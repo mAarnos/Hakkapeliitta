@@ -12,7 +12,7 @@ int main()
 {
 	Init = false;
 	Searching = false;
-	cout << "Hakkapeliitta dev 63.7, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta dev 64, (C) 2013-2014 Mikko Aarnos" << endl;
 	initInput();
 
 	while(true)

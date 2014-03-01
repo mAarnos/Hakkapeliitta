@@ -4,16 +4,16 @@
 // The value of a draw in centipawns. Zero is the normal setting, negative values make the program avoid draws and positive values make it prefer them.
 extern int drawscore;
 
-const int pawnOpening = 100;
-const int pawnEnding = 100;
-const int knightOpening = 345;
-const int knightEnding = 345;
-const int bishopOpening = 355;
-const int bishopEnding = 355;
-const int rookOpening = 525;
-const int rookEnding = 525;
-const int queenOpening = 1000;
-const int queenEnding = 1000;
+const int pawnOpening = 88;
+const int pawnEnding = 112;
+const int knightOpening = 235;
+const int knightEnding = 258;
+const int bishopOpening = 263;
+const int bishopEnding = 286;
+const int rookOpening = 410;
+const int rookEnding = 481;
+const int queenOpening = 901;
+const int queenEnding = 901;
 const int mateScore = 32767; 
 
 const int pieceValues[16] = {
@@ -266,18 +266,18 @@ const int queenMobilityEnding[28] = {
 };
 
 // pawn structure bonuses and penalties
-const int doubledPenaltyOpening = 20;
-const int doubledPenaltyEnding = 20;
-const int passedBonusOpening = 30; 
-const int passedBonusEnding = 30; 
-const int isolatedPenaltyOpening = 10; 
-const int isolatedPenaltyEnding = 10; 
-const int backwardPenaltyOpening = 5; 
-const int backwardPenaltyEnding = 5;  
+const int doubledPenaltyOpening = 16;
+const int doubledPenaltyEnding = 15;
+const int passedBonusOpening = -1; 
+const int passedBonusEnding = 55; 
+const int isolatedPenaltyOpening = 16; 
+const int isolatedPenaltyEnding = 20; 
+const int backwardPenaltyOpening = 13; 
+const int backwardPenaltyEnding = 9;  
 
 // material inbalance bonuses and penalties
-const int bishopPairBonus = 50;
-const int tradeDownBonus = 25;
+const int bishopPairBonus = 28;
+const int tradeDownBonus = 3;
 
 // following have no endgame counterpart as in the endgame the rook is always on a open or a semi-open file 
 const int rookOnOpenFileBonus = 10;

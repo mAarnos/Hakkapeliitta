@@ -665,11 +665,11 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				if (depth <= 3)
 				{
 					int staticEval = eval();
-					if (depth == 1 && staticEval - 350 >= beta)
+					if (depth == 1 && staticEval - 260 >= beta)
 						return staticEval;
-					else if (depth == 2 && staticEval - 525 >= beta)
+					else if (depth == 2 && staticEval - 445 >= beta)
 						return staticEval;
-					else if (depth == 3 && staticEval - 1000 >= beta)
+					else if (depth == 3 && staticEval - 900 >= beta)
 						depth--;
 				}
 				allowNullMove = false;
