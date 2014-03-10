@@ -24,41 +24,44 @@ void initializeKingTropism()
 		0, 1, 2, 3, 4, 5, 6, 7,
 		1, 2, 3, 4, 5, 6, 7, 8,
 		2, 3, 4, 5, 6, 7, 8, 9,
-		3, 4, 5, 6, 7, 8, 9,10,
-		4, 5, 6, 7, 8, 9,10,11,
-		5, 6, 7, 8, 9,10,11,12,
-		6, 7, 8, 9,10,11,12,13,
-		7, 8, 9,10,11,12,13,14
+		3, 4, 5, 6, 7, 8, 9, 10,
+		4, 5, 6, 7, 8, 9, 10, 11,
+		5, 6, 7, 8, 9, 10, 11, 12,
+		6, 7, 8, 9, 10, 11, 12, 13,
+		7, 8, 9, 10, 11, 12, 13, 14
 	};
 	int DistanceNE[64] = {
 		7, 6, 5, 4, 3, 2, 1, 0,
-	    8, 7, 6, 5, 4, 3, 2, 1,
-	    9, 8, 7, 6, 5, 4, 3, 2,
-	   10, 9, 8, 7, 6, 5, 4, 3,
-	   11,10, 9, 8, 7, 6, 5, 4,
-	   12,11,10, 9, 8, 7, 6, 5,
-	   13,12,11,10, 9, 8, 7, 6,
-	   14,13,12,11,10, 9, 8, 7
-	};	
-	int bonusDiagonalDistance[14] = {5, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+		8, 7, 6, 5, 4, 3, 2, 1,
+		9, 8, 7, 6, 5, 4, 3, 2,
+		10, 9, 8, 7, 6, 5, 4, 3,
+		11, 10, 9, 8, 7, 6, 5, 4,
+		12, 11, 10, 9, 8, 7, 6, 5,
+		13, 12, 11, 10, 9, 8, 7, 6,
+		14, 13, 12, 11, 10, 9, 8, 7
+	};
+	int nTropism[15] = { 14, 22, 29, 28, 19, -1, -6, -10, -11, -12, -13, -14, -15, -16, -17 };
+	int bTropism[15] = { 6, -12, 4, -16, -11, -17, -6, -14, -9, -17, -1, -17, -4, 3, 7 };
+	int rTropism[15] = { 7, 22, 23, 22, 22, 16, -2, -5, -14, -10, -8, -15, -16, -17, -17 };
+	int qTropism[15] = { 35, 49, 47, 44, 40, 14, 3, 0, -2, 1, 4, -3, -5, -6, -9 };
 	int i, j;
 
-	for (i = 0; i < 64; ++i) 
+	for (i = 0; i < 64; ++i)
 	{
-		for (j = 0; j < 64; ++j) 
+		for (j = 0; j < 64; ++j)
 		{
-		    Distance[i][j] = 14 - (abs(File(i) - File(j)) + abs(Rank(i) - Rank(j)));
+			Distance[i][j] = (abs(File(i) - File(j)) + abs(Rank(i) - Rank(j)));
 		}
 	}
-	for (i = 0; i < 64; ++i) 
+	for (i = 0; i < 64; ++i)
 	{
-		for (j = 0; j < 64; ++j) 
+		for (j = 0; j < 64; ++j)
 		{
-		    queenTropism[i][j] = (Distance[i][j] * 5) / 2;
-			rookTropism[i][j] = Distance[i][j] / 2;
-			knightTropism[i][j] = Distance[i][j];
-			bishopTropism[i][j] += bonusDiagonalDistance[abs(DistanceNE[i] - DistanceNE[j])];
-			bishopTropism[i][j] += bonusDiagonalDistance[abs(DistanceNW[i] - DistanceNW[j])];
+			queenTropism[i][j] = qTropism[Distance[i][j]];
+			rookTropism[i][j] = rTropism[Distance[i][j]];
+			knightTropism[i][j] = nTropism[Distance[i][j]];
+			bishopTropism[i][j] += bTropism[abs(DistanceNE[i] - DistanceNE[j])];
+			bishopTropism[i][j] += bTropism[abs(DistanceNW[i] - DistanceNW[j])];
 		}
 	}
 }
@@ -333,112 +336,112 @@ int kingSafetyEval(int &kingSafetyScore)
 	{
 		// penalize pawns which have moved one square
 		zone1 = popcnt(0x0000000000E00000 & whitePawns);
-		score -= 10 * zone1;
+		score -= 1 * zone1;
 		if (whitePawns & setMask[21])
-			score += 5;
+			score += 0;
 
 		// penalize pawns which have moved more than one square
 		zone2 = popcnt(0x00E0E0E0E0000000 & whitePawns);
-		score -= 20 * zone2;
+		score -= 11 * zone2;
 		if (whitePawns & RayN[21])
-			score += 10;
+			score += 5;
 
 		// penalize missing pawns
 		if (!(RayN[5] & whitePawns))
 		{
-			score -= 12;
+			score -= 19;
 		}
 		if (!(RayN[6] & whitePawns))
 		{
-			score -= 25;
+			score -= 38;
 		}
 		if (!(RayN[7] & whitePawns))
 		{
-			score -= 25;
+			score -= 38;
 		}
 
 		// penalize missing opponent pawns
 		if (!(RayN[5] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 		if (!(RayN[6] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 		if (!(RayN[7] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 
 		// pawn storm evaluation
 		// penalize pawns on the 6th rank(from black's point of view)
 		zone1 = popcnt(0x0000000000E00000 & blackPawns);
-		score -= 10 * zone1;
+		score -= 22 * zone1;
 
 		// penalize pawns on the 5th rank(from black's point of view)
 		zone2 = popcnt(0x00000000E0000000 & blackPawns);
-		score -= 5 * zone2;
+		score -= 6 * zone2;
 	}
 	else if (File(kingLocation) < 3)
 	{
 		// penalize pawns which have moved one square
 		zone1 = popcnt(0x0000000000070000 & whitePawns);
-		score -= 10 * zone1;
+		score -= 1 * zone1;
 		if (whitePawns & setMask[18])
-			score += 5;
+			score += 0;
 
 		// penalize pawns which have moved more than one square
 		zone2 = popcnt(0x0007070707000000 & whitePawns);
-		score -= 20 * zone2;
+		score -= 11 * zone2;
 		if (whitePawns & RayN[18])
-			score += 10;
+			score += 5;
 
 		// penalize missing pawns
 		if (!(RayN[2] & whitePawns))
 		{
-			score -= 12;
+			score -= 19;
 		}
 		if (!(RayN[1] & whitePawns))
 		{
-			score -= 25;
+			score -= 38;
 		}
 		if (!(RayN[0] & whitePawns))
 		{
-			score -= 25;
+			score -= 38;
 		}
 
 		// penalize missing opponent pawns
 		if (!(RayN[2] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 		if (!(RayN[1] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 		if (!(RayN[0] & blackPawns))
 		{
-			score -= 15;
+			score -= -2;
 		}
 
 		// pawn storm evaluation
 		// penalize pawns on the 6th rank(from black's point of view)
 		zone1 = popcnt(0x0000000000070000 & blackPawns);
-		score -= 10 * zone1;
+		score -= 22 * zone1;
 
 		// penalize pawns on the 5th rank(from black's point of view)
 		zone2 = popcnt(0x0000000007000000 & blackPawns);
-		score -= 5 * zone2;
+		score -= 6 * zone2;
 	}
 	else // if the king is in the center penalize open files near the king 
 	{
 		if (!(RayN[File(kingLocation)-1] & whitePawns & blackPawns))
-			score -= 15;
+			score -= 23;
 		if (!(RayN[File(kingLocation)] & whitePawns & blackPawns))
-			score -= 15;
+			score -= 23;
 		if (!(RayN[File(kingLocation)+1] & whitePawns & blackPawns))
-			score -= 15;
+			score -= 23;
 	}
 
 	kingLocation = bitScanForward(blackKing);
@@ -446,112 +449,112 @@ int kingSafetyEval(int &kingSafetyScore)
 	{
 		// penalize pawns which have moved one square
 		zone1 = popcnt(0x0000E00000000000 & blackPawns);
-		score += 10 * zone1;
+		score += 1 * zone1;
 		if (blackPawns & setMask[45])
-			score -= 5;
+			score -= 0;
 
 		// penalize pawns which have moved more than one square
 		zone2 = popcnt(0x000000E0E0E0E000 & blackPawns);
-		score += 20 * zone2;
+		score += 11 * zone2;
 		if (blackPawns & RayS[45])
-			score -= 10;
+			score -= 5;
 
 		// penalize missing pawns
 		if (!(RayS[61] & blackPawns))
 		{
-			score += 12;
+			score += 19;
 		}
 		if (!(RayS[62] & blackPawns))
 		{
-			score += 25;
+			score += 38;
 		}
 		if (!(RayS[63] & blackPawns))
 		{
-			score += 25;
+			score += 38;
 		}
 
 		// penalize missing opponent pawns
 		if (!(RayS[61] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 		if (!(RayS[62] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 		if (!(RayS[63] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 
 		// pawn storm evaluation
 		// penalize pawns on the 6th rank(from white's point of view)
 		zone1 = popcnt(0x0000E00000000000 & whitePawns);
-		score += 10 * zone1;
+		score += 22 * zone1;
 
 		// penalize pawns on the 5th rank(from white's point of view)
 		zone2 = popcnt(0x000000E000000000 & whitePawns);
-		score += 5 * zone2;
+		score += 6 * zone2;
 	}
 	else if (File(kingLocation) < 3)
 	{
 		// penalize pawns which have moved one square
 		zone1 = popcnt(0x0000070000000000 & blackPawns);
-		score += 10 * zone1;
+		score += 1 * zone1;
 		if (blackPawns & setMask[42])
-			score -= 5;
+			score -= 0;
 
 		// penalize pawns which have moved more than one square
 		zone2 = popcnt(0x0000000707070700 & blackPawns);
-		score += 20 * zone2;
+		score += 11 * zone2;
 		if (blackPawns & RayS[42])
-			score -= 10;
+			score -= 5;
 
 		// penalize missing pawns
 		if (!(RayS[58] & blackPawns))
 		{
-			score += 12;
+			score += 19;
 		}
 		if (!(RayS[57] & blackPawns))
 		{
-			score += 25;
+			score += 38;
 		}
 		if (!(RayS[56] & blackPawns))
 		{
-			score += 25;
+			score += 38;
 		}
 
 		// penalize missing opponent pawns
 		if (!(RayS[58] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 		if (!(RayS[57] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 		if (!(RayS[56] & whitePawns))
 		{
-			score += 15;
+			score += -2;
 		}
 
 		// pawn storm evaluation
 		// penalize pawns on the 6th rank(from white's point of view)
 		zone1 = popcnt(0x0000070000000000 & whitePawns);
-		score += 10 * zone1;
+		score += 22 * zone1;
 
 		// penalize pawns on the 5th rank(from white's point of view)
 		zone2 = popcnt(0x0000000700000000 & whitePawns);
-		score += 5 * zone2;
+		score += 6 * zone2;
 	}
 	else // if the king is in the center penalize open files near the king 
 	{
 		if (!(RayN[File(kingLocation)-1] & whitePawns & blackPawns))
-			score += 15;
+			score += 23;
 		if (!(RayN[File(kingLocation)] & whitePawns & blackPawns))
-			score += 15;
+			score += 23;
 		if (!(RayN[File(kingLocation)+1] & whitePawns & blackPawns))
-			score += 15;
+			score += 23;
 	}
 
 	return ((score * (256 - phase)) / 256);
