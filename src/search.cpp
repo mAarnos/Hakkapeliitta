@@ -306,7 +306,7 @@ void think()
 		allowNullMove = true;
 		singleMoveRoot = false;
 
-		score = searchRoot(searchdepth, alpha, beta);
+		score = searchRoot(searchdepth * onePly, alpha, beta);
 
 		searchtime = t.getms();
 
@@ -451,68 +451,9 @@ void think()
 		// don't adjust if depth is low - it's a waste of time
 		if (searchdepth > 4)
 		{
-			if (score >= mateScore - 600)
-			{
-				alpha = score-1;
-				beta = mateScore+1;
-			}
-			else if (score <= -mateScore + 600)
-			{
-				alpha = -(mateScore + 1);
-				beta = score+1;
-			}
-			else
-			{
-				alpha = score - aspirationWindow;
-				beta = score + aspirationWindow;
-			}
+			alpha = score - aspirationWindow;
+			beta = score + aspirationWindow;
 		}
-		else 
-		{
-			if (score >= mateScore - 600 || score <= -mateScore + 600)
-			{	
-				cout << "info " << "time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << endl;
-				if (!Infinite)
-				{
-					cout << "info " << "time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << endl;
-					int from = lastpv[0].getFrom();
-					int to = lastpv[0].getTo();
-					if (lastpv[0].isPromotion())
-					{
-						int promotion = lastpv[0].getPromotion();
-						std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
-					}
-					else 
-					{
-						std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
-					}
-				}
-				else 
-				{
-					while(true)
-					{
-						Sleep(100);
-						readClockAndInput();
-						if (!Searching)
-							break;
-					}
-
-					int from = lastpv[0].getFrom();
-					int to = lastpv[0].getTo();
-					if (lastpv[0].isPromotion())
-					{
-						int promotion = lastpv[0].getPromotion();
-						std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
-					}
-					else 
-					{
-						std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
-					}
-				}
-				return;
-			}
-		}
-		
 	}
 
 	t.stop();
@@ -610,18 +551,12 @@ int alphabetaPVS(int depth, int alpha, int beta)
 
 	_mm_prefetch((char *)&tt[Hash % ttSize], _MM_HINT_NTA);
 
-	// mate distance pruning
-	alpha = max(alpha, -mateScore + ply);
-	beta = min(beta, mateScore - ply - 1);
-	if (alpha >= beta)
-		return alpha;
-
 	// check extension
 	// makes sure that the quiescence search is NEVER started while being in check
 	check = inCheck(sideToMove);
 	if (check)
 	{
-		depth++;
+		depth += onePly;
 	}
 	
 	if (depth <= 0) 
@@ -662,15 +597,15 @@ int alphabetaPVS(int depth, int alpha, int beta)
 			if (phase != 256)
             {
 				// static null move pruning
-				if (depth <= 3)
+				if (depth <= 3 * onePly)
 				{
 					int staticEval = eval();
-					if (depth == 1 && staticEval - 260 >= beta)
+					if (depth == 1 * onePly && staticEval - 260 >= beta)
 						return staticEval;
-					else if (depth == 2 && staticEval - 445 >= beta)
+					else if (depth == 2 * onePly && staticEval - 445 >= beta)
 						return staticEval;
-					else if (depth == 3 && staticEval - 900 >= beta)
-						depth--;
+					else if (depth == 3 * onePly && staticEval - 900 >= beta)
+						depth -= onePly;
 				}
 				allowNullMove = false;
 				nodeCount++;
@@ -680,10 +615,10 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				}
 				sideToMove = !sideToMove;
 				Hash ^= side;
-				if (depth <= 3)
+				if (depth <= 3 * onePly)
 					value = -qsearch(-beta, -beta + 1);
 				else 
-					value = -alphabetaPVS(depth - 1 - (depth > 6 ? 3 : 2), -beta, -beta + 1);
+					value = -alphabetaPVS((depth - 1 * onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1);
 				sideToMove = !sideToMove;
 				Hash ^= side;
 				if (timedout || Searching == false)
@@ -693,18 +628,6 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				allowNullMove = true;
 				if (value >= beta) 
 				{
-					/*
-					if (depth >= 6)
-					{
-						int v = -alphabetaPVS(depth - 5, -beta-1, -beta);
-						if (v >= beta)
-							return value;
-					}
-					else
-					{
-						return value;
-					}
-					*/
 					return value;
 				}
 			 }
@@ -712,12 +635,12 @@ int alphabetaPVS(int depth, int alpha, int beta)
 	}
 	
 	// internal iterative deepening
-	if (!followpv && (alpha + 1) != beta && ttMove == Invalid && depth > 2 && Searching)
+	if (!followpv && (alpha + 1) != beta && ttMove == Invalid && depth > 2 * onePly && Searching)
 	{
-		value = alphabetaPVS(depth-2, alpha, beta);
+		value = alphabetaPVS(depth - 2 * onePly, alpha, beta);
 		if (value <= alpha)
 		{
-			value = alphabetaPVS(depth-2, -(mateScore + 1), beta);
+			value = alphabetaPVS(depth - 2 * onePly, -(mateScore + 1), beta);
 		}
 		ttProbe(depth, &alpha, &beta, &ttMove, &ttAllowNull);
 	}
@@ -757,15 +680,15 @@ int alphabetaPVS(int depth, int alpha, int beta)
 		movesFound = true;
 		if (pvFound)
 		{
-			value = -alphabetaPVS(depth-1, -alpha-1, -alpha); // zero window search 
+			value = -alphabetaPVS(depth - 1 * onePly, -alpha - 1, -alpha); // zero window search 
 			if (value > alpha && value < beta) 
 			{
-				value = -alphabetaPVS(depth-1, -beta, -alpha); // in case of failure research with a normal window
+				value = -alphabetaPVS(depth - 1 * onePly , -beta, -alpha); // in case of failure research with a normal window
 			}
 		}
         else
 		{
-			value = -alphabetaPVS(depth-1, -beta, -alpha); // normal alpha beta, used until a pv is found
+			value = -alphabetaPVS(depth - 1 * onePly, -beta, -alpha); // normal alpha beta, used until a pv is found
 		}
         unmake(moveStack[i].moveInt);
 		if (timedout || Searching == false)
@@ -833,7 +756,7 @@ int alphabetaPVS(int depth, int alpha, int beta)
 		{
 			bestscore = -mateScore + ply;
 		}
-		else 
+		else
 		{
 			bestscore = drawscore;
 		}
@@ -862,7 +785,7 @@ int searchRoot(int depth, int alpha, int beta)
 	check = inCheck(sideToMove);
 	if (check)
 	{
-		depth++;
+		depth += onePly;
 		generateEvasions();
 	}
 	else
@@ -898,15 +821,15 @@ int searchRoot(int depth, int alpha, int beta)
 
 		if (pvFound)
 		{
-			value = -alphabetaPVS(depth-1, -alpha-1, -alpha); // zero window search 
+			value = -alphabetaPVS(depth - 1 * onePly, -alpha - 1, -alpha); // zero window search 
 			if (value > alpha && value < beta) 
 			{
-				value = -alphabetaPVS(depth-1, -beta, -alpha); // in case of failure research with a normal window
+				value = -alphabetaPVS(depth - 1 * onePly, -beta, -alpha); // in case of failure research with a normal window
 			}
 		}
         else
 		{
-			value = -alphabetaPVS(depth-1, -beta, -alpha); // normal alpha beta, used until a pv is found
+			value = -alphabetaPVS(depth - 1 * onePly, -beta, -alpha); // normal alpha beta, used until a pv is found
 		}
 
         unmake(moveStack[i].moveInt);

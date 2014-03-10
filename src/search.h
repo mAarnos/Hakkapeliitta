@@ -33,4 +33,6 @@ int alphabetaPVS(int depth, int alpha, int beta);
 extern U64 nodeCount;
 extern int repetitionCount();
 
+const int onePly = 2;
+
 #endif

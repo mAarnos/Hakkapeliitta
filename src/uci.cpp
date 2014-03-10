@@ -94,7 +94,7 @@ void listenForInput()
     if (!strcmp(command, "uci")) 
 	{
  
-        cout << "id name Hakkapeliitta dev 65.2" << endl;
+        cout << "id name Hakkapeliitta dev 66" << endl;
         cout << "id author Mikko Aarnos" << endl;
  
         // send options
