@@ -141,11 +141,11 @@ void ttSave(unsigned __int8 depth, __int16 score, unsigned __int8 flags, int bes
 
 	if (score >= mateScore - 600)
 	{
-		score += ply;
+		score += (short)ply;
 	}
 	else if (score <= -mateScore + 600)
 	{
-		score -= ply;
+		score -= (short)ply;
 	}
 
 	// always replace replacement scheme

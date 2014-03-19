@@ -75,4 +75,6 @@ inline int File(int sq) {
    return sq % 8;
 }
 
+const int onePly = 2;
+
 #endif

@@ -22,15 +22,13 @@ int movestogo;
 void Timer::start()
 {
 	running = true;
-	ftime(&startBuffer);
-	startTime = startBuffer.time * 1000 + startBuffer.millitm;
+	startTime = clock();
 }
 
 void Timer::stop()
 {
 	running = false;
-	ftime(&stopBuffer);
-	stopTime = stopBuffer.time * 1000 + stopBuffer.millitm;
+	stopTime = clock();
 }
 
 void Timer::reset() 
@@ -45,12 +43,13 @@ U64 Timer::getms()
 {
 	if (running)
 	{
-		ftime(&currentBuffer);
-		currentTime = currentBuffer.time * 1000 + currentBuffer.millitm;
+		currentTime = clock();
 		return (currentTime - startTime);
 	}
-	else 
+	else
+	{
 		return (stopTime - startTime);
+	}
 }
 
 void readClockAndInput()
@@ -92,9 +91,13 @@ void go(char * command)
 	}
 	
 	if (!movestogo)
+	{
 		movestogo = 25;
-	else 
+	}
+	else
+	{
 		movestogo += 2; // create a time buffer to avoid losses on time
+	}
 
 	if (sideToMove == White)
 	{

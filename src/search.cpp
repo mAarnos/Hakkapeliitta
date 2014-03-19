@@ -65,7 +65,8 @@ int perft(int depth) {
 	
 	int i;
 
-	if (depth == 0) {
+	if (depth == 0) 
+	{
 		return 1;
 	}	
 
@@ -78,7 +79,6 @@ int perft(int depth) {
 		generateMoves();	
 	}
 
-	// generateMoves();
 	for (i = moveList[ply]; i < moveList[ply + 1]; i++) 
 	{
 		if (!(make(moveStack[i].moveInt))) // if the move is not legal just continue with the loop
@@ -92,8 +92,13 @@ int perft(int depth) {
 }	
 
 // repetitionCount is used to detect twofold repetitions of the current position
+// also detects fifty move rule draws.
 int repetitionCount()
 {
+	if (fiftyMoveDistance >= 100)
+	{
+		return true;
+	}
     for (int i = hply - 2; i >= (hply - fiftyMoveDistance) && i >= 0; i -= 2)   // we can skip every position where sideToMove is different from the current one. Also we don't need to go further than hply-fifty because the position must be different
     {
 		if (historyStack[i].Hash == Hash) 
@@ -130,7 +135,9 @@ void orderMoves(int &ttMove)
 		{
 			moveStack[i].score = SEE(moveStack[i]);
 			if (moveStack[i].score >= 0)
-				moveStack[i].score += CaptureMove; 
+			{
+				moveStack[i].score += CaptureMove;
+			}	
 		}
 		else if (moveStack[i].moveInt == killer[0][ply].moveInt)
 		{
@@ -198,10 +205,8 @@ void selectMove(int &i)
 		moveStack[i].score = temp1;
 	}
 
-	if (best == Infinity)
-		followpv = true;
-	else
-		followpv = false;
+	// Pretty much a hack.
+	best == Infinity ? followpv = true : followpv = false;
 }
 
 // selects the capture with the highest SEE score and puts it as the first move to try
@@ -263,13 +268,19 @@ void displayPV()
 		if (lastpv[i].isPromotion())
 		{
 			promotion = lastpv[i].getPromotion();
-			std::cout << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << " ";
+			cout << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << " ";
 		}
 		else 
 		{
-			std::cout << numberToNotation[from] << numberToNotation[to] << " ";
+			cout << numberToNotation[from] << numberToNotation[to] << " ";
 		}
 	}
+	cout << endl;
+}
+
+bool isMateScore(int score)
+{
+	return ((abs(score) >= mateScore - 600) && (abs(score) < mateScore));
 }
 
 void think()
@@ -278,7 +289,6 @@ void think()
 
 	// ply is simply the distance from root, so every time we start searching from the root we must reset ply to zero
 	ply = 0; 
-	// are the following four resets necessary?
 	lastpvLength = 0;
     memset(lastpv, 0 , sizeof(lastpv));
 	memset(whiteButterfly, 0, sizeof(whiteButterfly));
@@ -287,6 +297,7 @@ void think()
 	nodeCount = 0;
 	tbhits = 0;
 	countdown = stopinterval;
+	singleMoveRoot = false;
 
 	alpha = -(mateScore + 1);
 	beta = mateScore + 1;
@@ -310,7 +321,9 @@ void think()
 
 		searchtime = t.getms();
 
-		if (timedout || Searching == false)
+		// If more than 70% of our has been used or we have been ordered to stop searching return the best move.
+		// Also stop searching if there is only one root move or if we have searched too far.
+		if (timedout || Searching == false || t.getms() > (stopfrac * maxtime) || (singleMoveRoot && !Infinite) || searchdepth >= 64)
 		{
 			cout << "info " << "time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << endl;
 			int from = lastpv[0].getFrom();
@@ -319,29 +332,11 @@ void think()
 			if (lastpv[0].isPromotion())
 			{
 				int promotion = lastpv[0].getPromotion();
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
+				cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
 			}
 			else 
 			{
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
-			}
-			return;
-		}
-		// if we've used more than 70% of our time already don't start a new iteration as it most likely won't finish
-		else if (t.getms() > (stopfrac * maxtime))
-		{
-			cout << "info " << "time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << endl;
-			int from = lastpv[0].getFrom();
-			int to = lastpv[0].getTo();
-
-			if (lastpv[0].isPromotion())
-			{
-				int promotion = lastpv[0].getPromotion();
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
-			}
-			else 
-			{
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
+				cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
 			}
 			return;
 		}
@@ -350,50 +345,34 @@ void think()
 		if (score <= alpha)
 		{
 			alpha = -(mateScore + 1);
-			if (score >= mateScore - 600)
+			if (isMateScore(score))
 			{
-				int v = ((mateScore - score + 1) >> 1);
+				int v;
+				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 				cout << "info " << "depth " << searchdepth << " score mate " << v << " upperbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 				displayPV();
-				cout << "" << endl;
-			}
-			else if (score <= -mateScore + 600)
-			{
-				int v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchdepth << " score mate " << v << " upperbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
-				displayPV();
-				cout << "" << endl;
 			}
 			else
 			{
 				cout << "info " << "depth " << searchdepth << " score cp " << score << " upperbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 				displayPV();
-				cout << "" << endl;
 			}
 			continue;
 		}
 		if (score >= beta)
 		{
 			beta = mateScore + 1;
-			if (score >= mateScore - 600)
+			if (isMateScore(score))
 			{
-				int v = ((mateScore - score + 1) >> 1);
+				int v;
+				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 				cout << "info " << "depth " << searchdepth << " score mate " << v << " lowerbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 				displayPV();
-				cout << "" << endl;
-			}
-			else if (score <= -mateScore + 600)
-			{
-				int v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchdepth << " score mate " << v << " lowerbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
-				displayPV();
-				cout << "" << endl;
 			}
 			else
 			{
 				cout << "info " << "depth " << searchdepth << " score cp " << score << " lowerbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 				displayPV();
-				cout << "" << endl;
 			}
 			continue;
 		}
@@ -404,60 +383,30 @@ void think()
 		{
 			lastpv[i].moveInt = pv[0][i].moveInt;
 		}
-		// instead of (nodeCount / searchtime) we have (nodeCount / (searchtime + 1)) to prevent division by zero. Not fixing this WILL lead to extremely frequent crashes.
-		if (score >= mateScore - 600)
+
+		if (isMateScore(score))
 		{
-			int v = ((mateScore - score + 1) >> 1);
+			int v;
+			score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 			cout << "info " << "depth " << searchdepth << " score mate " << v << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 			displayPV();
-			cout << "" << endl;
-		}
-		else if (score <= -mateScore + 600)
-		{
-			int v = ((-score - mateScore) >> 1);
-			cout << "info " << "depth " << searchdepth << " score mate " << v << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
-			displayPV();
-			cout << "" << endl;
 		}
 		else
 		{
 			cout << "info " << "depth " << searchdepth << " score cp " << score << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 			displayPV();
-			cout << "" << endl;
 		}
 
-		if (singleMoveRoot && !Infinite)
-		{
-			singleMoveRoot = false;
-
-			cout << "info " << "time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000  << " tbhits " << tbhits << endl;
-			int from = lastpv[0].getFrom();
-			int to = lastpv[0].getTo();
-			if (lastpv[0].isPromotion())
-			{
-				int promotion = lastpv[0].getPromotion();
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << numberToPromotion[promotion] << endl;
-			}
-			else 
-			{
-				std::cout << "bestmove " << numberToNotation[from] << numberToNotation[to] << endl;
-			}
-			return;
-		}
-		searchdepth++;
 		// adjust alpha and beta based on the last score
-		// if we found a mate we dont use aspiration windows anymore
-		// score-1/score+1 is necessary in case of no faster mate as it will just lead to no pv
 		// don't adjust if depth is low - it's a waste of time
-		if (searchdepth > 4)
+		if (searchdepth >= 4)
 		{
 			alpha = score - aspirationWindow;
 			beta = score + aspirationWindow;
 		}
-	}
 
-	t.stop();
-	return;
+		searchdepth++;
+	}
 }
 
 // quiescence search
@@ -569,7 +518,7 @@ int alphabetaPVS(int depth, int alpha, int beta)
 		return drawscore;
 	}
 
-	if ((value = ttProbe(depth, &alpha, &beta, &ttMove, &ttAllowNull)) != Invalid)
+	if ((value = ttProbe((char)depth, &alpha, &beta, &ttMove, &ttAllowNull)) != Invalid)
 	{
 		return value;
 	}
@@ -601,11 +550,17 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				{
 					int staticEval = eval();
 					if (depth == 1 * onePly && staticEval - 260 >= beta)
+					{
 						return staticEval;
+					}
 					else if (depth == 2 * onePly && staticEval - 445 >= beta)
+					{
 						return staticEval;
+					}
 					else if (depth == 3 * onePly && staticEval - 900 >= beta)
+					{
 						depth -= onePly;
+					}
 				}
 				allowNullMove = false;
 				nodeCount++;
@@ -616,9 +571,13 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				sideToMove = !sideToMove;
 				Hash ^= side;
 				if (depth <= 3 * onePly)
+				{
 					value = -qsearch(-beta, -beta + 1);
-				else 
+				}
+				else
+				{
 					value = -alphabetaPVS((depth - 1 * onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1);
+				}
 				sideToMove = !sideToMove;
 				Hash ^= side;
 				if (timedout || Searching == false)
@@ -630,6 +589,13 @@ int alphabetaPVS(int depth, int alpha, int beta)
 				{
 					return value;
 				}
+				/*
+				// Mate threat extension, extend half a ply.
+				else if (value == -mateScore + ply + 1)
+				{
+					depth++;
+				}
+				*/
 			 }
 		}
 	}
@@ -642,7 +608,7 @@ int alphabetaPVS(int depth, int alpha, int beta)
 		{
 			value = alphabetaPVS(depth - 2 * onePly, -(mateScore + 1), beta);
 		}
-		ttProbe(depth, &alpha, &beta, &ttMove, &ttAllowNull);
+		ttProbe((char)depth, &alpha, &beta, &ttMove, &ttAllowNull);
 	}
 	
 	allowNullMove = true;
@@ -653,7 +619,7 @@ int alphabetaPVS(int depth, int alpha, int beta)
 	if (check)
 	{
 		generateEvasions();
-		// singular reply extension
+		// singular reply extension, extend half a ply.
 		if (moveList[ply + 1] - moveList[ply] == 1)
 		{
 			depth++;
@@ -715,7 +681,7 @@ int alphabetaPVS(int depth, int alpha, int beta)
 					killer[0][ply] = moveStack[i];
 				}
 			}
-			ttSave(depth, value, ttBeta, moveStack[i].moveInt);
+			ttSave((char)depth, (short)value, ttBeta, moveStack[i].moveInt);
 			return value;
 		}
 		if (value > bestscore)
@@ -761,12 +727,8 @@ int alphabetaPVS(int depth, int alpha, int beta)
 			bestscore = drawscore;
 		}
 	}
-	if (fiftyMoveDistance >= 100)
-	{
-		bestscore = drawscore;
-	}
 
-	ttSave(depth, bestscore, ttFlag, bestmove);
+	ttSave((char)depth, (short)bestscore, ttFlag, bestmove);
 
 	return bestscore;
 }
@@ -895,32 +857,26 @@ int searchRoot(int depth, int alpha, int beta)
 					lastpv[i] = pv[0][i];
 				}
 				searchtime = t.getms();
-				if (alpha >= mateScore - 600)
+				if (isMateScore(alpha))
 				{
-					int v = ((mateScore - alpha + 1) >> 1);
-					cout << "info " << "depth " << searchdepth << " score mate " << v << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
+					int v;
+					alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
+					cout << "info " << "depth " << searchdepth << " score mate " << v << " lowerbound " << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 					displayPV();
-					cout << "" << endl;
-				}
-				else if (alpha <= -mateScore + 600)
-				{
-					int v = ((-alpha - mateScore) >> 1);
-					cout << "info " << "depth " << searchdepth << " score mate " << v << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
-					displayPV();
-					cout << "" << endl;
 				}
 				else
 				{
 					cout << "info " << "depth " << searchdepth << " score cp " << alpha << " time " << searchtime << " nodes " << nodeCount << " nps " << (nodeCount / (searchtime + 1)) * 1000 << " tbhits " << tbhits << " pv ";
 					displayPV();
-					cout << "" << endl;
 				}
 			}
 		}
 	}
 
 	if (legalmoves == 1)
+	{
 		singleMoveRoot = true;
+	}
 
 	return bestscore;
 }

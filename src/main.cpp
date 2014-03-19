@@ -2,17 +2,17 @@
 #define MAIN_CPP
 
 #include <iostream>
+#include <time.h>
 #include "search.h"
 #include "eval.h"
 #include "hash.h"
 #include "uci.h"
-#include <time.h>
 
 int main()
 {
 	Init = false;
 	Searching = false;
-	cout << "Hakkapeliitta dev 66, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta dev 67, (C) 2013-2014 Mikko Aarnos" << endl;
 	initInput();
 
 	while(true)

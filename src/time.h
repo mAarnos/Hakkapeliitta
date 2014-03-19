@@ -2,16 +2,13 @@
 #define TIME_H
 
 #include "defs.h"
-#include <sys/timeb.h>
+#include <ctime>
 
 struct Timer
 {
-	U64 startTime;
-	U64 stopTime;
-	U64 currentTime;
-	timeb startBuffer;   
-	timeb stopBuffer;   
-    timeb currentBuffer;
+	clock_t startTime;
+	clock_t stopTime;
+	clock_t currentTime;
     bool running;  
 
 	void start();

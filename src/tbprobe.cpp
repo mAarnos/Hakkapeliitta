@@ -390,7 +390,7 @@ static int probe_wdl_table(int *success)
     struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
     U8 *pc = entry->pieces[bside];
     for (i = 0; i < entry->num;) {
-      U64 bb = getBitboard((bool)((pc[i] ^ cmirror) >> 3),
+      U64 bb = getBitboard(!!((pc[i] ^ cmirror) >> 3),
 				      (int)(pc[i] & 0x07));
       do {
 	p[i++] = pop_lsb(&bb);
@@ -402,7 +402,7 @@ static int probe_wdl_table(int *success)
     struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
     int k = entry->file[0].pieces[0][0] ^ cmirror;
 	// bb is zero, which causes an exception
-    U64 bb = getBitboard((bool)(k >> 3), (int)(k & 0x07));
+    U64 bb = getBitboard(!!(k >> 3), (int)(k & 0x07));
     i = 0;
     do {
       p[i++] = pop_lsb(&bb) ^ mirror;
@@ -410,7 +410,7 @@ static int probe_wdl_table(int *success)
     int f = pawn_file(entry, p);
     U8 *pc = entry->file[f].pieces[bside];
     for (; i < entry->num;) {
-      bb = getBitboard((bool)((pc[i] ^ cmirror) >> 3),
+      bb = getBitboard(!!((pc[i] ^ cmirror) >> 3),
 				    (int)(pc[i] & 0x07));
       do {
 	p[i++] = pop_lsb(&bb) ^ mirror;
@@ -491,7 +491,7 @@ static int probe_dtz_table(int wdl, int *success)
     }
     U8 *pc = entry->pieces;
     for (i = 0; i < entry->num;) {
-      U64 bb = getBitboard((bool)((pc[i] ^ cmirror) >> 3),
+      U64 bb = getBitboard(!!((pc[i] ^ cmirror) >> 3),
 				    (int)(pc[i] & 0x07));
       do {
 	p[i++] = pop_lsb(&bb);
@@ -508,7 +508,7 @@ static int probe_dtz_table(int wdl, int *success)
   } else {
     struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
     int k = entry->file[0].pieces[0] ^ cmirror;
-    U64 bb = getBitboard((bool)(k >> 3), (int)(k & 0x07));
+    U64 bb = getBitboard(!!(k >> 3), (int)(k & 0x07));
     i = 0;
     do {
       p[i++] = pop_lsb(&bb) ^ mirror;
@@ -520,7 +520,7 @@ static int probe_dtz_table(int wdl, int *success)
     }
     U8 *pc = entry->file[f].pieces;
     for (; i < entry->num;) {
-      bb = getBitboard((bool)((pc[i] ^ cmirror) >> 3),
+      bb = getBitboard(!!((pc[i] ^ cmirror) >> 3),
 			    (int)(pc[i] & 0x07));
       do {
 	p[i++] = pop_lsb(&bb) ^ mirror;

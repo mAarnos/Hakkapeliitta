@@ -6,7 +6,7 @@
 
 using namespace std;
 
-extern unsigned long long whiteKing;
+extern U64 whiteKing;
 extern U64 whiteQueens;
 extern U64 whiteRooks;
 extern U64 whiteBishops;

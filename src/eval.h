@@ -4,8 +4,6 @@
 // The value of a draw in centipawns. Zero is the normal setting, negative values make the program avoid draws and positive values make it prefer them.
 extern int drawscore;
 
-// iteration 23 is the best version
-
 const int pawnOpening = 88;
 const int pawnEnding = 112;
 const int knightOpening = 235;
@@ -17,6 +15,11 @@ const int rookEnding = 481;
 const int queenOpening = 892;
 const int queenEnding = 892;
 const int mateScore = 32767; 
+
+const int pawnValue = ((pawnOpening + pawnEnding) / 2);
+const int minorValue = ((knightOpening + knightEnding + bishopOpening + bishopEnding) / 4);
+const int rookValue = ((rookOpening + rookEnding) / 2);
+const int queenValue = ((queenOpening + queenEnding) / 2);
 
 const int pieceValues[16] = {
 	0, pawnOpening, mateScore, knightOpening, 0, bishopOpening, rookOpening, queenOpening,

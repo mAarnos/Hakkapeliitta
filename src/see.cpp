@@ -51,7 +51,6 @@ U64 attacksTo(int &target)
 U64 revealNextAttacker(U64 &attackers, U64 &nonremoved, int &target, int &heading)
 {
 	// we update the attackers bitmap to include any attackers which have been revealed by moving the previous attacker
-	// this part isn't done that well, OPTIMIZE
 	U64 blockers, targetbitmap;
 	U64 occupied = occupiedSquares & nonremoved;
 	int databaseIndex;
@@ -166,7 +165,7 @@ U64 revealNextAttacker(U64 &attackers, U64 &nonremoved, int &target, int &headin
 
 int SEE(Move &move)
 {
-	U64 attackers, nonremoved = ~0;
+	U64 attackers, nonremoved = (U64)~0;
 	int alpha, beta, next, value = 0, attackerValue = 0;
 	int from = move.getFrom();
 	int to = move.getTo();
