@@ -1,9 +1,36 @@
 #ifndef POSITION_CPP
 #define POSITION_CPP
 
-#include <sstream>
 #include "position.h"
 #include "bitboard.h"
+#include "hash.h"
+
+int Position::getPiece(int sq)
+{
+	if (isBitSet(bitboards[12], sq))
+	{
+		for (int i = WhitePawn; i < WhiteKing; i++)
+		{
+			if (isBitSet(bitboards[i], sq))
+			{
+				return i;
+			}
+		}
+		return WhiteKing;
+	}
+	if (isBitSet(bitboards[13], sq))
+	{
+		for (int i = BlackPawn; i < BlackKing; i++)
+		{
+			if (isBitSet(bitboards[i], sq))
+			{
+				return i;
+			}
+		}
+		return BlackKing;
+	}
+	return Empty;
+}
 
 int Position::initBoardFromFEN(string FEN)
 {
@@ -200,8 +227,7 @@ int Position::initBoardFromFEN(string FEN)
 
 void Position::initializeBoardFromFEN(string FEN)
 {
-	int success = initBoardFromFEN(FEN);
-	if (success = -1)
+	if (initBoardFromFEN(FEN) == -1)
 	{
 		cout << "fen string invalid" << endl;
 	}

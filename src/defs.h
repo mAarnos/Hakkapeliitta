@@ -7,7 +7,7 @@
 #include <vector>
 #include <ctime>
 #include <string>
-#include <regex>
+#include <sstream>
 
 using namespace std;
 
@@ -22,7 +22,6 @@ enum {
 	A8, B8, C8, D8, E8, F8, G8, H8,
 	NoSquare
 };
-const int Squares = NoSquare;
 
 enum {
 	White = 0, Black = 1
@@ -40,6 +39,8 @@ enum {
 enum {
 	whiteOO = 1, whiteOOO = 2, blackOO = 4, blackOOO = 8
 };
+
+const int Squares = NoSquare;
 
 
 #endif

@@ -38,4 +38,9 @@ inline uint64_t rookAttacks(int sq, uint64_t occupied)
 	return mag->data[((occupied & mag->mask) * mag->magic) >> (64 - 12)];
 }
 
+inline uint64_t queenAttacks(int sq, uint64_t occupied)
+{
+	return bishopAttacks(sq, occupied) | rookAttacks(sq, occupied);
+}
+
 #endif
