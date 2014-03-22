@@ -9,11 +9,6 @@ void Move::clear()
 	score = 0;
 }    
 
-void Move::setMove(int move)
-{
-	moveInt = move;
-}
-
 void Move::setFrom(int from)  
 {  
 	moveInt &= 0xffffffc0; 
@@ -26,28 +21,11 @@ void Move::setTo(int to)
 	moveInt |= to << 6;
 }
  
-void Move::setPiece(int piece)  
+void Move::setPromotion(int promotion)
 {  
 	moveInt &= 0xffff0fff;
-	moveInt |= piece << 12;
+	moveInt |= promotion << 12;
 } 
- 
-void Move::setCapture(int capture)  
-{  
-	moveInt &= 0xfff0ffff; 
-	moveInt |= capture << 16;
-} 
- 
-void Move::setPromotion(int promotion)  
-{  
-	moveInt &= 0xff0fffff;
-	moveInt |= promotion << 20;
-}  
-
-int Move::getMove()
-{
-	return moveInt;
-}
 
 int Move::getFrom()  
 { 
@@ -59,19 +37,9 @@ int Move::getTo()
 	return (moveInt >>  6) & 0x0000003f; 
 }   
  
-int Move::getPiece()  
+int Move::getPromotion()  
 { 
 	return (moveInt >> 12) & 0x0000000f; 
 }   
  
-int Move::getCapture()  
-{ 
-	return (moveInt >> 16) & 0x0000000f; 
-}   
- 
-int Move::getPromotion()  
-{ 
-	return (moveInt >> 20) & 0x0000000f; 
-}    
-
 #endif

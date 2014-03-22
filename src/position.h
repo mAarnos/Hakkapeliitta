@@ -9,7 +9,7 @@ class Position
 	public:
 		void initializeBoardFromFEN(string FEN);
 
-		int getPiece(int sq);
+		inline int getPiece(int sq) { return board[sq]; }
 
 		inline uint64_t getWhitePieces() { return bitboards[12]; }
 		inline uint64_t getBlackPieces() { return bitboards[13]; }
@@ -32,6 +32,9 @@ class Position
 		// 1 for all occupied squares.
 		// 1 for all not-occupied squares.
 		array<uint64_t, 16> bitboards;
+		// The board as a one-dimensional array.
+		// We have it because often we want to know what piece is on which square or something like that.
+		array<int, 64> board;
 
 		// Miscellaneous, everything is pretty self explanatory.
 		bool sideToMove;

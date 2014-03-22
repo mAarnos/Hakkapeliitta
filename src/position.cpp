@@ -5,36 +5,8 @@
 #include "bitboard.h"
 #include "hash.h"
 
-int Position::getPiece(int sq)
-{
-	if (isBitSet(bitboards[12], sq))
-	{
-		for (int i = WhitePawn; i < WhiteKing; i++)
-		{
-			if (isBitSet(bitboards[i], sq))
-			{
-				return i;
-			}
-		}
-		return WhiteKing;
-	}
-	if (isBitSet(bitboards[13], sq))
-	{
-		for (int i = BlackPawn; i < BlackKing; i++)
-		{
-			if (isBitSet(bitboards[i], sq))
-			{
-				return i;
-			}
-		}
-		return BlackKing;
-	}
-	return Empty;
-}
-
 int Position::initBoardFromFEN(string FEN)
 {
-	array<int, 64> startPosition;
 	unsigned int i, j;
 	int sq;
 	char letter;
@@ -42,7 +14,7 @@ int Position::initBoardFromFEN(string FEN)
 
 	for (sq = A1; sq <= H8; sq++)
 	{
-		startPosition[sq] = Empty;
+		board[sq] = Empty;
 	}
 
 	// Split the FEN into parts.
@@ -65,18 +37,18 @@ int Position::initBoardFromFEN(string FEN)
 		sq = (int)(((aRank - 1) * 8) + (aFile - 1));
 		switch (letter)
 		{
-			case 'p': startPosition[sq] = BlackPawn; break;
-			case 'r': startPosition[sq] = BlackRook; break;
-			case 'n': startPosition[sq] = BlackKnight; break;
-			case 'b': startPosition[sq] = BlackBishop; break;
-			case 'q': startPosition[sq] = BlackQueen; break;
-			case 'k': startPosition[sq] = BlackKing; break;
-			case 'P': startPosition[sq] = WhitePawn; break;
-			case 'R': startPosition[sq] = WhiteRook; break;
-			case 'N': startPosition[sq] = WhiteKnight; break;
-			case 'B': startPosition[sq] = WhiteBishop; break;
-			case 'Q': startPosition[sq] = WhiteQueen; break;
-			case 'K': startPosition[sq] = WhiteKing; break;
+			case 'p': board[sq] = BlackPawn; break;
+			case 'r': board[sq] = BlackRook; break;
+			case 'n': board[sq] = BlackKnight; break;
+			case 'b': board[sq] = BlackBishop; break;
+			case 'q': board[sq] = BlackQueen; break;
+			case 'k': board[sq] = BlackKing; break;
+			case 'P': board[sq] = WhitePawn; break;
+			case 'R': board[sq] = WhiteRook; break;
+			case 'N': board[sq] = WhiteKnight; break;
+			case 'B': board[sq] = WhiteBishop; break;
+			case 'Q': board[sq] = WhiteQueen; break;
+			case 'K': board[sq] = WhiteKing; break;
 			case '/': j--; break;
 			case '1': break;
 			case '2': j++; break;
@@ -168,51 +140,51 @@ int Position::initBoardFromFEN(string FEN)
 	// populate the bitboards
 	for (i = A1; i <= H8; i++) 
 	{
-		if (startPosition[i] == WhitePawn)
+		if (board[i] == WhitePawn)
 		{
 			setBit(bitboards[WhitePawn], i);
 		}
-		else if (startPosition[i] == WhiteKnight)
+		else if (board[i] == WhiteKnight)
 		{
 			setBit(bitboards[WhiteKnight], i);
 		}
-		else if (startPosition[i] == WhiteBishop)
+		else if (board[i] == WhiteBishop)
 		{
 			setBit(bitboards[WhiteBishop], i);
 		}
-		else if (startPosition[i] == WhiteRook)
+		else if (board[i] == WhiteRook)
 		{
 			setBit(bitboards[WhiteRook], i);
 		}
-		else if (startPosition[i] == WhiteQueen)
+		else if (board[i] == WhiteQueen)
 		{
 			setBit(bitboards[WhiteQueen], i);
 		}
-		else if (startPosition[i] == WhiteKing)
+		else if (board[i] == WhiteKing)
 		{
 			setBit(bitboards[WhiteKing], i);
 		}
-		else if (startPosition[i] == BlackPawn)
+		else if (board[i] == BlackPawn)
 		{
 			setBit(bitboards[BlackPawn], i);
 		}
-		else if (startPosition[i] == BlackKnight)
+		else if (board[i] == BlackKnight)
 		{
 			setBit(bitboards[BlackKnight], i);
 		}
-		else if (startPosition[i] == BlackBishop)
+		else if (board[i] == BlackBishop)
 		{
 			setBit(bitboards[BlackBishop], i);
 		}
-		else if (startPosition[i] == BlackRook)
+		else if (board[i] == BlackRook)
 		{
 			setBit(bitboards[BlackRook], i);
 		}
-		else if (startPosition[i] == BlackQueen)
+		else if (board[i] == BlackQueen)
 		{
 			setBit(bitboards[BlackQueen], i);
 		}
-		else if (startPosition[i] == BlackKing)
+		else if (board[i] == BlackKing)
 		{
 			setBit(bitboards[BlackKing], i);
 		}
