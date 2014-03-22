@@ -2,20 +2,18 @@
 #define TTABLE_CPP
 
 #include "ttable.h"
-#include "board.h"
-#include "eval.h"
 
-ttEntry * tt;
-int ttSize = 0;
+vector<ttEntry> tt;
+uint64_t ttSize = 0;
 
-pttEntry * ptt;
-int pttSize = 0;
+vector<pttEntry> ptt;
+uint64_t pttSize = 0;
 
-int ttSetSize(int size)
+void ttSetSize(uint64_t size)
 {
-	free(tt); // necessary so no undefined behaviour occurs
+	tt.clear();
 
-	// size is not a power of two make it the biggest power of two smaller than size
+	// If size is not a power of two make it the biggest power of two smaller than size.
 	if (size & (size - 1))
 	{
 		size--;
@@ -27,25 +25,22 @@ int ttSetSize(int size)
 		size >>= 1;
 	}
 
-	// if too small a transposition table for even a single entry, do nothing
+	// If the transposition table is too small for even a single entry, do nothing.
 	if (size < sizeof(ttEntry)) 
 	{
 		ttSize = 0;
-		return 0;
+		return;
 	}
 
 	ttSize = (size / sizeof(ttEntry)) - 1;
-	tt = (ttEntry *) malloc(size);
-	memset(tt, 0, size);
-
-	return 0;
+	tt.resize(ttSize);
 }
 
-int pttSetSize(int size)
+void pttSetSize(uint64_t size)
 {
-	free(ptt); // necessary so no undefined behaviour occurs
+	ptt.clear();
 
-	// size is not a power of two make it the biggest power of two smaller than size
+	// If size is not a power of two make it the biggest power of two smaller than size.
 	if (size & (size - 1))
 	{
 		size--;
@@ -57,112 +52,53 @@ int pttSetSize(int size)
 		size >>= 1;
 	}
 
-	// if too small a pawn hash table for even a single entry, do nothing
+	// If too small a pawn hash table for even a single entry do nothing.
 	if (size < sizeof(pttEntry)) 
 	{
 		pttSize = 0;
-		return 0;
+		return;
 	}
 
 	pttSize = (size / sizeof(pttEntry)) - 1;
-	ptt = (pttEntry *) malloc(size);
-	memset(ptt, 0, size);
+	ptt.resize(ttSize);
+
+	return;
+}
+
+int ttProbe(uint8_t depth, int * alpha, int * beta, int * best)
+{
+	if (!ttSize)
+	{
+		return 0;
+	}
 
 	return 0;
 }
 
-int ttProbe(unsigned __int8 depth, int * alpha, int * beta, int * best, bool * ttAllowNull) 
+int pttProbe(uint64_t hash)
 {
-	ttEntry * hashEntry = &tt[Hash % ttSize];
- 
-	if (hashEntry->Hash == Hash) 
+	if (!pttSize)
 	{
-		*best = hashEntry->bestmove;
-		if (hashEntry->flags == ttAlpha && hashEntry->depth >= depth - 1 - (depth > 6 ? 3 : 2) && hashEntry->score < *beta) 
-		{
-			*ttAllowNull = false;
-		}
-		if (hashEntry->depth >= depth) 
-		{
-			int score = hashEntry->score;
-
-			// correct the mate score back to usable form
-			if (score >= mateScore - 600)
-			{
-				score -= ply;
-			}
-			else if (score <= -mateScore + 600)
-			{
-				score += ply;
-			}
-
-			// handles every possible case, no need to optimize
-			if (hashEntry->flags == ttExact)
-				return score;
-
-			if ((hashEntry->flags == ttAlpha) && (score <= *alpha))
-				return score;
-			
-			if ((hashEntry->flags == ttAlpha) && (score < *beta))
-			{
-				*beta = score; 
-				return Invalid;
-			}
-			
-			if ((hashEntry->flags == ttBeta) && (score >= *beta))
-				return score;
-			
-			if ((hashEntry->flags == ttBeta) && (score > *alpha))
-			{
-				*alpha = score;
-				return Invalid;
-			}
-			
-		}
+		return 0;
 	}
-	return Invalid;
+
+	return 0;
 }
 
-int pttProbe(U64 hash)
+void ttSave(uint8_t depth, int16_t score, uint8_t flags, int32_t best)
 {
-	pttEntry * hashEntry = &ptt[hash % pttSize];
-
-	if (hashEntry->Hash == hash) 
+	if (!ttSize)
 	{
-		return hashEntry->score;
+		return;
 	}
-
-	return Invalid;
 }
 
-void ttSave(unsigned __int8 depth, __int16 score, unsigned __int8 flags, int best) 
+void pttSave(uint64_t hash, int32_t score)
 {
-	ttEntry * hashEntry = &tt[Hash % ttSize];
-
-	if (score >= mateScore - 600)
+	if (!pttSize)
 	{
-		score += (short)ply;
+		return;
 	}
-	else if (score <= -mateScore + 600)
-	{
-		score -= (short)ply;
-	}
-
-	// always replace replacement scheme
-	hashEntry->Hash = Hash;
-	hashEntry->bestmove = best;
-	hashEntry->score = score;
-	hashEntry->flags = flags;
-	hashEntry->depth = depth;
-}
-
-void pttSave(U64 hash, int score)
-{
-	pttEntry * hashEntry = &ptt[hash % pttSize];
-
-	// always replace replacement scheme
-	hashEntry->Hash = hash;
-	hashEntry->score = score;
 }
 
 #endif

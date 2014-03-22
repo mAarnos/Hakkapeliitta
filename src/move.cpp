@@ -6,10 +6,8 @@
 void Move::clear()
 {
 	moveInt = 0;
+	score = 0;
 }    
-
-// write Move information: 
-// first mask, then shift left
 
 void Move::setFrom(int from)  
 {  // bits  0.. 5

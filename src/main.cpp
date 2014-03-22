@@ -1,24 +1,26 @@
 #ifndef MAIN_CPP
 #define MAIN_CPP
 
-#include <iostream>
-#include <time.h>
-#include "search.h"
-#include "eval.h"
+#include "defs.h"
+#include "bitboard.h"
+#include "magic.h"
 #include "hash.h"
-#include "uci.h"
+#include "ttable.h"
+#include "position.h"
 
 int main()
 {
-	Init = false;
-	Searching = false;
-	cout << "Hakkapeliitta dev 67, (C) 2013-2014 Mikko Aarnos" << endl;
-	initInput();
+	cout << "Hakkapeliitta v2, (C) 2013-2014 Mikko Aarnos" << endl;
 
-	while(true)
-	{ 
-		listenForInput();
-	}
+	initializeBitboards();
+	initializeMagics();
+	initializeHash();
+
+	Position pos;
+	pos.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+
+	cout << "done" << endl;
+
 	return 0; 
 }
 

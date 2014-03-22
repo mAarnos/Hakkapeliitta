@@ -5,38 +5,43 @@
 
 const int Invalid = -11111;
 
-// flags for exact, upperbound and lowerbound scores
+// Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
 
-// we pack the ttEntry so that we can fit as much as possible of them into the TT
+// We pack the ttEntry so that we can fit as much as possible of them into the TT.
+// Maybe test someday whether packing is good or not.
 #pragma pack (1)
-struct ttEntry {
-	U64 Hash;
-	int bestmove;
-	__int16 score;
-	unsigned __int8 depth;
-	unsigned __int8 flags;
+class ttEntry 
+{
+	public:
+		uint64_t Hash;
+		int32_t bestmove;
+		int16_t score;
+		uint8_t depth;
+		uint8_t flags;
 }; 
 #pragma pack ()
 
-struct pttEntry {
-	U64 Hash;
-	int score;
+class pttEntry 
+{
+	public:
+		uint64_t Hash;
+		int score;
 };
 
-extern ttEntry * tt;
-extern int ttSize;
+extern vector<ttEntry> tt;
+extern uint64_t ttSize;
 
-extern pttEntry * ptt;
-extern int pttSize;
+extern vector<pttEntry> ptt;
+extern uint64_t pttSize;
 
-extern int ttSetSize(int size);
-extern int pttSetSize(int size);
+void ttSetSize(uint64_t size);
+void pttSetSize(uint64_t size);
 
-extern void ttSave(unsigned __int8 depth, __int16 score, unsigned __int8 flags, int best);
-extern int ttProbe(unsigned __int8 depth, int * alpha, int * beta, int * best, bool * ttAllowNull);
+void ttSave(uint8_t depth, int16_t score, uint8_t flags, int32_t best);
+int ttProbe(uint8_t depth, int * alpha, int * beta, int * best);
 
-extern void pttSave(U64 pHash, int score);
-extern int pttProbe(U64 pHash);
+void pttSave(uint64_t pHash, int32_t score);
+int pttProbe(uint64_t pHash);
 
 #endif
