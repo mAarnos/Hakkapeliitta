@@ -1,9 +1,11 @@
 #ifndef POSITION_CPP
 #define POSITION_CPP
 
+#include <sstream>
 #include "position.h"
+#include "bitboard.h"
 
-int Position::initializeBoardFromFEN(string FEN)
+int Position::initBoardFromFEN(string FEN)
 {
 	array<int, 64> startPosition;
 	unsigned int i, j;
@@ -16,9 +18,14 @@ int Position::initializeBoardFromFEN(string FEN)
 		startPosition[sq] = Empty;
 	}
 
+	// Split the FEN into parts.
 	vector<string> strList;
-
-	// Split the FEN into parts here.
+	stringstream ss(FEN);
+	string item;
+	while (getline(ss, item, ' ')) 
+	{
+		strList.push_back(item);
+	}
 
 	j = 1; i = 0;
 	// Translate the FEN string into piece locations on the board.
@@ -129,7 +136,75 @@ int Position::initializeBoardFromFEN(string FEN)
 		}
 	}
 
+	bitboards.fill(0);
+
+	// populate the bitboards
+	for (i = A1; i <= H8; i++) 
+	{
+		if (startPosition[i] == WhitePawn)
+		{
+			setBit(bitboards[WhitePawn], i);
+		}
+		else if (startPosition[i] == WhiteKnight)
+		{
+			setBit(bitboards[WhiteKnight], i);
+		}
+		else if (startPosition[i] == WhiteBishop)
+		{
+			setBit(bitboards[WhiteBishop], i);
+		}
+		else if (startPosition[i] == WhiteRook)
+		{
+			setBit(bitboards[WhiteRook], i);
+		}
+		else if (startPosition[i] == WhiteQueen)
+		{
+			setBit(bitboards[WhiteQueen], i);
+		}
+		else if (startPosition[i] == WhiteKing)
+		{
+			setBit(bitboards[WhiteKing], i);
+		}
+		else if (startPosition[i] == BlackPawn)
+		{
+			setBit(bitboards[BlackPawn], i);
+		}
+		else if (startPosition[i] == BlackKnight)
+		{
+			setBit(bitboards[BlackKnight], i);
+		}
+		else if (startPosition[i] == BlackBishop)
+		{
+			setBit(bitboards[BlackBishop], i);
+		}
+		else if (startPosition[i] == BlackRook)
+		{
+			setBit(bitboards[BlackRook], i);
+		}
+		else if (startPosition[i] == BlackQueen)
+		{
+			setBit(bitboards[BlackQueen], i);
+		}
+		else if (startPosition[i] == BlackKing)
+		{
+			setBit(bitboards[BlackKing], i);
+		}
+	}
+	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
+	bitboards[13] = bitboards[BlackKing] | bitboards[BlackQueen] | bitboards[BlackRook] | bitboards[BlackBishop] | bitboards[BlackKnight] | bitboards[BlackPawn];
+	bitboards[14] = bitboards[12] | bitboards[13];
+	bitboards[15] = ~(bitboards[14]);
+
 	return 0;
+}
+
+void Position::initializeBoardFromFEN(string FEN)
+{
+	int success = initBoardFromFEN(FEN);
+	if (success = -1)
+	{
+		cout << "fen string invalid" << endl;
+	}
 }
 
 #endif

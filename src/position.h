@@ -6,7 +6,7 @@
 class Position
 {
 	public:
-		int initializeBoardFromFEN(string FEN);
+		void initializeBoardFromFEN(string FEN);
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.
@@ -21,6 +21,8 @@ class Position
 		int fiftyMoveDistance;
 		int ply, hply;
 		uint64_t hash, pawnHash;
+
+		int initBoardFromFEN(string FEN);
 };
 
 #endif
