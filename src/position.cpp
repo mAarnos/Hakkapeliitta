@@ -5,7 +5,7 @@
 #include "bitboard.h"
 #include "hash.h"
 
-int Position::initBoardFromFEN(string FEN)
+void Position::initializeBoardFromFEN(string FEN)
 {
 	unsigned int i, j;
 	int sq;
@@ -58,7 +58,7 @@ int Position::initBoardFromFEN(string FEN)
 			case '6': j += 5; break;
 			case '7': j += 6; break;
 			case '8': j += 7; break;
-			default: return -1;
+			default: return;
 		}
 		j++;
 	}
@@ -75,7 +75,7 @@ int Position::initBoardFromFEN(string FEN)
 		{
 			sideToMove = Black;
 		}
-		else return -1;
+		else return;
 	}
 
 	// set castling to default 0 
@@ -111,7 +111,7 @@ int Position::initBoardFromFEN(string FEN)
 			aRank = strList[3].at(1) - 48; // ASCII '1' = 49 
 			enPassantSquare = (int)((aRank - 1) * 8 + aFile - 1);
 		}
-		else return -1;
+		else return;
 	}
 
 	// Fifty move distance, we start at 0 by default.
@@ -121,7 +121,7 @@ int Position::initBoardFromFEN(string FEN)
 		fiftyMoveDistance = stoi(strList[4]);
 	}
 
-	ply = 0;
+	hply = 0;
 	if (strList.size() >= 6)
 	{
 		hply = 2 * stoi(strList[5]) - 1;
@@ -194,15 +194,7 @@ int Position::initBoardFromFEN(string FEN)
 	bitboards[14] = bitboards[12] | bitboards[13];
 	bitboards[15] = ~(bitboards[14]);
 
-	return 0;
-}
-
-void Position::initializeBoardFromFEN(string FEN)
-{
-	if (initBoardFromFEN(FEN) == -1)
-	{
-		cout << "fen string invalid" << endl;
-	}
+	return;
 }
 
 #endif

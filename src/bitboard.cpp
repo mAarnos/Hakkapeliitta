@@ -3,13 +3,13 @@
 
 #include "bitboard.h"
 
-array<uint64_t, 64 + 1> above;
-array<uint64_t, 64 + 1> below;
-array<uint64_t, 64> kingAttacks;
-array<uint64_t, 64> knightAttacks;
-array<uint64_t, 64> pawnAttacks[2];
-array<uint64_t, 64> pawnSingleMoves[2];
-array<uint64_t, 64> pawnDoubleMoves[2];
+array<uint64_t, Squares + 1> above;
+array<uint64_t, Squares + 1> below;
+array<uint64_t, Squares> kingAttacks;
+array<uint64_t, Squares> knightAttacks;
+array<uint64_t, Squares> pawnAttacks[2];
+array<uint64_t, Squares> pawnSingleMoves[2];
+array<uint64_t, Squares> pawnDoubleMoves[2];
 
 void initializeBitMasks();
 void initializeKingAttacks();

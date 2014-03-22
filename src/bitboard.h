@@ -9,13 +9,13 @@ void initializeBitboards();
 const uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
 const uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
 
-extern array<uint64_t, 64 + 1> above;
-extern array<uint64_t, 64 + 1> below;
-extern array<uint64_t, 64> kingAttacks;
-extern array<uint64_t, 64> knightAttacks;
-extern array<uint64_t, 64> pawnAttacks[2];
-extern array<uint64_t, 64> pawnSingleMoves[2];
-extern array<uint64_t, 64> pawnDoubleMoves[2];
+extern array<uint64_t, Squares + 1> above;
+extern array<uint64_t, Squares + 1> below;
+extern array<uint64_t, Squares> kingAttacks;
+extern array<uint64_t, Squares> knightAttacks;
+extern array<uint64_t, Squares> pawnAttacks[2];
+extern array<uint64_t, Squares> pawnSingleMoves[2];
+extern array<uint64_t, Squares> pawnDoubleMoves[2];
 
 inline int bitScanForward(uint64_t mask)
 {

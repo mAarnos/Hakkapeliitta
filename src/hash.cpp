@@ -4,10 +4,10 @@
 #include "hash.h"
 #include "random.h"
 
-array<uint64_t, 64> pieceHash[2][6];
+array<uint64_t, Squares> pieceHash[2][6];
 array<uint64_t, 8> materialHash[2][6];
 array<uint64_t, 16> castlingRightsHash;
-array<uint64_t, 64> enPassantHash;
+array<uint64_t, Squares> enPassantHash;
 uint64_t turnHash;
 
 void initializeHash()

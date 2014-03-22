@@ -21,8 +21,8 @@ class MagicInit
 };
 
 extern uint64_t lookupTable[97264];
-extern Magic bishopMagic[64];
-extern Magic rookMagic[64];
+extern Magic bishopMagic[Squares];
+extern Magic rookMagic[Squares];
 
 void initializeMagics();
 

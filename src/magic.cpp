@@ -6,11 +6,11 @@
 
 uint64_t lookupTable[97264];
 
-Magic bishopMagic[64];
-Magic rookMagic[64];
+Magic bishopMagic[Squares];
+Magic rookMagic[Squares];
 
 // These fixed shift magics were found by Volker Annuss.
-MagicInit bishopInit[64] =
+MagicInit bishopInit[Squares] =
 {
 	{ 0x007bfeffbfeffbffull, 16530 },
 	{ 0x003effbfeffbfe08ull, 9162 },
@@ -78,7 +78,7 @@ MagicInit bishopInit[64] =
 	{ 0x007ffdff7fdff7fdull, 6166 }
 };
 
-MagicInit rookInit[64] =
+MagicInit rookInit[Squares] =
 {
 	{ 0x00a801f7fbfeffffull, 85487 },
 	{ 0x00180012000bffffull, 43101 },
