@@ -53,9 +53,10 @@ int generateMoves(Position & pos, Move * mlist)
 		}
 
 		tempCapture = pawnAttacks[side][from] & enemyPieces;
-		if (tempCapture)
+		while (tempCapture)
 		{
 			to = bitScanForward(tempCapture);
+			clearBit(tempCapture, to);
 			m.setTo(to);
 			if (to >= A8 || to <= H1)
 			{

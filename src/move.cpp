@@ -25,7 +25,12 @@ void Move::setPromotion(int promotion)
 {  
 	moveInt &= 0xffff0fff;
 	moveInt |= promotion << 12;
-} 
+}
+
+int Move::getMoveInt()
+{
+	return moveInt;
+}
 
 int Move::getFrom()  
 { 

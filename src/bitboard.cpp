@@ -86,7 +86,7 @@ void initializeKnightAttacks()
 	
 void initializePawnAttacks()
 {
-	for (int sq = A2; sq <= H7; sq++)
+	for (int sq = A1; sq <= H8; sq++)
 	{
 		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 9) & notAFile;
 		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 7) & notHFile;
@@ -98,7 +98,7 @@ void initializePawnAttacks()
    
 void initializePawnMoves()
 {
-	for (int sq = A2; sq <= H7; sq++) 
+	for (int sq = A1; sq <= H8; sq++) 
 	{
 		pawnSingleMoves[White][sq] = pawnSingleMoves[Black][sq] = 0;
 		pawnDoubleMoves[White][sq] = pawnDoubleMoves[Black][sq] = 0;

@@ -5,10 +5,10 @@
 #include "movegen.h"
 
 uint64_t nodeCount = 0;
+int Count = 0;
 
 int perft(int depth, Position & pos) 
 {
-
 	int i;
 
 	if (depth == 0)
@@ -21,7 +21,7 @@ int perft(int depth, Position & pos)
 
 	for (i = 0; i < generatedMoves; i++)
 	{
-		if (!(pos.makeMove(moveStack[i]))) 
+		if (!(pos.makeMove(moveStack[i])))
 		{
 			continue;
 		}

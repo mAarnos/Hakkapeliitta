@@ -11,7 +11,7 @@ class Move
 		void setFrom(int from);  
 		void setTo(int to);  
 		void setPromotion(int promotion);
-
+		int getMoveInt();
 		int getFrom();  
 		int getTo();  
 		int getPromotion();   

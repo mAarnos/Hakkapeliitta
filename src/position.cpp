@@ -341,10 +341,12 @@ bool Position::makeMove(Move m)
 		if (castlingRights & (WhiteOO << (sideToMove * 2)))
 		{
 			hash ^= castlingRightsHash[WhiteOO << (sideToMove * 2)];
+			castlingRights ^= WhiteOO << (sideToMove * 2);
 		}
 		if (castlingRights & (WhiteOOO << (sideToMove * 2)))
 		{
 			hash ^= castlingRightsHash[WhiteOOO << (sideToMove * 2)];
+			castlingRights ^= WhiteOOO << (sideToMove * 2);
 		}
 
 		// Make this part check the legality of the castling move sometime.
@@ -375,6 +377,8 @@ bool Position::makeMove(Move m)
 			clearBit(bitboards[12 + sideToMove], fromRook);
 			setBit(bitboards[Rook + sideToMove * 6], toRook);
 			setBit(bitboards[12 + sideToMove], toRook);
+			board[toRook] = board[fromRook];
+			board[fromRook] = Empty;
 			hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
 		}
 	}
@@ -411,6 +415,7 @@ void Position::unmakeMove(Move m)
 	int captured;
 
 	hply--;
+	castlingRights = historyStack[hply].castle;
 	enPassantSquare = historyStack[hply].ep;
 	fiftyMoveDistance = historyStack[hply].fifty;
 	captured = historyStack[hply].captured;
@@ -503,6 +508,8 @@ void Position::unmakeMove(Move m)
 			clearBit(bitboards[12 + sideToMove], toRook);
 			setBit(bitboards[Rook + sideToMove * 6], fromRook);
 			setBit(bitboards[12 + sideToMove], fromRook);
+			board[fromRook] = board[toRook];
+			board[toRook] = Empty;
 			hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
 		}
 	}
@@ -587,7 +594,9 @@ bool Position::attack(int sq, bool side)
 	{
 		return true;
 	}
-	if (queenAttacks(sq, bitboards[14]) & (bitboards[Bishop + side * 6] | bitboards[Rook + side * 6] | bitboards[Queen + side * 6]))
+	uint64_t RQ = bitboards[Rook + side * 6] | bitboards[Queen + side * 6];
+	uint64_t BQ = bitboards[Bishop + side * 6] | bitboards[Queen + side * 6];
+	if ((bishopAttacks(sq, bitboards[14]) & BQ) || rookAttacks(sq, bitboards[14]) & RQ)
 	{
 		return true;
 	}
