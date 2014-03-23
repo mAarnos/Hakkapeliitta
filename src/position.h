@@ -8,10 +8,10 @@
 class History
 {
 	public:
-		Move m;
 		int castle;
 		int ep;
 		int fifty;
+		int captured;
 		uint64_t hash;
 		uint64_t pHash;
 };
@@ -33,8 +33,11 @@ class Position
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
-		bool makeMove(Move move);
-		void unmakeMove();
+		bool makeMove(Move m);
+		void unmakeMove(Move m);
+
+		// Displays the board. Used for debugging.
+		void displayBoard();
 
 	private:
 		// All bitboards needed to represent the position.
@@ -58,8 +61,11 @@ class Position
 		uint64_t hash, pawnHash;
 
 		// Miscellaneous functions used by the program.
+		bool attack(int sq, bool side);
 		void makeCapture(int captured, int to);
+		void unmakeCapture(int captured, int to);
 		void makePromotion(int promotion, int to);
+		void unmakePromotion(int promotion, int to);
 };
 
 #endif

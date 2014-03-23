@@ -5,7 +5,7 @@
 #include "bitboard.h"
 #include "magic.h"
 
-void generateMoves(Position & pos, Move * mlist)
+int generateMoves(Position & pos, Move * mlist)
 {
 	int from, to;
 	bool side = pos.getSideToMove();
@@ -14,6 +14,7 @@ void generateMoves(Position & pos, Move * mlist)
 
 	Move m;
 	m.clear(); 
+	m.setPromotion(Empty);
 
 	uint64_t freeSquares = pos.getFreeSquares();
 	uint64_t enemyPieces = pos.getPieces(!side);
@@ -42,13 +43,13 @@ void generateMoves(Position & pos, Move * mlist)
 			{
 				mlist[generatedMoves++] = m;
 			}
-		}
 
-		if (freeSquares & pawnDoubleMoves[side][from])
-		{
-			to = from + 16 - side * 32;
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
+			if (freeSquares & pawnDoubleMoves[side][from])
+			{
+				to = from + 16 - side * 32;
+				m.setTo(to);
+				mlist[generatedMoves++] = m;
+			}
 		}
 
 		tempCapture = pawnAttacks[side][from] & enemyPieces;
@@ -255,6 +256,7 @@ void generateMoves(Position & pos, Move * mlist)
 			}
 		}
 	}
+	return generatedMoves;
 }
 	
 #endif

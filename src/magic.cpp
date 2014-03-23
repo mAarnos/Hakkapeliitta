@@ -147,7 +147,7 @@ MagicInit rookInit[Squares] =
 };
 
 // TODO: check that this works.
-void initMagics(MagicInit * magicInit, Magic * magic, array<int, 2> dir[4], int shift)
+void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 {
 	int sq88, d;
 	uint64_t bb, bb2;
@@ -185,7 +185,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, array<int, 2> dir[4], int 
 		for (int k = 0; k < (1 << num); k++)
 		{
 			bb = 0;
-			for (int j = 0; j < 4; j++)
+			for (int j = 0; j < num; j++)
 			{
 				if (k & (1 << j))
 				{
@@ -212,11 +212,11 @@ void initMagics(MagicInit * magicInit, Magic * magic, array<int, 2> dir[4], int 
 
 void initializeMagics()
 {
-	array<int, 2> bishopDirections[4] = {
+	int bishopDirections[4][2] = {
 		{ -9, -17 }, { -7, -15 }, { 7, 15 }, { 9, 17 }
 	};
 
-	array<int, 2>  rookDirections[4] = {
+	int rookDirections[4][2] = {
 		{ -8, -16 }, { -1, -1 }, { 1, 1 }, { 8, 16 }
 	};
 
