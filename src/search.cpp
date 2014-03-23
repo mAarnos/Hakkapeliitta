@@ -5,7 +5,6 @@
 #include "movegen.h"
 
 uint64_t nodeCount = 0;
-int Count = 0;
 
 int perft(int depth, Position & pos) 
 {
