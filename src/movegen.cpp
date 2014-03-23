@@ -217,7 +217,7 @@ void generateMoves(Position & pos, Move * mlist)
 			{
 				m.setFrom(E1);
 				m.setTo(G1);
-				m.setPromotion(WhiteKing);
+				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
@@ -227,7 +227,7 @@ void generateMoves(Position & pos, Move * mlist)
 			{
 				m.setFrom(E1);
 				m.setTo(C1);
-				m.setPromotion(WhiteKing);
+				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
@@ -240,7 +240,7 @@ void generateMoves(Position & pos, Move * mlist)
 			{
 				m.setFrom(E8);
 				m.setTo(G8);
-				m.setPromotion(BlackKing);
+				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
@@ -250,12 +250,11 @@ void generateMoves(Position & pos, Move * mlist)
 			{
 				m.setFrom(E8);
 				m.setTo(C8);
-				m.setPromotion(BlackKing);
+				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
 	}
-
 }
 	
 #endif

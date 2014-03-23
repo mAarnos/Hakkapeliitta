@@ -85,19 +85,19 @@ void Position::initializeBoardFromFEN(string FEN)
 	{
 		if (strList[2].find('K') != string::npos)
 		{
-			castlingRights += whiteOO;
+			castlingRights += WhiteOO;
 		}
 		if (strList[2].find('Q') != string::npos)
 		{
-			castlingRights += whiteOOO;
+			castlingRights += WhiteOOO;
 		}
 		if (strList[2].find('k') != string::npos)
 		{
-			castlingRights += blackOO;
+			castlingRights += BlackOO;
 		}
 		if (strList[2].find('q') != string::npos)
 		{
-			castlingRights += blackOOO;
+			castlingRights += BlackOOO;
 		}
 	}
 
@@ -195,6 +195,243 @@ void Position::initializeBoardFromFEN(string FEN)
 	bitboards[15] = ~(bitboards[14]);
 
 	return;
+}
+
+bool Position::makeMove(Move m)
+{
+	uint64_t fromBB, fromToBB;
+	int from = m.getFrom();
+	int to = m.getTo();
+	int promotion = m.getPromotion();
+	int piece = board[from];
+	int captured = board[to];
+
+	historyStack[hply].m = m;
+	historyStack[hply].ep = enPassantSquare;
+	historyStack[hply].fifty = fiftyMoveDistance;
+	historyStack[hply].hash = hash;
+	historyStack[hply].pHash = pawnHash;
+	hply++;
+	
+	setBit(fromBB, from);
+	setBit(fromToBB, to);
+	fromToBB |= fromBB;
+
+	board[to] = board[from];
+	board[from] = Empty;
+
+	hash ^= (pieceHash[sideToMove][piece][from] ^ pieceHash[sideToMove][piece][to]);
+	if (enPassantSquare != 64)
+	{
+		hash ^= enPassantHash[enPassantSquare];
+		enPassantSquare = 64;
+	}
+
+	bitboards[piece] ^= fromToBB;
+	bitboards[12 + sideToMove] ^= fromToBB;
+
+	if ((piece - sideToMove * 6) == Pawn)
+	{
+		pawnHash ^= (pieceHash[sideToMove][Pawn][from] ^ pieceHash[sideToMove][Pawn][to]);
+		fiftyMoveDistance = 0;
+		// If a double pawn move.
+		if (abs(to - from) == 16)
+		{
+			enPassantSquare = from + 8 - 16 * sideToMove;
+		}
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else if (!(abs(to - from) % 8 == 0))
+		{
+			clearBit(bitboards[Pawn + !sideToMove * 6], to - 8 + 16 * sideToMove);
+			clearBit(bitboards[12 + !sideToMove], to - 8 + 16 * sideToMove);
+			board[to - 8 + 16 * sideToMove] = Empty;
+			bitboards[14] ^= fromToBB;
+			setBit(bitboards[14], to - 8 + 16 * sideToMove);
+			hash ^= pieceHash[!sideToMove][Pawn][to - 8 + 16 * sideToMove];
+			pawnHash ^= pieceHash[!sideToMove][Pawn][to - 8 + 16 * sideToMove];
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+		if (promotion != Empty)
+		{
+			makePromotion(promotion, to);
+		}
+	}
+	else if ((piece - sideToMove * 6) == Knight)
+	{
+		fiftyMoveDistance++;
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+	}
+	else if ((piece - sideToMove * 6) == Bishop)
+	{
+		fiftyMoveDistance++;
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+	}
+	else if ((piece - sideToMove * 6) == Rook)
+	{
+		fiftyMoveDistance++;
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+		// Try to make this part colourblind.
+		if (sideToMove == White)
+		{
+			if (from == H1)
+			{
+				if (castlingRights & WhiteOO)
+				{
+					hash ^= castlingRightsHash[1];
+					castlingRights &= 14;
+				}
+			}
+			else if (from == A1)
+			{
+				if (castlingRights & WhiteOOO)
+				{
+					hash ^= castlingRightsHash[2];
+					castlingRights &= 13;
+				}
+			}
+		}
+		else
+		{
+			// TODO: finish this part
+		}
+	}
+	else if ((piece - sideToMove * 6) == Queen)
+	{
+		fiftyMoveDistance++;
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+	}
+	else if ((piece - sideToMove * 6) == King)
+	{
+		fiftyMoveDistance++;
+		if (captured != Empty)
+		{
+			makeCapture(captured, to);
+			clearBit(bitboards[14], from);
+		}
+		else
+		{
+			bitboards[14] ^= fromToBB;
+		}
+
+		// Make this part colourblind.
+		if (sideToMove == White)
+		{
+			if (castlingRights & WhiteOO)
+			{
+				hash ^= castlingRightsHash[WhiteOO];
+			}
+			if (castlingRights & WhiteOOO)
+			{
+				hash ^= castlingRightsHash[WhiteOOO];
+			}
+		}
+		else
+		{
+			if (castlingRights & BlackOO)
+			{
+				hash ^= castlingRightsHash[BlackOO];
+			}
+			if (castlingRights & BlackOOO)
+			{
+				hash ^= castlingRightsHash[BlackOOO];
+			}
+		}
+
+		// Make this part check the legality of the castling move.
+		if (promotion == King)
+		{
+			uint64_t rook;
+			setBit(rook, H1);
+			setBit(rook, F1);
+			bitboards[Rook + sideToMove * 6] ^= rook;
+			bitboards[12 + sideToMove] ^= rook;
+			hash ^= (pieceHash[sideToMove][Rook][H1] ^ pieceHash[sideToMove][Rook][F1]);
+		}
+	}
+}
+
+void Position::makeCapture(int captured, int to)
+{
+	hash ^= pieceHash[!sideToMove][captured - !sideToMove * 6][to];
+	clearBit(bitboards[captured], to);
+	clearBit(bitboards[12 + !sideToMove], to);
+	fiftyMoveDistance = 0;
+
+	if (captured - !sideToMove * 6 == Pawn)
+	{
+		pawnHash ^= pieceHash[!sideToMove][Pawn][to];
+	}
+	else if (captured - !sideToMove * 6 == Rook)
+	{
+		if (to == H1 && (castlingRights & WhiteOO))
+		{
+			hash ^= castlingRightsHash[WhiteOO];
+			castlingRights ^= WhiteOO;
+		}
+		else if (to == A1 && (castlingRights & WhiteOOO))
+		{
+			hash ^= castlingRightsHash[WhiteOOO];
+			castlingRights ^= WhiteOOO;
+		}
+		else if (to == H1 && (castlingRights & BlackOO))
+		{
+			hash ^= castlingRightsHash[BlackOO];
+			castlingRights ^= BlackOO;
+		}
+		else if (to == A8 && (castlingRights & BlackOOO))
+		{
+			hash ^= castlingRightsHash[BlackOOO];
+			castlingRights ^= BlackOOO;
+		}
+	}
+}
+
+void Position::makePromotion(int promotion, int to)
+{
+	clearBit(bitboards[Pawn + sideToMove * 6], to);
+	setBit(bitboards[promotion + sideToMove * 6], to);
+
+	hash ^= (pieceHash[sideToMove][Pawn][to] ^ pieceHash[sideToMove][promotion][to]);
+	pawnHash ^= pieceHash[sideToMove][Pawn][to];
 }
 
 #endif

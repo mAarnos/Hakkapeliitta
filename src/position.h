@@ -3,11 +3,25 @@
 
 #include "defs.h"
 #include "bitboard.h"
+#include "move.h"
+
+class History
+{
+	public:
+		Move m;
+		int castle;
+		int ep;
+		int fifty;
+		uint64_t hash;
+		uint64_t pHash;
+};
 
 class Position
 {
 	public:
 		void initializeBoardFromFEN(string FEN);
+
+		bool inCheck(bool side);
 
 		inline int getPieceType(int sq) { return board[sq]; }
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
@@ -19,7 +33,7 @@ class Position
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
-		bool makeMove(int move);
+		bool makeMove(Move move);
 		void unmakeMove();
 
 	private:
@@ -33,6 +47,8 @@ class Position
 		// We have it because often we want to know what piece is on which square or something like that.
 		array<int, Squares> board;
 
+		History historyStack[600];
+
 		// Miscellaneous, everything is pretty self explanatory.
 		bool sideToMove;
 		int castlingRights;
@@ -40,6 +56,10 @@ class Position
 		int fiftyMoveDistance;
 		int hply;
 		uint64_t hash, pawnHash;
+
+		// Miscellaneous functions used by the program.
+		void makeCapture(int captured, int to);
+		void makePromotion(int promotion, int to);
 };
 
 #endif

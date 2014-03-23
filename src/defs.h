@@ -37,7 +37,7 @@ enum {
 };
 
 enum {
-	whiteOO = 1, whiteOOO = 2, blackOO = 4, blackOOO = 8
+	WhiteOO = 1, WhiteOOO = 2, BlackOO = 4, BlackOOO = 8
 };
 
 const int Squares = NoSquare;
