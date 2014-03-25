@@ -6,13 +6,12 @@
 void Move::clear()
 {
 	moveInt = 0;
-	score = 0;
 }    
 
 void Move::setFrom(int from)  
 {  
 	moveInt &= 0xffffffc0; 
-	moveInt |= (from & 0x0000003f);
+	moveInt |= from;
 }
  
 void Move::setTo(int to)  
@@ -25,6 +24,12 @@ void Move::setPromotion(int promotion)
 {  
 	moveInt &= 0xffff0fff;
 	moveInt |= promotion << 12;
+}
+
+void Move::setScore(int score)
+{
+	moveInt &= 0x000000000000FFFF;
+	moveInt |= score << 16;
 }
 
 int Move::getMoveInt()
@@ -46,5 +51,10 @@ int Move::getPromotion()
 { 
 	return (moveInt >> 12) & 0x0000000f; 
 }   
+
+int Move::getScore()
+{
+	return (moveInt >> 16);
+}
  
 #endif

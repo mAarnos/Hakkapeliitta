@@ -15,6 +15,7 @@ int generateMoves(Position & pos, Move * mlist)
 	Move m;
 	m.clear(); 
 	m.setPromotion(Empty);
+	m.setScore(0);
 
 	uint64_t freeSquares = pos.getFreeSquares();
 	uint64_t enemyPieces = pos.getPieces(!side);

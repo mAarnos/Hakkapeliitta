@@ -36,7 +36,7 @@ int main()
 
 	Timer t;
 	t.start();
-	perft(7, &pos);
+	perft(7, pos);
 	t.stop();
 
 	cout << "Nodecount = " << nodeCount << endl;

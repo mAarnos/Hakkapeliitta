@@ -205,10 +205,12 @@ bool Position::makeMove(Move m)
 	{
 		makeCapture(captured, to);
 		bitboards[14] ^= bit[from];
+		bitboards[15] ^= bit[from];
 	}
 	else
 	{
 		bitboards[14] ^= fromToBB;
+		bitboards[15] ^= fromToBB;
 	}
 
 	int pType = piece % Pieces;
@@ -227,6 +229,7 @@ bool Position::makeMove(Move m)
 			bitboards[Pawn + !sideToMove * 6] ^= bit[enPassantPawn];
 			bitboards[12 + !sideToMove] ^= bit[enPassantPawn];
 			bitboards[14] ^= bit[enPassantPawn];
+			bitboards[15] ^= bit[enPassantPawn];
 			board[enPassantPawn] = Empty;
 		}
 		else if (promotion != Empty)
@@ -265,37 +268,27 @@ bool Position::makeMove(Move m)
 		// Make this part check the legality of the castling move sometime.
 		if (promotion == King)
 		{
-			if (to == G1)
+			if (to == (G1 + sideToMove * 56))
 			{
-				fromRook = H1;
-				toRook = F1;
+				fromRook = H1 + sideToMove * 56;
+				toRook = F1 + sideToMove * 56;
 			}
-			else if (to == C1)
+			else if (to == (C1 + sideToMove * 56))
 			{
-				fromRook = A1;
-				toRook = D1;
-			}
-			else if (to == G8)
-			{
-				fromRook = H8;
-				toRook = F8;
-			}
-			else if (to == C8)
-			{
-				fromRook = A8;
-				toRook = D8;
+				fromRook = A1 + sideToMove * 56;
+				toRook = D1 + sideToMove * 56;
 			}
 
 			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
 			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
 			bitboards[14] ^= bit[fromRook] | bit[toRook];
+			bitboards[15] ^= bit[fromRook] | bit[toRook];
 			board[toRook] = board[fromRook];
 			board[fromRook] = Empty;
 		}
 	}
 
 	sideToMove = !sideToMove;
-	bitboards[15] = ~bitboards[14];
 
 	if (inCheck(!sideToMove) || (promotion == King && (attack(from, sideToMove) || attack(toRook, sideToMove))))
 	{
