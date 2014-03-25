@@ -28,7 +28,7 @@ enum {
 };
 
 enum {
-	Pawn = 0, Knight = 1, Bishop = 2, Rook = 3, Queen = 4, King = 5
+	Pawn = 0, Knight = 1, Bishop = 2, Rook = 3, Queen = 4, King = 5, NoPiece = 6
 };
 
 enum {
@@ -41,6 +41,6 @@ enum {
 };
 
 const int Squares = NoSquare;
-
+const int Pieces = NoPiece;
 
 #endif

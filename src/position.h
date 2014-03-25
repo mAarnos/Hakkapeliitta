@@ -68,9 +68,4 @@ class Position
 		void unmakePromotion(int promotion, int to);
 };
 
-extern int captures;
-extern int promotions;
-extern int enpassant;
-extern int castlings;
-
 #endif

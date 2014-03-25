@@ -6,11 +6,6 @@
 #include "hash.h"
 #include "magic.h"
 
-int captures = 0;
-int promotions = 0;
-int enpassant = 0;
-int castlings = 0;
-
 void Position::displayBoard()
 {
 	string pieceToMark = "PNBRQKpnbrqk.";
@@ -160,53 +155,9 @@ void Position::initializeBoardFromFEN(string FEN)
 	// populate the bitboards
 	for (i = A1; i <= H8; i++) 
 	{
-		if (board[i] == WhitePawn)
+		if (board[i] != Empty)
 		{
-			setBit(bitboards[WhitePawn], i);
-		}
-		else if (board[i] == WhiteKnight)
-		{
-			setBit(bitboards[WhiteKnight], i);
-		}
-		else if (board[i] == WhiteBishop)
-		{
-			setBit(bitboards[WhiteBishop], i);
-		}
-		else if (board[i] == WhiteRook)
-		{
-			setBit(bitboards[WhiteRook], i);
-		}
-		else if (board[i] == WhiteQueen)
-		{
-			setBit(bitboards[WhiteQueen], i);
-		}
-		else if (board[i] == WhiteKing)
-		{
-			setBit(bitboards[WhiteKing], i);
-		}
-		else if (board[i] == BlackPawn)
-		{
-			setBit(bitboards[BlackPawn], i);
-		}
-		else if (board[i] == BlackKnight)
-		{
-			setBit(bitboards[BlackKnight], i);
-		}
-		else if (board[i] == BlackBishop)
-		{
-			setBit(bitboards[BlackBishop], i);
-		}
-		else if (board[i] == BlackRook)
-		{
-			setBit(bitboards[BlackRook], i);
-		}
-		else if (board[i] == BlackQueen)
-		{
-			setBit(bitboards[BlackQueen], i);
-		}
-		else if (board[i] == BlackKing)
-		{
-			setBit(bitboards[BlackKing], i);
+			bitboards[board[i]] |= bit[i];
 		}
 	}
 	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
@@ -222,8 +173,8 @@ void Position::initializeBoardFromFEN(string FEN)
 
 bool Position::makeMove(Move m)
 {
-	uint64_t fromBB = 0, fromToBB = 0;
-	int fromRook = -1, toRook = -1;
+	uint64_t fromBB, fromToBB;
+	int fromRook, toRook;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
@@ -234,37 +185,34 @@ bool Position::makeMove(Move m)
 	historyStack[hply].ep = enPassantSquare;
 	historyStack[hply].fifty = fiftyMoveDistance;
 	historyStack[hply].captured = captured;
-	historyStack[hply].hash = hash;
-	historyStack[hply].pHash = pawnHash;
+	// historyStack[hply].hash = hash;
+	// historyStack[hply].pHash = pawnHash;
 	hply++;
 	
-	setBit(fromBB, from);
-	setBit(fromToBB, to);
-	fromToBB |= fromBB;
+	fromBB = bit[from];
+	fromToBB = bit[from] | bit[to];
 
 	board[to] = board[from];
 	board[from] = Empty;
 
-	if (enPassantSquare != 64)
-	{
-		enPassantSquare = 64;
-	}
+	enPassantSquare = 64;
+	fiftyMoveDistance++;
 
 	bitboards[piece] ^= fromToBB;
 	bitboards[12 + sideToMove] ^= fromToBB; 
 
-	fiftyMoveDistance++;
 	if (captured != Empty)
 	{
 		makeCapture(captured, to);
-		clearBit(bitboards[14], from);
+		bitboards[14] ^= bit[from];
 	}
 	else
 	{
 		bitboards[14] ^= fromToBB;
 	}
 
-	if ((piece - sideToMove * 6) == Pawn)
+	int pType = piece % Pieces;
+	if (pType == Pawn)
 	{
 		fiftyMoveDistance = 0;
 		
@@ -275,72 +223,43 @@ bool Position::makeMove(Move m)
 
 		if (promotion == Pawn)
 		{
-			clearBit(bitboards[Pawn + !sideToMove * 6], to - 8 + 16 * sideToMove);
-			clearBit(bitboards[12 + !sideToMove], to - 8 + 16 * sideToMove);
-			clearBit(bitboards[14], to - 8 + 16 * sideToMove);
-			board[to - 8 + 16 * sideToMove] = Empty;
+			int enPassantPawn = to - 8 + 16 * sideToMove;
+			bitboards[Pawn + !sideToMove * 6] ^= bit[enPassantPawn];
+			bitboards[12 + !sideToMove] ^= bit[enPassantPawn];
+			bitboards[14] ^= bit[enPassantPawn];
+			board[enPassantPawn] = Empty;
 		}
 		else if (promotion != Empty)
 		{
 			makePromotion(promotion, to);
 		}
 	}
-	else if ((piece - sideToMove * 6) == Knight)
+	else if (pType == Rook)
 	{
-	}
-	else if ((piece - sideToMove * 6) == Bishop)
-	{
-	}
-	else if ((piece - sideToMove * 6) == Rook)
-	{
-		// Try to make this part colourblind.
-		if (sideToMove == White)
+		if (from == H1 + sideToMove * 56)
 		{
-			if (from == H1)
+			if (castlingRights & (WhiteOO << (sideToMove * 2)))
 			{
-				if (castlingRights & WhiteOO)
-				{
-					castlingRights ^= WhiteOO;
-				}
-			}
-			else if (from == A1)
-			{
-				if (castlingRights & WhiteOOO)
-				{
-					castlingRights ^= WhiteOOO;
-				}
+				castlingRights ^= WhiteOO << (sideToMove * 2);
 			}
 		}
-		else
+		else if (from == A1 + sideToMove * 56)
 		{
-			if (from == H8)
+			if (castlingRights & (WhiteOOO << (sideToMove * 2)))
 			{
-				if (castlingRights & BlackOO)
-				{
-					castlingRights ^= BlackOO;
-				}
-			}
-			else if (from == A8)
-			{
-				if (castlingRights & BlackOOO)
-				{
-					castlingRights ^= BlackOOO;
-				}
+				castlingRights ^= WhiteOOO << (sideToMove * 2);
 			}
 		}
 	}
-	else if ((piece - sideToMove * 6) == Queen)
-	{
-	}
-	else if ((piece - sideToMove * 6) == King)
+	else if (pType == King)
 	{
 		if (castlingRights & (WhiteOO << (sideToMove * 2)))
 		{
-			castlingRights ^= WhiteOO << (sideToMove * 2);
+			castlingRights ^= (WhiteOO << (sideToMove * 2));
 		}
 		if (castlingRights & (WhiteOOO << (sideToMove * 2)))
 		{
-			castlingRights ^= WhiteOOO << (sideToMove * 2);
+			castlingRights ^= (WhiteOOO << (sideToMove * 2));
 		}
 
 		// Make this part check the legality of the castling move sometime.
@@ -367,12 +286,9 @@ bool Position::makeMove(Move m)
 				toRook = D8;
 			}
 
-			clearBit(bitboards[Rook + sideToMove * 6], fromRook);
-			clearBit(bitboards[12 + sideToMove], fromRook);
-			clearBit(bitboards[14], fromRook);
-			setBit(bitboards[Rook + sideToMove * 6], toRook);
-			setBit(bitboards[12 + sideToMove], toRook);
-			setBit(bitboards[14], toRook);
+			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
+			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
+			bitboards[14] ^= bit[fromRook] | bit[toRook];
 			board[toRook] = board[fromRook];
 			board[fromRook] = Empty;
 		}
@@ -381,39 +297,12 @@ bool Position::makeMove(Move m)
 	sideToMove = !sideToMove;
 	bitboards[15] = ~bitboards[14];
 
-	if (inCheck(!sideToMove))
+	if (inCheck(!sideToMove) || (promotion == King && (attack(from, sideToMove) || attack(toRook, sideToMove))))
 	{
 		unmakeMove(m);
 		return false;
 	}
 
-	if (promotion == King)
-	{
-		if (attack(from, sideToMove) || attack(toRook, sideToMove))
-		{
-			unmakeMove(m);
-			return false;
-		}
-	}
-
-	if (captured != Empty)
-	{
-		captures++;
-	}
-	if (promotion == Pawn)
-	{
-		enpassant++;
-		captures++;
-	}
-	else if (promotion == King)
-	{
-		castlings++;
-	}
-	else if (promotion != Empty)
-	{
-		promotions++;
-	}
-	
 	return true;
 }
 
@@ -424,15 +313,14 @@ void Position::unmakeMove(Move m)
 	int to = m.getTo();
 	int promotion = m.getPromotion();
 	int piece = board[to];
-	int captured;
 
 	hply--;
 	castlingRights = historyStack[hply].castle;
 	enPassantSquare = historyStack[hply].ep;
 	fiftyMoveDistance = historyStack[hply].fifty;
-	captured = historyStack[hply].captured;
-	hash = historyStack[hply].hash;
-	pawnHash = historyStack[hply].pHash;
+	int captured = historyStack[hply].captured;
+	// hash = historyStack[hply].hash;
+	// pawnHash = historyStack[hply].pHash;
 
 	sideToMove = !sideToMove;
 
@@ -441,9 +329,8 @@ void Position::unmakeMove(Move m)
 		piece = Pawn + sideToMove * 6;
 	}
 
-	setBit(fromBB, from);
-	setBit(fromToBB, to);
-	fromToBB |= fromBB;
+	fromBB |= bit[from];
+	fromToBB |= bit[from] | bit[to];
 
 	board[from] = piece;
 	board[to] = captured;
@@ -454,41 +341,30 @@ void Position::unmakeMove(Move m)
 	if (captured != Empty)
 	{
 		unmakeCapture(captured, to);
-		setBit(bitboards[14], from);
+		bitboards[14] |= bit[from];
 	}
 	else
 	{
 		bitboards[14] ^= fromToBB;
 	}
 
-	if ((piece - sideToMove * 6) == Pawn)
+	int ptype = piece % Pieces;
+	if (ptype == Pawn)
 	{
 		if (promotion == Pawn)
 		{
-			clearBit(bitboards[Pawn + !sideToMove * 6], to - 8 + 16 * sideToMove);
-			clearBit(bitboards[12 + !sideToMove], to - 8 + 16 * sideToMove);
-			clearBit(bitboards[14], to - 8 + 16 * sideToMove);
-			board[to - 8 + 16 * sideToMove] = Pawn + !sideToMove * 6;
+			int enPassantPawn = to - 8 + 16 * sideToMove;
+			bitboards[Pawn + !sideToMove * 6] |= bit[enPassantPawn];
+			bitboards[12 + !sideToMove] |= bit[enPassantPawn];
+			bitboards[14] |= bit[enPassantPawn];
+			board[enPassantPawn] = Pawn + !sideToMove * 6;
 		}
 		else if (promotion != Empty)
 		{
 			unmakePromotion(promotion, to);
-			board[from] = Pawn + sideToMove * 6;
 		}
 	}
-	else if ((piece - sideToMove * 6) == Knight)
-	{
-	}
-	else if ((piece - sideToMove * 6) == Bishop)
-	{
-	}
-	else if ((piece - sideToMove * 6) == Rook)
-	{
-	}
-	else if ((piece - sideToMove * 6) == Queen)
-	{
-	}
-	else if ((piece - sideToMove * 6) == King)
+	else if (ptype == King)
 	{
 		if (promotion == King)
 		{
@@ -514,12 +390,9 @@ void Position::unmakeMove(Move m)
 				toRook = D8;
 			}
 
-			clearBit(bitboards[Rook + sideToMove * 6], toRook);
-			clearBit(bitboards[12 + sideToMove], toRook);
-			clearBit(bitboards[14], toRook);
-			setBit(bitboards[Rook + sideToMove * 6], fromRook);
-			setBit(bitboards[12 + sideToMove], fromRook);
-			setBit(bitboards[14], fromRook);
+			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
+			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
+			bitboards[14] ^= bit[fromRook] | bit[toRook];
 			board[fromRook] = board[toRook];
 			board[toRook] = Empty;
 		}
@@ -531,14 +404,11 @@ void Position::unmakeMove(Move m)
 
 void Position::makeCapture(int captured, int to)
 {
-	clearBit(bitboards[captured], to);
-	clearBit(bitboards[12 + !sideToMove], to);
+	bitboards[captured] ^= bit[to];
+	bitboards[12 + !sideToMove] ^= bit[to];
 	fiftyMoveDistance = 0;
 
-	if (captured - !sideToMove * 6 == Pawn)
-	{
-	}
-	else if ((captured - !sideToMove * 6) == Rook)
+	if ((captured % Pieces) == Rook)
 	{
 		if (to == H1 && (castlingRights & WhiteOO))
 		{
@@ -561,26 +431,21 @@ void Position::makeCapture(int captured, int to)
 
 void Position::unmakeCapture(int captured, int to)
 {
-	clearBit(bitboards[captured], to);
-	clearBit(bitboards[12 + !sideToMove], to);
-	fiftyMoveDistance = 0;
-
-	if (captured - !sideToMove * 6 == Pawn)
-	{
-	}
+	bitboards[captured] |= bit[to];
+	bitboards[12 + !sideToMove] |= bit[to];
 }
 
 void Position::makePromotion(int promotion, int to)
 {
-	clearBit(bitboards[Pawn + sideToMove * 6], to);
-	setBit(bitboards[promotion + sideToMove * 6], to);
+	bitboards[Pawn + sideToMove * 6] ^= bit[to];
+	bitboards[promotion + sideToMove * 6] |= bit[to];
 	board[to] = promotion + sideToMove * 6;
 }
 
 void Position::unmakePromotion(int promotion, int to)
 {
-	clearBit(bitboards[Pawn + sideToMove * 6], to);
-	clearBit(bitboards[promotion + sideToMove * 6], to);
+	bitboards[Pawn + sideToMove * 6] ^= bit[to];
+	bitboards[promotion + sideToMove * 6] ^= bit[to];
 }
 
 bool Position::inCheck(bool side)
@@ -595,8 +460,8 @@ bool Position::attack(int sq, bool side)
 	{
 		return true;
 	}
-	uint64_t RQ = bitboards[Rook + side * 6] | bitboards[Queen + side * 6];
 	uint64_t BQ = bitboards[Bishop + side * 6] | bitboards[Queen + side * 6];
+	uint64_t RQ = bitboards[Rook + side * 6] | bitboards[Queen + side * 6];
 	if ((bishopAttacks(sq, bitboards[14]) & BQ) || rookAttacks(sq, bitboards[14]) & RQ)
 	{
 		return true;

@@ -169,7 +169,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 			}
 			for (d = 2; !((sq88 + d * dir[i][1]) & 0x88); d++)
 			{
-				setBit(bb, sq + (d - 1) * dir[i][0]);
+				bb |= bit[sq + (d - 1) * dir[i][0]];
 			}
 		}
 		magic[sq].mask = bb;
@@ -178,7 +178,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 		while (bb)
 		{
 			squares[num] = bitScanForward(bb);
-			clearBit(bb, squares[num++]);
+			bb ^= bit[squares[num++]];
 		}
 
 		// Loop through all possible occupations within the mask and calculate the corresponding attack sets.
@@ -189,7 +189,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 			{
 				if (k & (1 << j))
 				{
-					setBit(bb, squares[j]);
+					bb |= bit[squares[j]];
 				}
 			}
 			bb2 = 0;
@@ -197,7 +197,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 			{
 				for (d = 1; !((sq88 + d * dir[j][1]) & 0x88); d++)
 				{
-					setBit(bb2, sq + d * dir[j][0]);
+					bb2 |= bit[sq + d * dir[j][0]];
 					if (bb & (uint64_t)1 << (sq + d * dir[j][0]))
 					{
 						break;

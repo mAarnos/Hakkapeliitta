@@ -3,8 +3,7 @@
 
 #include "bitboard.h"
 
-array<uint64_t, Squares + 1> above;
-array<uint64_t, Squares + 1> below;
+array<uint64_t, Squares> bit;
 array<uint64_t, Squares> kingAttacks;
 array<uint64_t, Squares> knightAttacks;
 array<uint64_t, Squares> pawnAttacks[2];
@@ -30,20 +29,8 @@ void initializeBitMasks()
 {
 	for (int sq = A1; sq <= H8; sq++) 
 	{
-		above[sq] = 0;
-		for (int i = sq + 1; i <= 63; i++) 
-		{
-			setBit(above[sq], i);
-		}
-
-		below[sq] = 0;
-		for (int i = 0; i < sq; i++) 
-		{
-			setBit(below[sq], i);
-		}
+		bit[sq] = (uint64_t)1 << sq;
 	}
-	above[NoSquare] = (uint64_t)0xffffffffffffffff;
-	below[NoSquare] = (uint64_t)0xffffffffffffffff;
 }
 
 void initializeKingAttacks()
@@ -52,14 +39,14 @@ void initializeKingAttacks()
 	{
 		uint64_t kingSet = 0;
 
-		setBit(kingSet, sq);
+		kingSet |= bit[sq];
 		kingSet |= (((uint64_t)1 << sq) << 1) & notAFile;
 		kingSet |= (((uint64_t)1 << sq) >> 1) & notHFile;
 
 		kingAttacks[sq] |= kingSet << 8;
 		kingAttacks[sq] |= kingSet >> 8;
 		kingAttacks[sq] |= kingSet;
-		clearBit(kingAttacks[sq], sq);
+		kingAttacks[sq] ^= bit[sq];
 	}
 }
 
@@ -103,15 +90,21 @@ void initializePawnMoves()
 		pawnSingleMoves[White][sq] = pawnSingleMoves[Black][sq] = 0;
 		pawnDoubleMoves[White][sq] = pawnDoubleMoves[Black][sq] = 0;
 
-		setBit(pawnSingleMoves[White][sq], sq + 8);
-		setBit(pawnSingleMoves[Black][sq], sq - 8);
+		if (sq <= H7)
+		{
+			pawnSingleMoves[White][sq] = bit[sq + 8];
+		}
+		if (sq >= A2)
+		{
+			pawnSingleMoves[Black][sq] = bit[sq - 8];
+		}
 		if (sq <= H2)
 		{
-			setBit(pawnDoubleMoves[White][sq], sq + 16);
+			pawnDoubleMoves[White][sq] = bit[sq + 16];
 		}
 	    if (sq >= A7)
 	    {
-			setBit(pawnDoubleMoves[Black][sq], sq - 16);
+			pawnDoubleMoves[Black][sq] = bit[sq - 16];
 	    }
     }	
 }	

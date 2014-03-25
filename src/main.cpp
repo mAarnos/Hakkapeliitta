@@ -36,16 +36,12 @@ int main()
 
 	Timer t;
 	t.start();
-	perft(7, pos);
+	perft(7, &pos);
 	t.stop();
 
-	cout << nodeCount << endl;
-	cout << t.getms() << endl;
-
-	cout << "Captures = " << captures << endl;
-	cout << "Castlings = " << castlings << endl;
-	cout << "Promotions = " << promotions << endl;
-	cout << "En passants = " << enpassant << endl;
+	cout << "Nodecount = " << nodeCount << endl;
+	cout << "Time(in ms) = " << t.getms() << endl;
+	cout << "NPS = " << nodeCount / (t.getms() / 1000.0) << endl;
 
 	return 0; 
 }
