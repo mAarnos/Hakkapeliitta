@@ -213,8 +213,8 @@ bool Position::makeMove(Move m)
 		bitboards[15] ^= fromToBB;
 	}
 
-	int pType = piece % Pieces;
-	if (pType == Pawn)
+	int pieceType = piece % Pieces;
+	if (pieceType == Pawn)
 	{
 		fiftyMoveDistance = 0;
 		
@@ -237,7 +237,7 @@ bool Position::makeMove(Move m)
 			makePromotion(promotion, to);
 		}
 	}
-	else if (pType == Rook)
+	else if (pieceType == Rook)
 	{
 		if (from == H1 + sideToMove * 56)
 		{
@@ -254,7 +254,7 @@ bool Position::makeMove(Move m)
 			}
 		}
 	}
-	else if (pType == King)
+	else if (pieceType == King)
 	{
 		if (castlingRights & (WhiteOO << (sideToMove * 2)))
 		{
@@ -341,8 +341,8 @@ void Position::unmakeMove(Move m)
 		bitboards[14] ^= fromToBB;
 	}
 
-	int ptype = piece % Pieces;
-	if (ptype == Pawn)
+	int pieceType = piece % Pieces;
+	if (pieceType == Pawn)
 	{
 		if (promotion == Pawn)
 		{
@@ -357,7 +357,7 @@ void Position::unmakeMove(Move m)
 			unmakePromotion(promotion, to);
 		}
 	}
-	else if (ptype == King)
+	else if (pieceType == King)
 	{
 		if (promotion == King)
 		{
@@ -443,8 +443,7 @@ void Position::unmakePromotion(int promotion, int to)
 
 bool Position::inCheck(bool side)
 {
-	int i = bitScanForward(bitboards[King + side * 6]);
-	return attack(i, !side);
+	return attack(bitScanForward(bitboards[King + side * 6]), !side);
 }
 
 bool Position::attack(int sq, bool side)

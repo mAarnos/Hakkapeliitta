@@ -10,15 +10,15 @@ int generateMoves(Position & pos, Move * mlist)
 	int from, to;
 	bool side = pos.getSideToMove();
 	int generatedMoves = 0;
-	uint64_t tempPiece, tempMove, tempCapture;
+	uint64_t tempPiece, tempMove;
 
 	Move m;
 	m.clear(); 
 	m.setPromotion(Empty);
-	m.setScore(0);
 
 	uint64_t freeSquares = pos.getFreeSquares();
 	uint64_t enemyPieces = pos.getPieces(!side);
+	uint64_t targetBB = freeSquares | enemyPieces;
 	uint64_t occupiedSquares = pos.getOccupiedSquares();
 
 	tempPiece = pos.getBitboard(side, Pawn);
@@ -26,7 +26,7 @@ int generateMoves(Position & pos, Move * mlist)
 	{
 		from = bitScanForward(tempPiece);
 		m.setFrom(from);
-		tempPiece ^= bit[from];
+		tempPiece &= (tempPiece - 1);
 
 		if (freeSquares & pawnSingleMoves[side][from])
 		{
@@ -53,11 +53,11 @@ int generateMoves(Position & pos, Move * mlist)
 			}
 		}
 
-		tempCapture = pawnAttacks[side][from] & enemyPieces;
+		uint64_t tempCapture = pawnAttacks[side][from] & enemyPieces;
 		while (tempCapture)
 		{
 			to = bitScanForward(tempCapture);
-			tempCapture ^= bit[to];
+			tempCapture &= (tempCapture - 1);
 			m.setTo(to);
 			if (to >= A8 || to <= H1)
 			{
@@ -90,23 +90,15 @@ int generateMoves(Position & pos, Move * mlist)
 	while (tempPiece)
 	{
 		from = bitScanForward(tempPiece);
-		tempPiece ^= bit[from];
+		tempPiece &= (tempPiece - 1);
 		m.setFrom(from);
 		
-		tempMove = knightAttacks[from] & freeSquares;
-		tempCapture = knightAttacks[from] & enemyPieces;
+		tempMove = knightAttacks[from] & targetBB;
 
 		while (tempMove)
 		{
 			to = bitScanForward(tempMove);
-			tempMove ^= bit[to];
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-		while (tempCapture)
-		{
-			to = bitScanForward(tempCapture);
-			tempCapture ^= bit[to];
+			tempMove &= (tempMove - 1);
 			m.setTo(to);
 			mlist[generatedMoves++] = m;
 		}
@@ -116,24 +108,15 @@ int generateMoves(Position & pos, Move * mlist)
 	while (tempPiece)
 	{
 		from = bitScanForward(tempPiece);
-		tempPiece ^= bit[from];
+		tempPiece &= (tempPiece - 1);
 		m.setFrom(from);
 
-		uint64_t allMoves = bishopAttacks(from, occupiedSquares);
-		tempMove = allMoves & freeSquares;
-		tempCapture = allMoves & enemyPieces;
+		tempMove = bishopAttacks(from, occupiedSquares) & targetBB;
 
 		while (tempMove)
 		{
 			to = bitScanForward(tempMove);
-			tempMove ^= bit[to];
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-		while (tempCapture)
-		{
-			to = bitScanForward(tempCapture);
-			tempCapture ^= bit[to];
+			tempMove &= (tempMove - 1);
 			m.setTo(to);
 			mlist[generatedMoves++] = m;
 		}
@@ -143,24 +126,15 @@ int generateMoves(Position & pos, Move * mlist)
 	while (tempPiece)
 	{
 		from = bitScanForward(tempPiece);
-		tempPiece ^= bit[from];
+		tempPiece &= (tempPiece - 1);
 		m.setFrom(from);
 
-		uint64_t allMoves = rookAttacks(from, occupiedSquares);
-		tempMove = allMoves & freeSquares;
-		tempCapture = allMoves & enemyPieces;
+		tempMove = rookAttacks(from, occupiedSquares) & targetBB;
 
 		while (tempMove)
 		{
 			to = bitScanForward(tempMove);
-			tempMove ^= bit[to];
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-		while (tempCapture)
-		{
-			to = bitScanForward(tempCapture);
-			tempCapture ^= bit[to];
+			tempMove &= (tempMove - 1);
 			m.setTo(to);
 			mlist[generatedMoves++] = m;
 		}
@@ -170,24 +144,14 @@ int generateMoves(Position & pos, Move * mlist)
 	while (tempPiece)
 	{
 		from = bitScanForward(tempPiece);
-		tempPiece ^= bit[from];
+		tempPiece &= (tempPiece - 1);
 		m.setFrom(from);
 
-		uint64_t allMoves = queenAttacks(from, occupiedSquares);
-		tempMove = allMoves & freeSquares;
-		tempCapture = allMoves & enemyPieces;
-
+		tempMove = queenAttacks(from, occupiedSquares) & targetBB;
 		while (tempMove)
 		{
 			to = bitScanForward(tempMove);
-			tempMove ^= bit[to];
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-		while (tempCapture)
-		{
-			to = bitScanForward(tempCapture);
-			tempCapture ^= bit[to];
+			tempMove &= (tempMove - 1);
 			m.setTo(to);
 			mlist[generatedMoves++] = m;
 		}
@@ -195,32 +159,24 @@ int generateMoves(Position & pos, Move * mlist)
 
 	from = bitScanForward(pos.getBitboard(side, King));
 	m.setFrom(from);
-	tempMove = kingAttacks[from] & freeSquares;
-	tempCapture = kingAttacks[from] & enemyPieces;
+	tempMove = kingAttacks[from] & targetBB;
 	while (tempMove)
 	{
 		to = bitScanForward(tempMove);
-		tempMove ^= bit[to];
-		m.setTo(to);
-		mlist[generatedMoves++] = m;
-	}
-	while (tempCapture)
-	{
-		to = bitScanForward(tempCapture);
-		tempCapture ^= bit[to];
+		tempMove &= (tempMove - 1);
 		m.setTo(to);
 		mlist[generatedMoves++] = m;
 	}
 
 	if (side == White)
 	{
+		m.setFrom(E1);
+		m.setPromotion(King);
 		if (pos.getCastlingRights() & 1)
 		{
 			if (!(occupiedSquares & (uint64_t)0x0000000000000060))
 			{
-				m.setFrom(E1);
 				m.setTo(G1);
-				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
@@ -228,22 +184,20 @@ int generateMoves(Position & pos, Move * mlist)
 		{
 			if (!(occupiedSquares & (uint64_t)0x000000000000000E))
 			{
-				m.setFrom(E1);
 				m.setTo(C1);
-				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
 	}
 	else
 	{
+		m.setFrom(E8);
+		m.setPromotion(King);
 		if (pos.getCastlingRights() & 4)
 		{
 			if (!(occupiedSquares & (uint64_t)0x6000000000000000))
 			{
-				m.setFrom(E8);
 				m.setTo(G8);
-				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
@@ -251,9 +205,7 @@ int generateMoves(Position & pos, Move * mlist)
 		{
 			if (!(occupiedSquares & (uint64_t)0x0E00000000000000))
 			{
-				m.setFrom(E8);
 				m.setTo(C8);
-				m.setPromotion(King);
 				mlist[generatedMoves++] = m;
 			}
 		}
