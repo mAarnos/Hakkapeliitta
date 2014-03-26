@@ -18,7 +18,7 @@ class Move
 		int getPromotion();   
 		int getScore();
 	private:
-		int moveInt;
+		int32_t moveInt;
 };
 
 

@@ -3,8 +3,6 @@
 
 #include "defs.h"
 
-// TODO: test that the fixed shift magics work.
-
 class Magic
 {
 	public:
@@ -24,7 +22,7 @@ extern uint64_t lookupTable[97264];
 extern Magic bishopMagic[Squares];
 extern Magic rookMagic[Squares];
 
-void initializeMagics();
+extern void initializeMagics();
 
 inline uint64_t bishopAttacks(int sq, uint64_t occupied)
 {

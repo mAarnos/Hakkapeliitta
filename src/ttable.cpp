@@ -72,6 +72,9 @@ int ttProbe(uint8_t depth, int * alpha, int * beta, int * best)
 		return 0;
 	}
 
+	uint64_t hash = 0;
+	ttEntry * hashEntry = &tt[hash % ttSize];
+
 	return 0;
 }
 
@@ -81,6 +84,8 @@ int pttProbe(uint64_t hash)
 	{
 		return 0;
 	}
+
+	pttEntry * hashEntry = &ptt[hash % ttSize];
 
 	return 0;
 }
@@ -99,6 +104,10 @@ void pttSave(uint64_t hash, int32_t score)
 	{
 		return;
 	}
+
+	pttEntry * hashEntry = &ptt[hash % pttSize];
+	hashEntry->hash = hash;
+	hashEntry->score = score;
 }
 
 #endif

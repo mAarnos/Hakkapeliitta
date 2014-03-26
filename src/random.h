@@ -8,15 +8,15 @@
 // Our implementation is based on the code given by Chris Lomont.
 class WELL512
 {
-	private:
-		array<uint32_t, 16> state;
-		uint32_t index;
 	public:
 		// Initializes the PRNG with either the current time(default) or a specific number as the seed.
 		WELL512(uint32_t seed = 0);
 
 		// Generates random 32-bit values.
 		uint32_t rand();
+	private:
+		array<uint32_t, 16> state;
+		uint32_t index;
 };
 
 #endif

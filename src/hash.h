@@ -9,6 +9,6 @@ extern array<uint64_t, 16> castlingRightsHash;
 extern array<uint64_t, Squares> enPassantHash;
 extern uint64_t turnHash;
 
-void initializeHash();
+extern void initializeHash();
 
 #endif

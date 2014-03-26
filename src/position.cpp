@@ -9,15 +9,18 @@
 void Position::displayBoard()
 {
 	string pieceToMark = "PNBRQKpnbrqk.";
+	cout << "  +-----------------------+" << endl;
 	for (int i = 7; i >= 0; i--)
 	{
+		cout << i + 1 << " ";
 		for (int j = 0; j < 8; j++)
 		{
-			cout << pieceToMark[board[i * 8 + j]] << " ";
+			cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
 		}
-		cout << endl;
+		cout << "|" << endl;
+		cout << "  +--+--+--+--+--+--+--+--+" << endl;
 	}
-	cout << endl;
+	cout << "   A  B  C  D  E  F  G  H" << endl;
 }
 
 void Position::initializeBoardFromFEN(string FEN)
@@ -289,7 +292,7 @@ bool Position::makeMove(Move m)
 				fromRook = H8;
 				toRook = F8;
 			}
-			else if (to == C8)
+			else
 			{
 				fromRook = A8;
 				toRook = D8;
@@ -393,7 +396,7 @@ void Position::unmakeMove(Move m)
 				fromRook = H8;
 				toRook = F8;
 			}
-			else if (to == C8)
+			else
 			{
 				fromRook = A8;
 				toRook = D8;
