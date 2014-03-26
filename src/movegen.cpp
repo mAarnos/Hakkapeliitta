@@ -170,43 +170,63 @@ int generateMoves(Position & pos, Move * mlist)
 
 	if (side == White)
 	{
+		if (pos.isAttacked(E1, Black))
+		{
+			return generatedMoves;
+		}
 		m.setFrom(E1);
 		m.setPromotion(King);
 		if (pos.getCastlingRights() & 1)
 		{
 			if (!(occupiedSquares & (uint64_t)0x0000000000000060))
 			{
-				m.setTo(G1);
-				mlist[generatedMoves++] = m;
+				if (!(pos.isAttacked(F1, Black)))
+				{
+					m.setTo(G1);
+					mlist[generatedMoves++] = m;
+				}
 			}
 		}
 		if (pos.getCastlingRights() & 2)
 		{
 			if (!(occupiedSquares & (uint64_t)0x000000000000000E))
 			{
-				m.setTo(C1);
-				mlist[generatedMoves++] = m;
+				if (!(pos.isAttacked(D1, Black)))
+				{
+					m.setTo(C1);
+					mlist[generatedMoves++] = m;
+				}
 			}
 		}
 	}
 	else
 	{
+		if (pos.isAttacked(E8, White))
+		{
+			return generatedMoves;
+		}
 		m.setFrom(E8);
 		m.setPromotion(King);
 		if (pos.getCastlingRights() & 4)
 		{
 			if (!(occupiedSquares & (uint64_t)0x6000000000000000))
 			{
-				m.setTo(G8);
-				mlist[generatedMoves++] = m;
+				if (!(pos.isAttacked(F8, White)))
+				{
+					m.setTo(G8);
+					mlist[generatedMoves++] = m;
+				}
 			}
 		}
 		if (pos.getCastlingRights() & 8)
 		{
 			if (!(occupiedSquares & (uint64_t)0x0E00000000000000))
 			{
-				m.setTo(C8);
-				mlist[generatedMoves++] = m;
+				if (!(pos.isAttacked(D8, White)))
+				{
+					m.setTo(C8);
+					mlist[generatedMoves++] = m;
+				}
 			}
 		}
 	}

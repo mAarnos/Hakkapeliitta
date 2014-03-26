@@ -189,8 +189,8 @@ bool Position::makeMove(Move m)
 	// historyStack[hply].pHash = pawnHash;
 	hply++;
 	
-	fromBB = bit[from];
-	fromToBB = bit[from] | bit[to];
+	fromToBB = fromBB = bit[from];
+	fromToBB |= bit[to];
 
 	board[to] = board[from];
 	board[from] = Empty;
@@ -217,12 +217,14 @@ bool Position::makeMove(Move m)
 	if (pieceType == Pawn)
 	{
 		fiftyMoveDistance = 0;
-		
+
+		// Check if the move is a double pawn move. If it is update the en passant square.
 		if (abs(to - from) == 16)
 		{
 			enPassantSquare = from + 8 - 16 * sideToMove;
 		}
 
+		// Handle en passant and promotions.
 		if (promotion == Pawn)
 		{
 			int enPassantPawn = to - 8 + 16 * sideToMove;
@@ -239,44 +241,58 @@ bool Position::makeMove(Move m)
 	}
 	else if (pieceType == Rook)
 	{
-		if (from == H1 + sideToMove * 56)
+		// Update the castling rights after a rook move if necessary.
+		// Try to make this colourblind.
+		if (from == H1 && (castlingRights & WhiteOO))
 		{
-			if (castlingRights & (WhiteOO << (sideToMove * 2)))
-			{
-				castlingRights ^= WhiteOO << (sideToMove * 2);
-			}
+			castlingRights ^= WhiteOO;
 		}
-		else if (from == A1 + sideToMove * 56)
+		else if (from == A1 && (castlingRights & WhiteOOO))
 		{
-			if (castlingRights & (WhiteOOO << (sideToMove * 2)))
-			{
-				castlingRights ^= WhiteOOO << (sideToMove * 2);
-			}
+			castlingRights ^= WhiteOOO;
+		}
+		else if (from == H8 && (castlingRights & BlackOO))
+		{
+			castlingRights ^= BlackOO;
+		}
+		else if (from == A8 && (castlingRights & BlackOOO))
+		{
+			castlingRights ^= BlackOOO;
 		}
 	}
 	else if (pieceType == King)
 	{
+		// Updates the castling rights after a king move.
 		if (castlingRights & (WhiteOO << (sideToMove * 2)))
 		{
-			castlingRights ^= (WhiteOO << (sideToMove * 2));
+			castlingRights ^= WhiteOO << (sideToMove * 2);
 		}
 		if (castlingRights & (WhiteOOO << (sideToMove * 2)))
 		{
-			castlingRights ^= (WhiteOOO << (sideToMove * 2));
+			castlingRights ^= WhiteOOO << (sideToMove * 2);
 		}
 
-		// Make this part check the legality of the castling move sometime.
 		if (promotion == King)
 		{
-			if (to == (G1 + sideToMove * 56))
+			if (to == G1)
 			{
-				fromRook = H1 + sideToMove * 56;
-				toRook = F1 + sideToMove * 56;
+				fromRook = H1;
+				toRook = F1;
 			}
-			else if (to == (C1 + sideToMove * 56))
+			else if (to == C1)
 			{
-				fromRook = A1 + sideToMove * 56;
-				toRook = D1 + sideToMove * 56;
+				fromRook = A1;
+				toRook = D1;
+			}
+			else if (to == G8)
+			{
+				fromRook = H8;
+				toRook = F8;
+			}
+			else if (to == C8)
+			{
+				fromRook = A8;
+				toRook = D8;
 			}
 
 			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
@@ -290,7 +306,7 @@ bool Position::makeMove(Move m)
 
 	sideToMove = !sideToMove;
 
-	if (inCheck(!sideToMove) || (promotion == King && (attack(from, sideToMove) || attack(toRook, sideToMove))))
+	if (inCheck(!sideToMove))
 	{
 		unmakeMove(m);
 		return false;
@@ -301,7 +317,7 @@ bool Position::makeMove(Move m)
 
 void Position::unmakeMove(Move m)
 {
-	uint64_t fromBB = 0, fromToBB = 0;
+	uint64_t fromBB, fromToBB;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
@@ -322,8 +338,8 @@ void Position::unmakeMove(Move m)
 		piece = Pawn + sideToMove * 6;
 	}
 
-	fromBB |= bit[from];
-	fromToBB |= bit[from] | bit[to];
+	fromToBB = fromBB = bit[from];
+	fromToBB |= bit[to];
 
 	board[from] = piece;
 	board[to] = captured;
@@ -441,11 +457,6 @@ void Position::unmakePromotion(int promotion, int to)
 	bitboards[promotion + sideToMove * 6] ^= bit[to];
 }
 
-bool Position::inCheck(bool side)
-{
-	return attack(bitScanForward(bitboards[King + side * 6]), !side);
-}
-
 bool Position::attack(int sq, bool side)
 {
 	if (knightAttacks[sq] & bitboards[Knight + side * 6] || pawnAttacks[!side][sq] & bitboards[Pawn + side * 6] || kingAttacks[sq] & bitboards[King + side * 6])
@@ -453,8 +464,12 @@ bool Position::attack(int sq, bool side)
 		return true;
 	}
 	uint64_t BQ = bitboards[Bishop + side * 6] | bitboards[Queen + side * 6];
+	if ((bishopAttacks(sq, bitboards[14]) & BQ))
+	{
+		return true;
+	}
 	uint64_t RQ = bitboards[Rook + side * 6] | bitboards[Queen + side * 6];
-	if ((bishopAttacks(sq, bitboards[14]) & BQ) || rookAttacks(sq, bitboards[14]) & RQ)
+	if (rookAttacks(sq, bitboards[14]) & RQ)
 	{
 		return true;
 	}

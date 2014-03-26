@@ -21,7 +21,8 @@ class Position
 	public:
 		void initializeBoardFromFEN(string FEN);
 
-		bool inCheck(bool side);
+		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
+		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
 
 		inline int getPieceType(int sq) { return board[sq]; }
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
@@ -50,6 +51,7 @@ class Position
 		// We have it because often we want to know what piece is on which square or something like that.
 		array<int, Squares> board;
 
+		// Keeps track of the irreversible things in the gamestate.
 		History historyStack[600];
 
 		// Miscellaneous, everything is pretty self explanatory.
