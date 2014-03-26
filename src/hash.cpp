@@ -32,36 +32,64 @@ void initializeHash()
 		enPassantHash[i] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
 	}
 
-	for (int i = 0; i < 16; i++)
-	{
-		castlingRightsHash[i] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
-	}
-
 	turnHash = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+
+	castlingRightsHash[1] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[2] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[3] = castlingRightsHash[1] ^ castlingRightsHash[2];
+	castlingRightsHash[4] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[5] = castlingRightsHash[1] ^ castlingRightsHash[4];
+	castlingRightsHash[6] = castlingRightsHash[2] ^ castlingRightsHash[4];
+	castlingRightsHash[7] = castlingRightsHash[1] ^ castlingRightsHash[2] ^ castlingRightsHash[4];
+	castlingRightsHash[8] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[9] = castlingRightsHash[1] ^ castlingRightsHash[8];
+	castlingRightsHash[10] = castlingRightsHash[2] ^ castlingRightsHash[8];
+	castlingRightsHash[11] = castlingRightsHash[1] ^ castlingRightsHash[2] ^ castlingRightsHash[8];
+	castlingRightsHash[12] = castlingRightsHash[4] ^ castlingRightsHash[8];
+	castlingRightsHash[13] = castlingRightsHash[1] ^ castlingRightsHash[4] ^ castlingRightsHash[8];
+	castlingRightsHash[14] = castlingRightsHash[2] ^ castlingRightsHash[4] ^ castlingRightsHash[8];
+	castlingRightsHash[15] = castlingRightsHash[1] ^ castlingRightsHash[2] ^ castlingRightsHash[4] ^ castlingRightsHash[8];
+
 }
 
-void Position::calculateHash()
+uint64_t Position::calculateHash()
 {
-	hash = 0;
+	uint64_t h = 0;
 	for (int i = A1; i <= H8; i++)
 	{
 		if (board[i] != Empty)
 		{
-			hash ^= pieceHash[board[i]][i];
+			h ^= pieceHash[board[i]][i];
 		}
 	}
+	if (enPassantSquare != 64)
+	{
+		h ^= enPassantHash[enPassantSquare];
+	}
+	if (sideToMove)
+	{
+		h ^= turnHash;
+	}
+	if (castlingRights)
+	{
+		h ^= castlingRightsHash[castlingRights];
+	}
+
+	return h;
 }
 
-void Position::calculatePawnHash()
+uint64_t Position::calculatePawnHash()
 {
-	pawnHash = 0;
+	uint64_t p = 0;
 	for (int i = A1; i <= H8; i++)
 	{
 		if (board[i] == WhitePawn || board[i] == BlackPawn)
 		{
-			pawnHash ^= pieceHash[board[i]][i];
+			p ^= pieceHash[board[i]][i];
 		}
 	}
+
+	return p;
 }
 
 #endif

@@ -24,7 +24,7 @@ enum {
 };
 
 enum {
-	White = 0, Black = 1
+	White = 0, Black = 1, NoColour = 2
 };
 
 enum {
@@ -40,6 +40,7 @@ enum {
 	WhiteOO = 1, WhiteOOO = 2, BlackOO = 4, BlackOOO = 8
 };
 
+const int Colours = NoColour;
 const int Squares = NoSquare;
 const int Pieces = NoPiece;
 

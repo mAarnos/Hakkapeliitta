@@ -166,14 +166,11 @@ const array<int, Squares> flip = {
 	0,  1,  2,  3,  4,  5,  6,  7
 };
 
-// average mobility for a knight in the opening is about 3.3
 const int knightMobilityOpening[9] = {
 	-12, -8, -4, 0, 4, 8, 12, 16,
 	20
 };
 
-// average mobility for a knight in the ending is about 3.3
-// maybe move 0 up one slot
 const int knightMobilityEnding[9] = {
 	-12, -8, -4, 0, 4, 8, 12, 16,
 	20
@@ -224,6 +221,13 @@ const int backwardPenaltyEnding = 9;
 const int bishopPairBonusOpening = 32;
 const int bishopPairBonusEnding = 32;
 const int tradeDownBonus = 3;
+
+const int pawnShelterAdvancedPawnPenalty = 11;
+const int pawnShelterMissingPawnPenalty = 38;
+const int pawnShelterMissingOpponentPawnPenalty = -2;
+const int pawnStormClosePenalty = 22;
+const int pawnStormFarPenalty = 6;
+const int kingInCenterOpenFilePenalty = 23;
 
 const int rookOnOpenFileBonus = 10;
 const int rookOnSemiOpenFileBonus = 5;

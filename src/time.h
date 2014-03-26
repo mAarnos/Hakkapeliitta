@@ -3,6 +3,7 @@
 
 #include "defs.h"
 
+// A stopwatch-type timer.
 class Timer
 {
 	private:

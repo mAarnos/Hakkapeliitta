@@ -26,7 +26,6 @@ class Position
 		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
 		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
 
-		inline int getPieceType(int sq) { return board[sq]; }
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
 		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
@@ -41,7 +40,6 @@ class Position
 
 		// Displays the board. Used for debugging.
 		void displayBoard();
-
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.
@@ -72,8 +70,10 @@ class Position
 		void makePromotion(int promotion, int to);
 		void unmakePromotion(int promotion, int to);
 
-		void calculateHash();
-		void calculatePawnHash();
+		// These two can be used to update the hash and pawn hash but that is very slow compared to incremental updating.
+		// So we use these two only to initialize the hash and pawn hash.
+		uint64_t calculateHash();
+		uint64_t calculatePawnHash();
 };
 
 #endif
