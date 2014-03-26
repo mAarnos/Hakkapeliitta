@@ -9,6 +9,7 @@ uint64_t ttSize = 0;
 vector<pttEntry> ptt;
 uint64_t pttSize = 0;
 
+// This and pttSetSize might be possible to combine into one function. Think about that someday.
 void ttSetSize(uint64_t size)
 {
 	tt.clear();
@@ -69,25 +70,25 @@ int ttProbe(uint8_t depth, int * alpha, int * beta, int * best)
 {
 	if (!ttSize)
 	{
-		return 0;
+		return NoHashEntry;
 	}
 
 	uint64_t hash = 0;
 	ttEntry * hashEntry = &tt[hash % ttSize];
 
-	return 0;
+	return NoHashEntry;
 }
 
 int pttProbe(uint64_t hash)
 {
 	if (!pttSize)
 	{
-		return 0;
+		return NoHashEntry;
 	}
 
 	pttEntry * hashEntry = &ptt[hash % ttSize];
 
-	return 0;
+	return NoHashEntry;
 }
 
 void ttSave(uint8_t depth, int16_t score, uint8_t flags, int32_t best)

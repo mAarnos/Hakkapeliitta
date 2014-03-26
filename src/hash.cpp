@@ -3,6 +3,7 @@
 
 #include "hash.h"
 #include "random.h"
+#include "position.h"
 
 array<uint64_t, Squares> pieceHash[12];
 array<uint64_t, 8> materialHash[12];
@@ -37,6 +38,30 @@ void initializeHash()
 	}
 
 	turnHash = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+}
+
+void Position::calculateHash()
+{
+	hash = 0;
+	for (int i = A1; i <= H8; i++)
+	{
+		if (board[i] != Empty)
+		{
+			hash ^= pieceHash[board[i]][i];
+		}
+	}
+}
+
+void Position::calculatePawnHash()
+{
+	pawnHash = 0;
+	for (int i = A1; i <= H8; i++)
+	{
+		if (board[i] == WhitePawn || board[i] == BlackPawn)
+		{
+			pawnHash ^= pieceHash[board[i]][i];
+		}
+	}
 }
 
 #endif

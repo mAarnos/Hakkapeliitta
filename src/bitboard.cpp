@@ -10,6 +10,9 @@ array<uint64_t, Squares> pawnAttacks[2];
 array<uint64_t, Squares> pawnSingleMoves[2];
 array<uint64_t, Squares> pawnDoubleMoves[2];
 
+uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
+uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
+
 void initializeBitMasks();
 void initializeKingAttacks();
 void initializeKnightAttacks();

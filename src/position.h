@@ -5,6 +5,8 @@
 #include "bitboard.h"
 #include "move.h"
 
+const int MaxGameLength = 600;
+
 class History
 {
 	public:
@@ -52,7 +54,7 @@ class Position
 		array<int, Squares> board;
 
 		// Keeps track of the irreversible things in the gamestate.
-		History historyStack[600];
+		History historyStack[MaxGameLength];
 
 		// Miscellaneous, everything is pretty self explanatory.
 		bool sideToMove;
@@ -60,6 +62,7 @@ class Position
 		int enPassantSquare;
 		int fiftyMoveDistance;
 		int hply;
+		int phase;
 		uint64_t hash, pawnHash;
 
 		// Miscellaneous functions used by the program.
@@ -68,6 +71,9 @@ class Position
 		void unmakeCapture(int captured, int to);
 		void makePromotion(int promotion, int to);
 		void unmakePromotion(int promotion, int to);
+
+		void calculateHash();
+		void calculatePawnHash();
 };
 
 #endif

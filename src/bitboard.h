@@ -13,9 +13,6 @@ extern array<uint64_t, Squares> pawnAttacks[2];
 extern array<uint64_t, Squares> pawnSingleMoves[2];
 extern array<uint64_t, Squares> pawnDoubleMoves[2];
 
-const uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
-const uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
-
 inline int bitScanForward(uint64_t mask)
 {
     unsigned long index; 

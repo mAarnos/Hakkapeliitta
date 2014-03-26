@@ -3,13 +3,11 @@
 
 #include "defs.h"
 
-const int Invalid = -11111;
+const int NoHashEntry = -11111;
 
 // Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
 
-// We pack the ttEntry so that we can fit as much as possible of them into the TT.
-// Maybe test someday whether packing is good or not.
 #pragma pack (1)
 class ttEntry 
 {

@@ -17,8 +17,7 @@ void Position::displayBoard()
 		{
 			cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
 		}
-		cout << "|" << endl;
-		cout << "  +--+--+--+--+--+--+--+--+" << endl;
+		cout << "|" << endl << "  +--+--+--+--+--+--+--+--+" << endl;
 	}
 	cout << "   A  B  C  D  E  F  G  H" << endl;
 }
@@ -143,9 +142,10 @@ void Position::initializeBoardFromFEN(string FEN)
 	if (strList.size() >= 6)
 	{
 		hply = 2 * stoi(strList[5]) - 1;
+		// Avoid possible underflow.
 		if (hply < 0)
 		{
-			hply = 0; // avoid possible underflow 
+			hply = 0; 
 		}
 		if (sideToMove == Black)
 		{
@@ -168,8 +168,8 @@ void Position::initializeBoardFromFEN(string FEN)
 	bitboards[14] = bitboards[12] | bitboards[13];
 	bitboards[15] = ~(bitboards[14]);
 
-	hash = 0;
-	pawnHash = 0;
+	calculateHash();
+	calculatePawnHash();
 
 	return;
 }

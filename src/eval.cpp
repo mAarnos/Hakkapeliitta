@@ -3,6 +3,6 @@
 
 #include "eval.h"
 
+int drawScore = 0;
 
-	
 #endif
