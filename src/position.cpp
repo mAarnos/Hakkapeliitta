@@ -170,6 +170,7 @@ void Position::initializeBoardFromFEN(string FEN)
 
 	hash = calculateHash();
 	pawnHash = calculatePawnHash();
+	matHash = calculateMaterialHash();
 
 	return;
 }
@@ -190,6 +191,7 @@ bool Position::makeMove(Move m)
 	historyStack[hply].captured = captured;
 	historyStack[hply].hash = hash;
 	historyStack[hply].pHash = pawnHash;
+	historyStack[hply].mHash = matHash;
 	hply++;
 	
 	fromToBB = fromBB = bit[from];
@@ -214,12 +216,10 @@ bool Position::makeMove(Move m)
 	{
 		makeCapture(captured, to);
 		bitboards[14] ^= bit[from];
-		bitboards[15] ^= bit[from];
 	}
 	else
 	{
 		bitboards[14] ^= fromToBB;
-		bitboards[15] ^= fromToBB;
 	}
 
 	int pieceType = piece % Pieces;
@@ -240,13 +240,14 @@ bool Position::makeMove(Move m)
 		{
 			// Move these to a doEnPassant function or something.
 			int enPassantPawn = to - 8 + 16 * sideToMove;
-			bitboards[Pawn + !sideToMove * 6] ^= bit[enPassantPawn];
+			// Since a pawn is either 0(white) or 6(black) if we reduce from 6 we get the opposite coloured pawn.
+			bitboards[6 - piece] ^= bit[enPassantPawn];
 			bitboards[12 + !sideToMove] ^= bit[enPassantPawn];
 			bitboards[14] ^= bit[enPassantPawn];
-			bitboards[15] ^= bit[enPassantPawn];
 			board[enPassantPawn] = Empty;
-			hash ^= pieceHash[Pawn + !sideToMove * 6][enPassantPawn];
-			pawnHash ^= pieceHash[Pawn + !sideToMove * 6][enPassantPawn];
+			hash ^= pieceHash[6 - piece][enPassantPawn];
+			pawnHash ^= pieceHash[6 - piece][enPassantPawn];
+			matHash ^= materialHash[6 - piece][popcnt(bitboards[6 - piece])];
 		}
 		else if (promotion != Empty)
 		{
@@ -318,7 +319,6 @@ bool Position::makeMove(Move m)
 			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
 			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
 			bitboards[14] ^= bit[fromRook] | bit[toRook];
-			bitboards[15] ^= bit[fromRook] | bit[toRook];
 			board[toRook] = board[fromRook];
 			board[fromRook] = Empty;
 			hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
@@ -327,6 +327,8 @@ bool Position::makeMove(Move m)
 
 	sideToMove = !sideToMove;
 	hash ^= turnHash;
+
+	bitboards[15] = ~bitboards[14];
 
 	if (inCheck(!sideToMove))
 	{
@@ -352,6 +354,7 @@ void Position::unmakeMove(Move m)
 	int captured = historyStack[hply].captured;
 	hash = historyStack[hply].hash;
 	pawnHash = historyStack[hply].pHash;
+	matHash = historyStack[hply].mHash;
 
 	sideToMove = !sideToMove;
 
@@ -441,6 +444,7 @@ void Position::makeCapture(int captured, int to)
 	fiftyMoveDistance = 0;
 
 	hash ^= pieceHash[captured][to];
+	matHash ^= materialHash[captured][popcnt(bitboards[captured])];
 
 	int pieceType = (captured % Pieces);
 	if (pieceType == Pawn)
@@ -480,10 +484,14 @@ void Position::unmakeCapture(int captured, int to)
 
 void Position::makePromotion(int promotion, int to)
 {
+	// This needs to be above the rest due to reasons. Try to fix that.
+	matHash ^= materialHash[promotion + sideToMove * 6][popcnt(bitboards[promotion + sideToMove * 6])];
+
 	bitboards[Pawn + sideToMove * 6] ^= bit[to];
 	bitboards[promotion + sideToMove * 6] |= bit[to];
 	hash ^= pieceHash[board[to]][to] ^ pieceHash[promotion + sideToMove * 6][to];
 	pawnHash ^= pieceHash[board[to]][to];
+	matHash ^= materialHash[Pawn + sideToMove * 6][popcnt(bitboards[Pawn + sideToMove * 6])];
 	board[to] = promotion + sideToMove * 6;
 }
 

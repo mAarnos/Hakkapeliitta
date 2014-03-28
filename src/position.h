@@ -4,6 +4,7 @@
 #include "defs.h"
 #include "bitboard.h"
 #include "move.h"
+#include "hash.h"
 
 const int MaxGameLength = 600;
 
@@ -16,6 +17,7 @@ class History
 		int captured;
 		uint64_t hash;
 		uint64_t pHash;
+		uint64_t mHash;
 };
 
 class Position
@@ -61,7 +63,7 @@ class Position
 		int fiftyMoveDistance;
 		int hply;
 		int phase;
-		uint64_t hash, pawnHash;
+		uint64_t hash, pawnHash, matHash;
 
 		// Miscellaneous functions used by the program.
 		bool attack(int sq, bool side);
@@ -70,10 +72,9 @@ class Position
 		void makePromotion(int promotion, int to);
 		void unmakePromotion(int promotion, int to);
 
-		// These two can be used to update the hash and pawn hash but that is very slow compared to incremental updating.
-		// So we use these two only to initialize the hash and pawn hash.
 		uint64_t calculateHash();
 		uint64_t calculatePawnHash();
+		uint64_t calculateMaterialHash();
 };
 
 #endif

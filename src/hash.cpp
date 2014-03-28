@@ -34,6 +34,7 @@ void initializeHash()
 
 	turnHash = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
 
+	// Do something about this mess.
 	castlingRightsHash[1] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
 	castlingRightsHash[2] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
 	castlingRightsHash[3] = castlingRightsHash[1] ^ castlingRightsHash[2];
@@ -90,6 +91,19 @@ uint64_t Position::calculatePawnHash()
 	}
 
 	return p;
+}
+
+uint64_t Position::calculateMaterialHash()
+{
+	uint64_t material = 0;
+	for (int i = WhitePawn; i <= BlackKing; i++)
+	{
+		for (int j = 0; j < popcnt(bitboards[i]); j++)
+		{
+			material ^= materialHash[i][j];
+		}
+	}
+	return material;
 }
 
 #endif
