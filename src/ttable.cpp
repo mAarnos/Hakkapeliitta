@@ -2,6 +2,7 @@
 #define TTABLE_CPP
 
 #include "ttable.h"
+#include "eval.h"
 
 vector<ttEntry> tt;
 uint64_t ttSize = 0;
@@ -66,48 +67,122 @@ void pttSetSize(uint64_t size)
 	return;
 }
 
-int ttProbe(uint8_t depth, int * alpha, int * beta, int * best)
+int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 {
 	if (!ttSize)
 	{
-		return NoHashEntry;
+		return probeFailed;
 	}
 
-	uint64_t hash = 0;
-	ttEntry * hashEntry = &tt[hash % ttSize];
+	ttEntry * hashEntry = &tt[pos.getHash() % ttSize];
+	if (hashEntry->hash == pos.getHash())
+	{
+		best = hashEntry->bestmove;
+		if (hashEntry->depth >= depth)
+		{
+			int score = hashEntry->score;
 
-	return NoHashEntry;
+			// correct the mate score back.
+			if (score >= maxMateScore)
+			{
+				score -= pos.getTurn();
+			}
+			else if (score <= -maxMateScore)
+			{
+				score += pos.getTurn();
+			}
+
+			if (hashEntry->flags == ttExact)
+			{
+				return score;
+			}
+
+			if (hashEntry->flags == ttAlpha)
+			{
+				if (score <= alpha)
+				{
+					return score;
+				}
+				if (score < beta)
+				{
+					beta = score;
+					return probeFailed;
+				}
+			}
+
+			if ((hashEntry->flags == ttBeta) && (score >= beta))
+			{
+				if (score >= beta)
+				{
+					return score;
+				}
+				if (score > alpha)
+				{
+					alpha = score;
+					return probeFailed;
+				}
+			}
+		}
+	}
+
+	return probeFailed;
 }
 
-int pttProbe(uint64_t hash)
+int pttProbe(uint64_t pHash)
 {
 	if (!pttSize)
 	{
-		return NoHashEntry;
+		return probeFailed;
 	}
 
-	pttEntry * hashEntry = &ptt[hash % ttSize];
+	pttEntry * hashEntry = &ptt[pHash % pttSize];
 
-	return NoHashEntry;
+	if (hashEntry->hash == pHash)
+	{
+		return hashEntry->score;
+	}
+
+	return probeFailed;
 }
 
-void ttSave(uint8_t depth, int16_t score, uint8_t flags, int32_t best)
+void ttSave(Position & pos, uint8_t depth, int16_t score, uint8_t flags, int32_t best)
 {
 	if (!ttSize)
 	{
 		return;
 	}
+
+	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
+	if (isMateScore(score))
+	{
+		if (score > 0)
+		{
+			score += (int16_t)pos.getTurn();
+		}
+		else
+		{
+			score -= (int16_t)pos.getTurn();
+		}
+	}
+
+	ttEntry * hashEntry = &tt[pos.getHash() % ttSize];
+
+	hashEntry->hash = pos.getHash();
+	hashEntry->bestmove = best;
+	hashEntry->score = score;
+	hashEntry->flags = flags;
+	hashEntry->depth = depth;
 }
 
-void pttSave(uint64_t hash, int32_t score)
+void pttSave(uint64_t pHash, int32_t score)
 {
 	if (!pttSize)
 	{
 		return;
 	}
 
-	pttEntry * hashEntry = &ptt[hash % pttSize];
-	hashEntry->hash = hash;
+	pttEntry * hashEntry = &ptt[pHash % pttSize];
+	hashEntry->hash = pHash;
 	hashEntry->score = score;
 }
 

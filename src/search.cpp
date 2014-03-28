@@ -8,8 +8,6 @@ uint64_t nodeCount = 0;
 
 int perft(int depth, Position & pos) 
 {
-	int i;
-
 	if (depth == 0)
 	{
 		return 1;
@@ -17,7 +15,7 @@ int perft(int depth, Position & pos)
 
 	Move moveStack[256];
 	int generatedMoves = generateMoves(pos, moveStack);
-	for (i = 0; i < generatedMoves; i++)
+	for (int i = 0; i < generatedMoves; i++)
 	{
 		if (!(pos.makeMove(moveStack[i])))
 		{

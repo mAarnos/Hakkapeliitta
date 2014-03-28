@@ -6,7 +6,7 @@
 #include "move.h"
 #include "hash.h"
 
-const int MaxGameLength = 600;
+const int maxGameLength = 600;
 
 class History
 {
@@ -24,6 +24,7 @@ class Position
 {
 	public:
 		void initializeBoardFromFEN(string FEN);
+		void displayBoard();
 
 		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
 		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
@@ -32,16 +33,18 @@ class Position
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
 		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
 		inline uint64_t getFreeSquares() { return bitboards[15]; }
+
+		inline uint64_t getHash() { return hash; }
+		inline uint64_t getPawnHash() { return pawnHash; }
+		inline uint64_t getMaterialHash() { return matHash; }
 		
 		inline bool getSideToMove() { return sideToMove; }
+		inline int getTurn() { return hply; }
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
 		bool makeMove(Move m);
 		void unmakeMove(Move m);
-
-		// Displays the board. Used for debugging.
-		void displayBoard();
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.
@@ -54,7 +57,7 @@ class Position
 		array<int, Squares> board;
 
 		// Keeps track of the irreversible things in the gamestate.
-		History historyStack[MaxGameLength];
+		History historyStack[maxGameLength];
 
 		// Miscellaneous, everything is pretty self explanatory.
 		bool sideToMove;
@@ -71,7 +74,10 @@ class Position
 		void unmakeCapture(int captured, int to);
 		void makePromotion(int promotion, int to);
 		void unmakePromotion(int promotion, int to);
-
+		void makeEnPassant(int to);
+		void unmakeEnPassant(int to);
+		// These functions can be used to calculate different hash keys for the current position.
+		// They are slow so they are only used when initializing, instead we update them incrementally.
 		uint64_t calculateHash();
 		uint64_t calculatePawnHash();
 		uint64_t calculateMaterialHash();

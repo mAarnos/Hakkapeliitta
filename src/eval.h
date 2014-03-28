@@ -5,7 +5,13 @@
 #include "position.h"
 
 const int mateScore = 32767;
-const int maxMateScore = 32767 - MaxGameLength;
+const int maxMateScore = 32767 - maxGameLength;
+
+// Watch out with Infinite as it is bigger than mateScore therefore it could be detected as an mate score even though it is not.
+inline bool isMateScore(int score)
+{
+	return (score <= -maxMateScore || score >= maxMateScore);
+}
 
 const array<int, Pieces> pieceValuesOpening = {
 	88, 235, 263, 402, 892, mateScore

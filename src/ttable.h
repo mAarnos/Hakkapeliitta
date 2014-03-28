@@ -3,7 +3,7 @@
 
 #include "defs.h"
 
-const int NoHashEntry = -11111;
+const int probeFailed = -11111;
 
 // Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
@@ -37,8 +37,8 @@ extern uint64_t pttSize;
 extern void ttSetSize(uint64_t size);
 extern void pttSetSize(uint64_t size);
 
-extern void ttSave(uint8_t depth, int16_t score, uint8_t flags, int32_t best);
-extern int ttProbe(uint8_t depth, int * alpha, int * beta, int * best);
+extern void ttSave(uint64_t hash, uint8_t depth, int16_t score, uint8_t flags, int32_t best);
+extern int ttProbe(uint64_t hash, uint8_t depth, int * alpha, int * beta, int * best);
 
 extern void pttSave(uint64_t pHash, int32_t score);
 extern int pttProbe(uint64_t pHash);
