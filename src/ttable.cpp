@@ -83,13 +83,16 @@ int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 			int score = hashEntry->score;
 
 			// correct the mate score back.
-			if (score >= maxMateScore)
+			if (isMateScore(score))
 			{
-				score -= pos.getTurn();
-			}
-			else if (score <= -maxMateScore)
-			{
-				score += pos.getTurn();
+				if (score > 0)
+				{
+					score -= pos.getTurn();
+				}
+				else
+				{
+					score += pos.getTurn();
+				}
 			}
 
 			if (hashEntry->flags == ttExact)
@@ -136,7 +139,6 @@ int pttProbe(uint64_t pHash)
 	}
 
 	pttEntry * hashEntry = &ptt[pHash % pttSize];
-
 	if (hashEntry->hash == pHash)
 	{
 		return hashEntry->score;
@@ -166,7 +168,6 @@ void ttSave(Position & pos, uint8_t depth, int16_t score, uint8_t flags, int32_t
 	}
 
 	ttEntry * hashEntry = &tt[pos.getHash() % ttSize];
-
 	hashEntry->hash = pos.getHash();
 	hashEntry->bestmove = best;
 	hashEntry->score = score;
