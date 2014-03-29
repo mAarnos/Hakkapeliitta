@@ -9,6 +9,7 @@
 #include "position.h"
 #include "search.h"
 #include "time.h"
+#include "eval.h"
 
 int main()
 {
@@ -17,10 +18,11 @@ int main()
 	initializeBitboards();
 	initializeMagics();
 	initializeHash();
+	initializeKnownEndgames();
 
 	Position pos;
 	// Perft 1-7 correct.
-	pos.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	// pos.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	// Perft 1-5 correct.
 	// pos.initializeBoardFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 	// Perft 1-7 correct
@@ -31,7 +33,12 @@ int main()
 	// pos.initializeBoardFromFEN("rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6");
 	// Perft 1-6 correct
 	// pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+	pos.initializeBoardFromFEN("8/8/3nk3/8/8/2B5/2BK4/8 w - -");
 
+
+	eval(pos);
+
+	/*
 	Timer t;
 	t.start();
 	perft(7, pos);
@@ -40,7 +47,7 @@ int main()
 	cout << "Nodecount = " << nodeCount << endl;
 	cout << "Time(in ms) = " << t.getms() << endl;
 	cout << "NPS = " << nodeCount / (t.getms() / 1000.0) << endl;
-
+	*/
 	return 0; 
 }
 

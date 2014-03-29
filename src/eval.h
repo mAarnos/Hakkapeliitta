@@ -247,7 +247,9 @@ const int queenPhase = 4;
 const int totalPhase = pawnPhase * 16 + knightPhase * 4 + bishopPhase * 4 + rookPhase * 4 + queenPhase * 2;
 
 extern int drawScore;
+extern map<uint64_t, int> knownEndgames;
 
+extern void initializeKnownEndgames();
 extern int eval(Position & pos);
 
 #endif

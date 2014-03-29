@@ -13,6 +13,7 @@ extern array<uint64_t, Squares> pawnAttacks[2];
 extern array<uint64_t, Squares> pawnSingleMoves[2];
 extern array<uint64_t, Squares> pawnDoubleMoves[2];
 
+// Returns the least significant set bit in the mask.
 // Precondition: mask != 0
 inline int bitScanForward(uint64_t mask)
 {
@@ -35,13 +36,13 @@ const array<int, Squares> index64 = {
 	13, 18, 8, 12, 7, 6, 5, 63
 };
 
-// Precondition: mask != 0
 inline int bitScanForward(uint64_t bb) 
 {
 	return index64[((bb ^ (bb - 1)) * 0x03f79d71b4cb0a89) >> 58];
 }
 */
 
+// Returns the amount of set bits in the mask.
 inline int popcnt(uint64_t mask)
 {
 	return (int)_mm_popcnt_u64(mask);
