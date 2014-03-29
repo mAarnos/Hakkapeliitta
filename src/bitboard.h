@@ -13,6 +13,7 @@ extern array<uint64_t, Squares> pawnAttacks[2];
 extern array<uint64_t, Squares> pawnSingleMoves[2];
 extern array<uint64_t, Squares> pawnDoubleMoves[2];
 
+// Precondition: mask != 0
 inline int bitScanForward(uint64_t mask)
 {
     unsigned long index; 
@@ -20,12 +21,33 @@ inline int bitScanForward(uint64_t mask)
     return (int)index;
 }
 
+// If the machine you are compiling this engine for has no hardware bitScanForward(basically w32), use the below bitScanForward instead of the above.
+// The code for this software bitScanFotward is by Kim Walisch(2012)
+/*
+const array<int, Squares> index64 = {
+	0, 47, 1, 56, 48, 27, 2, 60,
+	57, 49, 41, 37, 28, 16, 3, 61,
+	54, 58, 35, 52, 50, 42, 21, 44,
+	38, 32, 29, 23, 17, 11, 4, 62,
+	46, 55, 26, 59, 40, 36, 15, 53,
+	34, 51, 20, 43, 31, 22, 10, 45,
+	25, 39, 14, 33, 19, 30, 9, 24,
+	13, 18, 8, 12, 7, 6, 5, 63
+};
+
+// Precondition: mask != 0
+inline int bitScanForward(uint64_t bb) 
+{
+	return index64[((bb ^ (bb - 1)) * 0x03f79d71b4cb0a89) >> 58];
+}
+*/
+
 inline int popcnt(uint64_t mask)
 {
 	return (int)_mm_popcnt_u64(mask);
 }
 
-// If the machine you are compiling this engine for has no hardware popcnt, comment out the above popcnt and comment in the below software popcnt.
+// If the machine you are compiling this engine for has no hardware popcnt(w32 and older machines), use the below popnct instead of the above.
 /*
 inline int popcnt(uint64_t mask)
 {
