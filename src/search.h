@@ -4,8 +4,7 @@
 #include "defs.h"
 #include "position.h"
 
-extern uint64_t nodeCount;
-
-extern int perft(int depth, Position & pos);
+extern uint64_t perft(Position & pos, int depth);
+extern uint64_t perftHash(Position & pos, int depth);
 
 #endif

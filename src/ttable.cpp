@@ -4,13 +4,19 @@
 #include "ttable.h"
 #include "eval.h"
 
+// Maybe a class HashTable which includes the size?
+
 vector<ttEntry> tt;
 uint64_t ttSize = 0;
 
 vector<pttEntry> ptt;
 uint64_t pttSize = 0;
 
-// This and pttSetSize might be possible to combine into one function. Think about that someday.
+vector<perftTTEntry> perftTT;
+uint64_t perftTTSize = 0;
+
+// The three setSizes could perhaps be combined into one function. Think about that someday.
+
 void ttSetSize(uint64_t size)
 {
 	tt.clear();
@@ -18,16 +24,11 @@ void ttSetSize(uint64_t size)
 	// If size is not a power of two make it the biggest power of two smaller than size.
 	if (size & (size - 1))
 	{
-		size--;
-		for (int i = 1; i < 32; i *= 2)
-		{
-			size |= size >> i;
-		}
-		size++;
-		size >>= 1;
+		double power = floor(log2(size));
+		size = (uint64_t)pow(2, power);
 	}
 
-	// If the transposition table is too small for even a single entry, do nothing.
+	// If the hash table is too small for even a single entry, do nothing.
 	if (size < sizeof(ttEntry)) 
 	{
 		ttSize = 0;
@@ -42,19 +43,12 @@ void pttSetSize(uint64_t size)
 {
 	ptt.clear();
 
-	// If size is not a power of two make it the biggest power of two smaller than size.
 	if (size & (size - 1))
 	{
-		size--;
-		for (int i = 1; i < 32; i *= 2)
-		{
-			size |= size >> i;
-		}
-		size++;
-		size >>= 1;
+		double power = floor(log2(size));
+		size = (uint64_t)pow(2, power);
 	}
 
-	// If too small a pawn hash table for even a single entry do nothing.
 	if (size < sizeof(pttEntry)) 
 	{
 		pttSize = 0;
@@ -63,9 +57,28 @@ void pttSetSize(uint64_t size)
 
 	pttSize = (size / sizeof(pttEntry)) - 1;
 	ptt.resize(ttSize);
-
-	return;
 }
+
+void perftTTSetSize(uint64_t size)
+{
+	perftTT.clear();
+
+	if (size & (size - 1))
+	{
+		double power = floor(log2(size));
+		size = (uint64_t)pow(2, power);
+	}
+
+	if (size < sizeof(perftTTEntry))
+	{
+		perftTTSize = 0;
+		return;
+	}
+
+	perftTTSize = (size / sizeof(perftTTEntry)) - 1;
+	perftTT.resize(perftTTSize);
+}
+
 
 int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 {
@@ -75,6 +88,7 @@ int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 	}
 
 	ttEntry * hashEntry = &tt[pos.getHash() % ttSize];
+
 	if (hashEntry->hash == pos.getHash())
 	{
 		best = hashEntry->bestmove;
@@ -139,6 +153,7 @@ int pttProbe(uint64_t pHash)
 	}
 
 	pttEntry * hashEntry = &ptt[pHash % pttSize];
+
 	if (hashEntry->hash == pHash)
 	{
 		return hashEntry->score;
@@ -168,6 +183,7 @@ void ttSave(Position & pos, uint8_t depth, int16_t score, uint8_t flags, int32_t
 	}
 
 	ttEntry * hashEntry = &tt[pos.getHash() % ttSize];
+
 	hashEntry->hash = pos.getHash();
 	hashEntry->bestmove = best;
 	hashEntry->score = score;
@@ -183,8 +199,43 @@ void pttSave(uint64_t pHash, int32_t score)
 	}
 
 	pttEntry * hashEntry = &ptt[pHash % pttSize];
+
 	hashEntry->hash = pHash;
 	hashEntry->score = score;
+}
+
+void perftTTSave(Position & pos, uint64_t nodes, int depth)
+{
+	if (!perftTTSize)
+	{
+		return;
+	}
+
+	perftTTEntry * hashEntry = &perftTT[pos.getHash() % perftTTSize];
+
+	hashEntry->hash = pos.getHash();
+	hashEntry->data = (nodes & 0x00FFFFFFFFFFFFFF) | (uint64_t)depth << 56;
+	hashEntry->hash ^= hashEntry->data;
+}
+
+uint64_t perftTTProbe(Position & pos, int depth)
+{
+	if (!perftTTSize)
+	{
+		return probeFailed;
+	}
+
+	perftTTEntry * hashEntry = &perftTT[pos.getHash() % perftTTSize];
+
+	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
+	{
+		if ((hashEntry->data >> 56) == depth)
+		{
+			return (hashEntry->data & 0x00FFFFFFFFFFFFFF);
+		}
+	}
+
+	return probeFailed;
 }
 
 #endif

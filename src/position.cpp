@@ -5,6 +5,7 @@
 #include "bitboard.h"
 #include "hash.h"
 #include "magic.h"
+#include "eval.h"
 
 void Position::displayBoard()
 {
@@ -172,6 +173,13 @@ void Position::initializeBoardFromFEN(string FEN)
 	pawnHash = calculatePawnHash();
 	matHash = calculateMaterialHash();
 
+	phase = totalPhase;
+	for (int i = Knight; i < King; i++)
+	{
+		phase -= popcnt(bitboards[White + i] | bitboards[Black * 6 + i]) * piecePhase[i];
+	}
+	phase = (phase * 256 + (totalPhase / 2)) / totalPhase;
+
 	return;
 }
 
@@ -314,10 +322,6 @@ bool Position::makeMove(Move m)
 		unmakeMove(m);
 		return false;
 	}
-
-	assert(hash == calculateHash());
-	assert(pawnHash == calculatePawnHash());
-	assert(matHash == calculateMaterialHash());
 
 	return true;
 }

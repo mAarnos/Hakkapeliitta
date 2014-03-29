@@ -6,9 +6,9 @@
 #include <array>
 #include <vector>
 #include <ctime>
+#include <cmath>
 #include <string>
 #include <sstream>
-#include <cassert>
 #include <map>
 
 using namespace std;

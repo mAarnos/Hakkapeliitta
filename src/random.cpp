@@ -11,11 +11,13 @@ index(0)
 		if (!seed)
 		{
 			seed = (uint32_t)time(0);
-		};
+		}
 		uint32_t mask = ~0u;
 		state[0] = seed & mask;
 		for (int j = 1; j < 16; ++j)
+		{
 			state[j] = (1812433253UL * (state[j - 1] ^ (state[j - 1] >> 30)) + j) & mask;
+		}
 	}
 }
 

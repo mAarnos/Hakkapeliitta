@@ -5,6 +5,7 @@
 #include "hash.h"
 
 int drawScore = 0;
+
 map<uint64_t, int> knownEndgames;
 
 void initializeKnownEndgames()
@@ -60,12 +61,15 @@ int eval(Position & pos)
 {
 	int score = 0, kingSafetyScore = 0;
 
+	// Checks if we are in a known endgame.
+	// If we are we can straight away return the score for the endgame.
+	// At the moment only detects draws, if wins will be included this must be made to return things in negamax fashion.
 	if (knownEndgames.count(pos.getMaterialHash()))
 	{
-		return knownEndgames.at(pos.getMaterialHash());
+		return knownEndgames[pos.getMaterialHash()];
 	}
 
-	return score;
+	return score + kingSafetyScore;
 }
 
 #endif
