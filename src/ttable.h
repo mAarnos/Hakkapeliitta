@@ -36,6 +36,39 @@ class perftTTEntry
 		uint64_t data;
 };
 
+template <class t>
+class HashTable
+{
+	public:
+		void setSize(uint64_t size)
+		{
+			table.clear();
+
+			// If size is not a power of two make it the biggest power of two smaller than size.
+			if (size & (size - 1))
+			{
+				double power = floor(log2(size));
+				size = (uint64_t)pow(2, power);
+			}
+
+			// If size is too small to hold even a single entry do nothing.
+			if (size < sizeof(t))
+			{
+				tableSize = 0;
+				return;
+			}
+
+			tableSize = (size / sizeof(t)) - 1;
+			table.resize(tableSize);
+		}
+
+		inline uint64_t getTableSize() { return tableSize; }
+		inline t& getEntry(uint64_t entry) { return table[entry]; }
+	private:
+		vector<t> table;
+		uint64_t tableSize;
+};
+
 extern vector<ttEntry> tt;
 extern uint64_t ttSize;
 

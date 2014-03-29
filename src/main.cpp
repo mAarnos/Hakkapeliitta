@@ -22,7 +22,7 @@ int main()
 
 	Position pos;
 	// Perft 1-8 correct.
-	pos.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	// pos.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	// Perft 1-5 correct.
 	// pos.initializeBoardFromFEN("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 	// Perft 1-7 correct
@@ -32,13 +32,13 @@ int main()
 	// Perft 1-3 correct
 	// pos.initializeBoardFromFEN("rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6");
 	// Perft 1-6 correct
-	// pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+	pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
 	perftTTSetSize(1024 * 1024 * 1024);
 
 	Timer t;
 	t.start();
-	uint64_t nodeCount = perftHash(pos, 7);
+	uint64_t nodeCount = perftHash(pos, 6);
 	t.stop();
 
 	cout << "Nodecount = " << nodeCount << endl;
