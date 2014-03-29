@@ -178,7 +178,6 @@ void Position::initializeBoardFromFEN(string FEN)
 bool Position::makeMove(Move m)
 {
 	uint64_t fromBB, fromToBB;
-	int fromRook, toRook;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
@@ -285,25 +284,16 @@ bool Position::makeMove(Move m)
 
 		if (promotion == King)
 		{
-			if (to == G1)
+			int fromRook, toRook;
+			if (from > to)
 			{
-				fromRook = H1;
-				toRook = F1;
-			}
-			else if (to == C1)
-			{
-				fromRook = A1;
-				toRook = D1;
-			}
-			else if (to == G8)
-			{
-				fromRook = H8;
-				toRook = F8;
+				fromRook = to - 2;
+				toRook = from - 1;
 			}
 			else
 			{
-				fromRook = A8;
-				toRook = D8;
+				fromRook = to + 1;
+				toRook = from + 1;
 			}
 
 			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
@@ -394,25 +384,15 @@ void Position::unmakeMove(Move m)
 		if (promotion == King)
 		{
 			int fromRook, toRook;
-			if (to == G1)
+			if (from > to)
 			{
-				fromRook = H1;
-				toRook = F1;
-			}
-			else if (to == C1)
-			{
-				fromRook = A1;
-				toRook = D1;
-			}
-			else if (to == G8)
-			{
-				fromRook = H8;
-				toRook = F8;
+				fromRook = to - 2;
+				toRook = from - 1;
 			}
 			else
 			{
-				fromRook = A8;
-				toRook = D8;
+				fromRook = to + 1;
+				toRook = from + 1;
 			}
 
 			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
