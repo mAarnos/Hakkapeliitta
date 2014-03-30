@@ -47,8 +47,7 @@ class HashTable
 			// If size is not a power of two make it the biggest power of two smaller than size.
 			if (size & (size - 1))
 			{
-				double power = floor(log2(size));
-				size = (uint64_t)pow(2, power);
+				size = (uint64_t)pow(2, floor(log2(size)));
 			}
 
 			// If size is too small to hold even a single entry do nothing.
@@ -62,32 +61,25 @@ class HashTable
 			table.resize(tableSize);
 		}
 
-		inline uint64_t getTableSize() { return tableSize; }
+		inline uint64_t getSize() { return tableSize; }
 		inline t& getEntry(uint64_t entry) { return table[entry]; }
+		inline int isEmpty() { return table.empty(); }
 	private:
 		vector<t> table;
 		uint64_t tableSize;
 };
 
-extern vector<ttEntry> tt;
-extern uint64_t ttSize;
+extern HashTable<ttEntry> tt;
+extern HashTable<pttEntry> ptt;
+extern HashTable<perftTTEntry> perftTT;
 
-extern vector<pttEntry> ptt;
-extern uint64_t pttSize;
+void ttSave(uint64_t hash, uint8_t depth, int16_t score, uint8_t flags, int32_t best);
+int ttProbe(uint64_t hash, uint8_t depth, int * alpha, int * beta, int * best);
 
-extern vector<perftTTEntry> perftTT;
-extern uint64_t perftTTSize;
+void pttSave(uint64_t pHash, int32_t score);
+int pttProbe(uint64_t pHash);
 
-extern void ttSetSize(uint64_t size);
-extern void ttSave(uint64_t hash, uint8_t depth, int16_t score, uint8_t flags, int32_t best);
-extern int ttProbe(uint64_t hash, uint8_t depth, int * alpha, int * beta, int * best);
-
-extern void pttSetSize(uint64_t size);
-extern void pttSave(uint64_t pHash, int32_t score);
-extern int pttProbe(uint64_t pHash);
-
-extern void perftTTSetSize(uint64_t size);
-extern void perftTTSave(Position & pos, uint64_t nodes, int depth);
-extern uint64_t perftTTProbe(Position & pos, int depth);
+void perftTTSave(Position & pos, uint64_t nodes, int depth);
+uint64_t perftTTProbe(Position & pos, int depth);
 
 #endif

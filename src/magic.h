@@ -22,7 +22,7 @@ extern uint64_t lookupTable[97264];
 extern Magic bishopMagic[Squares];
 extern Magic rookMagic[Squares];
 
-extern void initializeMagics();
+void initializeMagics();
 
 inline uint64_t bishopAttacks(int sq, uint64_t occupied)
 {

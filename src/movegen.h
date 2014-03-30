@@ -5,6 +5,6 @@
 #include "move.h"
 #include "position.h"
 
-extern int generateMoves(Position & pos, Move * mlist);
+int generateMoves(Position & pos, Move * mlist);
 
 #endif
