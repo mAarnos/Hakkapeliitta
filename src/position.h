@@ -83,4 +83,6 @@ class Position
 		uint64_t calculateMaterialHash();
 };
 
+extern Position root;
+
 #endif

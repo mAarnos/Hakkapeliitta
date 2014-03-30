@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <map>
+#include <regex>
 
 using namespace std;
 
@@ -42,8 +43,8 @@ enum {
 	WhiteOO = 1, WhiteOOO = 2, BlackOO = 4, BlackOOO = 8
 };
 
-const int Colours = NoColour;
 const int Squares = NoSquare;
+const int Colours = NoColour;
 const int Pieces = NoPiece;
 
 #endif

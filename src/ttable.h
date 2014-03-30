@@ -61,6 +61,12 @@ class HashTable
 			table.resize(tableSize);
 		}
 
+		void clear()
+		{
+			table.clear();
+			table.resize(tableSize);
+		}
+
 		inline uint64_t getSize() { return tableSize; }
 		inline t& getEntry(uint64_t entry) { return table[entry]; }
 		inline int isEmpty() { return table.empty(); }

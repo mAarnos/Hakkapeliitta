@@ -4,7 +4,7 @@
 #include "defs.h"
 #include <intrin.h>
 
-extern void initializeBitboards();	
+void initializeBitboards();	
 
 extern array<uint64_t, Squares> bit;
 extern array<uint64_t, Squares> kingAttacks;
@@ -22,7 +22,7 @@ inline int bitScanForward(uint64_t mask)
     return (int)index;
 }
 
-// If the machine you are compiling this engine for has no hardware bitScanForward(basically w32), use the below bitScanForward instead of the above.
+// If the machine you are compiling this engine for has no hardware bitScanForward(only w32 nowadays?), use the below bitScanForward instead of the above.
 // The code for this software bitScanFotward is by Kim Walisch(2012)
 /*
 const array<int, Squares> index64 = {
@@ -48,7 +48,7 @@ inline int popcnt(uint64_t mask)
 	return (int)_mm_popcnt_u64(mask);
 }
 
-// If the machine you are compiling this engine for has no hardware popcnt(w32 and older machines), use the below popnct instead of the above.
+// If the machine you are compiling this engine for has no hardware popcnt(w32 and old x64 machines), use the below popnct instead of the above.
 /*
 inline int popcnt(uint64_t mask)
 {

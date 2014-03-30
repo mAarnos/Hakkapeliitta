@@ -10,6 +10,7 @@
 #include "search.h"
 #include "time.h"
 #include "eval.h"
+#include "uci.h"
 
 int main()
 {
@@ -33,6 +34,8 @@ int main()
 	// pos.initializeBoardFromFEN("rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6");
 	// Perft 1-6 correct
 	// pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
+
+	uciMainLoop();
 
 	perftTT.setSize(1024 * 1024 * 1024);
 

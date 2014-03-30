@@ -7,6 +7,8 @@
 #include "magic.h"
 #include "eval.h"
 
+Position root;
+
 void Position::displayBoard()
 {
 	string pieceToMark = "PNBRQKpnbrqk.";
