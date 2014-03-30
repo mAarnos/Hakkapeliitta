@@ -29,6 +29,9 @@ class Position
 		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
 		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
 
+		inline int getBoard(int sq) { return board[sq]; }
+		inline int getBoardPieceType(int sq) { return (board[sq] % Pieces); }
+
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
 		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
@@ -68,6 +71,12 @@ class Position
 		int phase;
 		uint64_t hash, pawnHash, matHash;
 
+		// These functions can be used to calculate different hash keys for the current position.
+		// They are slow so they are only used when initializing, instead we update them incrementally.
+		uint64_t calculateHash();
+		uint64_t calculatePawnHash();
+		uint64_t calculateMaterialHash();
+
 		// Miscellaneous functions used by the program.
 		bool attack(int sq, bool side);
 		void makeCapture(int captured, int to);
@@ -76,11 +85,6 @@ class Position
 		void unmakePromotion(int promotion, int to);
 		void makeEnPassant(int to);
 		void unmakeEnPassant(int to);
-		// These functions can be used to calculate different hash keys for the current position.
-		// They are slow so they are only used when initializing, instead we update them incrementally.
-		uint64_t calculateHash();
-		uint64_t calculatePawnHash();
-		uint64_t calculateMaterialHash();
 };
 
 extern Position root;

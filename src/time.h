@@ -20,4 +20,11 @@ class Timer
 
 extern Timer t;
 
+extern int targetTime;
+extern int maxTime;
+
+const int lagBuffer = 50;
+
+void allocateSearchTime(string s);
+
 #endif

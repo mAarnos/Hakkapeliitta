@@ -57,7 +57,7 @@ void uciMainLoop()
 			break;
 		}
 
-		// Remove all extra whitespace.
+		// Remove all extra whitespace from the string.
 		line = line.substr(line.find_first_not_of(' '));
 		line = line.substr(0, line.find_last_not_of(' ') + 1);
 		while (line.find("  ") != string::npos)
@@ -65,10 +65,9 @@ void uciMainLoop()
 			line.replace(line.find("  "), 2, " ");
 		}
 
-		// The easiest way to parse the string is to use a regular expression.
-		// We haven't implemented the protocol properly here, if you give the command joho uci or something like that we will find nothing.
+		// We haven't implemented the protocol properly here, if you give the command joho uci or something like that we will do nothing.
 		// TODO: do that properly some day.
-		regex expr("\\s*(\\w*)\\s*(.*)");
+		regex expr("(\\w*)\\s?(.*)");
 		smatch matches;
 		if (regex_search(line, matches, expr))
 		{
@@ -77,8 +76,7 @@ void uciMainLoop()
 		}
 
 		// Go through the list of commands and call the correct function if the command entered is available. 
-		int i = 0;
-		for (i = 0; i < amountOfCommands; i++)
+		for (int i = 0; i < amountOfCommands; i++)
 		{
 			if (command == commands[i].name)
 			{
@@ -172,6 +170,7 @@ int uciNewGame(string s)
 int uciPosition(string s)
 {
 	string moves;
+	vector<string> move;
 
 	size_t pos = s.find("moves");
 	if (pos != string::npos)
@@ -181,6 +180,8 @@ int uciPosition(string s)
 	}
 
 	pos = s.find("fen");
+	// Could also be s.find("fen") != string::npos but in that case fen could be ANYWHERE within the string and that is not what we want.
+	// I really don't know whether I should care about stuff like that.
 	if (pos == 0)
 	{
 		root.initializeBoardFromFEN(s.substr(4));
@@ -190,11 +191,55 @@ int uciPosition(string s)
 		root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	}
 
+	regex expr("([a-z][0-9][a-z][0-9][a-z]?)");
+	for (sregex_iterator it(moves.begin(), moves.end(), expr), end; it != end; ++it)
+	{
+		move.push_back((*it)[0]);
+	}
+
+	for (int i = 0; i < move.size(); i++)
+	{
+		Move m;
+		m.clear();
+		m.setPromotion(Empty);
+
+		int from = (move[i][0] - 'a') + 8 * (move[i][1] - '1');
+		int to = (move[i][2] - 'a') + 8 * (move[i][3] - '1');
+
+		m.setFrom(from);
+		m.setTo(to);
+
+		if (move[i].size() == 5)
+		{
+			switch (move[i][4])
+			{
+				case 'q': m.setPromotion(Queen); break;
+				case 'r': m.setPromotion(Rook); break;
+				case 'b': m.setPromotion(Bishop); break;
+				case 'n': m.setPromotion(Knight); break;
+				default: return uciOk;
+			}
+		}
+		else if ((root.getBoardPieceType(from) == King) && (abs(from - to) == 2))
+		{
+			m.setPromotion(King);
+		}
+		else if ((root.getBoardPieceType(from) == Pawn) && to == root.getEnPassantSquare())
+		{
+			m.setPromotion(Pawn);
+		}
+
+		root.makeMove(m);
+	}
+
 	return uciOk;
 }
 
+// add search
 int uciGo(string s)
 {
+	allocateSearchTime(s);
+	// think();
 	return uciOk;
 }
 

@@ -2,8 +2,12 @@
 #define TIME_CPP
 
 #include "time.h"
+#include "position.h"
 
 Timer t;
+
+int targetTime;
+int maxTime;
 
 void Timer::start()
 {
@@ -35,6 +39,72 @@ uint64_t Timer::getms()
 	else
 	{
 		return (stopTime - startTime);
+	}
+}
+
+void allocateSearchTime(string s)
+{
+	array<int, Colours> time;
+	array<int, Colours> increment;
+	int movestogo;
+	size_t pos;
+
+	pos = s.find("movetime");
+	if (pos != string::npos)
+	{
+		targetTime = stoi(s.substr(pos + 9));
+		targetTime -= lagBuffer;
+		return;
+	}
+
+	pos = s.find("infinite");
+	if (pos != string::npos)
+	{
+		targetTime = INT_MAX;
+		return;
+	}
+
+	pos = s.find("wtime");
+	if (pos != string::npos)
+	{
+		time[White] = stoi(s.substr(pos + 6));
+	}
+
+	pos = s.find("btime");
+	if (pos != string::npos)
+	{
+		time[Black] = stoi(s.substr(pos + 6));
+	}
+
+	pos = s.find("winc");
+	if (pos != string::npos)
+	{
+		increment[White] = stoi(s.substr(pos + 5));
+	}
+
+	pos = s.find("binc");
+	if (pos != string::npos)
+	{
+		increment[Black] = stoi(s.substr(pos + 5));
+	}
+
+	pos = s.find("movestogo");
+	if (pos != string::npos)
+	{
+		movestogo = stoi(s.substr(pos + 10));
+		movestogo += 2;
+	}
+	else
+	{
+		movestogo = 25;
+	}
+
+	targetTime = (time[root.getSideToMove()] / movestogo) + increment[root.getSideToMove()];
+	targetTime -= lagBuffer;
+
+	if (targetTime < 0)
+	{
+		targetTime = 0;
 	}
 }
 
