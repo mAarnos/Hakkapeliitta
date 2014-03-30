@@ -6,6 +6,8 @@
 
 const int mateScore = 32767;
 const int maxMateScore = 32767 - maxGameLength;
+// Is the value here enough?
+const int infinity = mateScore + 1;
 
 // Watch out with Infinite as it is bigger than mateScore therefore it could be detected as an mate score even though it is not.
 inline bool isMateScore(int score)
@@ -19,6 +21,15 @@ const array<int, Pieces> pieceValuesOpening = {
 
 const array<int, Pieces> pieceValuesEnding = {
 	112, 258, 286, 481, 892, mateScore
+};
+
+const array<int, Pieces> averagePieceValues = {
+	(pieceValuesOpening[0] + pieceValuesEnding[0]) / 2,
+	(pieceValuesOpening[1] + pieceValuesEnding[1]) / 2,
+	(pieceValuesOpening[2] + pieceValuesEnding[2]) / 2,
+	(pieceValuesOpening[3] + pieceValuesEnding[3]) / 2,
+	(pieceValuesOpening[4] + pieceValuesEnding[4]) / 2,
+	(pieceValuesOpening[5] + pieceValuesEnding[5]) / 2,
 };
 
 const array<int, Squares> openingPST[6] = {

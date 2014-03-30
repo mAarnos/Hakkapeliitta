@@ -30,7 +30,7 @@ class Position
 		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
 
 		inline int getBoard(int sq) { return board[sq]; }
-		inline int getBoardPieceType(int sq) { return (board[sq] % Pieces); }
+		inline int getPiece(int sq) { return (board[sq] % Pieces); }
 
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
@@ -85,10 +85,14 @@ class Position
 		void unmakePromotion(int promotion, int to);
 		void makeEnPassant(int to);
 		void unmakeEnPassant(int to);
+		uint64_t revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int target, int from);
 
 		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
 		uint64_t attacksTo(int to);
 		uint64_t attacksTo(int to, bool side);
+
+		// Static Exchange Evaluator
+		int SEE(Move m);
 };
 
 extern Position root;
