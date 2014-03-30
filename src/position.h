@@ -85,6 +85,10 @@ class Position
 		void unmakePromotion(int promotion, int to);
 		void makeEnPassant(int to);
 		void unmakeEnPassant(int to);
+
+		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
+		uint64_t attacksTo(int to);
+		uint64_t attacksTo(int to, bool side);
 };
 
 extern Position root;
