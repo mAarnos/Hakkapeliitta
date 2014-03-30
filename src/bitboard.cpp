@@ -9,15 +9,17 @@ array<uint64_t, Squares> knightAttacks;
 array<uint64_t, Squares> pawnAttacks[2];
 array<uint64_t, Squares> pawnSingleMoves[2];
 array<uint64_t, Squares> pawnDoubleMoves[2];
+array<uint64_t, Squares> rays[8];
 
-uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
-uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
+// Not really a bitboard but it is easiest to initialize here.
+array<int, Squares> heading[Squares];
 
 void initializeBitMasks();
 void initializeKingAttacks();
 void initializeKnightAttacks();
 void initializePawnAttacks();
 void initializePawnMoves();
+void initializeRays();
 
 void initializeBitboards() 
 {	
@@ -26,6 +28,7 @@ void initializeBitboards()
    initializeKnightAttacks();
    initializePawnAttacks();
    initializePawnMoves();
+   initializeRays();
 }
 
 void initializeBitMasks() 
@@ -38,6 +41,9 @@ void initializeBitMasks()
 
 void initializeKingAttacks()
 {
+	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
+	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
+
 	for (int sq = A1; sq <= H8; sq++)
 	{
 		uint64_t kingSet = 0;
@@ -55,8 +61,11 @@ void initializeKingAttacks()
 
 void initializeKnightAttacks()
 {
+	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
+	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
 	uint64_t notABFile = 0xFCFCFCFCFCFCFCFC;
 	uint64_t notGHFile = 0x3F3F3F3F3F3F3F3F;
+
 	for (int sq = A1; sq <= H8; sq++)
 	{
 		uint64_t knightSet = 0;
@@ -76,6 +85,8 @@ void initializeKnightAttacks()
 	
 void initializePawnAttacks()
 {
+	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
+	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
 	for (int sq = A1; sq <= H8; sq++)
 	{
 		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 9) & notAFile;
@@ -90,9 +101,6 @@ void initializePawnMoves()
 {
 	for (int sq = A1; sq <= H8; sq++) 
 	{
-		pawnSingleMoves[White][sq] = pawnSingleMoves[Black][sq] = 0;
-		pawnDoubleMoves[White][sq] = pawnDoubleMoves[Black][sq] = 0;
-
 		if (sq <= H7)
 		{
 			pawnSingleMoves[White][sq] = bit[sq + 8];
@@ -112,6 +120,38 @@ void initializePawnMoves()
     }	
 }	
 
+void initializeRays()
+{
+	array<int, 8> rankDirection = { -1, -1, -1, 0, 0, 1, 1, 1 };
+	array<int, 8> fileDirection = { -1, 0, 1, -1, 1, -1, 0, 1 };
+
+	for (int i = SW; i <= NE; i++)
+	{
+		heading[i].fill(-1);
+	}
+
+	for (int sq = A1; sq <= H8; sq++)
+	{
+		int rank = sq / 8;
+		int file = sq % 8;
+
+		for (int i = SW; i <= NE; i++)
+		{
+			for (int j = 1; j < 8; j++)
+			{
+				int toRank = rankDirection[i] * j + rank;
+				int toFile = fileDirection[i] * j + file;
+				// Check if we went over the side of the board.
+				if (toRank < 0 || toRank > 7 || toFile < 0 || toFile > 7)
+				{
+					break;
+				}
+				heading[sq][toRank * 8 + toFile] = i;
+				rays[i][sq] |= bit[toRank * 8 + toFile];
+			}
+		}
+	}
+}
 
 #endif
 

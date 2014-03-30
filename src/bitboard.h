@@ -9,9 +9,12 @@ void initializeBitboards();
 extern array<uint64_t, Squares> bit;
 extern array<uint64_t, Squares> kingAttacks;
 extern array<uint64_t, Squares> knightAttacks;
-extern array<uint64_t, Squares> pawnAttacks[2];
-extern array<uint64_t, Squares> pawnSingleMoves[2];
-extern array<uint64_t, Squares> pawnDoubleMoves[2];
+extern array<uint64_t, Squares> pawnAttacks[Colours];
+extern array<uint64_t, Squares> pawnSingleMoves[Colours];
+extern array<uint64_t, Squares> pawnDoubleMoves[Colours];
+extern array<uint64_t, Squares> rays[8];
+
+extern array<int, Squares> heading[Squares];
 
 // Returns the least significant set bit in the mask.
 // Precondition: mask != 0

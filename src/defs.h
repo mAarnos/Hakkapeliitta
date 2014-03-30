@@ -43,6 +43,10 @@ enum {
 	WhiteOO = 1, WhiteOOO = 2, BlackOO = 4, BlackOOO = 8
 };
 
+enum {
+	SW = 0, S = 1, SE = 2, W = 3, E = 4, NW = 5, N = 6, NE = 7
+};
+
 const int Squares = NoSquare;
 const int Colours = NoColour;
 const int Pieces = NoPiece;
