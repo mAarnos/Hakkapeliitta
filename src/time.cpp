@@ -3,6 +3,8 @@
 
 #include "time.h"
 
+Timer t;
+
 void Timer::start()
 {
 	startTime = clock();

@@ -7,6 +7,8 @@
 #include "hash.h"
 #include "eval.h"
 #include "ttable.h"
+#include "search.h"
+#include "time.h"
 
 int uciSendInformation(string s);
 int uciSetOption(string s);
@@ -16,8 +18,11 @@ int uciPosition(string s);
 int uciGo(string s);
 int uciStop(string s);
 int uciExit(string s);
+int uciDisplayBoard(string s);
 
-const int amountOfCommands = 8;
+bool searching;
+
+const int amountOfCommands = 9;
 uciCommand commands[amountOfCommands] =
 {
 	{ "uci", uciSendInformation },
@@ -27,7 +32,8 @@ uciCommand commands[amountOfCommands] =
 	{ "position", uciPosition },
 	{ "go", uciGo },
 	{ "stop", uciStop },
-	{ "quit", uciExit }
+	{ "quit", uciExit },
+	{ "displayboard", uciDisplayBoard },
 };
 
 void initializeEngine()
@@ -41,9 +47,7 @@ void initializeEngine()
 void uciMainLoop()
 {
 	int status = uciOk;
-	string line;
-	string command;
-	string parameters;
+	string line, command, parameters;
 
 	while (status == uciOk)
 	{
@@ -53,12 +57,13 @@ void uciMainLoop()
 			break;
 		}
 
-		// Remove whitespace from the beginning and the end. 
-		// We also remove whitespace inside the functions which take in multiple parameters.
+		// Remove all extra whitespace.
 		line = line.substr(line.find_first_not_of(' '));
 		line = line.substr(0, line.find_last_not_of(' ') + 1);
-		// Change all characters to lowercase. 
-		transform(line.begin(), line.end(), line.begin(), tolower);
+		while (line.find("  ") != string::npos)
+		{
+			line.replace(line.find("  "), 2, " ");
+		}
 
 		// The easiest way to parse the string is to use a regular expression.
 		// We haven't implemented the protocol properly here, if you give the command joho uci or something like that we will find nothing.
@@ -103,12 +108,11 @@ int uciSendInformation(string s)
 
 int uciSetOption(string s)
 {
-	string option;
-	string parameter;
+	string option, parameter;
 
 	// The string s for setoption comes in the form "name" option "value" parameter.
 	// We just ignore "name" and "value" and get option and parameter.
-	regex expr("\\w*\\s*(\\w*)\\s*\\w*\\s*(.*)");
+	regex expr("\\w*\\s(\\w*)\\s\\w*\\s(.*)");
 	smatch matches;
 	if (regex_search(s, matches, expr))
 	{
@@ -116,7 +120,7 @@ int uciSetOption(string s)
 		parameter = matches[2];
 	}
 
-	if (option == "drawscore")
+	if (option == "Drawscore")
 	{
 		try
 		{
@@ -127,7 +131,7 @@ int uciSetOption(string s)
 			drawScore = 0;
 		}
 	}
-	else if (option == "hash")
+	else if (option == "Hash")
 	{
 		uint64_t size;
 
@@ -142,7 +146,7 @@ int uciSetOption(string s)
 
 		tt.setSize(size);
 	}
-	else if (option == "clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
+	else if (option == "Clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
 	{
 		tt.clear();
 		ptt.clear();
@@ -167,6 +171,25 @@ int uciNewGame(string s)
 
 int uciPosition(string s)
 {
+	string moves;
+
+	size_t pos = s.find("moves");
+	if (pos != string::npos)
+	{
+		moves = s.substr(pos + 6);
+		s = s.substr(0, pos - 1);
+	}
+
+	pos = s.find("fen");
+	if (pos == 0)
+	{
+		root.initializeBoardFromFEN(s.substr(4));
+	}
+	else
+	{
+		root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	}
+
 	return uciOk;
 }
 
@@ -184,6 +207,12 @@ int uciStop(string s)
 int uciExit(string s)
 {
 	return uciQuit;
+}
+
+int uciDisplayBoard(string s)
+{
+	root.displayBoard();
+	return uciOk;
 }
 
 #endif

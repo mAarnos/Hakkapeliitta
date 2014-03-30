@@ -18,4 +18,6 @@ class Timer
 		uint64_t getms();
 };
 
+extern Timer t;
+
 #endif

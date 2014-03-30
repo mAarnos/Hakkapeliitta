@@ -5,10 +5,10 @@
 #include "movegen.h"
 #include "ttable.h"
 
+uint64_t nodeCount = 0;
+
 uint64_t perft(Position & pos, int depth)
 {
-	uint64_t nodes = 0;
-
 	if (depth == 0)
 	{
 		return 1;
@@ -22,11 +22,11 @@ uint64_t perft(Position & pos, int depth)
 		{
 			continue;
 		}
-		nodes += perft(pos, depth - 1);
+		nodeCount += perft(pos, depth - 1);
 		pos.unmakeMove(moveStack[i]);
 	}
 
-	return nodes;
+	return 0;
 }
 
 uint64_t perftHash(Position & pos, int depth)

@@ -36,6 +36,8 @@ class perftTTEntry
 		uint64_t data;
 };
 
+// Thanks to the template we have to keep all functions which use t in here, ttable.h.
+// Is there any reasonable way to get rid of this behaviour while keeping the template?
 template <class t>
 class HashTable
 {
@@ -72,7 +74,7 @@ class HashTable
 		inline int isEmpty() { return table.empty(); }
 	private:
 		vector<t> table;
-		uint64_t tableSize;
+		uint64_t tableSize = 0;
 };
 
 extern HashTable<ttEntry> tt;
