@@ -220,11 +220,11 @@ int uciPosition(string s)
 				default: return uciOk;
 			}
 		}
-		else if ((root.getBoardPieceType(from) == King) && (abs(from - to) == 2))
+		else if ((root.getPieceType(from) == King) && (abs(from - to) == 2))
 		{
 			m.setPromotion(King);
 		}
-		else if ((root.getBoardPieceType(from) == Pawn) && to == root.getEnPassantSquare())
+		else if ((root.getPieceType(from) == Pawn) && to == root.getEnPassantSquare())
 		{
 			m.setPromotion(Pawn);
 		}

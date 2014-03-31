@@ -29,8 +29,8 @@ class Position
 		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
 		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
 
-		inline int getBoard(int sq) { return board[sq]; }
-		inline int getPiece(int sq) { return (board[sq] % Pieces); }
+		inline int getPiece(int sq) { return board[sq]; }
+		inline int getPieceType(int sq) { return (board[sq] % Pieces); }
 
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }

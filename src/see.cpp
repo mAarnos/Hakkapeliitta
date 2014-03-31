@@ -91,8 +91,12 @@ uint64_t Position::revealNextAttacker(uint64_t attackers, uint64_t nonremoved, i
 
 int Position::SEE(Move m)
 {
+	// Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
+	static const array<int, 12> pieceValues = {
+		100, 300, 300, 500, 900, mateScore, 100, 300, 300, 500, 900, mateScore
+	};
 	uint64_t attackers, nonremoved = (uint64_t)~0;
-	int alpha = -infinity, beta, next, value, attackerValue = 0;
+	int alpha = -infinity, beta, next, value, attackerValue;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion(); 
@@ -103,16 +107,13 @@ int Position::SEE(Move m)
 	}
 	else if (promotion == Pawn)
 	{
-		value = averagePieceValues[Pawn];
+		value = pieceValues[Pawn];
+		attackerValue = value;
 	}
 	else 
 	{
-		value = averagePieceValues[getPiece(to)];
-		if (promotion != Empty)
-		{
-			value += averagePieceValues[promotion] - averagePieceValues[Pawn];
-			attackerValue += averagePieceValues[promotion] - averagePieceValues[Pawn];
-		}
+		value = pieceValues[board[to]];
+		attackerValue = pieceValues[board[from]];
 	}
 	beta = value;
 
@@ -130,12 +131,137 @@ int Position::SEE(Move m)
 		return beta;
 	}
 	// Illegal king capture, return alpha.
-	if (getPiece(from) == King)
+	if (getPieceType(from) == King)
 	{
 		return alpha;
 	}
 
-	attackerValue += averagePieceValues[getPiece(from)];
+	// Replace this while(true) with something more correct.
+	while (true)
+	{
+		value -= attackerValue;
+		if (value >= beta)
+		{
+			return beta;
+		}
+		if (value > alpha)
+		{
+			alpha = value;
+		}
+		if (alpha > 0)
+		{
+			return alpha;
+		}
+
+		if (bitboards[Pawn + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Knight + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Knight + !sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Bishop + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Bishop + !sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Rook + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Rook + !sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Queen + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
+		}
+		else
+		{
+			next = bitScanForward(bitboards[King + !sideToMove]);
+		}
+
+		attackers ^= bit[next];
+		nonremoved ^= bit[next];
+
+		attackers = revealNextAttacker(attackers, nonremoved, to, next);
+		// No defenders left, we are done.
+		if (!(attackers & bitboards[12 + sideToMove]))
+		{
+			break;
+		}
+		// Illegal king capture, we are done.
+		if (getPieceType(next) == King)
+		{
+			return beta;
+		}
+
+		attackerValue = pieceValues[board[next]];
+
+		value += attackerValue;
+		if (value <= alpha)
+		{
+			return alpha;
+		}
+		if (value < beta)
+		{
+			beta = value;
+		}
+		if (beta < 0)
+		{
+			return beta;
+		}
+
+		if (bitboards[Pawn + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Knight + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Knight + sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Bishop + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Bishop + sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Rook + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Rook + sideToMove * 6] & attackers);
+		}
+		else if (bitboards[Queen + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
+		}
+		else
+		{
+			next = bitScanForward(bitboards[King + sideToMove]);
+		}
+		
+		attackers ^= bit[next];
+		nonremoved ^= bit[next];
+
+		attackers = revealNextAttacker(attackers, nonremoved, to, next);
+		// No defenders left, we are done.
+		if (!(attackers & bitboards[12 + !sideToMove]))
+		{
+			break;
+		}
+		// Illegal king capture, we are done.
+		if (getPieceType(next) == King)
+		{
+			return alpha;
+		}
+
+		attackerValue = pieceValues[board[next]];
+	}
+
+	if (value < alpha)
+	{
+		value = alpha;
+	}
+	if (value > beta)
+	{
+		value = beta;
+	}
+
+	return value;
 }
 
 #endif

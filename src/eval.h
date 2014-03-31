@@ -23,15 +23,6 @@ const array<int, Pieces> pieceValuesEnding = {
 	112, 258, 286, 481, 892, mateScore
 };
 
-const array<int, Pieces> averagePieceValues = {
-	(pieceValuesOpening[0] + pieceValuesEnding[0]) / 2,
-	(pieceValuesOpening[1] + pieceValuesEnding[1]) / 2,
-	(pieceValuesOpening[2] + pieceValuesEnding[2]) / 2,
-	(pieceValuesOpening[3] + pieceValuesEnding[3]) / 2,
-	(pieceValuesOpening[4] + pieceValuesEnding[4]) / 2,
-	(pieceValuesOpening[5] + pieceValuesEnding[5]) / 2,
-};
-
 const array<int, Squares> openingPST[6] = {
 	// Pawn.
 	{
