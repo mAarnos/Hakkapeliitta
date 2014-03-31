@@ -46,6 +46,8 @@ class Position
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
+		inline int getPhase() { return phase; }
+
 		bool makeMove(Move m);
 		void unmakeMove(Move m);
 	private:

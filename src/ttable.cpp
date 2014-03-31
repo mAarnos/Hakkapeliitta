@@ -10,7 +10,7 @@ HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 HashTable<perftTTEntry> perftTT;
 
-int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
+int ttProbe(Position & pos, int ply, uint8_t depth, int & alpha, int & beta, int & best)
 {
 	if (tt.isEmpty())
 	{
@@ -19,32 +19,35 @@ int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
-	if (hashEntry->hash == pos.getHash())
+	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{
-		best = hashEntry->bestmove;
-		if (hashEntry->depth >= depth)
+		best = (int)hashEntry->data;
+		// (best | score << 32 | depth << 48 | flags << 56)
+		if ((hashEntry->data & 0x00FF000000000000) >> 48 >= depth)
 		{
-			int score = hashEntry->score;
+			int score = (hashEntry->data & 0x0000FFFF00000000) >> 32;
+			int flags = hashEntry->data >> 56;
 
-			// correct the mate score back.
+			// Correct the mate score back.
+			// Check that this works, might be ply - 1 or ply + 1.
 			if (isMateScore(score))
 			{
 				if (score > 0)
 				{
-					score -= pos.getTurn();
+					score -= ply;
 				}
 				else
 				{
-					score += pos.getTurn();
+					score += ply;
 				}
 			}
 
-			if (hashEntry->flags == ttExact)
+			if (flags == ttExact)
 			{
 				return score;
 			}
 
-			if (hashEntry->flags == ttAlpha)
+			if (flags == ttAlpha)
 			{
 				if (score <= alpha)
 				{
@@ -57,7 +60,7 @@ int ttProbe(Position & pos, uint8_t depth, int & alpha, int & beta, int & best)
 				}
 			}
 
-			if ((hashEntry->flags == ttBeta) && (score >= beta))
+			if ((flags == ttBeta) && (score >= beta))
 			{
 				if (score >= beta)
 				{
@@ -92,7 +95,7 @@ int pttProbe(uint64_t pHash)
 	return probeFailed;
 }
 
-void ttSave(Position & pos, uint8_t depth, int16_t score, uint8_t flags, int32_t best)
+void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best)
 {
 	if (tt.isEmpty())
 	{
@@ -104,33 +107,31 @@ void ttSave(Position & pos, uint8_t depth, int16_t score, uint8_t flags, int32_t
 	{
 		if (score > 0)
 		{
-			score += (int16_t)pos.getTurn();
+			score = mateScore;
 		}
 		else
 		{
-			score -= (int16_t)pos.getTurn();
+			score -= -mateScore;
 		}
 	}
 
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
 	hashEntry->hash = pos.getHash();
-	hashEntry->bestmove = best;
-	hashEntry->score = score;
-	hashEntry->flags = flags;
-	hashEntry->depth = depth;
+	hashEntry->data = (best | score << 32 | depth << 48 | flags << 56);
+	hashEntry->hash ^= hashEntry->data;
 }
 
-void pttSave(uint64_t pHash, int32_t score)
+void pttSave(Position & pos, int32_t score)
 {
 	if (ptt.isEmpty())
 	{
 		return;
 	}
 
-	pttEntry * hashEntry = &ptt.getEntry(pHash % ptt.getSize());
+	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	hashEntry->hash = pHash;
+	hashEntry->hash = pos.getPawnHash();
 	hashEntry->score = score;
 }
 

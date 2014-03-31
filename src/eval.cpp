@@ -112,11 +112,11 @@ void initializeKingTropism()
 	}
 }
 
-int mobilityEval(Position & pos, int & kingSafetyScore)
+int mobilityEval(Position & pos, int & kingTropismScore)
 {
 	int scoreOp = 0;
 	int scoreEd = 0;
-	int from, databaseIndex, count;
+	int from, count;
 	uint64_t occupied = pos.getOccupiedSquares();
 	uint64_t tempPiece, tempMove;
 
@@ -135,7 +135,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp += knightMobilityOpening[count];
 		scoreEd += knightMobilityEnding[count];
-		kingSafetyScore += knightTropism[from][kingLocation];
+		kingTropismScore += knightTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(White, Bishop);
@@ -149,7 +149,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp += bishopMobilityOpening[count];
 		scoreEd += bishopMobilityEnding[count];
-		kingSafetyScore += bishopTropism[from][kingLocation];
+		kingTropismScore += bishopTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(White, Rook);
@@ -163,7 +163,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp += rookMobilityOpening[count];
 		scoreEd += rookMobilityEnding[count];
-		kingSafetyScore += rookTropism[from][kingLocation];
+		kingTropismScore += rookTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(White, Queen);
@@ -177,7 +177,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp += queenMobilityOpening[count];
 		scoreEd += queenMobilityEnding[count];
-		kingSafetyScore += queenTropism[from][kingLocation];
+		kingTropismScore += queenTropism[from][kingLocation];
 	}
 
 	// Black
@@ -195,7 +195,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp -= knightMobilityOpening[count];
 		scoreEd -= knightMobilityEnding[count];
-		kingSafetyScore -= knightTropism[from][kingLocation];
+		kingTropismScore -= knightTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(Black, Bishop);
@@ -209,7 +209,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp -= bishopMobilityOpening[count];
 		scoreEd -= bishopMobilityEnding[count];
-		kingSafetyScore -= bishopTropism[from][kingLocation];
+		kingTropismScore -= bishopTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(Black, Rook);
@@ -223,7 +223,7 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp -= rookMobilityOpening[count];
 		scoreEd -= rookMobilityEnding[count];
-		kingSafetyScore -= rookTropism[from][kingLocation];
+		kingTropismScore -= rookTropism[from][kingLocation];
 	}
 
 	tempPiece = pos.getBitboard(Black, Queen);
@@ -237,8 +237,10 @@ int mobilityEval(Position & pos, int & kingSafetyScore)
 		count = popcnt(tempMove);
 		scoreOp -= queenMobilityOpening[count];
 		scoreEd -= queenMobilityEnding[count];
-		kingSafetyScore -= queenTropism[from][kingLocation];
+		kingTropismScore -= queenTropism[from][kingLocation];
 	}
+
+	return ((scoreOp * (256 - pos.getPhase())) + (scoreEd * pos.getPhase())) / 256;
 }
 
 int eval(Position & pos)

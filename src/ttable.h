@@ -9,18 +9,12 @@ const uint32_t probeFailed = UINT_MAX;
 // Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
 
-#pragma pack (1)
 class ttEntry 
 {
 	public:
 		uint64_t hash;
-		// Change this to one uint64_t data with all the stuff below meshed in. This way we don't have to use #pragma pack and we can make the hashtable lockless.
-		int32_t bestmove;
-		int16_t score;
-		uint8_t depth;
-		uint8_t flags;
+		uint64_t data;
 }; 
-#pragma pack ()
 
 class pttEntry 
 {
@@ -81,11 +75,11 @@ extern HashTable<ttEntry> tt;
 extern HashTable<pttEntry> ptt;
 extern HashTable<perftTTEntry> perftTT;
 
-void ttSave(uint64_t hash, uint8_t depth, int16_t score, uint8_t flags, int32_t best);
-int ttProbe(uint64_t hash, uint8_t depth, int * alpha, int * beta, int * best);
+void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best);
+int ttProbe(Position & pos, int ply, uint64_t depth, int * alpha, int * beta, int * best);
 
-void pttSave(uint64_t pHash, int32_t score);
-int pttProbe(uint64_t pHash);
+void pttSave(Position & pos, int32_t score);
+int pttProbe(Position & pos);
 
 void perftTTSave(Position & pos, uint64_t nodes, int depth);
 uint64_t perftTTProbe(Position & pos, int depth);
