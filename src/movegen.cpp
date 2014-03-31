@@ -168,6 +168,7 @@ int generateMoves(Position & pos, Move * mlist)
 		mlist[generatedMoves++] = m;
 	}
 
+	// TODO: make this part cleaner and faster.
 	if (side == White)
 	{
 		if (pos.isAttacked(E1, Black))
