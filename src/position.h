@@ -87,6 +87,10 @@ class Position
 		void unmakePromotion(int promotion, int to);
 		void makeEnPassant(int to);
 		void unmakeEnPassant(int to);
+
+		void makeCastling(int from, int to);
+		void unmakeCastling(int from, int to);
+
 		uint64_t revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int target, int from);
 
 		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.

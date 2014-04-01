@@ -294,24 +294,7 @@ bool Position::makeMove(Move m)
 
 		if (promotion == King)
 		{
-			int fromRook, toRook;
-			if (from > to)
-			{
-				fromRook = to - 2;
-				toRook = from - 1;
-			}
-			else
-			{
-				fromRook = to + 1;
-				toRook = from + 1;
-			}
-
-			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
-			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
-			bitboards[14] ^= bit[fromRook] | bit[toRook];
-			board[toRook] = board[fromRook];
-			board[fromRook] = Empty;
-			hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
+			makeCastling(from, to);
 		}
 	}
 
@@ -374,39 +357,17 @@ void Position::unmakeMove(Move m)
 	}
 
 	int pieceType = piece % Pieces;
-	if (pieceType == Pawn)
+	if (promotion == Pawn)
 	{
-		if (promotion == Pawn)
-		{
-			unmakeEnPassant(to - 8 + 16 * sideToMove);
-		}
-		else if (promotion != Empty)
-		{
-			unmakePromotion(promotion, to);
-		}
+		unmakeEnPassant(to - 8 + 16 * sideToMove);
 	}
-	else if (pieceType == King)
+	else if (promotion == King)
 	{
-		if (promotion == King)
-		{
-			int fromRook, toRook;
-			if (from > to)
-			{
-				fromRook = to - 2;
-				toRook = from - 1;
-			}
-			else
-			{
-				fromRook = to + 1;
-				toRook = from + 1;
-			}
-
-			bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
-			bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
-			bitboards[14] ^= bit[fromRook] | bit[toRook];
-			board[fromRook] = board[toRook];
-			board[toRook] = Empty;
-		}
+		unmakeCastling(from, to);
+	}
+	else if (promotion != Empty)
+	{
+		unmakePromotion(promotion, to);
 	}
 
 	bitboards[15] = ~bitboards[14];
@@ -513,6 +474,49 @@ bool Position::attack(int sq, bool side)
 		return true;
 	}
 	return false;
+}
+
+void Position::makeCastling(int from, int to)
+{
+	int fromRook, toRook;
+	if (from > to)
+	{
+		fromRook = to - 2;
+		toRook = from - 1;
+	}
+	else
+	{
+		fromRook = to + 1;
+		toRook = from + 1;
+	}
+
+	bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
+	bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
+	bitboards[14] ^= bit[fromRook] | bit[toRook];
+	board[toRook] = board[fromRook];
+	board[fromRook] = Empty;
+	hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
+}
+
+void Position::unmakeCastling(int from, int to)
+{
+	int fromRook, toRook;
+	if (from > to)
+	{
+		fromRook = to - 2;
+		toRook = from - 1;
+	}
+	else
+	{
+		fromRook = to + 1;
+		toRook = from + 1;
+	}
+
+	bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
+	bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
+	bitboards[14] ^= bit[fromRook] | bit[toRook];
+	board[fromRook] = board[toRook];
+	board[toRook] = Empty;
 }
 
 #endif

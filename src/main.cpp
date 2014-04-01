@@ -34,8 +34,8 @@ int main()
 	perftTT.setSize(1024 * 1024 * 1024);
 
 	t.start();
-	// nodeCount = perftHash(root, 7);
-	perft(root, 7);
+	nodeCount = perftHash(root, 7);
+	// perft(root, 7);
 	t.stop();
 
 	cout << "Nodecount = " << nodeCount << endl;

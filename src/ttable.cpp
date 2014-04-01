@@ -8,7 +8,7 @@
 
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
-HashTable<perftTTEntry> perftTT;
+HashTable<ttEntry> perftTT;
 
 int ttProbe(Position & pos, int ply, uint8_t depth, int & alpha, int & beta, int & best)
 {
@@ -142,7 +142,7 @@ void perftTTSave(Position & pos, uint64_t nodes, int depth)
 		return;
 	}
 
-	perftTTEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
+	ttEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
 
 	hashEntry->hash = pos.getHash();
 	hashEntry->data = (nodes & 0x00FFFFFFFFFFFFFF) | (uint64_t)depth << 56;
@@ -156,7 +156,7 @@ uint64_t perftTTProbe(Position & pos, int depth)
 		return probeFailed;
 	}
 
-	perftTTEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
+	ttEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
 
 	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{

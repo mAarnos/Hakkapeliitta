@@ -23,13 +23,6 @@ class pttEntry
 		int32_t score;
 }; 
 
-class perftTTEntry
-{
-	public:
-		uint64_t hash;
-		uint64_t data;
-};
-
 // Thanks to the template we have to keep all functions which use t in here, ttable.h.
 // Is there any reasonable way to get rid of this behaviour while keeping the template?
 template <class t>
@@ -73,7 +66,7 @@ class HashTable
 
 extern HashTable<ttEntry> tt;
 extern HashTable<pttEntry> ptt;
-extern HashTable<perftTTEntry> perftTT;
+extern HashTable<ttEntry> perftTT;
 
 void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best);
 int ttProbe(Position & pos, int ply, uint64_t depth, int * alpha, int * beta, int * best);

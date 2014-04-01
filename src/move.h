@@ -7,7 +7,6 @@ class Move
 {
 	public:
 		void clear();
-
 		void setFrom(int from);  
 		void setTo(int to);  
 		void setPromotion(int promotion);
