@@ -117,6 +117,7 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 	int scoreOp = 0;
 	int scoreEd = 0;
 	int from, count;
+	int phase = pos.calculateGamePhase();
 	uint64_t occupied = pos.getOccupiedSquares();
 	uint64_t tempPiece, tempMove;
 
@@ -240,7 +241,7 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		kingTropismScore -= queenTropism[from][kingLocation];
 	}
 
-	return ((scoreOp * (256 - pos.getPhase())) + (scoreEd * pos.getPhase())) / 256;
+	return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
 
 int eval(Position & pos)

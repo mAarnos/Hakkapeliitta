@@ -5,56 +5,56 @@
 
 void Move::clear()
 {
-	moveInt = 0;
+	move = 0;
 }    
 
 void Move::setFrom(int from)  
 {  
-	moveInt &= 0xffffffc0; 
-	moveInt |= from;
+	move &= 0xffffffc0; 
+	move |= from;
 }
  
 void Move::setTo(int to)  
 {  
-	moveInt &= 0xfffff03f; 
-	moveInt |= to << 6;
+	move &= 0xfffff03f; 
+	move |= to << 6;
 }
  
 void Move::setPromotion(int promotion)
 {  
-	moveInt &= 0xffff0fff;
-	moveInt |= promotion << 12;
+	move &= 0xffff0fff;
+	move |= promotion << 12;
 }
 
 void Move::setScore(int score)
 {
-	moveInt &= 0x0000ffff;
-	moveInt |= score << 16;
+	move &= 0x0000ffff;
+	move |= score << 16;
 }
 
-int Move::getMoveInt()
+int Move::getMove()
 {
-	return moveInt;
+	return move;
 }
 
 int Move::getFrom()  
 { 
-	return (moveInt & 0x0000003f);
+	return (move & 0x0000003f);
 }  
  
 int Move::getTo()  
 {  
-	return (moveInt >>  6) & 0x0000003f; 
+	return (move >>  6) & 0x0000003f; 
 }   
  
 int Move::getPromotion()  
 { 
-	return (moveInt >> 12) & 0x0000000f; 
+	return (move >> 12) & 0x0000000f; 
 }   
 
 int Move::getScore()
 {
-	return (moveInt >> 16);
+	return (move >> 16);
 }
  
 #endif

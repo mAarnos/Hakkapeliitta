@@ -8,6 +8,11 @@
 
 const int maxGameLength = 600;
 
+const array<int, Pieces> piecePhase = {
+	0, 1, 1, 2, 4, 0
+};
+const int totalPhase = piecePhase[Pawn] * 16 + piecePhase[Knight] * 4 + piecePhase[Bishop] * 4 + piecePhase[Rook] * 4 + piecePhase[Queen] * 2;
+
 class History
 {
 	public:
@@ -46,7 +51,7 @@ class Position
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
-		inline int getPhase() { return phase; }
+		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
 		bool makeMove(Move m);
 		void unmakeMove(Move m);
@@ -82,14 +87,16 @@ class Position
 		// Miscellaneous functions used by the program.
 		bool attack(int sq, bool side);
 		void makeCapture(int captured, int to);
-		void unmakeCapture(int captured, int to);
-		void makePromotion(int promotion, int to);
-		void unmakePromotion(int promotion, int to);
+		void makePromotion(int promotion, int to);	
 		void makeEnPassant(int to);
-		void unmakeEnPassant(int to);
-
 		void makeCastling(int from, int to);
+		void unmakeCapture(int captured, int to);
+		void unmakePromotion(int promotion, int to);
+		void unmakeEnPassant(int to);
 		void unmakeCastling(int from, int to);
+
+		void writeHistory(int & captured);
+		void readHistory(int & captured);
 
 		uint64_t revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int target, int from);
 

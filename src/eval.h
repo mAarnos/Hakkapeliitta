@@ -241,11 +241,6 @@ const int rookOnOpenFileBonus = 10;
 const int rookOnSemiOpenFileBonus = 5;
 const int rookBehindPassedBonus = 20;
 
-const array<int, Pieces> piecePhase = {
-	0, 1, 1, 2, 4, 0
-};
-const int totalPhase = piecePhase[Pawn] * 16 + piecePhase[Knight] * 4 + piecePhase[Bishop] * 4 + piecePhase[Rook] * 4 + piecePhase[Queen] * 2;
-
 extern int drawScore;
 
 extern map<uint64_t, int> knownEndgames;
