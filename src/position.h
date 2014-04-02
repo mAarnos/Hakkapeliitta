@@ -31,8 +31,13 @@ class Position
 		void initializeBoardFromFEN(string FEN);
 		void displayBoard();
 
-		inline bool inCheck(bool side) { return attack(bitScanForward(bitboards[King + side * 6]), !side); }
-		inline bool isAttacked(int sq, bool side) { return attack(sq, side); }
+		inline bool inCheck(bool side) { return isAttacked(bitScanForward(bitboards[King + side * 6]), !side); }
+		inline bool isAttacked(int sq, bool side) {
+			if (side)
+				return attack<true>(sq);
+			else
+				return attack<false>(sq);
+		}
 
 		inline int getPiece(int sq) { return board[sq]; }
 		inline int getPieceType(int sq) { return (board[sq] % Pieces); }
@@ -84,8 +89,10 @@ class Position
 		uint64_t calculatePawnHash();
 		uint64_t calculateMaterialHash();
 
+		template <bool side>
+		bool attack(int sq);
+
 		// Miscellaneous functions used by the program.
-		bool attack(int sq, bool side);
 		void makeCapture(int captured, int to);
 		void makePromotion(int promotion, int to);	
 		void makeEnPassant(int to);

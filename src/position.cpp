@@ -184,7 +184,8 @@ void Position::initializeBoardFromFEN(string FEN)
 	return;
 }
 
-bool Position::attack(int sq, bool side)
+template <bool side>
+bool Position::attack(int sq)
 {
 	if (knightAttacks[sq] & bitboards[Knight + side * 6] || pawnAttacks[!side][sq] & bitboards[Pawn + side * 6] || kingAttacks[sq] & bitboards[King + side * 6])
 	{
