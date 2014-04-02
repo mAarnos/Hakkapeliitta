@@ -58,8 +58,18 @@ class Position
 
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
-		bool makeMove(Move m);
-		void unmakeMove(Move m);
+		inline bool makeMove(Move m) {
+			if (sideToMove)
+				return makeMove<true>(m);
+			else
+				return makeMove<false>(m);
+		}
+		inline void unmakeMove(Move m) {
+			if (sideToMove)
+				return unmakeMove<true>(m);
+			else
+				return unmakeMove<false>(m);
+		}
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.
@@ -88,6 +98,12 @@ class Position
 		uint64_t calculateHash();
 		uint64_t calculatePawnHash();
 		uint64_t calculateMaterialHash();
+
+		template <bool side>
+		bool makeMove(Move m);
+
+		template <bool side>
+		void unmakeMove(Move m);
 
 		template <bool side>
 		bool attack(int sq);

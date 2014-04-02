@@ -204,6 +204,7 @@ bool Position::attack(int sq)
 	return false;
 }
 
+template <bool side>
 bool Position::makeMove(Move m)
 {
 	uint64_t fromToBB;
@@ -229,7 +230,7 @@ bool Position::makeMove(Move m)
 	fiftyMoveDistance++;
 
 	bitboards[piece] ^= fromToBB;
-	bitboards[12 + sideToMove] ^= fromToBB; 
+	bitboards[12 + side] ^= fromToBB; 
 
 	hash ^= (pieceHash[piece][from] ^ pieceHash[piece][to]);
 
@@ -252,13 +253,13 @@ bool Position::makeMove(Move m)
 		// Check if the move is a double pawn move. If it is update the en passant square.
 		if (abs(to - from) == 16)
 		{
-			enPassantSquare = from + 8 - 16 * sideToMove;
+			enPassantSquare = from + 8 - 16 * side;
 			hash ^= enPassantHash[enPassantSquare];
 		}
 
 		if (promotion == Pawn)
 		{
-			makeEnPassant(to - 8 + 16 * sideToMove);
+			makeEnPassant(to - 8 + 16 * side);
 		}
 		else if (promotion != Empty)
 		{
@@ -268,40 +269,29 @@ bool Position::makeMove(Move m)
 	else if (pieceType == Rook)
 	{
 		// Update the castling rights after a rook move if necessary.
-		// Try to make this colourblind.
-		if (from == H1 && (castlingRights & WhiteOO))
+		if (from == (H1 + side * 56) && castlingRights & (WhiteOO << (side << 1)))
 		{
-			castlingRights -= WhiteOO;
-			hash ^= castlingRightsHash[WhiteOO];
+			castlingRights -= WhiteOO << (side << 1);
+			hash ^= castlingRightsHash[WhiteOO << (side << 1)];
 		}
-		else if (from == A1 && (castlingRights & WhiteOOO))
+		else if (from == (A1 + side * 56) && castlingRights & (WhiteOOO << (side << 1)))
 		{
-			castlingRights -= WhiteOOO;
-			hash ^= castlingRightsHash[WhiteOOO];
-		}
-		else if (from == H8 && (castlingRights & BlackOO))
-		{
-			castlingRights -= BlackOO;
-			hash ^= castlingRightsHash[BlackOO];
-		}
-		else if (from == A8 && (castlingRights & BlackOOO))
-		{
-			castlingRights -= BlackOOO;
-			hash ^= castlingRightsHash[BlackOOO];
+			castlingRights -= WhiteOOO << (side << 1);
+			hash ^= castlingRightsHash[WhiteOOO << (side << 1)];
 		}
 	}
 	else if (pieceType == King)
 	{
 		// Updates the castling rights after a king move.
-		if (castlingRights & (WhiteOO << (sideToMove << 1)))
+		if (castlingRights & (WhiteOO << (side << 1)))
 		{
-			castlingRights -= WhiteOO << (sideToMove << 1);
-			hash ^= castlingRightsHash[WhiteOO << (sideToMove << 1)];
+			castlingRights -= WhiteOO << (side << 1);
+			hash ^= castlingRightsHash[WhiteOO << (side << 1)];
 		}
-		if (castlingRights & (WhiteOOO << (sideToMove << 1)))
+		if (castlingRights & (WhiteOOO << (side << 1)))
 		{
-			castlingRights -= WhiteOOO << (sideToMove << 1);
-			hash ^= castlingRightsHash[WhiteOOO << (sideToMove << 1)];
+			castlingRights -= WhiteOOO << (side << 1);
+			hash ^= castlingRightsHash[WhiteOOO << (side << 1)];
 		}
 
 		if (promotion == King)
@@ -322,7 +312,10 @@ bool Position::makeMove(Move m)
 
 	return true;
 }
+template bool Position::makeMove<true>(Move m);
+template bool Position::makeMove<false>(Move m);
 
+template <bool side>
 void Position::unmakeMove(Move m)
 {
 	uint64_t fromToBB;
@@ -339,13 +332,13 @@ void Position::unmakeMove(Move m)
 	// How to get rid of this?
 	if (promotion != Empty && promotion != King)
 	{
-		piece = Pawn + sideToMove * 6;
+		piece = Pawn + !side * 6;
 	}
 
 	fromToBB = bit[from] | bit[to];
 
 	bitboards[piece] ^= fromToBB;
-	bitboards[12 + sideToMove] ^= fromToBB;
+	bitboards[12 + !side] ^= fromToBB;
 
 	board[from] = piece;
 	board[to] = captured;
@@ -362,7 +355,7 @@ void Position::unmakeMove(Move m)
 
 	if (promotion == Pawn)
 	{
-		unmakeEnPassant(to - 8 + 16 * sideToMove);
+		unmakeEnPassant(to - 8 + 16 * !side);
 	}
 	else if (promotion == King)
 	{
@@ -375,6 +368,8 @@ void Position::unmakeMove(Move m)
 
 	bitboards[15] = ~bitboards[14];
 }
+template void Position::unmakeMove<true>(Move m);
+template void Position::unmakeMove<false>(Move m);
 
 void Position::makeCapture(int captured, int to)
 {
