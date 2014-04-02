@@ -169,7 +169,7 @@ void Position::initializeBoardFromFEN(string FEN)
 	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
 	bitboards[13] = bitboards[BlackKing] | bitboards[BlackQueen] | bitboards[BlackRook] | bitboards[BlackBishop] | bitboards[BlackKnight] | bitboards[BlackPawn];
 	bitboards[14] = bitboards[12] | bitboards[13];
-	bitboards[15] = ~(bitboards[14]);
+	bitboards[15] = ~bitboards[14];
 
 	hash = calculateHash();
 	pawnHash = calculatePawnHash();
@@ -180,7 +180,6 @@ void Position::initializeBoardFromFEN(string FEN)
 	{
 		phase -= popcnt(bitboards[White + i] | bitboards[Black * 6 + i]) * piecePhase[i];
 	}
-	phase = (phase * 256 + (totalPhase / 2)) / totalPhase;
 
 	return;
 }
@@ -206,7 +205,7 @@ bool Position::attack(int sq, bool side)
 
 bool Position::makeMove(Move m)
 {
-	uint64_t fromBB, fromToBB;
+	uint64_t fromToBB;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
@@ -215,16 +214,15 @@ bool Position::makeMove(Move m)
 
 	writeHistory(captured);
 
-	fromToBB = fromBB = bit[from];
-	fromToBB |= bit[to];
+	fromToBB = bit[from] | bit[to];
 
 	board[to] = board[from];
 	board[from] = Empty;
 
-	if (enPassantSquare != 64)
+	if (enPassantSquare != NoSquare)
 	{
 		hash ^= enPassantHash[enPassantSquare];
-		enPassantSquare = 64;
+		enPassantSquare = NoSquare;
 	}
 
 	fiftyMoveDistance++;
@@ -294,15 +292,15 @@ bool Position::makeMove(Move m)
 	else if (pieceType == King)
 	{
 		// Updates the castling rights after a king move.
-		if (castlingRights & (WhiteOO << (sideToMove * 2)))
+		if (castlingRights & (WhiteOO << (sideToMove << 1)))
 		{
-			castlingRights -= WhiteOO << (sideToMove * 2);
-			hash ^= castlingRightsHash[WhiteOO << (sideToMove * 2)];
+			castlingRights -= WhiteOO << (sideToMove << 1);
+			hash ^= castlingRightsHash[WhiteOO << (sideToMove << 1)];
 		}
-		if (castlingRights & (WhiteOOO << (sideToMove * 2)))
+		if (castlingRights & (WhiteOOO << (sideToMove << 1)))
 		{
-			castlingRights -= WhiteOOO << (sideToMove * 2);
-			hash ^= castlingRightsHash[WhiteOOO << (sideToMove * 2)];
+			castlingRights -= WhiteOOO << (sideToMove << 1);
+			hash ^= castlingRightsHash[WhiteOOO << (sideToMove << 1)];
 		}
 
 		if (promotion == King)
@@ -326,7 +324,7 @@ bool Position::makeMove(Move m)
 
 void Position::unmakeMove(Move m)
 {
-	uint64_t fromBB, fromToBB;
+	uint64_t fromToBB;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
@@ -343,8 +341,7 @@ void Position::unmakeMove(Move m)
 		piece = Pawn + sideToMove * 6;
 	}
 
-	fromToBB = fromBB = bit[from];
-	fromToBB |= bit[to];
+	fromToBB = bit[from] | bit[to];
 
 	bitboards[piece] ^= fromToBB;
 	bitboards[12 + sideToMove] ^= fromToBB;
@@ -388,6 +385,7 @@ void Position::makeCapture(int captured, int to)
 	matHash ^= materialHash[captured][popcnt(bitboards[captured])];
 
 	int pieceType = (captured % Pieces);
+	phase -= piecePhase[pieceType];
 	if (pieceType == Pawn)
 	{
 		pawnHash ^= pieceHash[captured][to];
@@ -428,6 +426,7 @@ void Position::makePromotion(int promotion, int to)
 	pawnHash ^= pieceHash[board[to]][to];
 	matHash ^= materialHash[Pawn + sideToMove * 6][popcnt(bitboards[Pawn + sideToMove * 6])];
 	board[to] = promotion + sideToMove * 6;
+	phase += piecePhase[promotion];
 }
 
 void Position::makeEnPassant(int to)
@@ -467,12 +466,14 @@ void Position::unmakeCapture(int captured, int to)
 {
 	bitboards[captured] |= bit[to];
 	bitboards[12 + !sideToMove] |= bit[to];
+	phase += piecePhase[captured % Pieces];
 }
 
 void Position::unmakePromotion(int promotion, int to)
 {
 	bitboards[Pawn + sideToMove * 6] ^= bit[to];
 	bitboards[promotion + sideToMove * 6] ^= bit[to];
+	phase -= piecePhase[promotion];
 }
 
 void Position::unmakeEnPassant(int to)
