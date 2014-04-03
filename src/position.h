@@ -31,7 +31,6 @@ class Position
 		void initializeBoardFromFEN(string FEN);
 		void displayBoard();
 
-		inline bool inCheck(bool side) { return isAttacked(bitScanForward(bitboards[King + side * 6]), !side); }
 		inline bool isAttacked(int sq, bool side) {
 			if (side)
 				return attack<true>(sq);

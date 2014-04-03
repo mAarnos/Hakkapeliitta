@@ -256,8 +256,7 @@ bool Position::makeMove(Move m)
 			enPassantSquare = from + 8 - 16 * side;
 			hash ^= enPassantHash[enPassantSquare];
 		}
-
-		if (promotion == Pawn)
+		else if (promotion == Pawn)
 		{
 			makeEnPassant(to - 8 + 16 * side);
 		}
@@ -304,7 +303,8 @@ bool Position::makeMove(Move m)
 	hash ^= turnHash;
 	bitboards[15] = ~bitboards[14];
 
-	if (inCheck(!sideToMove))
+	// Check if the move leaves us in check.
+	if (isAttacked(bitScanForward(bitboards[King + side * 6]), !side))
 	{
 		unmakeMove(m);
 		return false;
