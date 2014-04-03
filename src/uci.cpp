@@ -58,6 +58,12 @@ void uciMainLoop()
 			break;
 		}
 
+		// The command is only whitespace, move on.
+		if (line.find_first_not_of(' ') == string::npos)
+		{
+			continue;
+		}
+
 		// Remove all extra whitespace from the string.
 		line = line.substr(line.find_first_not_of(' '));
 		line = line.substr(0, line.find_last_not_of(' ') + 1);
