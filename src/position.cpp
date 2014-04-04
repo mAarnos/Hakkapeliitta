@@ -306,7 +306,7 @@ bool Position::makeMove(Move m)
 	if (castlingRights && (castlingMask[from] | castlingMask[to]))
 	{
 		int cf = castlingMask[from] | castlingMask[to];
-		hash ^= castlingRightsHash[castlingRights & cf];
+		hash ^= castlingRightsHash[castlingRights & ~cf];
 		castlingRights &= cf;
 	}
 
