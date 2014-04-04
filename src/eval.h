@@ -16,15 +16,14 @@ inline bool isMateScore(int64_t score)
 }
 
 const array<int, Pieces> pieceValuesOpening = {
-	88, 235, 263, 402, 892, mateScore
+	88, 235, 263, 402, 892, 0
 };
 
 const array<int, Pieces> pieceValuesEnding = {
-	112, 258, 286, 481, 892, mateScore
+	112, 258, 286, 481, 892, 0
 };
 
-const array<int, Squares> openingPST[6] = {
-	// Pawn.
+const array<int, Squares> openingPST[Pieces] = {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		-33,-18,-13,-18,-18,-13,-18,-33,
@@ -35,7 +34,6 @@ const array<int, Squares> openingPST[6] = {
 		42, 42, 42, 42, 42, 42, 42, 42,
 		0, 0, 0, 0, 0, 0, 0, 0
 	},
-	// Knight
 	{
 		-36, -26, -16, -6, -6, -16, -26, -36,
 		-26, -16, -6, 9, 9, -6, -16, -26,
@@ -46,7 +44,6 @@ const array<int, Squares> openingPST[6] = {
 		-26, -16, -6, 9, 9, -6, -16, -26,
 		-36, -26, -16, -6, -6, -16, -26, -36
 	},
-	// Bishop
 	{
 		-24, -19, -14, -9, -9, -14, -19, -24,
 		-9, 6, 1, 6, 6, 1, 6, -9,
@@ -57,7 +54,6 @@ const array<int, Squares> openingPST[6] = {
 		-9, -4, 1, 6, 6, 1, -4, -9,
 		-14, -9, -4, 1, 1, -5, -9, -14
 	},
-	// Rook
 	{
 		-3, -3, -1, 2, 2, -1, -3, -3,
 		-3, -3, -1, 2, 2, -1, -3, -3,
@@ -68,7 +64,6 @@ const array<int, Squares> openingPST[6] = {
 		7, 7, 9, 12, 12, 9, 7, 7,
 		-3, -3, -1, 2, 2, -1, -3, -3,
 	},
-	// Queen
 	{
 		-19, -14, -9, -4, -4, -9, -14, -19,
 		-9, -4, 1, 6, 6, 1, -4, -9,
@@ -79,7 +74,6 @@ const array<int, Squares> openingPST[6] = {
 		-9, -4, 1, 6, 6, 1, -4, -9,
 		-14, -9, -4, 1, 1, -4, -9, -14
 	},
-	// King
 	{
 		5, 10, 2, 0, 0, 6, 10, 4,
 		5, 5, 0, -5, -5, 0, 5, 5,
@@ -93,7 +87,6 @@ const array<int, Squares> openingPST[6] = {
 };
 
 const array<int, Squares> endingPST[6] = {
-	// Pawn
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		-22, -22, -22, -22, -22, -22, -22, -22,
@@ -104,7 +97,6 @@ const array<int, Squares> endingPST[6] = {
 		38, 38, 38, 38, 38, 38, 38, 38,
 		0, 0, 0, 0, 0, 0, 0, 0
 	},
-	// Knight
 	{
 		-34, -24, -14, -4, -4, -14, -24, -34,
 		-24, -14, -4, 11, 11, -4, -14, -24,
@@ -115,7 +107,6 @@ const array<int, Squares> endingPST[6] = {
 		-24, -14, -4, 11, 11, -4, -14, -24,
 		-34, -24, -14, -4, -4, -14, -24, -34
 	},
-	// Bishop
 	{
 		-15, -10, -5, 0, 0, -5, -10, -15,
 		-10, -5, 0, 5, 5, 0, -5, -10,
@@ -126,7 +117,6 @@ const array<int, Squares> endingPST[6] = {
 		-10, -5, 0, 5, 5, 0, -5, -10,
 		-15, -10, -5, 0, 0, -5, -10, -15
 	},
-	// Rook
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
@@ -137,7 +127,6 @@ const array<int, Squares> endingPST[6] = {
 		0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0,
 	},
-	// Queen
 	{
 		-15, -10, -5, 0, 0, -5, -10, -15,
 		-10, -5, 0, 5, 5, 0, -5, -10,
@@ -148,7 +137,6 @@ const array<int, Squares> endingPST[6] = {
 		-10, -5, 0, 5, 5, 0, -5, -10,
 		-15, -10, -5, 0, 0, -5, -10, -15
 	},
-	// King
 	{
 		-38, -28, -18, -8, -8, -18, -28, -38,
 		-28, -18, -8, 13, 13, -8, -18, -28,
@@ -161,25 +149,12 @@ const array<int, Squares> endingPST[6] = {
 	}
 };
 
-// The flip array is used to calculate the piece/square values for black pieces. 
-// If the piece/square value of a white pawn is pst[sq] then the value of a black pawn is pst[flip[sq]] 
-const array<int, Squares> flip = {
-	56, 57, 58, 59, 60, 61, 62, 63,
-	48, 49, 50, 51, 52, 53, 54, 55,
-	40, 41, 42, 43, 44, 45, 46, 47,
-	32, 33, 34, 35, 36, 37, 38, 39,
-	24, 25, 26, 27, 28, 29, 30, 31,
-	16, 17, 18, 19, 20, 21, 22, 23,
-	8,  9,  10, 11, 12, 13, 14, 15,
-	0,  1,  2,  3,  4,  5,  6,  7
-};
-
-const int knightMobilityOpening[9] = {
+const array<int, 9> knightMobilityOpening = {
 	-12, -8, -4, 0, 4, 8, 12, 16,
 	20
 };
 
-const int knightMobilityEnding[9] = {
+const array<int, 9> knightMobilityEnding = {
 	-12, -8, -4, 0, 4, 8, 12, 16,
 	20
 };
@@ -243,9 +218,12 @@ const int rookBehindPassedBonus = 20;
 
 extern int drawScore;
 
+extern array<int, 64> pieceSquareTableOpening[Colours][Pieces];
+extern array<int, 64> pieceSquareTableEnding[Colours][Pieces];
+
 extern map<uint64_t, int> knownEndgames;
 
-extern void initializeKnownEndgames();
-extern int eval(Position & pos);
+void initializeEval();
+int eval(Position & pos);
 
 #endif

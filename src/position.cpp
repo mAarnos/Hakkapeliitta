@@ -9,6 +9,17 @@
 
 Position root;
 
+array<int, Squares> castlingMask = {
+	13, 0, 0, 0, 12, 0, 0, 14,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	7, 0, 0, 0, 3, 0, 0, 11
+};
+
 void Position::displayBoard()
 {
 	string pieceToMark = "PNBRQKpnbrqk.";
@@ -169,7 +180,6 @@ void Position::initializeBoardFromFEN(string FEN)
 	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
 	bitboards[13] = bitboards[BlackKing] | bitboards[BlackQueen] | bitboards[BlackRook] | bitboards[BlackBishop] | bitboards[BlackKnight] | bitboards[BlackPawn];
 	bitboards[14] = bitboards[12] | bitboards[13];
-	bitboards[15] = ~bitboards[14];
 
 	hash = calculateHash();
 	pawnHash = calculatePawnHash();
@@ -184,27 +194,47 @@ void Position::initializeBoardFromFEN(string FEN)
 	return;
 }
 
-template <bool side>
-bool Position::attack(int sq)
+// Template or this? Can't pick my poison at least yet.
+bool Position::isAttacked(int sq, bool side)
 {
-	if (knightAttacks[sq] & bitboards[Knight + side * 6] || pawnAttacks[!side][sq] & bitboards[Pawn + side * 6] || kingAttacks[sq] & bitboards[King + side * 6])
+	if (side)
 	{
-		return true;
+		if (knightAttacks[sq] & bitboards[BlackKnight] || pawnAttacks[White][sq] & bitboards[BlackPawn] || kingAttacks[sq] & bitboards[BlackKing])
+		{
+			return true;
+		}
+		uint64_t BQ = bitboards[BlackBishop] | bitboards[BlackQueen];
+		if ((bishopAttacks(sq, bitboards[14]) & BQ))
+		{
+			return true;
+		}
+		uint64_t RQ = bitboards[BlackRook] | bitboards[BlackQueen];
+		if (rookAttacks(sq, bitboards[14]) & RQ)
+		{
+			return true;
+		}
 	}
-	uint64_t BQ = bitboards[Bishop + side * 6] | bitboards[Queen + side * 6];
-	if ((bishopAttacks(sq, bitboards[14]) & BQ))
+	else
 	{
-		return true;
+		if (knightAttacks[sq] & bitboards[WhiteKnight] || pawnAttacks[Black][sq] & bitboards[WhitePawn] || kingAttacks[sq] & bitboards[WhiteKing])
+		{
+			return true;
+		}
+		uint64_t BQ = bitboards[WhiteBishop] | bitboards[WhiteQueen];
+		if ((bishopAttacks(sq, bitboards[14]) & BQ))
+		{
+			return true;
+		}
+		uint64_t RQ = bitboards[WhiteRook] | bitboards[WhiteQueen];
+		if (rookAttacks(sq, bitboards[14]) & RQ)
+		{
+			return true;
+		}
 	}
-	uint64_t RQ = bitboards[Rook + side * 6] | bitboards[Queen + side * 6];
-	if (rookAttacks(sq, bitboards[14]) & RQ)
-	{
-		return true;
-	}
+
 	return false;
 }
 
-template <bool side>
 bool Position::makeMove(Move m)
 {
 	uint64_t fromToBB;
@@ -230,7 +260,7 @@ bool Position::makeMove(Move m)
 	fiftyMoveDistance++;
 
 	bitboards[piece] ^= fromToBB;
-	bitboards[12 + side] ^= fromToBB; 
+	bitboards[12 + sideToMove] ^= fromToBB; 
 
 	hash ^= (pieceHash[piece][from] ^ pieceHash[piece][to]);
 
@@ -244,67 +274,44 @@ bool Position::makeMove(Move m)
 		bitboards[14] ^= fromToBB;
 	}
 
-	int pieceType = piece % Pieces;
-	if (pieceType == Pawn)
+	if ((piece % Pieces) == Pawn)
 	{
 		fiftyMoveDistance = 0;
 		pawnHash ^= (pieceHash[piece][from] ^ pieceHash[piece][to]);
 
-		// Check if the move is a double pawn move. If it is update the en passant square.
-		if (abs(to - from) == 16)
+		if ((to ^ from) == 16)
 		{
-			enPassantSquare = from + 8 - 16 * side;
+			// Double pawn move.
+			enPassantSquare = to - 8 + 16 * sideToMove;
 			hash ^= enPassantHash[enPassantSquare];
 		}
 		else if (promotion == Pawn)
 		{
-			makeEnPassant(to - 8 + 16 * side);
+			makeEnPassant(to - 8 + 16 * sideToMove);
 		}
 		else if (promotion != Empty)
 		{
 			makePromotion(promotion, to);
 		}
 	}
-	else if (pieceType == Rook)
+	else if (promotion == King)
 	{
-		// Update the castling rights after a rook move if necessary.
-		if (from == (H1 + side * 56) && castlingRights & (WhiteOO << (side << 1)))
-		{
-			castlingRights -= WhiteOO << (side << 1);
-			hash ^= castlingRightsHash[WhiteOO << (side << 1)];
-		}
-		else if (from == (A1 + side * 56) && castlingRights & (WhiteOOO << (side << 1)))
-		{
-			castlingRights -= WhiteOOO << (side << 1);
-			hash ^= castlingRightsHash[WhiteOOO << (side << 1)];
-		}
-	}
-	else if (pieceType == King)
-	{
-		// Updates the castling rights after a king move.
-		if (castlingRights & (WhiteOO << (side << 1)))
-		{
-			castlingRights -= WhiteOO << (side << 1);
-			hash ^= castlingRightsHash[WhiteOO << (side << 1)];
-		}
-		if (castlingRights & (WhiteOOO << (side << 1)))
-		{
-			castlingRights -= WhiteOOO << (side << 1);
-			hash ^= castlingRightsHash[WhiteOOO << (side << 1)];
-		}
-
-		if (promotion == King)
-		{
-			makeCastling(from, to);
-		}
+		makeCastling(from, to);
 	}
 
 	sideToMove = !sideToMove;
 	hash ^= turnHash;
-	bitboards[15] = ~bitboards[14];
+
+	// Update castling rights if needed
+	if (castlingRights && (castlingMask[from] | castlingMask[to]))
+	{
+		int cf = castlingMask[from] | castlingMask[to];
+		hash ^= castlingRightsHash[castlingRights & cf];
+		castlingRights &= cf;
+	}
 
 	// Check if the move leaves us in check.
-	if (isAttacked(bitScanForward(bitboards[King + side * 6]), !side))
+	if (isAttacked(bitScanForward(bitboards[King + !sideToMove * 6]), sideToMove))
 	{
 		unmakeMove(m);
 		return false;
@@ -312,10 +319,7 @@ bool Position::makeMove(Move m)
 
 	return true;
 }
-template bool Position::makeMove<true>(Move m);
-template bool Position::makeMove<false>(Move m);
 
-template <bool side>
 void Position::unmakeMove(Move m)
 {
 	uint64_t fromToBB;
@@ -329,16 +333,25 @@ void Position::unmakeMove(Move m)
 
 	sideToMove = !sideToMove;
 
-	// How to get rid of this?
-	if (promotion != Empty && promotion != King)
+	if (promotion == Pawn)
 	{
-		piece = Pawn + !side * 6;
+		unmakeEnPassant(to - 8 + 16 * sideToMove);
+	}
+	else if (promotion == King)
+	{
+		unmakeCastling(from, to);
+	}
+	else if (promotion != Empty)
+	{
+		// Hack, fixes a slight problem with the backup when doing a promotion.
+		piece = Pawn + sideToMove * 6;
+		unmakePromotion(promotion, to);
 	}
 
 	fromToBB = bit[from] | bit[to];
 
 	bitboards[piece] ^= fromToBB;
-	bitboards[12 + !side] ^= fromToBB;
+	bitboards[12 + sideToMove] ^= fromToBB;
 
 	board[from] = piece;
 	board[to] = captured;
@@ -352,24 +365,7 @@ void Position::unmakeMove(Move m)
 	{
 		bitboards[14] ^= fromToBB;
 	}
-
-	if (promotion == Pawn)
-	{
-		unmakeEnPassant(to - 8 + 16 * !side);
-	}
-	else if (promotion == King)
-	{
-		unmakeCastling(from, to);
-	}
-	else if (promotion != Empty)
-	{
-		unmakePromotion(promotion, to);
-	}
-
-	bitboards[15] = ~bitboards[14];
 }
-template void Position::unmakeMove<true>(Move m);
-template void Position::unmakeMove<false>(Move m);
 
 void Position::makeCapture(int captured, int to)
 {
@@ -385,29 +381,6 @@ void Position::makeCapture(int captured, int to)
 	if (pieceType == Pawn)
 	{
 		pawnHash ^= pieceHash[captured][to];
-	}
-	else if (pieceType == Rook)
-	{
-		if (to == H1 && (castlingRights & WhiteOO))
-		{
-			castlingRights -= WhiteOO;
-			hash ^= castlingRightsHash[WhiteOO];
-		}
-		else if (to == A1 && (castlingRights & WhiteOOO))
-		{
-			castlingRights -= WhiteOOO;
-			hash ^= castlingRightsHash[WhiteOOO];
-		}
-		else if (to == H8 && (castlingRights & BlackOO))
-		{
-			castlingRights -= BlackOO;
-			hash ^= castlingRightsHash[BlackOO];
-		}
-		else if (to == A8 && (castlingRights & BlackOOO))
-		{
-			castlingRights -= BlackOOO;
-			hash ^= castlingRightsHash[BlackOOO];
-		}
 	}
 }
 

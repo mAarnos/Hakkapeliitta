@@ -31,51 +31,35 @@ class Position
 		void initializeBoardFromFEN(string FEN);
 		void displayBoard();
 
-		inline bool isAttacked(int sq, bool side) {
-			if (side)
-				return attack<true>(sq);
-			else
-				return attack<false>(sq);
-		}
+		bool isAttacked(int sq, bool side);
 
 		inline int getPiece(int sq) { return board[sq]; }
+		// Returns incorrect piecetype if there is nothing on the square. Use only if you known something is on the square specified.
 		inline int getPieceType(int sq) { return (board[sq] % Pieces); }
 
 		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
 		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
 		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
-		inline uint64_t getFreeSquares() { return bitboards[15]; }
+		inline uint64_t getFreeSquares() { return ~bitboards[14]; }
 
 		inline uint64_t getHash() { return hash; }
 		inline uint64_t getPawnHash() { return pawnHash; }
 		inline uint64_t getMaterialHash() { return matHash; }
 		
 		inline bool getSideToMove() { return sideToMove; }
-		inline int getTurn() { return hply; }
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
-		inline bool makeMove(Move m) {
-			if (sideToMove)
-				return makeMove<true>(m);
-			else
-				return makeMove<false>(m);
-		}
-		inline void unmakeMove(Move m) {
-			if (sideToMove)
-				return unmakeMove<true>(m);
-			else
-				return unmakeMove<false>(m);
-		}
+		bool makeMove(Move m);
+		void unmakeMove(Move m);
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.
 		// 6 bitboards for different black pieces + 1 for all black pieces.
 		// 1 for all occupied squares.
-		// 1 for all not-occupied squares.
-		array<uint64_t, 16> bitboards;
+		array<uint64_t, 15> bitboards;
 		// The board as a one-dimensional array.
 		// We have it because often we want to know what piece is on which square or something like that.
 		array<int, Squares> board;
@@ -90,6 +74,7 @@ class Position
 		int fiftyMoveDistance;
 		int hply;
 		int phase;
+		int scoreOp, scoreEd;
 		uint64_t hash, pawnHash, matHash;
 
 		// These functions can be used to calculate different hash keys for the current position.
@@ -97,15 +82,6 @@ class Position
 		uint64_t calculateHash();
 		uint64_t calculatePawnHash();
 		uint64_t calculateMaterialHash();
-
-		template <bool side>
-		bool makeMove(Move m);
-
-		template <bool side>
-		void unmakeMove(Move m);
-
-		template <bool side>
-		bool attack(int sq);
 
 		// Miscellaneous functions used by the program.
 		void makeCapture(int captured, int to);

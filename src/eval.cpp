@@ -7,6 +7,9 @@
 
 int drawScore = 0;
 
+array<int, 64> pieceSquareTableOpening[Colours][Pieces];
+array<int, 64> pieceSquareTableEnding[Colours][Pieces];
+
 map<uint64_t, int> knownEndgames;
 
 array<int, Squares> queenTropism[Squares];
@@ -108,6 +111,35 @@ void initializeKingTropism()
 			knightTropism[i][j] = nTropism[Distance[i][j]];
 			bishopTropism[i][j] += bTropism[abs(DistanceNE[i] - DistanceNE[j])];
 			bishopTropism[i][j] += bTropism[abs(DistanceNW[i] - DistanceNW[j])];
+		}
+	}
+}
+
+void initializeEval()
+{
+	initializeKnownEndgames();
+	initializeKingTropism();
+
+	array<int, Squares> flip = {
+		56, 57, 58, 59, 60, 61, 62, 63,
+		48, 49, 50, 51, 52, 53, 54, 55,
+		40, 41, 42, 43, 44, 45, 46, 47,
+		32, 33, 34, 35, 36, 37, 38, 39,
+		24, 25, 26, 27, 28, 29, 30, 31,
+		16, 17, 18, 19, 20, 21, 22, 23,
+		8, 9, 10, 11, 12, 13, 14, 15,
+		0, 1, 2, 3, 4, 5, 6, 7
+	};
+
+	for (int i = Pawn; i <= King; i++)
+	{
+		for (int sq = A1; sq <= H8; sq++)
+		{
+			pieceSquareTableOpening[White][i][sq] = openingPST[i][sq] + pieceValuesOpening[i];
+			pieceSquareTableEnding[White][i][sq] = endingPST[i][sq] + pieceValuesEnding[i];
+
+			pieceSquareTableOpening[Black][i][flip[sq]] = -(openingPST[i][sq] + pieceValuesOpening[i]);
+			pieceSquareTableEnding[Black][i][flip[sq]] = -(endingPST[i][sq]+ pieceValuesEnding[i]);
 		}
 	}
 }
