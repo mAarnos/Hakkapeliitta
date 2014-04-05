@@ -166,8 +166,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = knightAttacks[from] & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp += knightMobilityOpening[count];
-		scoreEd += knightMobilityEnding[count];
+		scoreOp += mobilityOpening[Knight][count];
+		scoreEd += mobilityEnding[Knight][count];
 		kingTropismScore += knightTropism[from][kingLocation];
 	}
 
@@ -180,8 +180,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = bishopAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp += bishopMobilityOpening[count];
-		scoreEd += bishopMobilityEnding[count];
+		scoreOp += mobilityOpening[Bishop][count];
+		scoreEd += mobilityEnding[Bishop][count];
 		kingTropismScore += bishopTropism[from][kingLocation];
 	}
 
@@ -194,8 +194,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = rookAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp += rookMobilityOpening[count];
-		scoreEd += rookMobilityEnding[count];
+		scoreOp += mobilityOpening[Rook][count];
+		scoreEd += mobilityEnding[Rook][count];
 		kingTropismScore += rookTropism[from][kingLocation];
 	}
 
@@ -208,8 +208,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = queenAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp += queenMobilityOpening[count];
-		scoreEd += queenMobilityEnding[count];
+		scoreOp += mobilityOpening[Queen][count];
+		scoreEd += mobilityEnding[Queen][count];
 		kingTropismScore += queenTropism[from][kingLocation];
 	}
 
@@ -226,8 +226,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = knightAttacks[from] & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp -= knightMobilityOpening[count];
-		scoreEd -= knightMobilityEnding[count];
+		scoreOp -= mobilityOpening[Knight][count];
+		scoreEd -= mobilityEnding[Knight][count];
 		kingTropismScore -= knightTropism[from][kingLocation];
 	}
 
@@ -240,8 +240,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = bishopAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp -= bishopMobilityOpening[count];
-		scoreEd -= bishopMobilityEnding[count];
+		scoreOp -= mobilityOpening[Bishop][count];
+		scoreEd -= mobilityEnding[Bishop][count];
 		kingTropismScore -= bishopTropism[from][kingLocation];
 	}
 
@@ -254,8 +254,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = rookAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp -= rookMobilityOpening[count];
-		scoreEd -= rookMobilityEnding[count];
+		scoreOp -= mobilityOpening[Rook][count];
+		scoreEd -= mobilityEnding[Rook][count];
 		kingTropismScore -= rookTropism[from][kingLocation];
 	}
 
@@ -268,8 +268,8 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 		tempMove = queenAttacks(from, occupied) & targetBitboard;
 
 		count = popcnt(tempMove);
-		scoreOp -= queenMobilityOpening[count];
-		scoreEd -= queenMobilityEnding[count];
+		scoreOp -= mobilityOpening[Queen][count];
+		scoreEd -= mobilityEnding[Queen][count];
 		kingTropismScore -= queenTropism[from][kingLocation];
 	}
 

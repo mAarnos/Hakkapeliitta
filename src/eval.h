@@ -149,48 +149,22 @@ const array<int, Squares> endingPST[6] = {
 	}
 };
 
-const array<int, 9> knightMobilityOpening = {
-	-12, -8, -4, 0, 4, 8, 12, 16,
-	20
+const array<int, Squares> mobilityOpening[6] = {
+	{},
+	{ -12, -8, -4, 0, 4, 8, 12, 16, 20 },
+	{ -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30 },
+	{ -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22 },
+	{ -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 },
+	{}
 };
 
-const array<int, 9> knightMobilityEnding = {
-	-12, -8, -4, 0, 4, 8, 12, 16,
-	20
-};
-
-const array<int, 14> bishopMobilityOpening = {
-	-9, -6, -3, 0, 3, 6, 9, 12,
-	15, 18, 21, 24, 27, 30
-};
-
-const array<int, 14> bishopMobilityEnding = {
-	-12, -9, -6, -3, 0, 3, 6, 9,
-	12, 15, 18, 21, 24, 27
-};
-
-const array<int, 15> rookMobilityOpening = {
-	-6, -4, -2, 0, 2, 4, 6, 8,
-	10, 12, 14, 16, 18, 20, 22
-};
-
-const array<int, 15> rookMobilityEnding = {
-	-10, -8, -6, -4, -2, 0, 2, 4,
-	6, 8, 10, 12, 14, 16, 18
-};
-
-const array<int, 28> queenMobilityOpening = {
-	-7, -6, -5, -4, -3, -2, -1, 0,
-	1, 2, 3, 4, 5, 6, 7, 8,
-	9, 10, 11, 12, 13, 14, 15, 16,
-	17, 18, 19, 20
-};
-
-const array<int, 28> queenMobilityEnding = {
-	-10, -9, -8, -7, -6, -5, -4, -3,
-	-2, -1, 0, 1, 2, 3, 4, 5,
-	6, 7, 8, 9, 10, 11, 12, 13,
-	14, 15, 16, 17
+const array<int, Squares> mobilityEnding[6] = {
+	{},
+	{ -12, -8, -4, 0, 4, 8, 12, 16, 20 },
+	{ -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21, 24, 27 },
+	{ -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14, 16, 18 },
+	{ -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 },
+	{}
 };
 
 const int doubledPenaltyOpening = 15;
