@@ -144,12 +144,11 @@ void initializeEval()
 	}
 }
 
-int mobilityEval(Position & pos, int & kingTropismScore)
+int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 {
 	int scoreOp = 0;
 	int scoreEd = 0;
 	int from, count;
-	int phase = pos.calculateGamePhase();
 	uint64_t occupied = pos.getOccupiedSquares();
 	uint64_t tempPiece, tempMove;
 
@@ -276,9 +275,166 @@ int mobilityEval(Position & pos, int & kingTropismScore)
 	return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
 
+int pawnStructureEval(Position & pos, int phase)
+{
+	int score = 0;
+
+	return score;
+}
+
+int kingSafetyEval(Position & pos, int phase, int score)
+{
+	int zone1, zone2;
+
+	// White
+	if (pos.getBitboard(White, King) & kingSide)
+	{
+		// Penalize pawns which have moved more than one square.
+		zone1 = popcnt(0x00E0E0E0E0000000 & pos.getBitboard(White, Pawn));
+		score -= pawnShelterAdvancedPawnPenalty * zone1;
+		// If the f-pawn has moved make the penalty less because it isn't as serious.
+		if (pos.getBitboard(White, Pawn) & rays[N][21])
+		{
+			score += (pawnShelterAdvancedPawnPenalty / 2);
+		}
+
+		// Penalize missing pawns from our pawn shelter.
+		// Penalize missing opponent pawns as they can be used to attack us.
+		for (int i = 5; i < 8; i++)
+		{
+			if (!(files[i] & pos.getBitboard(White, Pawn)))
+			{
+				score -= pawnShelterMissingPawnPenalty;
+			}
+			if (!(files[i] & pos.getBitboard(Black, Pawn)))
+			{
+				score -= pawnShelterMissingOpponentPawnPenalty;
+			}
+		}
+
+		// pawn storm evaluation
+		// penalize pawns on the 6th rank(from black's point of view)
+		zone1 = popcnt(0x0000000000E00000 & pos.getBitboard(Black, Pawn));
+		score -= pawnStormClosePenalty * zone1;
+
+		// penalize pawns on the 5th rank(from black's point of view)
+		zone2 = popcnt(0x00000000E0000000 & pos.getBitboard(Black, Pawn));
+		score -= pawnStormFarPenalty * zone2;
+	}
+	else if (pos.getBitboard(White, King) & queenSide)
+	{
+		zone1 = popcnt(0x0007070707000000 & pos.getBitboard(White, Pawn));
+		score -= pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(White, Pawn) & rays[N][18])
+		{
+			score += (pawnShelterAdvancedPawnPenalty / 2);
+		}
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (!(files[i] & pos.getBitboard(White, Pawn)))
+			{
+				score -= pawnShelterMissingPawnPenalty;
+			}
+			if (!(files[i] & pos.getBitboard(Black, Pawn)))
+			{
+				score -= pawnShelterMissingOpponentPawnPenalty;
+			}
+		}
+
+		zone1 = popcnt(0x0000000000070000 & pos.getBitboard(Black, Pawn));
+		score -= pawnStormClosePenalty * zone1;
+
+		zone2 = popcnt(0x0000000007000000 & pos.getBitboard(Black, Pawn));
+		score -= pawnStormFarPenalty * zone2;
+	}
+	else 
+	{
+		// Penalize open files near the king.
+		int kingFile = (bitScanForward(pos.getBitboard(White, King))) % 8;
+		for (int i = -1; i <= 1; i++)
+		{
+			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))
+			{
+				score -= kingInCenterOpenFilePenalty;
+			}
+		}
+	}
+
+	// Black
+	if (pos.getBitboard(Black, King) & kingSide)
+	{
+		zone1 = popcnt(0x000000E0E0E0E000 & pos.getBitboard(Black, Pawn));
+		score += pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(Black, Pawn) & rays[S][45])
+		{
+			score -= (pawnShelterAdvancedPawnPenalty / 2);
+		}
+
+		for (int i = 5; i < 8; i++)
+		{
+			if (!(files[i] & pos.getBitboard(Black, Pawn)))
+			{
+				score += pawnShelterMissingPawnPenalty;
+			}
+			if (!(files[i] & pos.getBitboard(White, Pawn)))
+			{
+				score += pawnShelterMissingOpponentPawnPenalty;
+			}
+		}
+
+		zone1 = popcnt(0x0000E00000000000 & pos.getBitboard(White, Pawn));
+		score += pawnStormClosePenalty * zone1;
+
+		zone2 = popcnt(0x000000E000000000 & pos.getBitboard(White, Pawn));
+		score += pawnStormFarPenalty * zone2;
+	}
+	else if (pos.getBitboard(Black, King) & queenSide)
+	{
+		zone1 = popcnt(0x0000000707070700 & pos.getBitboard(Black, Pawn));
+		score += pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(Black, Pawn) & rays[S][42])
+		{
+			score -= (pawnShelterAdvancedPawnPenalty / 2);
+		}
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (!(files[i] & pos.getBitboard(Black, Pawn)))
+			{
+				score += pawnShelterMissingPawnPenalty;
+			}
+			if (!(files[i] & pos.getBitboard(White, Pawn)))
+			{
+				score += pawnShelterMissingOpponentPawnPenalty;
+			}
+		}
+
+		zone1 = popcnt(0x0000070000000000 & pos.getBitboard(White, Pawn));
+		score += pawnStormClosePenalty * zone1;
+
+		zone2 = popcnt(0x0000000700000000 & pos.getBitboard(White, Pawn));
+		score += pawnStormFarPenalty * zone2;
+	}
+	else
+	{
+		int kingFile = (bitScanForward(pos.getBitboard(Black, King))) % 8;
+		for (int i = -1; i <= 1; i++)
+		{
+			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))
+			{
+				score += kingInCenterOpenFilePenalty;
+			}
+		}
+	}
+
+	return ((score * (256 - phase)) / 256);
+}
+
 int eval(Position & pos)
 {
-	int score = 0, kingTropismScore = 0;
+	int score, kingTropismScore = 0;
+	int phase = pos.calculateGamePhase();
 
 	// Checks if we are in a known endgame.
 	// If we are we can straight away return the score for the endgame.
@@ -288,7 +444,33 @@ int eval(Position & pos)
 		return knownEndgames[pos.getMaterialHash()];
 	}
 
-	score += mobilityEval(pos, kingTropismScore);
+	// Material + Piece-Square Tables
+	score = ((pos.getScoreOp() * (256 - phase)) + (pos.getScoreEd() * phase)) / 256;
+
+	if (popcnt(pos.getBitboard(White, Bishop)) == 2)
+	{
+		score += ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+	}
+	if (popcnt(pos.getBitboard(Black, Bishop)) == 2)
+	{
+		score -= ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+	}
+
+	// Most important rule of king and pawn endgames - the side with more pawns wins.
+	// Therefore add a big bonus for the side with more pawns.
+	// Maybe add code dealing with doubled isolated pawns? Make them only worth one pawn?
+	if (phase == 256)
+	{
+		score += (popcnt(pos.getBitboard(White, Pawn)) - popcnt(pos.getBitboard(Black, Pawn))) * pieceValuesEnding[Pawn];
+	}
+
+	// Mobility
+	score += mobilityEval(pos, phase, kingTropismScore);
+
+	score += pawnStructureEval(pos, phase);
+
+	// King safety
+	score += kingSafetyEval(pos, phase, kingTropismScore);
 
 	if (pos.getSideToMove())
 	{

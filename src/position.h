@@ -50,6 +50,9 @@ class Position
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
 
+		inline int getScoreOp() { return scoreOp; }
+		inline int getScoreEd() { return scoreEd; }
+
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
 		bool makeMove(Move m);

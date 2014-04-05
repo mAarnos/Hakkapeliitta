@@ -177,7 +177,6 @@ const int backwardPenaltyOpening = 13;
 const int backwardPenaltyEnding = 9;
 const int bishopPairBonusOpening = 32;
 const int bishopPairBonusEnding = 32;
-const int tradeDownBonus = 3;
 
 const int pawnShelterAdvancedPawnPenalty = 11;
 const int pawnShelterMissingPawnPenalty = 38;

@@ -16,6 +16,32 @@ extern array<uint64_t, Squares> rays[8];
 
 extern array<int, Squares> heading[Squares];
 
+const array<uint64_t, 8> ranks = {
+	0x00000000000000FF,
+	0x000000000000FF00,
+	0x0000000000FF0000,
+	0x00000000FF000000,
+	0x000000FF00000000,
+	0x0000FF0000000000,
+	0x00FF000000000000,
+	0x00FF000000000000
+};
+
+const array<uint64_t, 8> files = {
+	0x0101010101010101,
+	0x0202020202020202,
+	0x0404040404040404,
+	0x0808080808080808,
+	0x1010101010101010,
+	0x2020202020202020,
+	0x4040404040404040,
+	0x8080808080808080
+};
+
+const uint64_t kingSide = 0xE0E0E0E0E0E0E0E0;
+const uint64_t queenSide = 0x0707070707070707;
+const uint64_t center = 0x1818181818181818;
+
 // Returns the least significant set bit in the mask.
 // Precondition: mask != 0
 inline int bitScanForward(uint64_t mask)

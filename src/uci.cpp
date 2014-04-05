@@ -19,10 +19,11 @@ int uciGo(string s);
 int uciStop(string s);
 int uciExit(string s);
 int uciDisplayBoard(string s);
+int uciStaticEval(string s);
 
 bool searching;
 
-const int amountOfCommands = 9;
+const int amountOfCommands = 10;
 uciCommand commands[amountOfCommands] =
 {
 	{ "uci", uciSendInformation },
@@ -34,6 +35,7 @@ uciCommand commands[amountOfCommands] =
 	{ "stop", uciStop },
 	{ "quit", uciExit },
 	{ "displayboard", uciDisplayBoard },
+	{ "staticeval", uciStaticEval },
 };
 
 void initializeEngine()
@@ -264,6 +266,12 @@ int uciExit(string s)
 int uciDisplayBoard(string s)
 {
 	root.displayBoard();
+	return uciOk;
+}
+
+int uciStaticEval(string s)
+{
+	cout << "Static Evaluation = " << eval(root) << endl;
 	return uciOk;
 }
 
