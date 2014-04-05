@@ -168,6 +168,8 @@ void Position::initializeBoardFromFEN(string FEN)
 	}
 
 	bitboards.fill(0);
+	scoreOp = 0;
+	scoreEd = 0;
 
 	// populate the bitboards
 	for (i = A1; i <= H8; i++) 
@@ -175,6 +177,8 @@ void Position::initializeBoardFromFEN(string FEN)
 		if (board[i] != Empty)
 		{
 			bitboards[board[i]] |= bit[i];
+			scoreOp += pieceSquareTableOpening[board[i]][i];
+			scoreEd += pieceSquareTableEnding[board[i]][i];
 		}
 	}
 	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
@@ -250,6 +254,9 @@ bool Position::makeMove(Move m)
 
 	board[to] = board[from];
 	board[from] = Empty;
+
+	scoreOp += pieceSquareTableOpening[piece][to] - pieceSquareTableOpening[piece][from];
+	scoreEd += pieceSquareTableEnding[piece][to] - pieceSquareTableEnding[piece][from];
 
 	if (enPassantSquare != NoSquare)
 	{
@@ -356,6 +363,9 @@ void Position::unmakeMove(Move m)
 	board[from] = piece;
 	board[to] = captured;
 
+	scoreOp += pieceSquareTableOpening[piece][from] - pieceSquareTableOpening[piece][to];
+	scoreEd += pieceSquareTableEnding[piece][from] - pieceSquareTableEnding[piece][to];
+
 	if (captured != Empty)
 	{
 		unmakeCapture(captured, to);
@@ -372,6 +382,9 @@ void Position::makeCapture(int captured, int to)
 	bitboards[captured] ^= bit[to];
 	bitboards[12 + !sideToMove] ^= bit[to];
 	fiftyMoveDistance = 0;
+
+	scoreOp -= pieceSquareTableOpening[captured][to];
+	scoreEd -= pieceSquareTableEnding[captured][to];
 
 	hash ^= pieceHash[captured][to];
 	matHash ^= materialHash[captured][popcnt(bitboards[captured])];
@@ -396,6 +409,8 @@ void Position::makePromotion(int promotion, int to)
 	matHash ^= materialHash[Pawn + sideToMove * 6][popcnt(bitboards[Pawn + sideToMove * 6])];
 	board[to] = promotion + sideToMove * 6;
 	phase += piecePhase[promotion];
+	scoreOp += pieceSquareTableOpening[promotion + sideToMove * 6][to] - pieceSquareTableOpening[Pawn + sideToMove * 6][to];
+	scoreEd += pieceSquareTableEnding[promotion + sideToMove * 6][to] - pieceSquareTableEnding[Pawn + sideToMove * 6][to];
 }
 
 void Position::makeEnPassant(int to)
@@ -404,6 +419,8 @@ void Position::makeEnPassant(int to)
 	bitboards[12 + !sideToMove] ^= bit[to];
 	bitboards[14] ^= bit[to];
 	board[to] = Empty;
+	scoreOp -= pieceSquareTableOpening[Pawn + !sideToMove * 6][to];
+	scoreEd -= pieceSquareTableEnding[Pawn + !sideToMove * 6][to];
 	hash ^= pieceHash[Pawn + !sideToMove * 6][to];
 	pawnHash ^= pieceHash[Pawn + !sideToMove * 6][to];
 	matHash ^= materialHash[Pawn + !sideToMove * 6][popcnt(bitboards[Pawn + !sideToMove * 6])];
@@ -428,6 +445,8 @@ void Position::makeCastling(int from, int to)
 	bitboards[14] ^= bit[fromRook] | bit[toRook];
 	board[toRook] = board[fromRook];
 	board[fromRook] = Empty;
+	scoreOp += pieceSquareTableOpening[Rook + sideToMove * 6][toRook] - pieceSquareTableOpening[Rook + sideToMove * 6][fromRook];
+	scoreEd += pieceSquareTableEnding[Rook + sideToMove * 6][toRook] - pieceSquareTableEnding[Rook + sideToMove * 6][fromRook];
 	hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
 }
 
@@ -435,6 +454,8 @@ void Position::unmakeCapture(int captured, int to)
 {
 	bitboards[captured] |= bit[to];
 	bitboards[12 + !sideToMove] |= bit[to];
+	scoreOp += pieceSquareTableOpening[captured][to];
+	scoreEd += pieceSquareTableEnding[captured][to];
 	phase += piecePhase[captured % Pieces];
 }
 
@@ -443,6 +464,8 @@ void Position::unmakePromotion(int promotion, int to)
 	bitboards[Pawn + sideToMove * 6] ^= bit[to];
 	bitboards[promotion + sideToMove * 6] ^= bit[to];
 	phase -= piecePhase[promotion];
+	scoreOp += pieceSquareTableOpening[Pawn + sideToMove * 6][to] - pieceSquareTableOpening[promotion + sideToMove * 6][to];
+	scoreEd += pieceSquareTableEnding[Pawn + sideToMove * 6][to] - pieceSquareTableEnding[promotion + sideToMove * 6][to];
 }
 
 void Position::unmakeEnPassant(int to)
@@ -451,6 +474,8 @@ void Position::unmakeEnPassant(int to)
 	bitboards[12 + !sideToMove] |= bit[to];
 	bitboards[14] |= bit[to];
 	board[to] = Pawn + !sideToMove * 6;
+	scoreOp += pieceSquareTableOpening[Pawn + !sideToMove * 6][to];
+	scoreEd += pieceSquareTableEnding[Pawn + !sideToMove * 6][to];
 }
 
 void Position::unmakeCastling(int from, int to)
@@ -472,6 +497,8 @@ void Position::unmakeCastling(int from, int to)
 	bitboards[14] ^= bit[fromRook] | bit[toRook];
 	board[fromRook] = board[toRook];
 	board[toRook] = Empty;
+	scoreOp += pieceSquareTableOpening[Rook + sideToMove * 6][fromRook] - pieceSquareTableOpening[Rook + sideToMove * 6][toRook];
+	scoreEd += pieceSquareTableEnding[Rook + sideToMove * 6][fromRook] - pieceSquareTableEnding[Rook + sideToMove * 6][toRook];
 }
 
 void Position::writeHistory(int & captured)

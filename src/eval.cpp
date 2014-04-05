@@ -7,8 +7,8 @@
 
 int drawScore = 0;
 
-array<int, 64> pieceSquareTableOpening[Colours][Pieces];
-array<int, 64> pieceSquareTableEnding[Colours][Pieces];
+array<int, 64> pieceSquareTableOpening[12];
+array<int, 64> pieceSquareTableEnding[12];
 
 map<uint64_t, int> knownEndgames;
 
@@ -135,11 +135,11 @@ void initializeEval()
 	{
 		for (int sq = A1; sq <= H8; sq++)
 		{
-			pieceSquareTableOpening[White][i][sq] = openingPST[i][sq] + pieceValuesOpening[i];
-			pieceSquareTableEnding[White][i][sq] = endingPST[i][sq] + pieceValuesEnding[i];
+			pieceSquareTableOpening[i][sq] = openingPST[i][sq] + pieceValuesOpening[i];
+			pieceSquareTableEnding[i][sq] = endingPST[i][sq] + pieceValuesEnding[i];
 
-			pieceSquareTableOpening[Black][i][flip[sq]] = -(openingPST[i][sq] + pieceValuesOpening[i]);
-			pieceSquareTableEnding[Black][i][flip[sq]] = -(endingPST[i][sq]+ pieceValuesEnding[i]);
+			pieceSquareTableOpening[i + Black * 6][flip[sq]] = -(openingPST[i][sq] + pieceValuesOpening[i]);
+			pieceSquareTableEnding[i + Black * 6][flip[sq]] = -(endingPST[i][sq] + pieceValuesEnding[i]);
 		}
 	}
 }

@@ -218,8 +218,8 @@ const int rookBehindPassedBonus = 20;
 
 extern int drawScore;
 
-extern array<int, 64> pieceSquareTableOpening[Colours][Pieces];
-extern array<int, 64> pieceSquareTableEnding[Colours][Pieces];
+extern array<int, 64> pieceSquareTableOpening[12];
+extern array<int, 64> pieceSquareTableEnding[12];
 
 extern map<uint64_t, int> knownEndgames;
 
