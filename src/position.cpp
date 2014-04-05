@@ -109,9 +109,9 @@ void Position::initializeBoardFromFEN(string FEN)
 		else return;
 	}
 
-	// set castling to default 0 
+	// Set castlingRights to default: no castling allowed.
 	castlingRights = 0;
-	// Initialize all castle possibilities 
+	// Add all given castling rights.
 	if (strList.size() >= 3)
 	{
 		if (strList[2].find('K') != string::npos)
@@ -132,8 +132,8 @@ void Position::initializeBoardFromFEN(string FEN)
 		}
 	}
 
-	// Set the en passant square, if any. Default is 64 which means no en passant
-	enPassantSquare = 64;
+	// Set the en passant square, if any.
+	enPassantSquare = NoSquare;
 	if ((strList.size() >= 4) && (strList[3].length() >= 2))
 	{
 		if ((strList[3].at(0) >= 'a') && (strList[3].at(0) <= 'h') && ((strList[3].at(1) == '3') || (strList[3].at(1) == '6')))

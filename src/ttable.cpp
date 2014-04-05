@@ -78,16 +78,16 @@ int ttProbe(Position & pos, int ply, uint8_t depth, int & alpha, int & beta, int
 	return probeFailed;
 }
 
-int pttProbe(uint64_t pHash)
+int pttProbe(Position & pos)
 {
 	if (ptt.isEmpty())
 	{
 		return probeFailed;
 	}
 
-	pttEntry * hashEntry = &ptt.getEntry(pHash % ptt.getSize());
+	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	if (hashEntry->hash == pHash)
+	if (hashEntry->hash == pos.getPawnHash())
 	{
 		return hashEntry->score;
 	}

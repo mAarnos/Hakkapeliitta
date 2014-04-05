@@ -4,6 +4,7 @@
 #include "eval.h"
 #include "hash.h"
 #include "magic.h"
+#include "ttable.h"
 
 int drawScore = 0;
 
@@ -278,6 +279,12 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 int pawnStructureEval(Position & pos, int phase)
 {
 	int score = 0;
+	int value;
+
+	if ((value = pttProbe(pos)) != probeFailed)
+	{
+		return value;
+	}
 
 	return score;
 }
@@ -292,14 +299,9 @@ int kingSafetyEval(Position & pos, int phase, int score)
 		// Penalize pawns which have moved more than one square.
 		zone1 = popcnt(0x00E0E0E0E0000000 & pos.getBitboard(White, Pawn));
 		score -= pawnShelterAdvancedPawnPenalty * zone1;
-		// If the f-pawn has moved make the penalty less because it isn't as serious.
-		if (pos.getBitboard(White, Pawn) & rays[N][21])
-		{
-			score += (pawnShelterAdvancedPawnPenalty / 2);
-		}
 
 		// Penalize missing pawns from our pawn shelter.
-		// Penalize missing opponent pawns as they can be used to attack us.
+		// Penalize missing opponent pawns as they allow the opponent to use his semi-open/open files to attack us.
 		for (int i = 5; i < 8; i++)
 		{
 			if (!(files[i] & pos.getBitboard(White, Pawn)))
@@ -312,12 +314,12 @@ int kingSafetyEval(Position & pos, int phase, int score)
 			}
 		}
 
-		// pawn storm evaluation
-		// penalize pawns on the 6th rank(from black's point of view)
+		// Pawn storm evaluation.
+		// Penalize pawns on the 6th rank(from black's point of view).
 		zone1 = popcnt(0x0000000000E00000 & pos.getBitboard(Black, Pawn));
 		score -= pawnStormClosePenalty * zone1;
 
-		// penalize pawns on the 5th rank(from black's point of view)
+		// Penalize pawns on the 5th rank(from black's point of view).
 		zone2 = popcnt(0x00000000E0000000 & pos.getBitboard(Black, Pawn));
 		score -= pawnStormFarPenalty * zone2;
 	}
@@ -325,10 +327,6 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x0007070707000000 & pos.getBitboard(White, Pawn));
 		score -= pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(White, Pawn) & rays[N][18])
-		{
-			score += (pawnShelterAdvancedPawnPenalty / 2);
-		}
 
 		for (int i = 0; i < 3; i++)
 		{
@@ -366,10 +364,6 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x000000E0E0E0E000 & pos.getBitboard(Black, Pawn));
 		score += pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(Black, Pawn) & rays[S][45])
-		{
-			score -= (pawnShelterAdvancedPawnPenalty / 2);
-		}
 
 		for (int i = 5; i < 8; i++)
 		{
@@ -393,10 +387,6 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x0000000707070700 & pos.getBitboard(Black, Pawn));
 		score += pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(Black, Pawn) & rays[S][42])
-		{
-			score -= (pawnShelterAdvancedPawnPenalty / 2);
-		}
 
 		for (int i = 0; i < 3; i++)
 		{
