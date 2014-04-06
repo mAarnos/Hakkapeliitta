@@ -14,12 +14,17 @@ array<uint64_t, Squares> rays[8];
 // Not really a bitboard but it is easiest to initialize here.
 array<int, Squares> heading[Squares];
 
+array<uint64_t, Squares> passed[Colours];
+array<uint64_t, Squares> backward[Colours];
+array<uint64_t, Squares> isolated;
+
 void initializeBitMasks();
 void initializeKingAttacks();
 void initializeKnightAttacks();
 void initializePawnAttacks();
 void initializePawnMoves();
 void initializeRays();
+void initializePawnEvaluationBitboards();
 
 void initializeBitboards() 
 {	
@@ -29,6 +34,7 @@ void initializeBitboards()
    initializePawnAttacks();
    initializePawnMoves();
    initializeRays();
+   initializePawnEvaluationBitboards();
 }
 
 void initializeBitMasks() 
@@ -149,6 +155,34 @@ void initializeRays()
 				heading[sq][toRank * 8 + toFile] = i;
 				rays[i][sq] |= bit[toRank * 8 + toFile];
 			}
+		}
+	}
+}
+
+void initializePawnEvaluationBitboards()
+{
+	for (int sq = A2; sq <= H7; sq++)
+	{
+		int file = sq % 8;
+		
+		passed[White][sq] = rays[N][sq];
+		passed[Black][sq] = rays[S][sq];
+
+		if (file != 7)
+		{
+			passed[White][sq] |= rays[N][sq + 1];
+			passed[Black][sq] |= rays[S][sq + 1];
+			backward[White][sq] |= rays[S][sq + 9];
+			backward[Black][sq] |= rays[N][sq - 7];
+			isolated[sq] |= files[file + 1];
+		}
+		if (file != 0)
+		{
+			passed[White][sq] |= rays[N][sq - 1];
+			passed[Black][sq] |= rays[S][sq - 1];
+			backward[White][sq] |= rays[S][sq + 7];
+			backward[Black][sq] |= rays[S][sq - 9];
+			isolated[sq] |= files[file - 1];
 		}
 	}
 }

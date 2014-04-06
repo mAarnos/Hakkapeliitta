@@ -16,6 +16,10 @@ extern array<uint64_t, Squares> rays[8];
 
 extern array<int, Squares> heading[Squares];
 
+extern array<uint64_t, Squares> passed[Colours];
+extern array<uint64_t, Squares> backward[Colours];
+extern array<uint64_t, Squares> isolated;
+
 const array<uint64_t, 8> ranks = {
 	0x00000000000000FF,
 	0x000000000000FF00,

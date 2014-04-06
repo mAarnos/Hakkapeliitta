@@ -174,7 +174,8 @@ const int passedBonusEnding = 51;
 const int isolatedPenaltyOpening = 13;
 const int isolatedPenaltyEnding = 17;
 const int backwardPenaltyOpening = 13;
-const int backwardPenaltyEnding = 9;
+const int backwardPenaltyEnding = 9; 
+
 const int bishopPairBonusOpening = 32;
 const int bishopPairBonusEnding = 32;
 
@@ -191,10 +192,10 @@ const int rookBehindPassedBonus = 20;
 
 extern int drawScore;
 
+extern map<uint64_t, int> knownEndgames;
+
 extern array<int, 64> pieceSquareTableOpening[12];
 extern array<int, 64> pieceSquareTableEnding[12];
-
-extern map<uint64_t, int> knownEndgames;
 
 void initializeEval();
 int eval(Position & pos);

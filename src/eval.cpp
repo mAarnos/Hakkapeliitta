@@ -278,15 +278,85 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 
 int pawnStructureEval(Position & pos, int phase)
 {
-	int score = 0;
-	int value;
+	int scoreOp = 0, scoreEd = 0, value, from;
+	uint64_t whitePawns, blackPawns, tempPiece;
 
 	if ((value = pttProbe(pos)) != probeFailed)
 	{
 		return value;
 	}
 
-	return score;
+	tempPiece = whitePawns = pos.getBitboard(White, Pawn);
+	blackPawns = pos.getBitboard(Black, Pawn);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+
+		if (whitePawns & rays[N][from])
+		{
+			scoreOp -= doubledPenaltyOpening;
+			scoreEd -= doubledPenaltyEnding;
+		}
+
+		if (!(blackPawns & passed[White][from]))
+		{
+			scoreOp += passedBonusOpening;
+			scoreEd += passedBonusEnding;
+		}
+
+		if (!(whitePawns & isolated[from]))
+		{
+			scoreOp -= isolatedPenaltyOpening;
+			scoreEd -= isolatedPenaltyEnding;
+		}
+
+		if (pawnAttacks[White][from + 8] & blackPawns)
+		{
+			if (!(whitePawns & backward[White][from]))
+			{
+				scoreOp -= backwardPenaltyOpening;
+				scoreEd -= backwardPenaltyEnding;
+			}
+		}
+	}
+
+	tempPiece = blackPawns;
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+
+		if (blackPawns & rays[S][from])
+		{
+			scoreOp += doubledPenaltyOpening;
+			scoreEd += doubledPenaltyEnding;
+		}
+		if (!(whitePawns & passed[Black][from]))
+		{
+			scoreOp -= passedBonusOpening;
+			scoreEd -= passedBonusEnding;
+		}
+		if (!(blackPawns & isolated[from]))
+		{
+			scoreOp += isolatedPenaltyOpening;
+			scoreEd += isolatedPenaltyEnding;
+		}
+		if (pawnAttacks[Black][from - 8] & whitePawns)
+		{
+			if (!(blackPawns & backward[Black][from]))
+			{
+				scoreOp += backwardPenaltyOpening;
+				scoreEd += backwardPenaltyEnding;
+			}
+		}
+	}
+
+	value = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+
+	pttSave(pos, value);
+
+	return value;
 }
 
 int kingSafetyEval(Position & pos, int phase, int score)
