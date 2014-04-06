@@ -56,4 +56,6 @@ const int captureMove = hashMove >> 1;
 const int killerMove1 = captureMove >> 1;
 const int killerMove2 = killerMove1 >> 1;
 
+const int onePly = 2;
+
 #endif

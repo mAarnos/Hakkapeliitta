@@ -220,4 +220,220 @@ int qsearch(Position & pos, int alpha, int beta)
 	return bestscore;
 }
 
+int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
+{
+	bool movesFound, pvFound;
+	bool check;
+	int value, generatedMoves;
+	int ttMove = probeFailed;
+	int bestmove = -1;
+	int ttFlag = ttAlpha;
+	bool ttAllowNull = true;
+	int bestscore = -mateScore;
+
+	// Check extension.
+	// Makes sure that the quiescence search is NEVER started while being in check.
+	check = pos.inCheck(pos.getSideToMove());
+	if (check)
+	{
+		depth += onePly;
+	}
+
+	if (depth <= 0)
+	{
+		return qsearch(pos, alpha, beta);
+	}
+
+	// Check for repetition and fifty move draws.
+	if (pos.repetitionDraw())
+	{
+		return drawScore;
+	}
+
+	// Probe the transposition table.
+	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull)) != probeFailed)
+	{
+		return value;
+	}
+
+	// Null move pruning, both static and dynamic.
+	if (allowNullMove && ttAllowNull)
+	{
+		if (!check)
+		{
+			if (pos.calculateGamePhase() != 256)
+			{
+				// Here's static.
+				if (depth <= 3 * onePly)
+				{
+					int staticEval = eval(pos);
+					if (depth == 1 * onePly && staticEval - 260 >= beta)
+					{
+						return staticEval;
+					}
+					else if (depth == 2 * onePly && staticEval - 445 >= beta)
+					{
+						return staticEval;
+					}
+					else if (depth == 3 * onePly && staticEval - 900 >= beta)
+					{
+						depth -= onePly;
+					}
+				}
+				nodeCount++;
+				/*
+				if (--countdown <= 0)
+				{
+					readClockAndInput();
+				}
+				
+				sideToMove = !sideToMove;
+				Hash ^= side;
+				*/
+				// And here's dynamic.
+				if (depth <= 3 * onePly)
+				{
+					value = -qsearch(pos, -beta, -beta + 1);
+				}
+				else
+				{
+					value = -alphabetaPVS(pos, ply, (depth - 1 * onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
+				}
+				/*
+				sideToMove = !sideToMove;
+				Hash ^= side;
+				*/
+				if (searching == false)
+				{
+					return 0;
+				}
+
+				if (value >= beta)
+				{
+					return value;
+				}
+			}
+		}
+	}
+
+	allowNullMove = true;
+
+	// Internal iterative deepening.
+	if ((alpha + 1) != beta && ttMove == probeFailed && depth > 2 * onePly && searching)
+	{
+		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, allowNullMove);
+		if (value <= alpha)
+		{
+			value = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, allowNullMove);
+		}
+		ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
+	}
+
+	pvFound = false;
+	movesFound = false;
+
+	Move moveStack[256];
+	/*
+	if (check)
+	{
+		generatedMoves = generateEvasions(pos, moveStack);
+		if (generatedMoves == 1)
+		{
+			depth += onePly;
+		}
+	}
+	else
+	{
+		generatedMoves = generateMoves(pos, moveStack);
+	}
+	*/
+	generatedMoves = generateMoves(pos, moveStack);
+	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
+	for (int i = 0; i < generatedMoves; i++)
+	{
+		selectMove(moveStack, generatedMoves, i);
+		if (!(pos.makeMove(moveStack[i])))
+		{
+			continue;
+		}
+		nodeCount++;
+		/*
+		if (--countdown <= 0)
+		{
+			readClockAndInput();
+		}
+		*/
+		movesFound = true;
+		if (pvFound)
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, allowNullMove); 
+			if (value > alpha && value < beta)
+			{
+				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, allowNullMove);
+			}
+		}
+		else
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, allowNullMove); 
+		}
+		pos.unmakeMove(moveStack[i]);
+
+		if (searching == false)
+		{
+			return 0;
+		}
+
+		if (value > bestscore)
+		{
+			bestscore = value;
+			if (value > alpha)
+			{
+				// Update the history heuristic when a move which improves alpha is found.
+				// Don't update if the move is not a quiet move.
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() < 5 && moveStack[i].getPromotion() > 0))
+				{
+					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
+					if (value >= beta)
+					{
+						if (moveStack[i].getMove() != killer[0][ply])
+						{
+							killer[1][ply] = killer[0][ply];
+							killer[0][ply] = moveStack[i].getMove();
+						}
+					}
+				}
+
+				if (value < beta)
+				{
+					alpha = value;
+					ttFlag = ttExact;
+					bestmove = moveStack[i].getMove();
+					pvFound = true;
+				}
+				else
+				{
+					ttSave(pos, depth, value, ttBeta, moveStack[i].getMove());
+					return value;
+				}
+			}
+		}
+	}
+
+	if (!movesFound)
+	{
+		if (check)
+		{
+			bestscore = -mateScore + ply;
+		}
+		else
+		{
+			bestscore = drawScore;
+		}
+	}
+
+	ttSave(pos, depth, bestscore, ttFlag, bestmove);
+
+	return bestscore;
+}
+
 #endif

@@ -10,7 +10,7 @@ HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 HashTable<ttEntry> perftTT;
 
-int ttProbe(Position & pos, int ply, uint8_t depth, int & alpha, int & beta, int & best)
+int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull)
 {
 	if (tt.isEmpty())
 	{
@@ -22,12 +22,16 @@ int ttProbe(Position & pos, int ply, uint8_t depth, int & alpha, int & beta, int
 	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{
 		best = (int)hashEntry->data;
-		// (best | score << 32 | depth << 48 | flags << 56)
-		if ((hashEntry->data & 0x00FF000000000000) >> 48 >= depth)
-		{
-			int score = (hashEntry->data & 0x0000FFFF00000000) >> 32;
-			int flags = hashEntry->data >> 56;
+		int score = (hashEntry->data & 0x0000FFFF00000000) >> 32;
+		int flags = hashEntry->data >> 56;
+		int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
 
+		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
+		{
+			ttAllowNull = false;
+		}
+		if (hashDepth >= depth)
+		{
 			// Correct the mate score back.
 			// Check that this works, might be ply - 1 or ply + 1.
 			if (isMateScore(score))
