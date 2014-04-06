@@ -419,7 +419,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	check = pos.inCheck(pos.getSideToMove());
 	if (check)
 	{
-		// depth += onePly;
+		depth += onePly;
 	}
 
 	if (depth <= 0)
@@ -434,7 +434,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Probe the transposition table.
-	
 	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull)) != probeFailed)
 	{
 		return value;

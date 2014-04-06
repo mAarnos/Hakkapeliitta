@@ -46,8 +46,8 @@ void initializeEngine()
 	initializeHash();
 	initializeEval();
 	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	tt.setSize(1024 * 1024 * 64);
-	ptt.setSize((1024 * 1024 * 64) / 8);
+	tt.setSize(1024 * 1024);
+	ptt.setSize((1024 * 1024 ) / 8);
 }
 
 void uciMainLoop()

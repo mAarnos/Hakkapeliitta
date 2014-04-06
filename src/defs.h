@@ -52,10 +52,10 @@ const int Squares = NoSquare;
 const int Colours = NoColour;
 const int Pieces = NoPiece;
 
-const int hashMove = 65535;
+const int hashMove = 2147483647;
 const int captureMove = hashMove >> 1;
-const int killerMove1 = captureMove >> 1;
-const int killerMove2 = killerMove1 >> 1;
+const int killerMove1 = hashMove >> 2;
+const int killerMove2 = hashMove >> 3;
 
 const int onePly = 2;
 

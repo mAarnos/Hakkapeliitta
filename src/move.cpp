@@ -26,10 +26,9 @@ void Move::setPromotion(int promotion)
 	move |= promotion << 12;
 }
 
-void Move::setScore(int score)
+void Move::setScore(int s)
 {
-	move &= 0x0000ffff;
-	move |= score << 16;
+	score = s;
 }
 
 void Move::setMove(int m)
@@ -59,7 +58,7 @@ int Move::getPromotion()
 
 int Move::getScore()
 {
-	return (move >> 16);
+	return score;
 }
  
 #endif

@@ -19,6 +19,7 @@ class Move
 		int getScore();
 	private:
 		uint32_t move;
+		int score;
 };
 
 
