@@ -97,8 +97,9 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int &ttMove, i
 		{
 			moveStack[i].setScore(hashMove);
 		}
-		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() < 6)
+		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty)
 		{
+			// Misses en passant captures atm, add them in.
 			int score = pos.SEE(moveStack[i]);
 			if (score >= 0)
 			{
@@ -197,7 +198,7 @@ void displayPV(vector<Move> pv)
 
 		cout << squareToNotation[from] << squareToNotation[to];
 
-		if ((pv[i].getPromotion() > 0) && (pv[i].getPromotion() < 5))
+		if (pv[i].getPromotion() != Empty)
 		{
 			int promotion = pv[i].getPromotion();
 			cout << promotionToNotation[promotion];
@@ -228,7 +229,7 @@ void displayBestMove(Move m)
 	int to = m.getTo();
 
 	cout << squareToNotation[from] << squareToNotation[to];
-	if ((m.getPromotion() > 0) && (m.getPromotion() < 5))
+	if (m.getPromotion() != Empty)
 	{
 		int promotion = m.getPromotion();
 		cout << promotionToNotation[promotion];
@@ -570,7 +571,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() < 5 && moveStack[i].getPromotion() > 0))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() != Empty))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)
@@ -676,7 +677,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() < 5 && moveStack[i].getPromotion() > 0))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() != Empty))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)

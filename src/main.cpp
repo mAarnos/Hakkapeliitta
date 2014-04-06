@@ -35,7 +35,7 @@ int main()
 
 	t.start();
 	// nodeCount = perftHash(root, 7);
-	// perft(root, 7);
+	perft(root, 7);
 	t.stop();
 
 	cout << "Nodecount = " << nodeCount << endl;

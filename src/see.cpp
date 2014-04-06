@@ -101,11 +101,11 @@ int Position::SEE(Move m)
 	int to = m.getTo();
 	int promotion = m.getPromotion(); 
 
-	if (promotion == King)
+	if (m.getCastling())
 	{
 		return 0;
 	}
-	else if (promotion == Pawn)
+	else if (m.getEnPassant())
 	{
 		value = pieceValues[Pawn];
 		attackerValue = value;

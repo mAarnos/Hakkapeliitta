@@ -292,7 +292,7 @@ bool Position::makeMove(Move m)
 			enPassantSquare = to - 8 + 16 * sideToMove;
 			hash ^= enPassantHash[enPassantSquare];
 		}
-		else if (promotion == Pawn)
+		else if (m.getEnPassant())
 		{
 			makeEnPassant(to - 8 + 16 * sideToMove);
 		}
@@ -301,7 +301,7 @@ bool Position::makeMove(Move m)
 			makePromotion(promotion, to);
 		}
 	}
-	else if (promotion == King)
+	else if (m.getCastling())
 	{
 		makeCastling(from, to);
 	}
@@ -340,11 +340,11 @@ void Position::unmakeMove(Move m)
 
 	sideToMove = !sideToMove;
 
-	if (promotion == Pawn)
+	if (m.getEnPassant())
 	{
 		unmakeEnPassant(to - 8 + 16 * sideToMove);
 	}
-	else if (promotion == King)
+	else if (m.getCastling())
 	{
 		unmakeCastling(from, to);
 	}

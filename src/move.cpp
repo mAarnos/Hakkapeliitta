@@ -26,6 +26,18 @@ void Move::setPromotion(int promotion)
 	move |= promotion << 12;
 }
 
+void Move::setCastling(bool castling)
+{
+	move &= 0x00000000FFFEFFFF;
+	move |= (int)castling << 16;
+}
+
+void Move::setEnPassant(bool ep)
+{
+	move &= 0x00000000FFFDFFFF;
+	move |= (int)ep << 17;
+}
+
 void Move::setScore(int s)
 {
 	score = s;
@@ -34,11 +46,6 @@ void Move::setScore(int s)
 void Move::setMove(int m)
 {
 	move = m;
-}
-
-int Move::getMove()
-{
-	return move;
 }
 
 int Move::getFrom()  
@@ -54,11 +61,26 @@ int Move::getTo()
 int Move::getPromotion()  
 { 
 	return (move >> 12) & 0x0000000f; 
-}   
+}  
+
+bool Move::getCastling()
+{
+	return (move >> 16) & 0x00000001;
+}
+
+bool Move::getEnPassant()
+{
+	return (move >> 17) & 0x00000001;
+}
 
 int Move::getScore()
 {
 	return score;
+}
+
+int Move::getMove()
+{
+	return move;
 }
  
 #endif

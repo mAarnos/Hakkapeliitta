@@ -78,10 +78,11 @@ int generateMoves(Position & pos, Move * mlist)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{
-				m.setPromotion(Pawn);
+				m.setEnPassant(true);
 				m.setTo(pos.getEnPassantSquare());
 				mlist[generatedMoves++] = m;
 				m.setPromotion(Empty);
+				m.setEnPassant(false);
 			}
 		}
 	}
@@ -169,6 +170,7 @@ int generateMoves(Position & pos, Move * mlist)
 	}
 
 	// TODO: make this part cleaner and faster.
+	m.setCastling(true);
 	if (side == White)
 	{
 		if (pos.isAttacked(E1, Black))
@@ -176,7 +178,6 @@ int generateMoves(Position & pos, Move * mlist)
 			return generatedMoves;
 		}
 		m.setFrom(E1);
-		m.setPromotion(King);
 		if (pos.getCastlingRights() & 1)
 		{
 			if (!(occupiedSquares & (uint64_t)0x0000000000000060))
@@ -207,7 +208,6 @@ int generateMoves(Position & pos, Move * mlist)
 			return generatedMoves;
 		}
 		m.setFrom(E8);
-		m.setPromotion(King);
 		if (pos.getCastlingRights() & 4)
 		{
 			if (!(occupiedSquares & (uint64_t)0x6000000000000000))
@@ -280,10 +280,11 @@ int generateCaptures(Position & pos, Move * mlist)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{
-				m.setPromotion(Pawn);
+				m.setEnPassant(true);
 				m.setTo(pos.getEnPassantSquare());
 				mlist[generatedMoves++] = m;
 				m.setPromotion(Empty);
+				m.setEnPassant(false);
 			}
 		}
 	}
