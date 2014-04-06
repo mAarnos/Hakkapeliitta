@@ -10,6 +10,7 @@
 #include "search.h"
 #include "time.h"
 
+int uciProcessInput();
 int uciSendInformation(string s);
 int uciSetOption(string s);
 int uciIsReady(string s);
@@ -45,55 +46,65 @@ void initializeEngine()
 	initializeHash();
 	initializeEval();
 	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	tt.setSize(1024 * 1024 * 64);
+	ptt.setSize((1024 * 1024 * 64) / 8);
 }
 
 void uciMainLoop()
 {
 	int status = uciOk;
-	string line, command, parameters;
-
 	while (status == uciOk)
 	{
-		// Read a line from stdin.
-		if (!getline(cin, line))
+		status = uciProcessInput();
+	}
+}
+
+int uciProcessInput()
+{
+	int status = uciOk;
+	string line, command, parameters;
+
+	// Read a line from stdin.
+	if (!getline(cin, line))
+	{
+		return uciQuit;
+	}
+
+	// The command is only whitespace, move on.
+	if (line.find_first_not_of(' ') == string::npos)
+	{
+		return uciOk;
+	}
+
+	// Remove all extra whitespace from the string.
+	line = line.substr(line.find_first_not_of(' '));
+	line = line.substr(0, line.find_last_not_of(' ') + 1);
+	while (line.find("  ") != string::npos)
+	{
+		line.replace(line.find("  "), 2, " ");
+	}
+
+	// We haven't implemented the protocol properly here, if you give the command joho uci or something like that we will do nothing.
+	// TODO: do that properly some day.
+	regex expr("(\\w*)\\s?(.*)");
+	smatch matches;
+	if (regex_search(line, matches, expr))
+	{
+		command = matches[1];
+		parameters = matches[2];
+	}
+
+	// Go through the list of commands and call the correct function if the command entered is available. 
+	for (int i = 0; i < amountOfCommands; i++)
+	{
+		if (command == commands[i].name)
 		{
+			status = (commands[i].function)(parameters);
 			break;
 		}
-
-		// The command is only whitespace, move on.
-		if (line.find_first_not_of(' ') == string::npos)
-		{
-			continue;
-		}
-
-		// Remove all extra whitespace from the string.
-		line = line.substr(line.find_first_not_of(' '));
-		line = line.substr(0, line.find_last_not_of(' ') + 1);
-		while (line.find("  ") != string::npos)
-		{
-			line.replace(line.find("  "), 2, " ");
-		}
-
-		// We haven't implemented the protocol properly here, if you give the command joho uci or something like that we will do nothing.
-		// TODO: do that properly some day.
-		regex expr("(\\w*)\\s?(.*)");
-		smatch matches;
-		if (regex_search(line, matches, expr))
-		{
-			command = matches[1];
-			parameters = matches[2];
-		}
-
-		// Go through the list of commands and call the correct function if the command entered is available. 
-		for (int i = 0; i < amountOfCommands; i++)
-		{
-			if (command == commands[i].name)
-			{
-				status = (commands[i].function)(parameters);
-				break;
-			}
-		}
 	}
+
+	return status;
 }
 
 int uciSendInformation(string s)
@@ -151,7 +162,13 @@ int uciSetOption(string s)
 			size = 0;
 		}
 
+		if (size <= 1024 * 1024)
+		{
+			size = 1024 * 1024;
+		}
+
 		tt.setSize(size);
+		ptt.setSize(size / 8);
 	}
 	else if (option == "Clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
 	{
@@ -248,7 +265,7 @@ int uciPosition(string s)
 int uciGo(string s)
 {
 	allocateSearchTime(s);
-	// think();
+	think();
 	return uciOk;
 }
 

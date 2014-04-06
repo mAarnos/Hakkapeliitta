@@ -92,8 +92,8 @@ uint64_t Position::revealNextAttacker(uint64_t attackers, uint64_t nonremoved, i
 int Position::SEE(Move m)
 {
 	// Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
-	static const array<int, 12> pieceValues = {
-		100, 300, 300, 500, 900, mateScore, 100, 300, 300, 500, 900, mateScore
+	static const array<int, 13> pieceValues = {
+		100, 300, 300, 500, 900, mateScore, 100, 300, 300, 500, 900, mateScore, 0
 	};
 	uint64_t attackers, nonremoved = (uint64_t)~0;
 	int alpha = -infinity, beta, next, value, attackerValue;
@@ -171,7 +171,7 @@ int Position::SEE(Move m)
 		}
 		else if (bitboards[Queen + !sideToMove * 6] & attackers)
 		{
-			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
+			next = bitScanForward(bitboards[Queen + !sideToMove * 6] & attackers);
 		}
 		else
 		{
@@ -227,7 +227,7 @@ int Position::SEE(Move m)
 		}
 		else if (bitboards[Queen + sideToMove * 6] & attackers)
 		{
-			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
+			next = bitScanForward(bitboards[Queen + sideToMove * 6] & attackers);
 		}
 		else
 		{

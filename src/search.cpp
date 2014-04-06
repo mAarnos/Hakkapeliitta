@@ -7,11 +7,14 @@
 #include "eval.h"
 #include "uci.h"
 #include "movegen.h"
+#include "time.h"
 
 uint64_t nodeCount = 0;
 
 array<int, maxGameLength> killer[2];
 array<int, Squares> butterfly[Colours][Squares];
+
+int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
 {
@@ -145,6 +148,192 @@ void selectMove(Move * moveStack, int moveAmount, int i)
 	}
 }
 
+void reconstructPV(Position pos, vector<Move> & pv)
+{
+	ttEntry * hashEntry;
+	Move m;
+	pv.clear();
+
+	int ply = 0;
+	while (ply < 63)
+	{
+		//  
+		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
+		if ((hashEntry->hash ^ hashEntry->data) != pos.getHash()
+		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
+		|| ((int)hashEntry->data) == -1)
+		{
+			break;
+		}
+		m.setMove((int)hashEntry->data);
+		pv.push_back(m);
+		pos.makeMove(m);
+		ply++;
+	}
+}
+
+// Displays the pv in the format UCI-protocol wants(from, to, if promotion add what promotion).
+void displayPV(vector<Move> pv)
+{
+	static array<string, Squares> squareToNotation = {
+		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+		"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+		"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+		"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+		"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+		"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+		"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+	};
+
+	static array<string, Pieces> promotionToNotation = {
+		"P", "N", "B", "R", "Q", "K"
+	};
+
+	for (int i = 0; i < pv.size(); i++)
+	{
+		int from = pv[i].getFrom();
+		int to = pv[i].getTo();
+
+		cout << squareToNotation[from] << squareToNotation[to];
+
+		if ((pv[i].getPromotion() > 0) && (pv[i].getPromotion() < 5))
+		{
+			int promotion = pv[i].getPromotion();
+			cout << promotionToNotation[promotion];
+		}
+		cout << " ";
+	}
+	cout << endl;
+}
+
+void displayBestMove(Move m)
+{
+	static array<string, Squares> squareToNotation = {
+		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+		"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+		"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+		"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+		"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+		"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+		"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+	};
+
+	static array<string, Pieces> promotionToNotation = {
+		"P", "N", "B", "R", "Q", "K"
+	};
+
+	int from = m.getFrom();
+	int to = m.getTo();
+
+	cout << squareToNotation[from] << squareToNotation[to];
+	if ((m.getPromotion() > 0) && (m.getPromotion() < 5))
+	{
+		int promotion = m.getPromotion();
+		cout << promotionToNotation[promotion];
+	}
+	cout << " ";
+}
+
+void think()
+{
+	int score, alpha, beta;
+	int searchDepth, searchTime;
+	vector<Move> pv;
+
+	searching = true;
+	memset(butterfly, 0, sizeof(butterfly));
+	memset(killer, 0, sizeof(killer));
+	nodeCount = 0;
+	countDown = stopInterval;
+
+	alpha = -infinity;
+	beta = infinity;
+
+	t.reset();
+	t.start();
+
+	for (searchDepth = 1;;)
+	{
+		score = searchRoot(root, 0, searchDepth * onePly, alpha, beta);
+		reconstructPV(root, pv);
+
+		searchTime = (int)t.getms();
+
+		// If more than 70% of our has been used or we have been ordered to stop searching return the best move.
+		// Also stop searching if there is only one root move or if we have searched too far.
+		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
+		{
+			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl;
+
+			displayBestMove(pv[0]);
+
+			return;
+		}
+
+		// if our score is outside the aspiration window do a research with no windows
+		if (score <= alpha)
+		{
+			alpha = -(mateScore + 1);
+			if (isMateScore(score))
+			{
+				int v;
+				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
+				cout << "info " << "depth " << searchDepth << " score mate " << v << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				displayPV(pv);
+			}
+			else
+			{
+				cout << "info " << "depth " << searchDepth << " score cp " << score << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				displayPV(pv);
+			}
+			continue;
+		}
+		if (score >= beta)
+		{
+			beta = mateScore + 1;
+			if (isMateScore(score))
+			{
+				int v;
+				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
+				cout << "info " << "depth " << searchDepth << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				displayPV(pv);
+			}
+			else
+			{
+				cout << "info " << "depth " << searchDepth << " score cp " << score << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				displayPV(pv);
+			}
+			continue;
+		}
+
+		if (isMateScore(score))
+		{
+			int v;
+			score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
+			cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+			displayPV(pv);
+		}
+		else
+		{
+			cout << "info " << "depth " << searchDepth << " score cp " << score << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+			displayPV(pv);
+		}
+
+		// adjust alpha and beta based on the last score
+		// don't adjust if depth is low - it's a waste of time
+		/*
+		if (searchDepth >= 4)
+		{
+			alpha = score - aspirationWindow;
+			beta = score + aspirationWindow;
+		}
+		*/
+		searchDepth++;
+	}
+}
+
 int qsearch(Position & pos, int alpha, int beta)
 {
 	int i, value, bestscore;
@@ -157,18 +346,16 @@ int qsearch(Position & pos, int alpha, int beta)
 	bestscore = value = eval(pos);
 	if (value > alpha)
 	{
-		if (value < beta)
-		{
-			alpha = value;
-		}
-		else
+		if (value > beta)
 		{
 			return value;
 		}
+		alpha = value;
 	}
 
 	Move moveStack[64];
 	int generatedMoves = generateCaptures(pos, moveStack);
+	orderCaptures(pos, moveStack, generatedMoves);
 	for (i = 0; i < generatedMoves; i++)
 	{
 		selectMove(moveStack, generatedMoves, i);
@@ -191,12 +378,11 @@ int qsearch(Position & pos, int alpha, int beta)
 
 		nodeCount++;
 
-		/*
-		if (--countdown <= 0)
+		if (--countDown <= 0)
 		{
 			readClockAndInput();
 		}
-		*/
+		
 		value = -qsearch(pos, -beta, -alpha);
 		pos.unmakeMove(moveStack[i]);
 
@@ -205,14 +391,11 @@ int qsearch(Position & pos, int alpha, int beta)
 			bestscore = value;
 			if (value > alpha)
 			{
-				if (value < beta)
-				{
-					alpha = value;
-				}
-				else
+				if (value > beta)
 				{
 					return value;
 				}
+				alpha = value;
 			}
 		}
 	}
@@ -225,7 +408,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	bool movesFound, pvFound;
 	bool check;
 	int value, generatedMoves;
-	int ttMove = probeFailed;
+	int ttMove = -1;
 	int bestmove = -1;
 	int ttFlag = ttAlpha;
 	bool ttAllowNull = true;
@@ -236,7 +419,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	check = pos.inCheck(pos.getSideToMove());
 	if (check)
 	{
-		depth += onePly;
+		// depth += onePly;
 	}
 
 	if (depth <= 0)
@@ -251,11 +434,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Probe the transposition table.
+	
 	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull)) != probeFailed)
 	{
 		return value;
 	}
-
+	
 	// Null move pruning, both static and dynamic.
 	if (allowNullMove && ttAllowNull)
 	{
@@ -281,16 +465,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 					}
 				}
 				nodeCount++;
-				/*
-				if (--countdown <= 0)
+
+				if (--countDown <= 0)
 				{
 					readClockAndInput();
 				}
 				
-				sideToMove = !sideToMove;
-				Hash ^= side;
-				*/
 				// And here's dynamic.
+				pos.makeNullMove();
 				if (depth <= 3 * onePly)
 				{
 					value = -qsearch(pos, -beta, -beta + 1);
@@ -299,10 +481,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				{
 					value = -alphabetaPVS(pos, ply, (depth - 1 * onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
 				}
-				/*
-				sideToMove = !sideToMove;
-				Hash ^= side;
-				*/
+				pos.unmakeNullMove();
+
 				if (searching == false)
 				{
 					return 0;
@@ -317,9 +497,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	allowNullMove = true;
-
-	// Internal iterative deepening.
-	if ((alpha + 1) != beta && ttMove == probeFailed && depth > 2 * onePly && searching)
+	
+	// Internal iterative deepening
+	if ((alpha + 1) != beta && ttMove == -1 && depth > 2 * onePly && searching)
 	{
 		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, allowNullMove);
 		if (value <= alpha)
@@ -328,7 +508,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
 	}
-
+	
 	pvFound = false;
 	movesFound = false;
 
@@ -357,12 +537,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			continue;
 		}
 		nodeCount++;
-		/*
-		if (--countdown <= 0)
+
+		if (--countDown <= 0)
 		{
 			readClockAndInput();
 		}
-		*/
+
 		movesFound = true;
 		if (pvFound)
 		{
@@ -386,6 +566,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		if (value > bestscore)
 		{
 			bestscore = value;
+			bestmove = moveStack[i].getMove();
 			if (value > alpha)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
@@ -407,12 +588,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				{
 					alpha = value;
 					ttFlag = ttExact;
-					bestmove = moveStack[i].getMove();
 					pvFound = true;
 				}
 				else
 				{
-					ttSave(pos, depth, value, ttBeta, moveStack[i].getMove());
+					ttSave(pos, depth, value, ttBeta, bestmove);
 					return value;
 				}
 			}
@@ -432,6 +612,100 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	ttSave(pos, depth, bestscore, ttFlag, bestmove);
+
+	return bestscore;
+}
+
+int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
+{
+	int value, generatedMoves;
+	bool check;
+	int legalmoves = 0;
+	bool pvFound = false;
+	int ttMove = -1;
+	int bestmove = -1;
+	int bestscore = -mateScore;
+
+	check = pos.inCheck(pos.getSideToMove());
+	if (check)
+	{
+		depth += onePly;
+	}
+
+	Move moveStack[256];
+	generatedMoves = generateMoves(pos, moveStack);
+	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
+	for (int i = 0; i < generatedMoves; i++)
+	{
+		selectMove(moveStack, generatedMoves, i);
+		if (!(pos.makeMove(moveStack[i])))
+		{
+			continue;
+		}
+		nodeCount++;
+		legalmoves++;
+
+		if (--countDown <= 0)
+		{
+			readClockAndInput();
+		}
+		if (pvFound)
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
+			if (value > alpha && value < beta)
+			{
+				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+			}
+		}
+		else
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+		}
+
+		pos.unmakeMove(moveStack[i]);
+
+		if (searching == false)
+		{
+			return 0;
+		}
+
+		if (value > bestscore)
+		{
+			bestscore = value;
+			bestmove = moveStack[i].getMove();
+			if (value > alpha)
+			{
+				// Update the history heuristic when a move which improves alpha is found.
+				// Don't update if the move is not a quiet move.
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() < 5 && moveStack[i].getPromotion() > 0))
+				{
+					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
+					if (value >= beta)
+					{
+						if (moveStack[i].getMove() != killer[0][ply])
+						{
+							killer[1][ply] = killer[0][ply];
+							killer[0][ply] = moveStack[i].getMove();
+						}
+					}
+				}
+
+				if (value < beta)
+				{
+					alpha = value;
+					ttSave(pos, depth, value, ttAlpha, bestmove);
+					pvFound = true;
+				}
+				else
+				{
+					ttSave(pos, depth, value, ttBeta, bestmove);
+					return value;
+				}
+			}
+		}
+	}
+
+	ttSave(pos, depth, bestscore, ttExact, bestmove);
 
 	return bestscore;
 }

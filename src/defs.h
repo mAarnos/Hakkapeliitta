@@ -8,6 +8,7 @@
 #include <ctime>
 #include <cmath>
 #include <string>
+#include <istream>
 #include <sstream>
 #include <map>
 #include <regex>

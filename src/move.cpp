@@ -32,6 +32,11 @@ void Move::setScore(int score)
 	move |= score << 16;
 }
 
+void Move::setMove(int m)
+{
+	move = m;
+}
+
 int Move::getMove()
 {
 	return move;

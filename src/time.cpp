@@ -9,6 +9,8 @@ Timer t;
 int targetTime;
 int maxTime;
 
+int countDown;
+
 void Timer::start()
 {
 	startTime = clock();
@@ -39,6 +41,20 @@ uint64_t Timer::getms()
 	else
 	{
 		return (stopTime - startTime);
+	}
+}
+
+void readClockAndInput()
+{
+	countDown = stopInterval;
+	if (t.getms() > targetTime)
+	{
+		searching = false;
+	}
+	// Bug here, cin.peek freezes everything
+	if (cin.rdbuf()->in_avail())
+	{
+		uciProcessInput();
 	}
 }
 

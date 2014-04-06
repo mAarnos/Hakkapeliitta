@@ -62,6 +62,9 @@ class Position
 
 		bool makeMove(Move m);
 		void unmakeMove(Move m);
+
+		void makeNullMove();
+		void unmakeNullMove();
 	private:
 		// All bitboards needed to represent the position.
 		// 6 bitboards for different white pieces + 1 for all white pieces.

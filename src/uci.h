@@ -13,6 +13,7 @@ class uciCommand
 };
 
 void uciMainLoop();
+int uciProcessInput();
 
 const int uciQuit = 0;
 const int uciOk = 1;

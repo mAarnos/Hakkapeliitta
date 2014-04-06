@@ -4,27 +4,20 @@
 #include "ttable.h"
 #include "eval.h"
 
-// Maybe a class HashTable which includes the size?
-
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 HashTable<ttEntry> perftTT;
 
 int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull)
 {
-	if (tt.isEmpty())
-	{
-		return probeFailed;
-	}
-
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
 	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{
 		best = (int)hashEntry->data;
-		int score = (hashEntry->data & 0x0000FFFF00000000) >> 32;
-		int flags = hashEntry->data >> 56;
+		int16_t score = (hashEntry->data & 0x0000FFFF00000000) >> 32;
 		int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
+		int flags = hashEntry->data >> 56;
 
 		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
 		{
@@ -34,6 +27,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 		{
 			// Correct the mate score back.
 			// Check that this works, might be ply - 1 or ply + 1.
+			/*
 			if (isMateScore(score))
 			{
 				if (score > 0)
@@ -45,7 +39,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 					score += ply;
 				}
 			}
-
+			*/
 			if (flags == ttExact)
 			{
 				return score;
@@ -64,7 +58,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 				}
 			}
 
-			if ((flags == ttBeta) && (score >= beta))
+			if (flags == ttBeta)
 			{
 				if (score >= beta)
 				{
@@ -84,11 +78,6 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 
 int pttProbe(Position & pos)
 {
-	if (ptt.isEmpty())
-	{
-		return probeFailed;
-	}
-
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
 	if (hashEntry->hash == pos.getPawnHash())
@@ -99,14 +88,10 @@ int pttProbe(Position & pos)
 	return probeFailed;
 }
 
-void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best)
+void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int64_t best)
 {
-	if (tt.isEmpty())
-	{
-		return;
-	}
-
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
+	/*
 	if (isMateScore(score))
 	{
 		if (score > 0)
@@ -118,21 +103,42 @@ void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64
 			score -= -mateScore;
 		}
 	}
-
+	*/
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
 	hashEntry->hash = pos.getHash();
-	hashEntry->data = (best | score << 32 | depth << 48 | flags << 56);
+	hashEntry->data = ((best & 0x00000000FFFFFFFF) | (score & 0x000000000000FFFF) << 32 | ((depth << 48) & 0x00FF000000000000) | flags << 56);
 	hashEntry->hash ^= hashEntry->data;
+
+	/*
+	int16_t hashScore = (hashEntry->data & 0x0000FFFF00000000) >> 32;
+	if (hashScore != score)
+	{
+		cout << "error" << endl;
+	}
+
+	int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
+	if (hashDepth != depth)
+	{
+		cout << "error" << endl;
+	}
+
+	int hashBest = (int)hashEntry->data;
+	if (hashBest != best)
+	{
+		cout << "error" << endl;
+	}
+
+	int hashFlags = hashEntry->data >> 56;
+	if (hashFlags != flags)
+	{
+		cout << "error" << endl;
+	}
+	*/
 }
 
 void pttSave(Position & pos, int32_t score)
 {
-	if (ptt.isEmpty())
-	{
-		return;
-	}
-
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
 	hashEntry->hash = pos.getPawnHash();

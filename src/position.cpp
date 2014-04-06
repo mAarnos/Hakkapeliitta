@@ -525,4 +525,21 @@ void Position::readHistory(int & captured)
 	matHash = historyStack[hply].mHash;
 }
 
+void Position::makeNullMove()
+{
+	sideToMove = !sideToMove;
+	hash ^= turnHash;
+	historyStack[hply].ep = enPassantSquare;
+	enPassantSquare = NoSquare;
+	hply++;
+}
+
+void Position::unmakeNullMove()
+{
+	hply--;
+	enPassantSquare = historyStack[hply].ep;
+	sideToMove = !sideToMove;
+	hash ^= turnHash;
+}
+
 #endif
