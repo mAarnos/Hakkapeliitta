@@ -55,6 +55,10 @@ class Position
 
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
+		bool repetitionDraw();
+
+		int SEE(Move m);
+
 		bool makeMove(Move m);
 		void unmakeMove(Move m);
 	private:
@@ -104,9 +108,6 @@ class Position
 		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
 		uint64_t attacksTo(int to);
 		uint64_t attacksTo(int to, bool side);
-
-		// Static Exchange Evaluator
-		int SEE(Move m);
 };
 
 extern Position root;
