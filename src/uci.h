@@ -12,6 +12,8 @@ class uciCommand
 		uciFunctionPointer function;
 };
 
+bool inputAvailable();
+
 void uciMainLoop();
 int uciProcessInput();
 

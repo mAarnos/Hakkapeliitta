@@ -51,8 +51,8 @@ void readClockAndInput()
 	{
 		searching = false;
 	}
-	// Bug here, cin.peek freezes everything
-	if (cin.rdbuf()->in_avail())
+	
+	if (inputAvailable())
 	{
 		uciProcessInput();
 	}

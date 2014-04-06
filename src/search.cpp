@@ -266,8 +266,7 @@ void think()
 		// Also stop searching if there is only one root move or if we have searched too far.
 		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
 		{
-			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl;
-
+			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << "bestmove " << endl;
 			displayBestMove(pv[0]);
 
 			return;
@@ -276,7 +275,7 @@ void think()
 		// if our score is outside the aspiration window do a research with no windows
 		if (score <= alpha)
 		{
-			alpha = -(mateScore + 1);
+			alpha = -infinity;
 			if (isMateScore(score))
 			{
 				int v;
@@ -293,7 +292,7 @@ void think()
 		}
 		if (score >= beta)
 		{
-			beta = mateScore + 1;
+			beta = infinity;
 			if (isMateScore(score))
 			{
 				int v;
@@ -322,15 +321,14 @@ void think()
 			displayPV(pv);
 		}
 
-		// adjust alpha and beta based on the last score
-		// don't adjust if depth is low - it's a waste of time
-		/*
+		// Adjust alpha and beta based on the last score.
+		// Don't adjust if depth is low - it's a waste of time.
 		if (searchDepth >= 4)
 		{
 			alpha = score - aspirationWindow;
 			beta = score + aspirationWindow;
 		}
-		*/
+
 		searchDepth++;
 	}
 }
@@ -379,7 +377,7 @@ int qsearch(Position & pos, int alpha, int beta)
 
 		nodeCount++;
 
-		if (--countDown <= 0)
+		if (countDown-- <= 0)
 		{
 			readClockAndInput();
 		}
@@ -466,7 +464,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				}
 				nodeCount++;
 
-				if (--countDown <= 0)
+				if (countDown-- <= 0)
 				{
 					readClockAndInput();
 				}
@@ -538,7 +536,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		nodeCount++;
 
-		if (--countDown <= 0)
+		if (countDown-- <= 0)
 		{
 			readClockAndInput();
 		}
@@ -645,7 +643,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		nodeCount++;
 		legalmoves++;
 
-		if (--countDown <= 0)
+		if (countDown-- <= 0)
 		{
 			readClockAndInput();
 		}

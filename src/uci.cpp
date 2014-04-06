@@ -1,6 +1,7 @@
 #ifndef UCI_CPP
 #define UCI_CPP
 
+#include <windows.h>
 #include "uci.h"
 #include "bitboard.h"
 #include "magic.h"
@@ -24,6 +25,9 @@ int uciStaticEval(string s);
 
 bool searching;
 
+int pipe;
+HANDLE hstdin;
+
 const int amountOfCommands = 10;
 uciCommand commands[amountOfCommands] =
 {
@@ -39,15 +43,52 @@ uciCommand commands[amountOfCommands] =
 	{ "staticeval", uciStaticEval },
 };
 
+void initInput()
+{
+	unsigned long dw;
+
+	hstdin = GetStdHandle(STD_INPUT_HANDLE);
+	pipe = !GetConsoleMode(hstdin, &dw);
+
+	if (!pipe)
+	{
+		SetConsoleMode(hstdin, dw&~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
+		FlushConsoleInputBuffer(hstdin);
+	}
+	else
+	{
+		setvbuf(stdin, NULL, _IONBF, 0);
+		setvbuf(stdout, NULL, _IONBF, 0);
+	}
+}
+
 void initializeEngine()
 {
+	initInput();
 	initializeBitboards();
 	initializeMagics();
 	initializeHash();
 	initializeEval();
 	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	tt.setSize(1024 * 1024 * 64);
-	ptt.setSize((1024 * 1024 *64) / 8);
+	tt.setSize(1024 * 1024);
+	ptt.setSize((1024 * 1024) / 8);
+}
+
+bool inputAvailable()
+{
+	unsigned long dw = 0;
+
+	if (stdin->_cnt > 0) return true;
+	if (pipe)
+	{
+		if (!PeekNamedPipe(hstdin, 0, 0, 0, &dw, 0)) return true;
+		return dw > 0;
+	}
+	else
+	{
+		GetNumberOfConsoleInputEvents(hstdin, &dw);
+		return dw > 1;
+	}
 }
 
 void uciMainLoop()
