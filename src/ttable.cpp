@@ -109,32 +109,6 @@ void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int6
 	hashEntry->hash = pos.getHash();
 	hashEntry->data = ((best & 0x00000000FFFFFFFF) | (score & 0x000000000000FFFF) << 32 | ((depth << 48) & 0x00FF000000000000) | flags << 56);
 	hashEntry->hash ^= hashEntry->data;
-
-	/*
-	int16_t hashScore = (hashEntry->data & 0x0000FFFF00000000) >> 32;
-	if (hashScore != score)
-	{
-		cout << "error" << endl;
-	}
-
-	int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
-	if (hashDepth != depth)
-	{
-		cout << "error" << endl;
-	}
-
-	int hashBest = (int)hashEntry->data;
-	if (hashBest != best)
-	{
-		cout << "error" << endl;
-	}
-
-	int hashFlags = hashEntry->data >> 56;
-	if (hashFlags != flags)
-	{
-		cout << "error" << endl;
-	}
-	*/
 }
 
 void pttSave(Position & pos, int32_t score)

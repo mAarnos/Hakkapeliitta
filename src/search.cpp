@@ -89,7 +89,7 @@ bool Position::repetitionDraw()
 	return false;
 }
 
-void orderMoves(Position & pos, Move * moveStack, int moveAmount, int &ttMove, int ply)
+void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, int ply)
 {
 	for (int i = 0; i < moveAmount; i++)
 	{
@@ -97,7 +97,7 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int &ttMove, i
 		{
 			moveStack[i].setScore(hashMove);
 		}
-		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty)
+		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty || moveStack[i].getEnPassant())
 		{
 			// Misses en passant captures atm, add them in.
 			int score = pos.SEE(moveStack[i]);
@@ -114,6 +114,14 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int &ttMove, i
 		else if (moveStack[i].getMove() == killer[1][ply])
 		{
 			moveStack[i].setScore(killerMove2);
+		}
+		else if (ply > 1 && moveStack[i].getMove() == killer[0][ply - 2])
+		{
+			moveStack[i].setScore(killerMove3);
+		}
+		else if (ply > 1 && moveStack[i].getMove() == killer[1][ply - 2])
+		{
+			moveStack[i].setScore(killerMove4);
 		}
 		else
 		{
@@ -569,7 +577,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() != Empty))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && (moveStack[i].getPromotion() == Empty))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)
@@ -618,7 +626,6 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
 	int value, generatedMoves;
 	bool check;
-	int legalmoves = 0;
 	bool pvFound = false;
 	int ttMove = -1;
 	int bestmove = -1;
@@ -641,7 +648,6 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			continue;
 		}
 		nodeCount++;
-		legalmoves++;
 
 		if (countDown-- <= 0)
 		{

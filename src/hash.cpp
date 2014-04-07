@@ -13,7 +13,7 @@ uint64_t turnHash;
 
 void initializeHash()
 {
-	WELL512 rng(119582769);
+	WELL512 rng(123456789);
 
 	for (int i = WhitePawn; i <= BlackKing; i++)
 	{
