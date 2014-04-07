@@ -273,8 +273,10 @@ void think()
 		// Also stop searching if there is only one root move or if we have searched too far.
 		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
 		{
-			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << "bestmove " << endl;
+			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl;
+			cout << "bestmove ";
 			displayBestMove(pv[0]);
+			cout << endl;
 
 			return;
 		}
