@@ -19,21 +19,6 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 		int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
 		int flags = hashEntry->data >> 56;
 
-		if (flags > 2 || flags < 0)
-		{
-			cout << "error" << endl;
-		}
-
-		if (score > mateScore || score < -mateScore)
-		{
-			cout << "error" << endl;
-		}
-		
-		if (hashDepth < 0 ||hashDepth > 64)
-		{
-			cout << "error" << endl;
-		}
-
 		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
 		{
 			ttAllowNull = false;
@@ -124,16 +109,6 @@ void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int6
 	hashEntry->hash = pos.getHash();
 	hashEntry->data = ((best & 0x00000000FFFFFFFF) | (score & 0x000000000000FFFF) << 32 | ((depth << 48) & 0x00FF000000000000) | flags << 56);
 	hashEntry->hash ^= hashEntry->data;
-
-	int bestMove = (int)hashEntry->data;
-	int hashScore = (int16_t)((hashEntry->data & 0x0000FFFF00000000) >> 32);
-	int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
-	int hashFlags = hashEntry->data >> 56;
-
-	if (bestMove != best || hashScore != score || hashDepth != depth || hashFlags != flags)
-	{
-		cout << "error" << endl;
-	}
 }
 
 void pttSave(Position & pos, int32_t score)
