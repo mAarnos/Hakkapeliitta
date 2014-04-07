@@ -99,8 +99,8 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 		}
 		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty || moveStack[i].getEnPassant())
 		{
-			// Misses en passant captures atm, add them in.
 			int score = pos.SEE(moveStack[i]);
+			// If the capture is good, order it way higher than bad captures.
 			if (score >= 0)
 			{
 				score += captureMove;
@@ -166,11 +166,10 @@ void reconstructPV(Position pos, vector<Move> & pv)
 	int ply = 0;
 	while (ply < 63)
 	{
-		//  
 		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 		if ((hashEntry->hash ^ hashEntry->data) != pos.getHash()
-		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
-		|| ((int)hashEntry->data) == -1)
+        || ((hashEntry->data >> 56) != ttExact)
+		|| ((int)hashEntry->data) == ttMoveNone)
 		{
 			break;
 		}
@@ -415,8 +414,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	bool movesFound, pvFound;
 	bool check;
 	int value, generatedMoves;
-	int ttMove = -1;
-	int bestmove = -1;
+	int ttMove = ttMoveNone;
+	int bestmove = ttMoveNone;
 	int ttFlag = ttAlpha;
 	bool ttAllowNull = true;
 	int bestscore = -mateScore;
@@ -505,7 +504,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	allowNullMove = true;
 	
 	// Internal iterative deepening
-	if ((alpha + 1) != beta && ttMove == -1 && depth > 2 * onePly && searching)
+	if ((alpha + 1) != beta && ttMove == ttMoveNone && depth > 2 * onePly && searching)
 	{
 		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, allowNullMove);
 		if (value <= alpha)
@@ -627,8 +626,8 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	int value, generatedMoves;
 	bool check;
 	bool pvFound = false;
-	int ttMove = -1;
-	int bestmove = -1;
+	int ttMove = ttMoveNone;
+	int bestmove = ttMoveNone;
 	int bestscore = -mateScore;
 
 	check = pos.inCheck(pos.getSideToMove());

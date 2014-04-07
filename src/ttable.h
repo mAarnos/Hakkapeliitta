@@ -5,6 +5,7 @@
 #include "position.h"
 
 const uint32_t probeFailed = UINT_MAX;
+const int ttMoveNone = -1;
 
 // Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
