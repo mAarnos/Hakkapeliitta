@@ -139,8 +139,8 @@ void initializeEval()
 			pieceSquareTableOpening[i][sq] = openingPST[i][sq] + pieceValuesOpening[i];
 			pieceSquareTableEnding[i][sq] = endingPST[i][sq] + pieceValuesEnding[i];
 
-			pieceSquareTableOpening[i + Black * 6][flip[sq]] = -(openingPST[i][sq] + pieceValuesOpening[i]);
-			pieceSquareTableEnding[i + Black * 6][flip[sq]] = -(endingPST[i][sq] + pieceValuesEnding[i]);
+			pieceSquareTableOpening[i + Black * 6][sq] = -(openingPST[i][flip[sq]] + pieceValuesOpening[i]);
+			pieceSquareTableEnding[i + Black * 6][sq] = -(endingPST[i][flip[sq]] + pieceValuesEnding[i]);
 		}
 	}
 }
@@ -527,6 +527,7 @@ int eval(Position & pos)
 	// Mobility
 	score += mobilityEval(pos, phase, kingTropismScore);
 
+	// Pawn structure
 	score += pawnStructureEval(pos, phase);
 
 	// King safety

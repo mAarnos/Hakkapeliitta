@@ -680,7 +680,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && !(moveStack[i].getPromotion() != Empty))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && (moveStack[i].getPromotion() == Empty))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)

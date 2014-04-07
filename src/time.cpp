@@ -51,12 +51,10 @@ void readClockAndInput()
 	{
 		searching = false;
 	}
-	/*
 	if (inputAvailable())
 	{
 		uciProcessInput();
 	}
-	*/
 }
 
 void allocateSearchTime(string s)
