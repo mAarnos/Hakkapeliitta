@@ -130,7 +130,7 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 	}
 }
 
-void orderCaptures(Position & pos, Move * moveStack, const int moveAmount)
+void orderCaptures(Position & pos, Move * moveStack, int moveAmount)
 {
 	for (int i = 0; i < moveAmount; i++)
 	{
@@ -250,10 +250,6 @@ void think()
 	int score, alpha, beta;
 	int searchDepth, searchTime;
 	vector<Move> pv;
-
-	// REMOVE THESE TWO AFTER FINDING ALL BUGS
-	tt.clear();
-	ptt.clear();
 
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));

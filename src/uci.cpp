@@ -94,6 +94,8 @@ bool inputAvailable()
 void uciMainLoop()
 {
 	int status = uciOk;
+	// The loop here is pretty much redundant at the moment as we never change uciOk to anything else.
+	// Maybe if something goes badly wrong?
 	while (status == uciOk)
 	{
 		status = uciProcessInput();
@@ -318,7 +320,7 @@ int uciStop(string s)
 
 int uciExit(string s)
 {
-	return uciQuit;
+	exit(0);
 }
 
 int uciDisplayBoard(string s)
