@@ -167,10 +167,10 @@ void reconstructPV(Position pos, vector<Move> & pv)
 	while (ply < 63)
 	{
 		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-		if ((hashEntry->hash ^ hashEntry->data) != pos.getHash()
-        || ((hashEntry->data >> 56) != ttExact)
-		|| ((int)hashEntry->data) == ttMoveNone
-		|| pos.repetitionDraw())
+		if (((hashEntry->hash ^ hashEntry->data) != pos.getHash())
+		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
+		|| (pos.repetitionDraw() && ply >= 2)
+		|| ((int)hashEntry->data == ttMoveNone))
 		{
 			break;
 		}
@@ -250,6 +250,9 @@ void think()
 	int score, alpha, beta;
 	int searchDepth, searchTime;
 	vector<Move> pv;
+
+	//tt.clear();
+	//ptt.clear();
 
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));
