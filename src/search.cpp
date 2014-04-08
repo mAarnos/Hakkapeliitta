@@ -130,7 +130,7 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 	}
 }
 
-void orderCaptures(Position & pos, Move * moveStack, int moveAmount)
+void orderCaptures(Position & pos, Move * moveStack, const int moveAmount)
 {
 	for (int i = 0; i < moveAmount; i++)
 	{
@@ -169,7 +169,8 @@ void reconstructPV(Position pos, vector<Move> & pv)
 		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 		if ((hashEntry->hash ^ hashEntry->data) != pos.getHash()
         || ((hashEntry->data >> 56) != ttExact)
-		|| ((int)hashEntry->data) == ttMoveNone)
+		|| ((int)hashEntry->data) == ttMoveNone
+		|| pos.repetitionDraw())
 		{
 			break;
 		}
@@ -249,6 +250,10 @@ void think()
 	int score, alpha, beta;
 	int searchDepth, searchTime;
 	vector<Move> pv;
+
+	// REMOVE THESE TWO AFTER FINDING ALL BUGS
+	tt.clear();
+	ptt.clear();
 
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));

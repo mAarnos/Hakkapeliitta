@@ -99,13 +99,8 @@ int Position::SEE(Move m)
 	int alpha = -infinity, beta, next, value, attackerValue;
 	int from = m.getFrom();
 	int to = m.getTo();
-	int promotion = m.getPromotion(); 
 
-	if (m.getCastling())
-	{
-		return 0;
-	}
-	else if (m.getEnPassant())
+	if (m.getEnPassant())
 	{
 		value = pieceValues[Pawn];
 		attackerValue = value;
@@ -175,7 +170,7 @@ int Position::SEE(Move m)
 		}
 		else
 		{
-			next = bitScanForward(bitboards[King + !sideToMove]);
+			next = bitScanForward(bitboards[King + !sideToMove * 6]);
 		}
 
 		attackers ^= bit[next];
@@ -231,7 +226,7 @@ int Position::SEE(Move m)
 		}
 		else
 		{
-			next = bitScanForward(bitboards[King + sideToMove]);
+			next = bitScanForward(bitboards[King + !sideToMove * 6]);
 		}
 		
 		attackers ^= bit[next];
