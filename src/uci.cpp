@@ -264,8 +264,6 @@ int uciPosition(string s)
 		move.push_back((*it)[0]);
 	}
 
-	root.displayBoard();
-
 	for (int i = 0; i < move.size(); i++)
 	{
 		Move m;
