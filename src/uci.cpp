@@ -264,6 +264,8 @@ int uciPosition(string s)
 		move.push_back((*it)[0]);
 	}
 
+	root.displayBoard();
+
 	for (int i = 0; i < move.size(); i++)
 	{
 		Move m;
@@ -289,11 +291,11 @@ int uciPosition(string s)
 		}
 		else if ((root.getPieceType(from) == King) && (abs(from - to) == 2))
 		{
-			m.setPromotion(King);
+			m.setCastling(true);
 		}
 		else if ((root.getPieceType(from) == Pawn) && to == root.getEnPassantSquare())
 		{
-			m.setPromotion(Pawn);
+			m.setEnPassant(true);
 		}
 
 		root.makeMove(m);

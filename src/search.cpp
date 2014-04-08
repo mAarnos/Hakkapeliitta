@@ -446,7 +446,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	{
 		return value;
 	}
-	
+
 	// Null move pruning, both static and dynamic.
 	if (allowNullMove && ttAllowNull)
 	{
