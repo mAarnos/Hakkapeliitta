@@ -10,14 +10,14 @@
 Position root;
 
 array<int, Squares> castlingMask = {
-	13, 0, 0, 0, 12, 0, 0, 14,
+	2, 0, 0, 0, 3, 0, 0, 1,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
-	7, 0, 0, 0, 3, 0, 0, 11
+	8, 0, 0, 0, 12, 0, 0, 4
 };
 
 void Position::displayBoard()
@@ -313,8 +313,8 @@ bool Position::makeMove(Move m)
 	if (castlingRights && (castlingMask[from] | castlingMask[to]))
 	{
 		int cf = castlingMask[from] | castlingMask[to];
-		hash ^= castlingRightsHash[castlingRights & ~cf];
-		castlingRights &= cf;
+		hash ^= castlingRightsHash[castlingRights & cf];
+		castlingRights &= ~cf;
 	}
 
 	// Check if the move leaves us in check.

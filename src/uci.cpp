@@ -304,7 +304,6 @@ int uciPosition(string s)
 	return uciOk;
 }
 
-// add search
 int uciGo(string s)
 {
 	allocateSearchTime(s);
