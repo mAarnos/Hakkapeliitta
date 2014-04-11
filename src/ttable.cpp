@@ -80,7 +80,7 @@ int pttProbe(Position & pos)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	if (hashEntry->hash == pos.getPawnHash())
+	if ((hashEntry->hash ^ hashEntry->score) == (uint32_t)pos.getPawnHash())
 	{
 		return hashEntry->score;
 	}
@@ -115,8 +115,9 @@ void pttSave(Position & pos, int32_t score)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	hashEntry->hash = pos.getPawnHash();
+	hashEntry->hash = (uint32_t)pos.getPawnHash();
 	hashEntry->score = score;
+	hashEntry->hash ^= hashEntry->score;
 }
 
 void perftTTSave(Position & pos, uint64_t nodes, int depth)

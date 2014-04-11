@@ -186,10 +186,6 @@ const int pawnStormClosePenalty = 22;
 const int pawnStormFarPenalty = 6;
 const int kingInCenterOpenFilePenalty = 23;
 
-const int rookOnOpenFileBonus = 10;
-const int rookOnSemiOpenFileBonus = 5;
-const int rookBehindPassedBonus = 20;
-
 extern int drawScore;
 
 extern map<uint64_t, int> knownEndgames;

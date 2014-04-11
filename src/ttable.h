@@ -20,7 +20,7 @@ class ttEntry
 class pttEntry 
 {
 	public:
-		uint64_t hash;
+		uint32_t hash;
 		int32_t score;
 }; 
 
