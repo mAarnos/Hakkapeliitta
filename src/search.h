@@ -9,7 +9,6 @@ extern uint64_t nodeCount;
 
 void think();
 uint64_t perft(Position & pos, int depth);
-uint64_t perftHash(Position & pos, int depth);
 
 const int deltaPruningSafetyMargin = 50;
 const int aspirationWindow = 50;

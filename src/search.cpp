@@ -18,28 +18,6 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
 {
-	if (depth == 0)
-	{
-		return 1;
-	}
-
-	Move moveStack[256];
-	int generatedMoves = generateMoves(pos, moveStack);
-	for (int i = 0; i < generatedMoves; i++)
-	{
-		if (!(pos.makeMove(moveStack[i])))
-		{
-			continue;
-		}
-		nodeCount += perft(pos, depth - 1);
-		pos.unmakeMove(moveStack[i]);
-	}
-
-	return 0;
-}
-
-uint64_t perftHash(Position & pos, int depth)
-{
 	uint64_t nodes = 0;
 	uint64_t value;
 
@@ -61,7 +39,7 @@ uint64_t perftHash(Position & pos, int depth)
 		{
 			continue;
 		}
-		nodes += perftHash(pos, depth - 1);
+		nodes += perft(pos, depth - 1);
 		pos.unmakeMove(moveStack[i]);
 	}
 
@@ -100,7 +78,7 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty || moveStack[i].getEnPassant())
 		{
 			int score = pos.SEE(moveStack[i]);
-			// If the capture is good, order it way higher than bad captures.
+			// If the capture is good, order it way higher than anything else.
 			if (score >= 0)
 			{
 				score += captureMove;
@@ -277,8 +255,7 @@ void think()
 		// Also stop searching if there is only one root move or if we have searched too far.
 		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
 		{
-			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl;
-			cout << "bestmove ";
+			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl << "bestmove ";
 			displayBestMove(pv[0]);
 			cout << endl;
 

@@ -30,18 +30,19 @@ int main()
 	// root.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
     uciMainLoop();
+
 	/*
 	perftTT.setSize(1024 * 1024 * 256);
 
 	t.start();
-	// nodeCount = perftHash(root, 7);
-	perft(root, 5);
+	nodeCount = perft(root, 7);
 	t.stop();
 
 	cout << "Nodecount = " << nodeCount << endl;
 	cout << "Time(in ms) = " << t.getms() << endl;
 	cout << "NPS = " << nodeCount / (t.getms() / 1000.0) << endl;
 	*/
+
 	return 0; 
 }
 
