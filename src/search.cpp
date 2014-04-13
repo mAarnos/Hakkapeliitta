@@ -174,7 +174,7 @@ void displayPV(vector<Move> pv)
 	};
 
 	static array<string, Pieces> promotionToNotation = {
-		"P", "N", "B", "R", "Q", "K"
+		"p", "n", "b", "r", "q", "k"
 	};
 
 	for (int i = 0; i < pv.size(); i++)
@@ -208,7 +208,7 @@ void displayBestMove(Move m)
 	};
 
 	static array<string, Pieces> promotionToNotation = {
-		"P", "N", "B", "R", "Q", "K"
+		"p", "n", "b", "r", "q", "k"
 	};
 
 	int from = m.getFrom();
