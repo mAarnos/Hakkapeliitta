@@ -335,7 +335,7 @@ int qsearch(Position & pos, int alpha, int beta)
 	bestscore = value = eval(pos);
 	if (value > alpha)
 	{
-		if (value > beta)
+		if (value >= beta)
 		{
 			return value;
 		}
@@ -380,7 +380,7 @@ int qsearch(Position & pos, int alpha, int beta)
 			bestscore = value;
 			if (value > alpha)
 			{
-				if (value > beta)
+				if (value >= beta)
 				{
 					return value;
 				}
