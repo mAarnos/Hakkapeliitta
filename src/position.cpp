@@ -288,7 +288,6 @@ bool Position::makeMove(Move m)
 
 		if ((to ^ from) == 16)
 		{
-			// Double pawn move.
 			enPassantSquare = to - 8 + 16 * sideToMove;
 			hash ^= enPassantHash[enPassantSquare];
 		}
@@ -390,7 +389,7 @@ void Position::makeCapture(int captured, int to)
 	matHash ^= materialHash[captured][popcnt(bitboards[captured])];
 
 	int pieceType = (captured % Pieces);
-	phase -= piecePhase[pieceType];
+	phase += piecePhase[pieceType];
 	if (pieceType == Pawn)
 	{
 		pawnHash ^= pieceHash[captured][to];
@@ -408,7 +407,7 @@ void Position::makePromotion(int promotion, int to)
 	pawnHash ^= pieceHash[board[to]][to];
 	matHash ^= materialHash[Pawn + sideToMove * 6][popcnt(bitboards[Pawn + sideToMove * 6])];
 	board[to] = promotion + sideToMove * 6;
-	phase += piecePhase[promotion];
+	phase -= piecePhase[promotion];
 	scoreOp += pieceSquareTableOpening[promotion + sideToMove * 6][to] - pieceSquareTableOpening[Pawn + sideToMove * 6][to];
 	scoreEd += pieceSquareTableEnding[promotion + sideToMove * 6][to] - pieceSquareTableEnding[Pawn + sideToMove * 6][to];
 }
@@ -456,14 +455,14 @@ void Position::unmakeCapture(int captured, int to)
 	bitboards[12 + !sideToMove] |= bit[to];
 	scoreOp += pieceSquareTableOpening[captured][to];
 	scoreEd += pieceSquareTableEnding[captured][to];
-	phase += piecePhase[captured % Pieces];
+	phase -= piecePhase[captured % Pieces];
 }
 
 void Position::unmakePromotion(int promotion, int to)
 {
 	bitboards[Pawn + sideToMove * 6] ^= bit[to];
 	bitboards[promotion + sideToMove * 6] ^= bit[to];
-	phase -= piecePhase[promotion];
+	phase += piecePhase[promotion];
 	scoreOp += pieceSquareTableOpening[Pawn + sideToMove * 6][to] - pieceSquareTableOpening[promotion + sideToMove * 6][to];
 	scoreEd += pieceSquareTableEnding[Pawn + sideToMove * 6][to] - pieceSquareTableEnding[promotion + sideToMove * 6][to];
 }
