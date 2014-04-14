@@ -530,7 +530,11 @@ void Position::makeNullMove()
 	sideToMove = !sideToMove;
 	hash ^= turnHash;
 	historyStack[hply].ep = enPassantSquare;
-	enPassantSquare = NoSquare;
+	if (enPassantSquare != NoSquare)
+	{
+		hash ^= enPassantHash[enPassantSquare];
+		enPassantSquare = NoSquare;
+	}
 	hply++;
 }
 
@@ -538,6 +542,10 @@ void Position::unmakeNullMove()
 {
 	hply--;
 	enPassantSquare = historyStack[hply].ep;
+	if (enPassantSquare != NoSquare)
+	{
+		hash ^= enPassantHash[enPassantSquare];
+	}
 	sideToMove = !sideToMove;
 	hash ^= turnHash;
 }

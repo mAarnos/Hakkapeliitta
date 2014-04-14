@@ -14,7 +14,7 @@
 
 int main()
 {
-	cout << "Hakkapeliitta v2.01, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta v2.02, (C) 2013-2014 Mikko Aarnos" << endl;
 
 	// Perft 1-8 correct.
 	// root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -30,9 +30,8 @@ int main()
 	// root.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
     uciMainLoop();
-
 	/*
-	perftTT.setSize(1024 * 1024 * 256);
+	perftTT.setSize(0);
 
 	t.start();
 	nodeCount = perft(root, 7);
@@ -42,7 +41,6 @@ int main()
 	cout << "Time(in ms) = " << t.getms() << endl;
 	cout << "NPS = " << nodeCount / (t.getms() / 1000.0) << endl;
 	*/
-
 	return 0; 
 }
 
