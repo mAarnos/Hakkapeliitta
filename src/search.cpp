@@ -608,7 +608,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
 	int value, generatedMoves;
-	bool check;
+	bool check, ttAllowNull;
 	bool pvFound = false;
 	int ttMove = ttMoveNone;
 	int bestmove = ttMoveNone;
@@ -619,6 +619,9 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	{
 		depth += onePly;
 	}
+
+	// Probe the transposition table to get the PV-Move, if any.
+	ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
 
 	Move moveStack[256];
 	generatedMoves = generateMoves(pos, moveStack);
