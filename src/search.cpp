@@ -14,6 +14,8 @@ uint64_t nodeCount = 0;
 array<int, maxGameLength> killer[2];
 array<int, Squares> butterfly[Colours][Squares];
 
+vector<Move> pv;
+
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
@@ -227,7 +229,6 @@ void think()
 {
 	int score, alpha, beta;
 	int searchDepth, searchTime;
-	vector<Move> pv;
 
 	//tt.clear();
 	//ptt.clear();
@@ -681,6 +682,21 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					alpha = value;
 					ttSave(pos, depth, value, ttAlpha, bestmove);
 					pvFound = true;
+
+					int searchTime = t.getms();
+					reconstructPV(pos, pv);
+					if (isMateScore(alpha))
+					{
+						int v;
+						alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
+						cout << "info " << "depth " << depth / onePly << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+						displayPV(pv);
+					}
+					else
+					{
+						cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << " pv ";
+						displayPV(pv);
+					}
 				}
 				else
 				{
