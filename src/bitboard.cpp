@@ -131,10 +131,7 @@ void initializeRays()
 	array<int, 8> rankDirection = { -1, -1, -1, 0, 0, 1, 1, 1 };
 	array<int, 8> fileDirection = { -1, 0, 1, -1, 1, -1, 0, 1 };
 
-	for (int i = SW; i <= NE; i++)
-	{
-		heading[i].fill(-1);
-	}
+	memset(heading, -1, sizeof(heading));
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
