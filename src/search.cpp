@@ -697,7 +697,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					}
 					else
 					{
-						cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << " pv ";
+						cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
 						displayPV(pv);
 					}
 				}

@@ -311,7 +311,7 @@ int pawnStructureEval(Position & pos, int phase)
 			scoreEd -= isolatedPenaltyEnding;
 		}
 
-		if (pawnAttacks[White][from + 8] & blackPawns)
+		if ((pawnAttacks[White][from + 8] & blackPawns)) // && pos.getPiece(from - 8) == Empty)
 		{
 			if (!(whitePawns & backward[White][from]))
 			{
@@ -342,7 +342,7 @@ int pawnStructureEval(Position & pos, int phase)
 			scoreOp += isolatedPenaltyOpening;
 			scoreEd += isolatedPenaltyEnding;
 		}
-		if (pawnAttacks[Black][from - 8] & whitePawns)
+		if ((pawnAttacks[Black][from - 8] & whitePawns))// && pos.getPiece(from - 8) == Empty)
 		{
 			if (!(blackPawns & backward[Black][from]))
 			{

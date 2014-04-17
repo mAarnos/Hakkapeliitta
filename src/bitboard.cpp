@@ -178,7 +178,7 @@ void initializePawnEvaluationBitboards()
 			passed[White][sq] |= rays[N][sq - 1];
 			passed[Black][sq] |= rays[S][sq - 1];
 			backward[White][sq] |= rays[S][sq + 7];
-			backward[Black][sq] |= rays[S][sq - 9];
+			backward[Black][sq] |= rays[N][sq - 9];
 			isolated[sq] |= files[file - 1];
 		}
 	}
