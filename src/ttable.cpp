@@ -105,10 +105,12 @@ void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64
 	}
 	*/
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-
-	hashEntry->hash = pos.getHash();
-	hashEntry->data = ((best & 0xffff) | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56);
-	hashEntry->hash ^= hashEntry->data;
+	if (((hashEntry->data & 0x00FF000000000000) >> 48) <= depth || ((hashEntry->data & 0xffff0000) >> 16) < tt.getGeneration())
+	{
+		hashEntry->hash = pos.getHash();
+		hashEntry->data = ((best & 0xffff) | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56);
+		hashEntry->hash ^= hashEntry->data;
+	}
 }
 
 void pttSave(Position & pos, int32_t score)

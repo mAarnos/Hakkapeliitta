@@ -55,7 +55,7 @@ class HashTable
 		{
 			table.clear();
 			table.resize(tableSize);
-			// generation = 0;
+			generation = 0;
 		}
 
 		inline uint64_t getSize() { return tableSize; }
