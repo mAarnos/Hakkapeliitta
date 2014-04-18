@@ -26,8 +26,6 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 		if (hashDepth >= depth)
 		{
 			// Correct the mate score back.
-			// Check that this works, might be ply - 1 or ply + 1.
-			/*
 			if (isMateScore(score))
 			{
 				if (score > 0)
@@ -39,7 +37,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 					score += ply;
 				}
 			}
-			*/
+			
 			if (flags == ttExact)
 			{
 				return score;
@@ -88,22 +86,21 @@ int pttProbe(Position & pos)
 	return probeFailed;
 }
 
-void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best)
+void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t flags, int64_t best)
 {
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
-	/*
 	if (isMateScore(score))
 	{
 		if (score > 0)
 		{
-			score = mateScore;
+			score += ply;
 		}
 		else
 		{
-			score -= -mateScore;
+			score -= ply;
 		}
 	}
-	*/
+	
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 	if (((hashEntry->data & 0x00FF000000000000) >> 48) <= depth || ((hashEntry->data & 0xffff0000) >> 16) < tt.getGeneration())
 	{

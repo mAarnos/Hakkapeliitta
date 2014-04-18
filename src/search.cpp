@@ -582,7 +582,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				}
 				else
 				{
-					ttSave(pos, depth, value, ttBeta, bestmove);
+					ttSave(pos, depth, ply, value, ttBeta, bestmove);
 					return value;
 				}
 			}
@@ -601,7 +601,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	ttSave(pos, depth, bestscore, ttFlag, bestmove);
+	ttSave(pos, depth, ply, bestscore, ttFlag, bestmove);
 
 	return bestscore;
 }
@@ -684,7 +684,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				if (value < beta)
 				{
 					alpha = value;
-					ttSave(pos, depth, value, ttAlpha, bestmove);
+					ttSave(pos, depth, ply, value, ttAlpha, bestmove);
 					pvFound = true;
 
 					int searchTime = (int)t.getms();
@@ -704,14 +704,14 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				}
 				else
 				{
-					ttSave(pos, depth, value, ttBeta, bestmove);
+					ttSave(pos, depth, ply, value, ttBeta, bestmove);
 					return value;
 				}
 			}
 		}
 	}
 
-	ttSave(pos, depth, bestscore, ttExact, bestmove);
+	ttSave(pos, depth, ply, bestscore, ttExact, bestmove);
 
 	return bestscore;
 }

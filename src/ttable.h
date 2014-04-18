@@ -73,7 +73,7 @@ extern HashTable<ttEntry> tt;
 extern HashTable<pttEntry> ptt;
 extern HashTable<ttEntry> perftTT;
 
-void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best);
+void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t flags, int64_t best);
 int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull);
 
 void pttSave(Position & pos, int32_t score);
