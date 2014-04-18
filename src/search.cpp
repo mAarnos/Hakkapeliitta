@@ -693,7 +693,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					{
 						int v;
 						alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
-						cout << "info " << "depth " << depth / onePly << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+						cout << "info " << "depth " << depth / onePly << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
 						displayPV(pv);
 					}
 					else
