@@ -173,7 +173,7 @@ int uciSetOption(string s)
 
 	// The string s for setoption comes in the form "name" option "value" parameter.
 	// We just ignore "name" and "value" and get option and parameter.
-	regex expr("\\w*\\s(\\w*)\\s\\w*\\s(.*)");
+	regex expr("\\w*\\s(\\w*)\\s\\w*\\s*(.*)");
 	smatch matches;
 	if (regex_search(s, matches, expr))
 	{

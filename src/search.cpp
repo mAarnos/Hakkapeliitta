@@ -232,6 +232,7 @@ void think()
 
 	//tt.clear();
 	//ptt.clear();
+	tt.startNewSearch();
 
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));

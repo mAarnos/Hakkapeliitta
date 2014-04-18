@@ -55,21 +55,25 @@ class HashTable
 		{
 			table.clear();
 			table.resize(tableSize);
+			// generation = 0;
 		}
 
 		inline uint64_t getSize() { return tableSize; }
 		inline t& getEntry(uint64_t entry) { return table[entry]; }
-		inline int isEmpty() { return table.empty(); }
+		inline bool isEmpty() { return table.empty(); }
+		inline void startNewSearch() { generation++; }
+		inline uint32_t getGeneration() { return generation; }
 	private:
 		vector<t> table;
 		uint64_t tableSize = 0;
+		uint32_t generation = 0;
 };
 
 extern HashTable<ttEntry> tt;
 extern HashTable<pttEntry> ptt;
 extern HashTable<ttEntry> perftTT;
 
-void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int64_t best);
+void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best);
 int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull);
 
 void pttSave(Position & pos, int32_t score);

@@ -14,7 +14,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & b
 
 	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{
-		best = (int)hashEntry->data;
+		best = (uint16_t)hashEntry->data;
 		int score = (int16_t)((hashEntry->data & 0x0000FFFF00000000) >> 32);
 		int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
 		int flags = hashEntry->data >> 56;
@@ -88,7 +88,7 @@ int pttProbe(Position & pos)
 	return probeFailed;
 }
 
-void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int64_t best)
+void ttSave(Position & pos, uint64_t depth, int64_t score, uint64_t flags, int64_t best)
 {
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
 	/*
@@ -107,7 +107,7 @@ void ttSave(Position & pos, uint64_t depth, uint64_t score, uint64_t flags, int6
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
 	hashEntry->hash = pos.getHash();
-	hashEntry->data = ((best & 0x00000000FFFFFFFF) | (score & 0x000000000000FFFF) << 32 | ((depth << 48) & 0x00FF000000000000) | flags << 56);
+	hashEntry->data = ((best & 0xffff) | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56);
 	hashEntry->hash ^= hashEntry->data;
 }
 
