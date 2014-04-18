@@ -78,11 +78,10 @@ int generateMoves(Position & pos, Move * mlist)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{
-				m.setEnPassant(true);
+				m.setPromotion(Pawn);
 				m.setTo(pos.getEnPassantSquare());
 				mlist[generatedMoves++] = m;
 				m.setPromotion(Empty);
-				m.setEnPassant(false);
 			}
 		}
 	}
@@ -170,7 +169,7 @@ int generateMoves(Position & pos, Move * mlist)
 	}
 
 	// TODO: make this part cleaner and faster.
-	m.setCastling(true);
+	m.setPromotion(King);
 	if (side == White)
 	{
 		if (pos.isAttacked(E1, Black))
@@ -280,11 +279,10 @@ int generateCaptures(Position & pos, Move * mlist)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{
-				m.setEnPassant(true);
+				m.setPromotion(Pawn);
 				m.setTo(pos.getEnPassantSquare());
 				mlist[generatedMoves++] = m;
 				m.setPromotion(Empty);
-				m.setEnPassant(false);
 			}
 		}
 	}

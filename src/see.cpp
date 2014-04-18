@@ -100,7 +100,7 @@ int Position::SEE(Move m)
 	int from = m.getFrom();
 	int to = m.getTo();
 
-	if (m.getEnPassant())
+	if (m.getPromotion() == Pawn)
 	{
 		value = pieceValues[Pawn];
 		attackerValue = value;

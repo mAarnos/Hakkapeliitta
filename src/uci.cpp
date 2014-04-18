@@ -153,7 +153,7 @@ int uciProcessInput()
 int uciSendInformation(string s)
 {
 	// Send the name of the engine and the name of it's author.
-	cout << "id name Hakkapeliitta v2.04" << endl;
+	cout << "id name Hakkapeliitta v2.05" << endl;
 	cout << "id author Mikko Aarnos" << endl;
 
 	// Send all possible options the engine has that can be modified.
@@ -291,11 +291,11 @@ int uciPosition(string s)
 		}
 		else if ((root.getPieceType(from) == King) && (abs(from - to) == 2))
 		{
-			m.setCastling(true);
+			m.setPromotion(King);
 		}
 		else if ((root.getPieceType(from) == Pawn) && to == root.getEnPassantSquare())
 		{
-			m.setEnPassant(true);
+			m.setPromotion(Pawn);
 		}
 
 		root.makeMove(m);

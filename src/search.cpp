@@ -77,10 +77,10 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 		{
 			moveStack[i].setScore(hashMove);
 		}
-		else if (pos.getPiece(moveStack[i].getTo()) != Empty || moveStack[i].getPromotion() != Empty || moveStack[i].getEnPassant())
+		else if (pos.getPiece(moveStack[i].getTo()) != Empty || ((moveStack[i].getPromotion() != Empty) && (moveStack[i].getPromotion() != King)))
 		{
 			int score = pos.SEE(moveStack[i]);
-			// If the capture is good, order it way higher than anything else.
+			// If the capture is good, order it way higher than anything else with the exception of the hash move.
 			if (score >= 0)
 			{
 				score += captureMove;
@@ -183,12 +183,12 @@ void displayPV(vector<Move> pv)
 	{
 		int from = pv[i].getFrom();
 		int to = pv[i].getTo();
+		int promotion = pv[i].getPromotion();
 
 		cout << squareToNotation[from] << squareToNotation[to];
 
-		if (pv[i].getPromotion() != Empty)
+		if (promotion != Empty && promotion != King && promotion != Pawn)
 		{
-			int promotion = pv[i].getPromotion();
 			cout << promotionToNotation[promotion];
 		}
 		cout << " ";
@@ -215,11 +215,11 @@ void displayBestMove(Move m)
 
 	int from = m.getFrom();
 	int to = m.getTo();
+	int promotion = m.getPromotion();
 
 	cout << squareToNotation[from] << squareToNotation[to];
-	if (m.getPromotion() != Empty)
+	if (promotion != Empty && promotion != King && promotion != Pawn)
 	{
-		int promotion = m.getPromotion();
 		cout << promotionToNotation[promotion];
 	}
 	cout << " ";
@@ -560,7 +560,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && (moveStack[i].getPromotion() == Empty))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)
@@ -667,7 +667,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && (moveStack[i].getPromotion() == Empty))
+				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)
@@ -686,7 +686,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					ttSave(pos, depth, value, ttAlpha, bestmove);
 					pvFound = true;
 
-					int searchTime = t.getms();
+					int searchTime = (int)t.getms();
 					reconstructPV(pos, pv);
 					if (isMateScore(alpha))
 					{
