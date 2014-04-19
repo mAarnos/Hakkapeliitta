@@ -8,7 +8,7 @@ HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 HashTable<ttEntry> perftTT;
 
-int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull)
+int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best, bool & ttAllowNull)
 {
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 

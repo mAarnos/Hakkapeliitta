@@ -13,14 +13,14 @@ class Move
 		void setPromotion(int promotion);
 
 		void setScore(int score);
-		void setMove(int m);
+		void setMove(uint16_t m);
 	
 		int getFrom();  
 		int getTo();  
 		int getPromotion(); 
 
 		int getScore();
-		int getMove();
+		uint16_t getMove();
 	private:
 		uint16_t move;
 		int score;

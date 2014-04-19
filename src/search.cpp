@@ -150,11 +150,11 @@ void reconstructPV(Position pos, vector<Move> & pv)
 		if (((hashEntry->hash ^ hashEntry->data) != pos.getHash())
 		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
 		|| (pos.repetitionDraw() && ply >= 2)
-		|| ((int)hashEntry->data == ttMoveNone))
+		|| ((uint16_t)hashEntry->data == (uint16_t)ttMoveNone))
 		{
 			break;
 		}
-		m.setMove((int)hashEntry->data);
+		m.setMove((uint16_t)hashEntry->data);
 		pv.push_back(m);
 		pos.makeMove(m);
 		ply++;
@@ -399,8 +399,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	bool movesFound, pvFound;
 	bool check;
 	int value, generatedMoves;
-	int ttMove = ttMoveNone;
-	int bestmove = ttMoveNone;
+	uint16_t ttMove = ttMoveNone;
+	uint16_t bestmove = ttMoveNone;
 	int ttFlag = ttAlpha;
 	bool ttAllowNull = true;
 	int bestscore = -mateScore;
@@ -611,8 +611,8 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	int value, generatedMoves;
 	bool check, ttAllowNull;
 	bool pvFound = false;
-	int ttMove = ttMoveNone;
-	int bestmove = ttMoveNone;
+	uint16_t ttMove = ttMoveNone;
+	uint16_t bestmove = ttMoveNone;
 	int bestscore = -mateScore;
 
 	check = pos.inCheck(pos.getSideToMove());

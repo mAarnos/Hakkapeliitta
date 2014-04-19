@@ -5,7 +5,7 @@
 #include "position.h"
 
 const uint32_t probeFailed = UINT_MAX;
-const int ttMoveNone = -1;
+const uint16_t ttMoveNone = USHRT_MAX;
 
 // Flags for exact, upperbound and lowerbound scores.
 enum { ttExact, ttAlpha, ttBeta };
@@ -74,7 +74,7 @@ extern HashTable<pttEntry> ptt;
 extern HashTable<ttEntry> perftTT;
 
 void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t flags, int64_t best);
-int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, int & best, bool & ttAllowNull);
+int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best, bool & ttAllowNull);
 
 void pttSave(Position & pos, int32_t score);
 int pttProbe(Position & pos);

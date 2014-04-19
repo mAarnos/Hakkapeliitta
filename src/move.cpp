@@ -31,7 +31,7 @@ void Move::setScore(int s)
 	score = s;
 }
 
-void Move::setMove(int m)
+void Move::setMove(uint16_t m)
 {
 	move = m;
 }
@@ -56,7 +56,7 @@ int Move::getScore()
 	return score;
 }
 
-int Move::getMove()
+uint16_t Move::getMove()
 {
 	return move;
 }
