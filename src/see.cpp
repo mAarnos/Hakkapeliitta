@@ -115,8 +115,10 @@ int Position::SEE(Move m)
 	// Generate a list of attackers.
 	attackers = attacksTo(to);
 	// Remove the piece moving.
-	attackers ^= bit[from];
-	nonremoved ^= bit[from];
+	// DO NOT OPTIMIZE THIS TO attackers ^= bit[from], that causes a bug when promoting a pawn.
+	// Basically, attacksTo cannot detect pawns about to promote so ^= creates an attacker instead of removing one.
+	attackers &= ~bit[from];
+	nonremoved &= ~bit[from];
 
 	attackers = revealNextAttacker(attackers, nonremoved, to, from);
 
@@ -173,8 +175,8 @@ int Position::SEE(Move m)
 			next = bitScanForward(bitboards[King + !sideToMove * 6]);
 		}
 
-		attackers ^= bit[next];
-		nonremoved ^= bit[next];
+		attackers &= ~bit[next];
+		nonremoved &= ~bit[next];
 
 		attackers = revealNextAttacker(attackers, nonremoved, to, next);
 		// No defenders left, we are done.
@@ -229,8 +231,8 @@ int Position::SEE(Move m)
 			next = bitScanForward(bitboards[King + sideToMove * 6]);
 		}
 		
-		attackers ^= bit[next];
-		nonremoved ^= bit[next];
+		attackers &= ~bit[next];
+		nonremoved &= ~bit[next];
 
 		attackers = revealNextAttacker(attackers, nonremoved, to, next);
 		// No defenders left, we are done.
