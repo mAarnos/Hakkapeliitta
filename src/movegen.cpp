@@ -255,6 +255,7 @@ int generateCaptures(Position & pos, Move * mlist)
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = pawnAttacks[side][from] & enemyPieces;
+		tempMove |= pawnSingleMoves[side][from] & ~occupiedSquares & 0xFF000000000000FF;
 		while (tempMove)
 		{
 			to = bitScanForward(tempMove);
