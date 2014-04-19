@@ -82,7 +82,7 @@ uint64_t Position::revealNextAttacker(uint64_t attackers, uint64_t nonremoved, i
 		if (targetbitmap)
 		{
 			targetbitmap = rookAttacks(to, occupied);
-			targetbitmap &= ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteBishop] | bitboards[BlackBishop]) & nonremoved);
+			targetbitmap &= ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteRook] | bitboards[BlackRook]) & nonremoved);
 			return (attackers | targetbitmap);
 		}
 	}
