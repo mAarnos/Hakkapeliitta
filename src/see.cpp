@@ -226,7 +226,7 @@ int Position::SEE(Move m)
 		}
 		else
 		{
-			next = bitScanForward(bitboards[King + !sideToMove * 6]);
+			next = bitScanForward(bitboards[King + sideToMove * 6]);
 		}
 		
 		attackers ^= bit[next];
