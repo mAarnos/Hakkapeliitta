@@ -201,8 +201,6 @@ void think()
 	int score, alpha, beta;
 	int searchDepth, searchTime;
 
-	//tt.clear();
-	//ptt.clear();
 	tt.startNewSearch();
 
 	searching = true;
@@ -298,14 +296,14 @@ void think()
 
 int qsearch(Position & pos, int alpha, int beta)
 {
-	int i, value, bestscore;
+	int value, bestscore, delta;
 
 	if (searching == false)
 	{
 		return 0;
 	}
 
-	bestscore = value = eval(pos);
+	value = eval(pos);
 	if (value > alpha)
 	{
 		if (value >= beta)
@@ -314,11 +312,13 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		alpha = value;
 	}
+	bestscore = value;
+	delta = value + deltaPruningSafetyMargin;
 
 	Move moveStack[64];
 	int generatedMoves = generateCaptures(pos, moveStack);
 	orderCaptures(pos, moveStack, generatedMoves);
-	for (i = 0; i < generatedMoves; i++)
+	for (int i = 0; i < generatedMoves; i++)
 	{
 		selectMove(moveStack, generatedMoves, i);
 		// We only try good captures, so if we have reached the bad captures we can stop.
@@ -328,7 +328,7 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		// Delta pruning. Check if the score is below the delta-pruning safety margin.
 		// we can return alpha straight away as all captures following a failure are equal or worse to it - that is they will fail as well
-		if (value + moveStack[i].getScore() + deltaPruningSafetyMargin < alpha)
+		if (delta + moveStack[i].getScore() < alpha)
 		{
 			return bestscore;
 		}
@@ -456,7 +456,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			}
 		}
 	}
-
 	allowNullMove = true;
 	
 	// Internal iterative deepening
