@@ -15,8 +15,8 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_
 	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
 	{
 		best = (uint16_t)hashEntry->data;
-		int score = (int16_t)((hashEntry->data & 0x0000FFFF00000000) >> 32);
-		int hashDepth = (hashEntry->data & 0x00FF000000000000) >> 48;
+		int score = (int16_t)((hashEntry->data & 0xffff00000000) >> 32);
+		int hashDepth = (hashEntry->data & 0xff000000000000) >> 48;
 		int flags = hashEntry->data >> 56;
 
 		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
@@ -78,9 +78,9 @@ int pttProbe(Position & pos)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	if ((hashEntry->hash ^ hashEntry->score) == (uint32_t)pos.getPawnHash())
+	if ((hashEntry->hash ^ hashEntry->data) == (uint32_t)pos.getPawnHash())
 	{
-		return hashEntry->score;
+		return hashEntry->data;
 	}
 
 	return probeFailed;
@@ -102,7 +102,7 @@ void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t fla
 	}
 	
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-	if (((hashEntry->data & 0x00FF000000000000) >> 48) <= depth || ((hashEntry->data & 0xffff0000) >> 16) < tt.getGeneration())
+	if (((hashEntry->data & 0xff000000000000) >> 48) <= depth || ((hashEntry->data & 0xffff0000) >> 16) < tt.getGeneration())
 	{
 		hashEntry->hash = pos.getHash();
 		hashEntry->data = ((best & 0xffff) | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56);
@@ -110,13 +110,13 @@ void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t fla
 	}
 }
 
-void pttSave(Position & pos, int32_t score)
+void pttSave(Position & pos, int score)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
 	hashEntry->hash = (uint32_t)pos.getPawnHash();
-	hashEntry->score = score;
-	hashEntry->hash ^= hashEntry->score;
+	hashEntry->data = score;
+	hashEntry->hash ^= hashEntry->data;
 }
 
 void perftTTSave(Position & pos, uint64_t nodes, int depth)
@@ -129,7 +129,7 @@ void perftTTSave(Position & pos, uint64_t nodes, int depth)
 	ttEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
 
 	hashEntry->hash = pos.getHash();
-	hashEntry->data = (nodes & 0x00FFFFFFFFFFFFFF) | (uint64_t)depth << 56;
+	hashEntry->data = (nodes & 0xffffffffffffff) | (uint64_t)depth << 56;
 	hashEntry->hash ^= hashEntry->data;
 }
 
@@ -146,7 +146,7 @@ uint64_t perftTTProbe(Position & pos, int depth)
 	{
 		if ((hashEntry->data >> 56) == depth)
 		{
-			return (hashEntry->data & 0x00FFFFFFFFFFFFFF);
+			return (hashEntry->data & 0xffffffffffffff);
 		}
 	}
 

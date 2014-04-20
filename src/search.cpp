@@ -150,7 +150,7 @@ void reconstructPV(Position pos, vector<Move> & pv)
 		if (((hashEntry->hash ^ hashEntry->data) != pos.getHash())
 		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
 		|| (pos.repetitionDraw() && ply >= 2)
-		|| ((uint16_t)hashEntry->data == (uint16_t)ttMoveNone))
+		|| ((uint16_t)hashEntry->data == ttMoveNone))
 		{
 			break;
 		}
@@ -162,7 +162,7 @@ void reconstructPV(Position pos, vector<Move> & pv)
 }
 
 // Displays the pv in the format UCI-protocol wants(from, to, if promotion add what promotion).
-void displayPV(vector<Move> pv)
+void displayPV(vector<Move> pv, int length)
 {
 	static array<string, Squares> squareToNotation = {
 		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
@@ -179,7 +179,7 @@ void displayPV(vector<Move> pv)
 		"p", "n", "b", "r", "q", "k"
 	};
 
-	for (int i = 0; i < pv.size(); i++)
+	for (int i = 0; i < length; i++)
 	{
 		int from = pv[i].getFrom();
 		int to = pv[i].getTo();
@@ -194,35 +194,6 @@ void displayPV(vector<Move> pv)
 		cout << " ";
 	}
 	cout << endl;
-}
-
-void displayBestMove(Move m)
-{
-	static array<string, Squares> squareToNotation = {
-		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-		"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-		"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-		"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-		"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-		"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-		"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-	};
-
-	static array<string, Pieces> promotionToNotation = {
-		"p", "n", "b", "r", "q", "k"
-	};
-
-	int from = m.getFrom();
-	int to = m.getTo();
-	int promotion = m.getPromotion();
-
-	cout << squareToNotation[from] << squareToNotation[to];
-	if (promotion != Empty && promotion != King && promotion != Pawn)
-	{
-		cout << promotionToNotation[promotion];
-	}
-	cout << " ";
 }
 
 void think()
@@ -258,7 +229,7 @@ void think()
 		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
 		{
 			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl << "bestmove ";
-			displayBestMove(pv[0]);
+			displayPV(pv, 1);
 			cout << endl;
 
 			return;
@@ -273,12 +244,12 @@ void think()
 				int v;
 				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 				cout << "info " << "depth " << searchDepth << " score mate " << v << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-				displayPV(pv);
+				displayPV(pv, (int)pv.size());
 			}
 			else
 			{
 				cout << "info " << "depth " << searchDepth << " score cp " << score << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-				displayPV(pv);
+				displayPV(pv, (int)pv.size());
 			}
 			continue;
 		}
@@ -290,12 +261,12 @@ void think()
 				int v;
 				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 				cout << "info " << "depth " << searchDepth << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-				displayPV(pv);
+				displayPV(pv, (int)pv.size());
 			}
 			else
 			{
 				cout << "info " << "depth " << searchDepth << " score cp " << score << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-				displayPV(pv);
+				displayPV(pv, (int)pv.size());
 			}
 			continue;
 		}
@@ -305,12 +276,12 @@ void think()
 			int v;
 			score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
 			cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-			displayPV(pv);
+			displayPV(pv, (int)pv.size());
 		}
 		else
 		{
 			cout << "info " << "depth " << searchDepth << " score cp " << score << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-			displayPV(pv);
+			displayPV(pv, (int)pv.size());
 		}
 
 		// Adjust alpha and beta based on the last score.
@@ -694,12 +665,12 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 						int v;
 						alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
 						cout << "info " << "depth " << depth / onePly << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-						displayPV(pv);
+						displayPV(pv, (int)pv.size());
 					}
 					else
 					{
 						cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-						displayPV(pv);
+						displayPV(pv, (int)pv.size());
 					}
 				}
 				else

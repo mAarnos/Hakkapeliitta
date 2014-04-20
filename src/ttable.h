@@ -21,7 +21,7 @@ class pttEntry
 {
 	public:
 		uint32_t hash;
-		int32_t score;
+		uint32_t data;
 }; 
 
 // Thanks to the template we have to keep all functions which use t in here, ttable.h.
@@ -76,7 +76,7 @@ extern HashTable<ttEntry> perftTT;
 void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t flags, int64_t best);
 int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best, bool & ttAllowNull);
 
-void pttSave(Position & pos, int32_t score);
+void pttSave(Position & pos, int score);
 int pttProbe(Position & pos);
 
 void perftTTSave(Position & pos, uint64_t nodes, int depth);
