@@ -299,14 +299,7 @@ void think()
 
 int qsearch(Position & pos, int alpha, int beta)
 {
-	int value, bestscore, delta;
-
-	if (searching == false)
-	{
-		return 0;
-	}
-
-	value = eval(pos);
+	int value = eval(pos);
 	if (value > alpha)
 	{
 		if (value >= beta)
@@ -315,8 +308,8 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		alpha = value;
 	}
-	bestscore = value;
-	delta = value + deltaPruningSafetyMargin;
+	int bestscore = value;
+	int delta = value + deltaPruningSafetyMargin;
 
 	Move moveStack[64];
 	int generatedMoves = generateCaptures(pos, moveStack);
@@ -364,23 +357,23 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool movesFound, pvFound;
-	bool check;
-	int value, generatedMoves;
-	uint16_t ttMove = ttMoveNone;
-	uint16_t bestmove = ttMoveNone;
-	int ttFlag = ttAlpha;
-	bool ttAllowNull = true;
-	int bestscore = -mateScore;
+	bool movesFound = false, pvFound = false, ttAllowNull = true;
+	int value, generatedMoves, ttFlag = ttAlpha, bestscore = -mateScore;
+	uint16_t ttMove = ttMoveNone, bestmove = ttMoveNone;
 
+	// Check if we have overstepped the time limit or if the user has given a new order.
 	if (countDown-- <= 0)
 	{
 		checkTimeAndInput();
 	}
+	if (!searching)
+	{
+		return 0;
+	}
 
 	// Check extension.
 	// Makes sure that the quiescence search is NEVER started while being in check.
-	check = pos.inCheck(pos.getSideToMove());
+	bool check = pos.inCheck(pos.getSideToMove());
 	if (check)
 	{
 		depth += onePly;
@@ -438,7 +431,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		pos.unmakeNullMove();
 
-		if (searching == false)
+		if (!searching)
 		{
 			return 0;
 		}
@@ -448,22 +441,18 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			return value;
 		}
 	}
-	allowNullMove = true;
-	
+
 	// Internal iterative deepening
 	if ((alpha + 1) != beta && ttMove == ttMoveNone && depth > 2 * onePly)
 	{
-		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, allowNullMove);
+		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, true);
 		if (value <= alpha)
 		{
-			value = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, allowNullMove);
+			value = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, true);
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
 	}
 	
-	pvFound = false;
-	movesFound = false;
-
 	Move moveStack[256];
 	if (check)
 	{
@@ -491,19 +480,19 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		movesFound = true;
 		if (pvFound)
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, allowNullMove); 
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true); 
 			if (value > alpha && value < beta)
 			{
-				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, allowNullMove);
+				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
 			}
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, allowNullMove); 
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true); 
 		}
 		pos.unmakeMove(moveStack[i]);
 
-		if (searching == false)
+		if (!searching)
 		{
 			return 0;
 		}
@@ -605,7 +594,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 		pos.unmakeMove(moveStack[i]);
 
-		if (searching == false)
+		if (!searching)
 		{
 			return 0;
 		}
