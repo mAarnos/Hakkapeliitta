@@ -7,16 +7,16 @@
 // A stopwatch-type timer.
 class Timer
 {
-	private:
-		clock_t startTime;
-		clock_t stopTime;
-		clock_t currentTime;
-		bool running;
 	public:
 		void start();
 		void stop();
 		void reset();
 		uint64_t getms();
+	private:
+		clock_t startTime;
+		clock_t stopTime;
+		clock_t currentTime;
+		bool running;
 };
 
 extern Timer t;
@@ -31,6 +31,6 @@ const int lagBuffer = 50;
 const double stopFraction = 0.7;
 
 void allocateSearchTime(string s);
-void readClockAndInput();
+void checkTimeAndInput();
 
 #endif

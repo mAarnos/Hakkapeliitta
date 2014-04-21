@@ -41,7 +41,7 @@ uint64_t Timer::getms()
 	}
 }
 
-void readClockAndInput()
+void checkTimeAndInput()
 {
 	countDown = stopInterval;
 	if (t.getms() > targetTime)

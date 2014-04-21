@@ -342,12 +342,6 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 
 		nodeCount++;
-
-		if (countDown-- <= 0)
-		{
-			readClockAndInput();
-		}
-		
 		value = -qsearch(pos, -beta, -alpha);
 		pos.unmakeMove(moveStack[i]);
 
@@ -379,6 +373,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	bool ttAllowNull = true;
 	int bestscore = -mateScore;
 
+	if (countDown-- <= 0)
+	{
+		checkTimeAndInput();
+	}
+
 	// Check extension.
 	// Makes sure that the quiescence search is NEVER started while being in check.
 	check = pos.inCheck(pos.getSideToMove());
@@ -387,6 +386,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		depth += onePly;
 	}
 
+	// If we have gone as far as we wanted to go drop into quiescence search.
 	if (depth <= 0)
 	{
 		return qsearch(pos, alpha, beta);
@@ -424,10 +424,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				depth -= onePly;
 			}
 		}
-		if (countDown-- <= 0)
-		{
-			readClockAndInput();
-		}
 
 		// And here's dynamic.
 		pos.makeNullMove();
@@ -455,7 +451,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	allowNullMove = true;
 	
 	// Internal iterative deepening
-	if ((alpha + 1) != beta && ttMove == ttMoveNone && depth > 2 * onePly && searching)
+	if ((alpha + 1) != beta && ttMove == ttMoveNone && depth > 2 * onePly)
 	{
 		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, allowNullMove);
 		if (value <= alpha)
@@ -492,12 +488,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			continue;
 		}
 		nodeCount++;
-
-		if (countDown-- <= 0)
-		{
-			readClockAndInput();
-		}
-
 		movesFound = true;
 		if (pvFound)
 		{
@@ -600,11 +590,6 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			continue;
 		}
 		nodeCount++;
-
-		if (countDown-- <= 0)
-		{
-			readClockAndInput();
-		}
 		if (pvFound)
 		{
 			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
