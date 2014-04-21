@@ -412,21 +412,19 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				if (depth <= 3 * onePly)
 				{
 					int staticEval = eval(pos);
-					if (depth == onePly && staticEval - 260 >= beta)
+					if (depth <= onePly && staticEval - 260 >= beta)
 					{
 						return staticEval;
 					}
-					else if (depth == 2 * onePly && staticEval - 445 >= beta)
+					else if (depth <= 2 * onePly && staticEval - 445 >= beta)
 					{
 						return staticEval;
 					}
-					else if (depth == 3 * onePly && staticEval - 900 >= beta)
+					else if (staticEval - 900 >= beta)
 					{
 						depth -= onePly;
 					}
 				}
-				nodeCount++;
-
 				if (countDown-- <= 0)
 				{
 					readClockAndInput();
@@ -434,6 +432,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				
 				// And here's dynamic.
 				pos.makeNullMove();
+				nodeCount++;
 				if (depth <= 3 * onePly)
 				{
 					value = -qsearch(pos, -beta, -beta + 1);
@@ -563,11 +562,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	{
 		if (check)
 		{
-			bestscore = -mateScore + ply;
+			return -mateScore + ply;
 		}
 		else
 		{
-			bestscore = drawScore;
+			return drawScore;
 		}
 	}
 
