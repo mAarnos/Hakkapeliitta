@@ -34,6 +34,13 @@ class Position
 		bool inCheck(bool side) { return isAttacked(bitScanForward(bitboards[King + side * 6]), !side); }
 		bool isAttacked(int sq, bool side);
 
+		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
+		uint64_t attacksTo(int to);
+		uint64_t attacksTo(int to, bool side);
+
+		// Hack, this shouldn't exist but I haven't figured out a way to do generateEvasions without it.
+		inline void replaceBitboard(uint64_t newBB, int bbNumber) { bitboards[bbNumber] = newBB; }
+
 		inline int getPiece(int sq) { return board[sq]; }
 		// Returns incorrect piecetype if there is nothing on the square. Use only if you known something is on the square specified.
 		inline int getPieceType(int sq) { return (board[sq] % Pieces); }
@@ -108,10 +115,6 @@ class Position
 		void readHistory(int & captured);
 
 		uint64_t revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int target, int from);
-
-		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
-		uint64_t attacksTo(int to);
-		uint64_t attacksTo(int to, bool side);
 };
 
 extern Position root;

@@ -20,8 +20,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
 {
-	uint64_t nodes = 0;
-	uint64_t value;
+	uint64_t value, generatedMoves, nodes = 0;
 
 	if (depth == 0)
 	{
@@ -34,7 +33,14 @@ uint64_t perft(Position & pos, int depth)
 	}
 
 	Move moveStack[256];
-	int generatedMoves = generateMoves(pos, moveStack);
+	if (pos.inCheck(pos.getSideToMove()))
+	{
+		generatedMoves = generateEvasions(pos, moveStack);
+	}
+	else
+	{
+		generatedMoves = generateMoves(pos, moveStack);
+	}
 	for (int i = 0; i < generatedMoves; i++)
 	{
 		if (!(pos.makeMove(moveStack[i])))
@@ -402,57 +408,51 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Null move pruning, both static and dynamic.
-	if (allowNullMove && ttAllowNull)
+	if (allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
 	{
-		if (!check)
+		// Here's static.
+		if (depth <= 3 * onePly)
 		{
-			if (pos.calculateGamePhase() != 256)
+			int staticEval = eval(pos);
+			if (depth <= onePly && staticEval - 260 >= beta)
 			{
-				// Here's static.
-				if (depth <= 3 * onePly)
-				{
-					int staticEval = eval(pos);
-					if (depth <= onePly && staticEval - 260 >= beta)
-					{
-						return staticEval;
-					}
-					else if (depth <= 2 * onePly && staticEval - 445 >= beta)
-					{
-						return staticEval;
-					}
-					else if (staticEval - 900 >= beta)
-					{
-						depth -= onePly;
-					}
-				}
-				if (countDown-- <= 0)
-				{
-					readClockAndInput();
-				}
-				
-				// And here's dynamic.
-				pos.makeNullMove();
-				nodeCount++;
-				if (depth <= 3 * onePly)
-				{
-					value = -qsearch(pos, -beta, -beta + 1);
-				}
-				else
-				{
-					value = -alphabetaPVS(pos, ply, (depth - onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
-				}
-				pos.unmakeNullMove();
-
-				if (searching == false)
-				{
-					return 0;
-				}
-
-				if (value >= beta)
-				{
-					return value;
-				}
+				return staticEval;
 			}
+			else if (depth <= 2 * onePly && staticEval - 445 >= beta)
+			{
+				return staticEval;
+			}
+			else if (staticEval - 900 >= beta)
+			{
+				depth -= onePly;
+			}
+		}
+		if (countDown-- <= 0)
+		{
+			readClockAndInput();
+		}
+
+		// And here's dynamic.
+		pos.makeNullMove();
+		nodeCount++;
+		if (depth <= 3 * onePly)
+		{
+			value = -qsearch(pos, -beta, -beta + 1);
+		}
+		else
+		{
+			value = -alphabetaPVS(pos, ply, (depth - onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
+		}
+		pos.unmakeNullMove();
+
+		if (searching == false)
+		{
+			return 0;
+		}
+
+		if (value >= beta)
+		{
+			return value;
 		}
 	}
 	allowNullMove = true;
@@ -472,21 +472,20 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	movesFound = false;
 
 	Move moveStack[256];
-	/*
 	if (check)
 	{
 		generatedMoves = generateEvasions(pos, moveStack);
+		/*
 		if (generatedMoves == 1)
 		{
 			depth += onePly;
 		}
+		*/
 	}
 	else
 	{
 		generatedMoves = generateMoves(pos, moveStack);
 	}
-	*/
-	generatedMoves = generateMoves(pos, moveStack);
 	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
 	for (int i = 0; i < generatedMoves; i++)
 	{
@@ -532,7 +531,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				// Don't update if the move is not a quiet move.
 				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
 				{
-					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
+					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
 					if (value >= beta)
 					{
 						if (moveStack[i].getMove() != killer[0][ply])

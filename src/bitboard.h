@@ -16,6 +16,8 @@ extern array<uint64_t, Squares> rays[8];
 
 extern array<int, Squares> heading[Squares];
 
+extern array<uint64_t, Squares> between[Squares];
+
 extern array<uint64_t, Squares> passed[Colours];
 extern array<uint64_t, Squares> backward[Colours];
 extern array<uint64_t, Squares> isolated;
@@ -86,8 +88,7 @@ inline int popcnt(uint64_t mask)
 inline int popcnt(uint64_t mask)
 {
 	mask = mask - ((mask >> 1) & 0x5555555555555555ULL);
-	mask = (mask & 0x3333333333333333ULL) +
-		((mask >> 2) & 0x3333333333333333ULL);
+	mask = (mask & 0x3333333333333333ULL) + ((mask >> 2) & 0x3333333333333333ULL);
 	mask = (mask + (mask >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
 	return (mask * 0x0101010101010101ull) >> 56;
 }

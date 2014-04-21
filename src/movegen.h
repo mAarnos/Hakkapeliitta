@@ -7,5 +7,6 @@
 
 int generateMoves(Position & pos, Move * mlist);
 int generateCaptures(Position & pos, Move * mlist);
+int generateEvasions(Position & pos, Move * mlist);
 
 #endif

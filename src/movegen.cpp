@@ -369,5 +369,229 @@ int generateCaptures(Position & pos, Move * mlist)
 
 	return generatedMoves;
 }
+
+// This works if and only if the side to move is in check.
+int generateEvasions(Position & pos, Move * mlist)
+{
+	int from, to, generatedMoves = 0;
+	bool side = pos.getSideToMove();
+	uint64_t tempPiece, tempMove, pinned = 0;
+	uint64_t occupied = pos.getOccupiedSquares();
+	uint64_t targetBitboard = ~pos.getPieces(side);
+
+	Move m;
+	m.clear();
+	m.setPromotion(Empty);
+	
+	from = bitScanForward(pos.getBitboard(side, King));
+	m.setFrom(from);
+	tempMove = kingAttacks[from] & targetBitboard;
+	// Now we take the king out from the board and see which squares are attacked.
+	pos.replaceBitboard(occupied ^ bit[from], 14);
+	while (tempMove)
+	{
+		to = bitScanForward(tempMove);
+		tempMove &= (tempMove - 1);
+		if (pos.isAttacked(to, !side))
+		{
+			continue;
+		}
+		m.setTo(to);
+		mlist[generatedMoves++] = m;
+	}
+	// And here we put the king back in. 
+	pos.replaceBitboard(occupied, 14);
+
+	// If we are checked by more than two pieces only the king can move. Therefore we can return.
+	uint64_t checkers = pos.attacksTo(from, !side);
+	if (popcnt(checkers) > 1)
+	{
+		return generatedMoves;
+	}
+
+	// find the pinned pieces
+	uint64_t b = bishopAttacks(from, 0) & (pos.getBitboard(!side, Bishop) | pos.getBitboard(!side, Queen));
+	while (b)
+	{
+		int pinner = bitScanForward(b);
+		b &= (b - 1);
+		uint64_t potentialPinned = (between[from][pinner] & occupied);
+		if (popcnt(potentialPinned) == 1)
+		{
+			pinned |= potentialPinned & pos.getPieces(side);
+		}
+	}
+	b = rookAttacks(from, 0) & (pos.getBitboard(!side, Rook) | pos.getBitboard(!side, Queen));
+	while (b)
+	{
+		int pinner = bitScanForward(b);
+		b &= (b - 1);
+		uint64_t potentialPinned = (between[from][pinner] & occupied);
+		if (popcnt(potentialPinned) == 1)
+		{
+			pinned |= potentialPinned & pos.getPieces(side);
+		}
+	}
+
+	tempPiece = pos.getBitboard(side, Pawn);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+		if (bit[from] & pinned)
+		{
+			continue;
+		}
+		m.setFrom(from);
+		tempMove = pawnAttacks[side][from] & checkers;
+		while (tempMove)
+		{
+			to = bitScanForward(tempMove);
+			tempMove &= (tempMove - 1);
+			m.setTo(to);
+			if (to >= A8 || to <= H1)
+			{
+				m.setPromotion(Queen); mlist[generatedMoves++] = m;
+				m.setPromotion(Rook); mlist[generatedMoves++] = m;
+				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
+				m.setPromotion(Knight); mlist[generatedMoves++] = m;
+				m.setPromotion(Empty);
+			}
+			else
+			{
+				mlist[generatedMoves++] = m;
+			}
+		}
+		int enPassant = pos.getEnPassantSquare();
+		if (enPassant != NoSquare)
+		{
+			if (pawnAttacks[side][from] & bit[enPassant])
+			{
+				if (bitScanForward(checkers) == (enPassant - 8 + side * 16))
+				{
+					m.setPromotion(Pawn);
+					m.setTo(enPassant);
+					mlist[generatedMoves++] = m;
+					m.setPromotion(Empty);
+				}
+			}
+		}
+
+		uint64_t interpose = between[bitScanForward(pos.getBitboard(side, King))][bitScanForward(checkers)];
+		if (interpose)
+		{
+			if (pawnSingleMoves[side][from] & occupied)
+			{
+				continue;
+			}
+			tempMove = pawnSingleMoves[side][from] & interpose;
+			if (!(pawnDoubleMoves[side][from] & occupied))
+			{
+				tempMove |= pawnDoubleMoves[side][from] & interpose;
+			}
+			while (tempMove)
+			{
+				to = bitScanForward(tempMove);
+				tempMove &= (tempMove - 1);
+				m.setTo(to);
+				if (to >= A8 || to <= H1)
+				{
+					m.setPromotion(Queen); mlist[generatedMoves++] = m;
+					m.setPromotion(Rook); mlist[generatedMoves++] = m;
+					m.setPromotion(Bishop); mlist[generatedMoves++] = m;
+					m.setPromotion(Knight); mlist[generatedMoves++] = m;
+					m.setPromotion(Empty); 
+				}
+				else
+				{
+					mlist[generatedMoves++] = m;
+				}
+			}
+		}
+	}
+
+	uint64_t interpose = between[bitScanForward(pos.getBitboard(side, King))][bitScanForward(checkers)] | bit[bitScanForward(checkers)];
+	tempPiece = pos.getBitboard(side, Knight);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+		if (bit[from] & pinned)
+		{
+			continue;
+		}
+		m.setFrom(from);
+		tempMove = knightAttacks[from] & interpose;
+		while (tempMove)
+		{
+			to = bitScanForward(tempMove);
+			tempMove &= (tempMove - 1);
+			m.setTo(to);
+			mlist[generatedMoves++] = m;
+		}
+	}
+
+	tempPiece = pos.getBitboard(side, Bishop);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+		if (bit[from] & pinned)
+		{
+			continue;
+		}
+		m.setFrom(from);
+		tempMove = bishopAttacks(from, occupied) & interpose;
+		while (tempMove)
+		{
+			to = bitScanForward(tempMove);
+			tempMove &= (tempMove - 1);
+			m.setTo(to);	
+			mlist[generatedMoves++] = m;
+		}
+	}
+
+	tempPiece = pos.getBitboard(side, Rook);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+		if (bit[from] & pinned)
+		{
+			continue;
+		}
+		m.setFrom(from);
+		tempMove = rookAttacks(from, occupied) & interpose;
+		while (tempMove)
+		{
+			to = bitScanForward(tempMove);
+			tempMove &= (tempMove - 1);
+			m.setTo(to);
+			mlist[generatedMoves++] = m;
+		}
+	}
+
+	tempPiece = pos.getBitboard(side, Queen);
+	while (tempPiece)
+	{
+		from = bitScanForward(tempPiece);
+		tempPiece &= (tempPiece - 1);
+		if (bit[from] & pinned)
+		{
+			continue;
+		}
+		m.setFrom(from);
+		tempMove = queenAttacks(from, occupied) & interpose;
+		while (tempMove)
+		{
+			to = bitScanForward(tempMove);
+			tempMove &= (tempMove - 1);
+			m.setTo(to);
+			mlist[generatedMoves++] = m;	
+		}
+	}
+
+	return generatedMoves;
+}
 	
 #endif

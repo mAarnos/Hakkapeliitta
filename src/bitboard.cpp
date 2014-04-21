@@ -14,6 +14,8 @@ array<uint64_t, Squares> rays[8];
 // Not really a bitboard but it is easiest to initialize here.
 array<int, Squares> heading[Squares];
 
+array<uint64_t, Squares> between[Squares];
+
 array<uint64_t, Squares> passed[Colours];
 array<uint64_t, Squares> backward[Colours];
 array<uint64_t, Squares> isolated;
@@ -25,6 +27,7 @@ void initializePawnAttacks();
 void initializePawnMoves();
 void initializeRays();
 void initializePawnEvaluationBitboards();
+void initializeBetween();
 
 void initializeBitboards() 
 {	
@@ -35,10 +38,13 @@ void initializeBitboards()
    initializePawnMoves();
    initializeRays();
    initializePawnEvaluationBitboards();
+   initializeBetween();
 }
 
 void initializeBitMasks() 
 {
+	bit.fill(0);
+
 	for (int sq = A1; sq <= H8; sq++) 
 	{
 		bit[sq] = (uint64_t)1 << sq;
@@ -49,6 +55,8 @@ void initializeKingAttacks()
 {
 	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
 	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
+
+	kingAttacks.fill(0);
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
@@ -72,6 +80,8 @@ void initializeKnightAttacks()
 	uint64_t notABFile = 0xFCFCFCFCFCFCFCFC;
 	uint64_t notGHFile = 0x3F3F3F3F3F3F3F3F;
 
+	knightAttacks.fill(0);
+
 	for (int sq = A1; sq <= H8; sq++)
 	{
 		uint64_t knightSet = 0;
@@ -93,6 +103,9 @@ void initializePawnAttacks()
 {
 	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
 	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
+
+	memset(pawnAttacks, 0, sizeof(pawnAttacks));
+
 	for (int sq = A1; sq <= H8; sq++)
 	{
 		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 9) & notAFile;
@@ -105,6 +118,9 @@ void initializePawnAttacks()
    
 void initializePawnMoves()
 {
+	memset(pawnSingleMoves, 0, sizeof(pawnSingleMoves));
+	memset(pawnDoubleMoves, 0, sizeof(pawnDoubleMoves));
+
 	for (int sq = A1; sq <= H8; sq++) 
 	{
 		if (sq <= H7)
@@ -158,6 +174,10 @@ void initializeRays()
 
 void initializePawnEvaluationBitboards()
 {
+	memset(passed, 0, sizeof(passed));
+	memset(backward, 0, sizeof(backward));
+	isolated.fill(0);
+
 	for (int sq = A2; sq <= H7; sq++)
 	{
 		int file = sq % 8;
@@ -180,6 +200,23 @@ void initializePawnEvaluationBitboards()
 			backward[White][sq] |= rays[S][sq + 7];
 			backward[Black][sq] |= rays[N][sq - 9];
 			isolated[sq] |= files[file - 1];
+		}
+	}
+}
+
+void initializeBetween()
+{
+	memset(between, 0, sizeof(between));
+
+	for (int i = A1; i <= H8; i++)
+	{
+		for (int j = A1; j <= H8; j++)
+		{
+			int h = heading[i][j];
+			if (h != -1)
+			{
+				between[i][j] = rays[h][i] & rays[7 - h][j];
+			}
 		}
 	}
 }
