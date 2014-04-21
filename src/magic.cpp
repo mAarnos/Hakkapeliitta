@@ -1,6 +1,3 @@
-#ifndef MAGIC_CPP
-#define MAGIC_CPP
-
 #include "magic.h"
 #include "bitboard.h"
 
@@ -227,6 +224,3 @@ void initializeMagics()
 	initMagics(bishopInit, bishopMagic, bishopDirections, 64 - 9);
 	initMagics(rookInit, rookMagic, rookDirections, 64 - 12);
 }
-
-
-#endif

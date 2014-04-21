@@ -1,6 +1,3 @@
-#ifndef TIME_CPP
-#define TIME_CPP
-
 #include "time.h"
 #include "position.h"
 
@@ -122,5 +119,3 @@ void allocateSearchTime(string s)
 		targetTime = 0;
 	}
 }
-
-#endif

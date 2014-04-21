@@ -1,6 +1,3 @@
-#ifndef UCI_CPP
-#define UCI_CPP
-
 #include <windows.h>
 #include "uci.h"
 #include "bitboard.h"
@@ -333,5 +330,3 @@ int uciStaticEval(string s)
 	cout << "Static Evaluation = " << eval(root) << endl;
 	return uciOk;
 }
-
-#endif

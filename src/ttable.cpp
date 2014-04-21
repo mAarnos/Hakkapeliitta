@@ -1,6 +1,3 @@
-#ifndef TTABLE_CPP
-#define TTABLE_CPP
-
 #include "ttable.h"
 #include "eval.h"
 
@@ -152,5 +149,3 @@ uint64_t perftTTProbe(Position & pos, int depth)
 
 	return probeFailed;
 }
-
-#endif

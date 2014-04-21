@@ -1,6 +1,3 @@
-#ifndef MOVEGEN_CPP
-#define MOVEGEN_CPP
-
 #include "movegen.h"
 #include "bitboard.h"
 #include "magic.h"
@@ -593,5 +590,3 @@ int generateEvasions(Position & pos, Move * mlist)
 
 	return generatedMoves;
 }
-	
-#endif

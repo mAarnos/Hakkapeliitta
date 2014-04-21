@@ -1,6 +1,3 @@
-#ifndef POSITION_CPP
-#define POSITION_CPP
-
 #include "position.h"
 #include "bitboard.h"
 #include "hash.h"
@@ -548,5 +545,3 @@ void Position::unmakeNullMove()
 	sideToMove = !sideToMove;
 	hash ^= turnHash;
 }
-
-#endif

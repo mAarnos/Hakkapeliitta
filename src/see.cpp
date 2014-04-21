@@ -1,6 +1,3 @@
-#ifndef SEE_CPP
-#define SEE_CPP
-
 #include "see.h"
 #include "bitboard.h"
 #include "magic.h"
@@ -260,5 +257,3 @@ int Position::SEE(Move m)
 
 	return value;
 }
-
-#endif

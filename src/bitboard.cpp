@@ -1,6 +1,3 @@
-#ifndef BITBOARD_CPP
-#define BITBOARD_CPP
-
 #include "bitboard.h"
 
 array<uint64_t, Squares> bit;
@@ -220,6 +217,4 @@ void initializeBetween()
 		}
 	}
 }
-
-#endif
 

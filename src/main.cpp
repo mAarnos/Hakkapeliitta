@@ -1,6 +1,3 @@
-#ifndef MAIN_CPP
-#define MAIN_CPP
-
 #include "defs.h"
 #include "bitboard.h"
 #include "magic.h"
@@ -43,5 +40,3 @@ int main()
 	*/
 	return 0; 
 }
-
-#endif

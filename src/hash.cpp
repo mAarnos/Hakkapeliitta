@@ -1,6 +1,3 @@
-#ifndef HASH_CPP
-#define HASH_CPP
-
 #include "hash.h"
 #include "random.h"
 #include "position.h"
@@ -105,5 +102,3 @@ uint64_t Position::calculateMaterialHash()
 	}
 	return material;
 }
-
-#endif

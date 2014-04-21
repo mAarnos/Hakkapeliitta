@@ -1,6 +1,3 @@
-#ifndef RANDOM_CPP
-#define RANDOM_CPP
-
 #include "random.h"
 
 WELL512::WELL512(uint32_t seed) :
@@ -36,5 +33,3 @@ uint32_t WELL512::rand()
 	state[index] = a ^ b ^ d ^ (a << 2) ^ (b << 18) ^ (c << 28);
 	return state[index];
 };
-
-#endif

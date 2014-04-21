@@ -1,6 +1,3 @@
-#ifndef SEARCH_CPP
-#define SEARCH_CPP
-
 #include "search.h"
 #include "movegen.h"
 #include "ttable.h"
@@ -683,5 +680,3 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 	return bestscore;
 }
-
-#endif

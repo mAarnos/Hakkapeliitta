@@ -1,6 +1,3 @@
-#ifndef EVAL_CPP
-#define EVAL_CPP
-
 #include "eval.h"
 #include "hash.h"
 #include "magic.h"
@@ -542,5 +539,3 @@ int eval(Position & pos)
 		return score;
 	}
 }
-
-#endif

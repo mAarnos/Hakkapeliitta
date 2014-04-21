@@ -1,6 +1,3 @@
-#ifndef MOVE_CPP
-#define MOVE_CPP
-
 #include "move.h"
 
 void Move::clear()
@@ -60,5 +57,3 @@ uint16_t Move::getMove()
 {
 	return move;
 }
- 
-#endif
