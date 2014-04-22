@@ -357,7 +357,7 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool movesFound = false, pvFound = false, ttAllowNull = true;
+	bool movesFound = false, firstMove = true, ttAllowNull = true;
 	int value, generatedMoves, ttFlag = ttAlpha, bestscore = -mateScore;
 	uint16_t ttMove = ttMoveNone, bestmove = ttMoveNone;
 
@@ -398,7 +398,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Null move pruning, both static and dynamic.
-	if (allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
+	if ((alpha + 1) == beta && allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
 	{
 		// Here's static.
 		if (depth <= 3 * onePly)
@@ -478,17 +478,18 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		nodeCount++;
 		movesFound = true;
-		if (pvFound)
+		if (firstMove)
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true); 
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+			firstMove = false;
+		}
+		else
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
 			if (value > alpha && value < beta)
 			{
 				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
 			}
-		}
-		else
-		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true); 
 		}
 		pos.unmakeMove(moveStack[i]);
 
@@ -518,17 +519,13 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 					}
 				}
 
-				if (value < beta)
-				{
-					alpha = value;
-					ttFlag = ttExact;
-					pvFound = true;
-				}
-				else
+				if (value >= beta)
 				{
 					ttSave(pos, depth, ply, value, ttBeta, bestmove);
 					return value;
 				}
+				alpha = value;
+				ttFlag = ttExact;
 			}
 		}
 	}
@@ -554,7 +551,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
 	int value, generatedMoves;
 	bool check, ttAllowNull;
-	bool pvFound = false;
+	bool firstMove = true;
 	uint16_t ttMove = ttMoveNone;
 	uint16_t bestmove = ttMoveNone;
 	int bestscore = -mateScore;
@@ -579,17 +576,18 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			continue;
 		}
 		nodeCount++;
-		if (pvFound)
+		if (firstMove)
+		{
+			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+			firstMove = false;
+		}
+		else
 		{
 			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
 			if (value > alpha && value < beta)
 			{
 				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
 			}
-		}
-		else
-		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
 		}
 
 		pos.unmakeMove(moveStack[i]);
@@ -620,31 +618,28 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					}
 				}
 
-				if (value < beta)
-				{
-					alpha = value;
-					ttSave(pos, depth, ply, value, ttAlpha, bestmove);
-					pvFound = true;
-
-					int searchTime = (int)t.getms();
-					reconstructPV(pos, pv);
-					if (isMateScore(alpha))
-					{
-						int v;
-						alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
-						cout << "info " << "depth " << depth / onePly << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-						displayPV(pv, (int)pv.size());
-					}
-					else
-					{
-						cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
-						displayPV(pv, (int)pv.size());
-					}
-				}
-				else
+				if (value >= beta)
 				{
 					ttSave(pos, depth, ply, value, ttBeta, bestmove);
 					return value;
+				}
+
+				alpha = value;
+				ttSave(pos, depth, ply, value, ttAlpha, bestmove);
+
+				int searchTime = (int)t.getms();
+				reconstructPV(pos, pv);
+				if (isMateScore(alpha))
+				{
+					int v;
+					alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
+					cout << "info " << "depth " << depth / onePly << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					displayPV(pv, (int)pv.size());
+				}
+				else
+				{
+					cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					displayPV(pv, (int)pv.size());
 				}
 			}
 		}
