@@ -96,8 +96,14 @@ int Position::SEE(Move m)
 	int alpha = -infinity, beta, next, value, attackerValue;
 	int from = m.getFrom();
 	int to = m.getTo();
+	int promotion = m.getPromotion();
+	bool toAtPromoRank = false;
 
-	if (m.getPromotion() == Pawn)
+	if (promotion == King)
+	{
+		return 0;
+	}
+	else if (promotion == Pawn)
 	{
 		value = pieceValues[Pawn];
 		attackerValue = value;
@@ -106,6 +112,12 @@ int Position::SEE(Move m)
 	{
 		value = pieceValues[board[to]];
 		attackerValue = pieceValues[board[from]];
+		if (promotion != Empty)
+		{
+			value += pieceValues[promotion] - pieceValues[Pawn];
+			attackerValue += pieceValues[promotion] - pieceValues[Pawn];
+			toAtPromoRank = true;
+		}
 	}
 	beta = value;
 
@@ -134,6 +146,7 @@ int Position::SEE(Move m)
 	while (true)
 	{
 		value -= attackerValue;
+		attackerValue = 0;
 		if (value >= beta)
 		{
 			return beta;
@@ -147,7 +160,7 @@ int Position::SEE(Move m)
 			return alpha;
 		}
 
-		if (bitboards[Pawn + !sideToMove * 6] & attackers)
+		if (!toAtPromoRank && bitboards[Pawn + !sideToMove * 6] & attackers)
 		{
 			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
 		}
@@ -162,6 +175,12 @@ int Position::SEE(Move m)
 		else if (bitboards[Rook + !sideToMove * 6] & attackers)
 		{
 			next = bitScanForward(bitboards[Rook + !sideToMove * 6] & attackers);
+		}
+		else if (toAtPromoRank && bitboards[Pawn + !sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
+			value -= pieceValues[Queen] - pieceValues[Pawn];
+			attackerValue += pieceValues[Queen] - pieceValues[Pawn];
 		}
 		else if (bitboards[Queen + !sideToMove * 6] & attackers)
 		{
@@ -187,9 +206,10 @@ int Position::SEE(Move m)
 			return beta;
 		}
 
-		attackerValue = pieceValues[board[next]];
+		attackerValue += pieceValues[board[next]];
 
 		value += attackerValue;
+		attackerValue = 0;
 		if (value <= alpha)
 		{
 			return alpha;
@@ -203,7 +223,7 @@ int Position::SEE(Move m)
 			return beta;
 		}
 
-		if (bitboards[Pawn + sideToMove * 6] & attackers)
+		if (!toAtPromoRank && bitboards[Pawn + sideToMove * 6] & attackers)
 		{
 			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
 		}
@@ -218,6 +238,12 @@ int Position::SEE(Move m)
 		else if (bitboards[Rook + sideToMove * 6] & attackers)
 		{
 			next = bitScanForward(bitboards[Rook + sideToMove * 6] & attackers);
+		}
+		else if (toAtPromoRank && bitboards[Pawn + sideToMove * 6] & attackers)
+		{
+			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
+			value += pieceValues[Queen] - pieceValues[Pawn];
+			attackerValue += pieceValues[Queen] - pieceValues[Pawn];
 		}
 		else if (bitboards[Queen + sideToMove * 6] & attackers)
 		{
@@ -243,7 +269,7 @@ int Position::SEE(Move m)
 			return alpha;
 		}
 
-		attackerValue = pieceValues[board[next]];
+		attackerValue += pieceValues[board[next]];
 	}
 
 	if (value < alpha)
