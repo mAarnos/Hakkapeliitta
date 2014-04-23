@@ -308,6 +308,10 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		alpha = value;
 	}
+	else if (value + 1000 < alpha) // If we are doing extremly badly, so badly that even capturing a hanging queen can't help us just return alpha.
+	{
+		return alpha;
+	}
 	int bestscore = value;
 	int delta = value + deltaPruningSafetyMargin;
 
