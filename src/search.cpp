@@ -366,9 +366,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	{
 		checkTimeAndInput();
 	}
-	if (!searching)
+
+	// Check for aborted search(either due to going beyond the allocated time or a new command) and repetition+fifty move draws.
+	if (!searching || pos.repetitionDraw())
 	{
-		return 0;
+		return drawScore;
 	}
 
 	// Check extension.
@@ -383,12 +385,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	if (depth <= 0)
 	{
 		return qsearch(pos, alpha, beta);
-	}
-
-	// Check for repetition and fifty move draws.
-	if (pos.repetitionDraw())
-	{
-		return drawScore;
 	}
 
 	// Probe the transposition table.
@@ -433,7 +429,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!searching)
 		{
-			return 0;
+			return drawScore;
 		}
 
 		if (value >= beta)
@@ -495,7 +491,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!searching)
 		{
-			return 0;
+			return drawScore;
 		}
 
 		if (value > bestscore)
@@ -594,7 +590,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 		if (!searching)
 		{
-			return 0;
+			return drawScore;
 		}
 
 		if (value > bestscore)

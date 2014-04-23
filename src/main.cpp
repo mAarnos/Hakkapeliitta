@@ -11,7 +11,7 @@
 
 int main()
 {
-	cout << "Hakkapeliitta v2.13, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta v2.14, (C) 2013-2014 Mikko Aarnos" << endl;
 
 	// Perft 1-8 correct.
 	// root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
