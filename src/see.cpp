@@ -92,12 +92,13 @@ int Position::SEE(Move m)
 	static const array<int, 13> pieceValues = {
 		100, 300, 300, 500, 900, mateScore, 100, 300, 300, 500, 900, mateScore, 0
 	};
-	uint64_t attackers, nonremoved = (uint64_t)~0;
-	int alpha = -infinity, beta, next, value, attackerValue;
+	uint64_t attackers, nonRemoved = (uint64_t)~0;
+	array<int, 32> materialGains;
+	int next, attackerValue, numberOfCaptures = 0;
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
-	bool toAtPromoRank = false;
+	bool toAtPromoRank = false, side = sideToMove;
 
 	if (promotion == King)
 	{
@@ -105,21 +106,21 @@ int Position::SEE(Move m)
 	}
 	else if (promotion == Pawn)
 	{
-		value = pieceValues[Pawn];
-		attackerValue = value;
+		materialGains[0] = pieceValues[Pawn];
+		attackerValue = pieceValues[Pawn];
 	}
-	else 
+	else
 	{
-		value = pieceValues[board[to]];
+		materialGains[0] = pieceValues[board[to]];
 		attackerValue = pieceValues[board[from]];
 		if (promotion != Empty)
 		{
-			value += pieceValues[promotion] - pieceValues[Pawn];
+			materialGains[0] += pieceValues[promotion] - pieceValues[Pawn];
 			attackerValue += pieceValues[promotion] - pieceValues[Pawn];
 			toAtPromoRank = true;
 		}
 	}
-	beta = value;
+	numberOfCaptures++;
 
 	// Generate a list of attackers.
 	attackers = attacksTo(to);
@@ -127,159 +128,70 @@ int Position::SEE(Move m)
 	// DO NOT OPTIMIZE THIS TO attackers ^= bit[from], that causes a bug when promoting a pawn.
 	// Basically, attacksTo cannot detect pawns about to promote so ^= creates an attacker instead of removing one.
 	attackers &= ~bit[from];
-	nonremoved &= ~bit[from];
+	nonRemoved &= ~bit[from];
 
-	attackers = revealNextAttacker(attackers, nonremoved, to, from);
+	attackers = revealNextAttacker(attackers, nonRemoved, to, from);
+	side = !side;
 
-	// If there are no defenders just return beta.
-	if (!(attackers & bitboards[12 + !sideToMove]))
+	while (attackers & bitboards[12 + side])
 	{
-		return beta;
-	}
-	// Illegal king capture, return alpha.
-	if (getPieceType(from) == King)
-	{
-		return alpha;
-	}
-
-	// Replace this while(true) with something more correct.
-	while (true)
-	{
-		value -= attackerValue;
-		attackerValue = 0;
-		if (value >= beta)
+		if (!toAtPromoRank && bitboards[Pawn + side * 6] & attackers)
 		{
-			return beta;
+			next = bitScanForward(bitboards[Pawn + side * 6] & attackers);
 		}
-		if (value > alpha)
+		else if (bitboards[Knight + side * 6] & attackers)
 		{
-			alpha = value;
+			next = bitScanForward(bitboards[Knight + side * 6] & attackers);
 		}
-		if (alpha > 0)
+		else if (bitboards[Bishop + side * 6] & attackers)
 		{
-			return alpha;
+			next = bitScanForward(bitboards[Bishop + side * 6] & attackers);
 		}
-
-		if (!toAtPromoRank && bitboards[Pawn + !sideToMove * 6] & attackers)
+		else if (bitboards[Rook + side * 6] & attackers)
 		{
-			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
+			next = bitScanForward(bitboards[Rook + side * 6] & attackers);
 		}
-		else if (bitboards[Knight + !sideToMove * 6] & attackers)
+		else if (toAtPromoRank && bitboards[Pawn + side * 6] & attackers)
 		{
-			next = bitScanForward(bitboards[Knight + !sideToMove * 6] & attackers);
+			next = bitScanForward(bitboards[Pawn + side * 6] & attackers);
 		}
-		else if (bitboards[Bishop + !sideToMove * 6] & attackers)
+		else if (bitboards[Queen + side * 6] & attackers)
 		{
-			next = bitScanForward(bitboards[Bishop + !sideToMove * 6] & attackers);
-		}
-		else if (bitboards[Rook + !sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Rook + !sideToMove * 6] & attackers);
-		}
-		else if (toAtPromoRank && bitboards[Pawn + !sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Pawn + !sideToMove * 6] & attackers);
-			value -= pieceValues[Queen] - pieceValues[Pawn];
-			attackerValue += pieceValues[Queen] - pieceValues[Pawn];
-		}
-		else if (bitboards[Queen + !sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Queen + !sideToMove * 6] & attackers);
+			next = bitScanForward(bitboards[Queen + side * 6] & attackers);
 		}
 		else
 		{
-			next = bitScanForward(bitboards[King + !sideToMove * 6]);
+			next = bitScanForward(bitboards[King + side * 6]);
 		}
 
-		attackers &= ~bit[next];
-		nonremoved &= ~bit[next];
-
-		attackers = revealNextAttacker(attackers, nonremoved, to, next);
-		// No defenders left, we are done.
-		if (!(attackers & bitboards[12 + sideToMove]))
+		// Update the materialgains array.
+		materialGains[numberOfCaptures] = -materialGains[numberOfCaptures - 1] + attackerValue;
+		// Remember the value of the capturing piece because it is going to be captured next.
+		attackerValue = pieceValues[board[next]];
+		// If we are going to do a promotion we need to correct the values a bit.
+		if (toAtPromoRank && attackerValue == pieceValues[Pawn])
 		{
-			break;
-		}
-		// Illegal king capture, we are done.
-		if (getPieceType(next) == King)
-		{
-			return beta;
-		}
-
-		attackerValue += pieceValues[board[next]];
-
-		value += attackerValue;
-		attackerValue = 0;
-		if (value <= alpha)
-		{
-			return alpha;
-		}
-		if (value < beta)
-		{
-			beta = value;
-		}
-		if (beta < 0)
-		{
-			return beta;
-		}
-
-		if (!toAtPromoRank && bitboards[Pawn + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
-		}
-		else if (bitboards[Knight + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Knight + sideToMove * 6] & attackers);
-		}
-		else if (bitboards[Bishop + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Bishop + sideToMove * 6] & attackers);
-		}
-		else if (bitboards[Rook + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Rook + sideToMove * 6] & attackers);
-		}
-		else if (toAtPromoRank && bitboards[Pawn + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Pawn + sideToMove * 6] & attackers);
-			value += pieceValues[Queen] - pieceValues[Pawn];
+			materialGains[numberOfCaptures] += pieceValues[Queen] - pieceValues[Pawn];
 			attackerValue += pieceValues[Queen] - pieceValues[Pawn];
 		}
-		else if (bitboards[Queen + sideToMove * 6] & attackers)
-		{
-			next = bitScanForward(bitboards[Queen + sideToMove * 6] & attackers);
-		}
-		else
-		{
-			next = bitScanForward(bitboards[King + sideToMove * 6]);
-		}
-		
-		attackers &= ~bit[next];
-		nonremoved &= ~bit[next];
 
-		attackers = revealNextAttacker(attackers, nonremoved, to, next);
-		// No defenders left, we are done.
-		if (!(attackers & bitboards[12 + !sideToMove]))
+		attackers &= ~bit[next];
+		nonRemoved &= ~bit[next];
+
+		attackers = revealNextAttacker(attackers, nonRemoved, to, next);
+		side = !side;
+
+		if (getPieceType(next) == King && (attackers & bitboards[12 + side]))
 		{
 			break;
 		}
-		// Illegal king capture, we are done.
-		if (getPieceType(next) == King)
-		{
-			return alpha;
-		}
-
-		attackerValue += pieceValues[board[next]];
+		numberOfCaptures++;
 	}
 
-	if (value < alpha)
+	while (--numberOfCaptures)
 	{
-		value = alpha;
-	}
-	if (value > beta)
-	{
-		value = beta;
+		materialGains[numberOfCaptures - 1] = min(-materialGains[numberOfCaptures], materialGains[numberOfCaptures - 1]);
 	}
 
-	return value;
+	return materialGains[0];
 }
