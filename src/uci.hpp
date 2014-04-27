@@ -1,7 +1,7 @@
-#ifndef UCI_H
-#define UCI_H
+#ifndef UCI_H_
+#define UCI_H_
 
-#include "defs.h"
+#include "defs.hpp"
 
 typedef int(*uciFunctionPointer)(string s);
 

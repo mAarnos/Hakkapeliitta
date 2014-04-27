@@ -1,6 +1,6 @@
-#include "hash.h"
-#include "random.h"
-#include "position.h"
+#include "hash.hpp"
+#include "random.hpp"
+#include "position.hpp"
 
 array<uint64_t, Squares> pieceHash[12];
 array<uint64_t, 8> materialHash[12];

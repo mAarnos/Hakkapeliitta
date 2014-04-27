@@ -1,8 +1,8 @@
-#ifndef TIME_H
-#define TIME_H
+#ifndef TIME_H_
+#define TIME_H_
 
-#include "defs.h"
-#include "uci.h"
+#include "defs.hpp"
+#include "uci.hpp"
 
 // A stopwatch-type timer.
 class Timer

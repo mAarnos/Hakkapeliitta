@@ -1,8 +1,8 @@
-#ifndef SEARCH_H
-#define SEARCH_H
+#ifndef SEARCH_H_
+#define SEARCH_H_
 
-#include "defs.h"
-#include "position.h"
+#include "defs.hpp"
+#include "position.hpp"
 
 
 extern uint64_t nodeCount;

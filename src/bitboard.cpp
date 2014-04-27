@@ -1,4 +1,4 @@
-#include "bitboard.h"
+#include "bitboard.hpp"
 
 array<uint64_t, Squares> bit;
 array<uint64_t, Squares> kingAttacks;

@@ -1,7 +1,7 @@
-#include "eval.h"
-#include "hash.h"
-#include "magic.h"
-#include "ttable.h"
+#include "eval.hpp"
+#include "hash.hpp"
+#include "magic.hpp"
+#include "ttable.hpp"
 
 int drawScore = 0;
 

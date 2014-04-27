@@ -1,5 +1,5 @@
-#include "ttable.h"
-#include "eval.h"
+#include "ttable.hpp"
+#include "eval.hpp"
 
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
@@ -110,10 +110,7 @@ void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t fla
 		}
 		// Here we check if we have found an entry which is worse than the current worse entry.
 		// If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-		// The exception is when we have an exact entry which has a lower depth. In this case we never replace it.
-		// This avoids problems with reconstructing the pv.
-		// The exact entries are flushed out when we start a new search and notice the entry is from a previous search.
-		c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));// && hashEntry->getFlags(i) != ttExact);
+		c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));
 		c2 = (hashEntry->getDepth(replace) > hashEntry->getDepth(i));
 		if (c1 || c2)
 		{

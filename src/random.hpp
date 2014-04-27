@@ -1,7 +1,7 @@
-#ifndef RANDOM_H
-#define RANDOM_H
+#ifndef RANDOM_H_
+#define RANDOM_H_
 
-#include "defs.h"
+#include "defs.hpp"
 
 // Our PRNG of choice is WELL, or Well Equidistributed Long-period Linear. It is an improved version of Mersenne Twister. For more details see
 // L'Ecuyer, Pierre; Panneton, Francois; Matsumoto, Makoto (2006), Improved Long-Period Generators Based on Linear Recurrences Modulo 2

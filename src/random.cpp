@@ -1,4 +1,4 @@
-#include "random.h"
+#include "random.hpp"
 
 WELL512::WELL512(uint32_t seed) :
 index(0)

@@ -1,7 +1,7 @@
 #ifndef BITBOARD_H_
 #define BITBOARD_H_
 
-#include "defs.h"
+#include "defs.hpp"
 #include <intrin.h>
 
 void initializeBitboards();	

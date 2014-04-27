@@ -1,10 +1,10 @@
-#ifndef POSITION_H
-#define POSITION_H
+#ifndef POSITION_H_
+#define POSITION_H_
 
-#include "defs.h"
-#include "bitboard.h"
-#include "move.h"
-#include "hash.h"
+#include "defs.hpp"
+#include "bitboard.hpp"
+#include "move.hpp"
+#include "hash.hpp"
 
 const int maxGameLength = 600;
 

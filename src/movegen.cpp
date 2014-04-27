@@ -1,6 +1,6 @@
-#include "movegen.h"
-#include "bitboard.h"
-#include "magic.h"
+#include "movegen.hpp"
+#include "bitboard.hpp"
+#include "magic.hpp"
 
 int generateMoves(Position & pos, Move * mlist)
 {

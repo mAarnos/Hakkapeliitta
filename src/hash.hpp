@@ -1,7 +1,7 @@
-#ifndef HASH_H
-#define HASH_H
+#ifndef HASH_H_
+#define HASH_H_
 
-#include "defs.h"
+#include "defs.hpp"
 
 extern array<uint64_t, Squares> pieceHash[12];
 extern array<uint64_t, 8> materialHash[12];

@@ -1,7 +1,7 @@
-#ifndef MOVE_H
-#define MOVE_H
+#ifndef MOVE_H_
+#define MOVE_H_
 
-#include "defs.h"
+#include "defs.hpp"
 
 class Move
 {

@@ -1,10 +1,10 @@
-#include "search.h"
-#include "movegen.h"
-#include "ttable.h"
-#include "eval.h"
-#include "uci.h"
-#include "movegen.h"
-#include "time.h"
+#include "search.hpp"
+#include "movegen.hpp"
+#include "ttable.hpp"
+#include "eval.hpp"
+#include "uci.hpp"
+#include "movegen.hpp"
+#include "time.hpp"
 
 uint64_t nodeCount = 0;
 

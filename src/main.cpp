@@ -1,13 +1,13 @@
-#include "defs.h"
-#include "bitboard.h"
-#include "magic.h"
-#include "hash.h"
-#include "ttable.h"
-#include "position.h"
-#include "search.h"
-#include "time.h"
-#include "eval.h"
-#include "uci.h"
+#include "defs.hpp"
+#include "bitboard.hpp"
+#include "magic.hpp"
+#include "hash.hpp"
+#include "ttable.hpp"
+#include "position.hpp"
+#include "search.hpp"
+#include "time.hpp"
+#include "eval.hpp"
+#include "uci.hpp"
 
 int main()
 {

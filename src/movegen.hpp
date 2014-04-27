@@ -1,9 +1,9 @@
-#ifndef MOVEGEN_H
-#define MOVEGEN_H
+#ifndef MOVEGEN_H_
+#define MOVEGEN_H_
 
-#include "defs.h"
-#include "move.h"
-#include "position.h"
+#include "defs.hpp"
+#include "move.hpp"
+#include "position.hpp"
 
 int generateMoves(Position & pos, Move * mlist);
 int generateCaptures(Position & pos, Move * mlist);

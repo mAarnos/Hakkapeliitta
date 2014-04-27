@@ -1,8 +1,8 @@
-#ifndef EVAL_H
-#define EVAL_H
+#ifndef EVAL_H_
+#define EVAL_H_
 
-#include "defs.h"
-#include "position.h"
+#include "defs.hpp"
+#include "position.hpp"
 
 const int mateScore = 32767;
 const int maxMateScore = 32767 - maxGameLength;

@@ -1,12 +1,12 @@
 #include <windows.h>
-#include "uci.h"
-#include "bitboard.h"
-#include "magic.h"
-#include "hash.h"
-#include "eval.h"
-#include "ttable.h"
-#include "search.h"
-#include "time.h"
+#include "uci.hpp"
+#include "bitboard.hpp"
+#include "magic.hpp"
+#include "hash.hpp"
+#include "eval.hpp"
+#include "ttable.hpp"
+#include "search.hpp"
+#include "time.hpp"
 
 int uciProcessInput();
 int uciSendInformation(string s);

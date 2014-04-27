@@ -1,8 +1,8 @@
-#include "see.h"
-#include "bitboard.h"
-#include "magic.h"
-#include "position.h"
-#include "eval.h"
+#include "see.hpp"
+#include "bitboard.hpp"
+#include "magic.hpp"
+#include "position.hpp"
+#include "eval.hpp"
 
 uint64_t Position::attacksTo(int to)
 {

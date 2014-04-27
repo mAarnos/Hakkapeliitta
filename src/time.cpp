@@ -1,5 +1,5 @@
-#include "time.h"
-#include "position.h"
+#include "time.hpp"
+#include "position.hpp"
 
 Timer t;
 

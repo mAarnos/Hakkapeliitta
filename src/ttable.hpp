@@ -1,8 +1,8 @@
-#ifndef TTABLE_H
-#define TTABLE_H
+#ifndef TTABLE_H_
+#define TTABLE_H_
 
-#include "defs.h"
-#include "position.h"
+#include "defs.hpp"
+#include "position.hpp"
 
 const uint32_t probeFailed = UINT_MAX;
 const uint16_t ttMoveNone = USHRT_MAX;

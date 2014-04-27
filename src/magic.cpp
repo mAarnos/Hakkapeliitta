@@ -1,5 +1,5 @@
-#include "magic.h"
-#include "bitboard.h"
+#include "magic.hpp"
+#include "bitboard.hpp"
 
 uint64_t lookupTable[97264];
 

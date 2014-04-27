@@ -1,8 +1,8 @@
-#include "position.h"
-#include "bitboard.h"
-#include "hash.h"
-#include "magic.h"
-#include "eval.h"
+#include "position.hpp"
+#include "bitboard.hpp"
+#include "hash.hpp"
+#include "magic.hpp"
+#include "eval.hpp"
 
 Position root;
 

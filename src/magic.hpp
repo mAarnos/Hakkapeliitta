@@ -1,7 +1,7 @@
-#ifndef MAGIC_H
-#define MAGIC_H
+#ifndef MAGIC_H_
+#define MAGIC_H_
 
-#include "defs.h"
+#include "defs.hpp"
 
 class Magic
 {
