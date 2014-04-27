@@ -20,7 +20,7 @@ int uciExit(string s);
 int uciDisplayBoard(string s);
 int uciStaticEval(string s);
 
-bool searching;
+bool searching; 
 
 int pipe;
 HANDLE hstdin;
@@ -57,18 +57,6 @@ void initInput()
 		setvbuf(stdin, NULL, _IONBF, 0);
 		setvbuf(stdout, NULL, _IONBF, 0);
 	}
-}
-
-void initializeEngine()
-{
-	initInput();
-	initializeBitboards();
-	initializeMagics();
-	initializeHash();
-	initializeEval();
-	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	tt.setSize(1024 * 1024);
-	ptt.setSize((1024 * 1024) / 8);
 }
 
 bool inputAvailable()
@@ -150,7 +138,7 @@ int uciProcessInput()
 int uciSendInformation(string s)
 {
 	// Send the name of the engine and the name of it's author.
-	cout << "id name Hakkapeliitta v2.17" << endl;
+	cout << "id name Hakkapeliitta v2.18" << endl;
 	cout << "id author Mikko Aarnos" << endl;
 
 	// Send all possible options the engine has that can be modified.
@@ -221,7 +209,6 @@ int uciSetOption(string s)
 
 int uciIsReady(string s)
 {
-	initializeEngine();
 	cout << "readyok" << endl;
 	return uciOk;
 }
@@ -230,6 +217,7 @@ int uciNewGame(string s)
 {
 	tt.clear();
 	ptt.clear();
+	cout << "info string hash cleared" << endl;
 	return uciOk;
 }
 

@@ -11,7 +11,17 @@
 
 int main()
 {
-	cout << "Hakkapeliitta v2.17, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta v2.18, (C) 2013-2014 Mikko Aarnos" << endl;
+
+	// Initialize the engine.
+	initInput();
+	initializeBitboards();
+	initializeMagics();
+	initializeHash();
+	initializeEval();
+	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	tt.setSize(1024 * 1024);
+	ptt.setSize((1024 * 1024) / 8);
 
 	// Perft 1-8 correct.
 	// root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
@@ -28,8 +38,6 @@ int main()
 
     uciMainLoop();
 	/*
-	perftTT.setSize(1024 * 1024 * 512);
-
 	t.start();
 	nodeCount = perft(root, 7);
 	t.stop();

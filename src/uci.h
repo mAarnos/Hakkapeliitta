@@ -16,6 +16,7 @@ bool inputAvailable();
 
 void uciMainLoop();
 int uciProcessInput();
+void initInput();
 
 const int uciQuit = 0;
 const int uciOk = 1;

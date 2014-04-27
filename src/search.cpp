@@ -8,6 +8,8 @@
 
 uint64_t nodeCount = 0;
 
+int searchDepth;
+
 array<int, maxGameLength> killer[2];
 array<int, Squares> butterfly[Colours][Squares];
 
@@ -17,16 +19,11 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
 {
-	uint64_t value, generatedMoves, nodes = 0;
+	uint64_t generatedMoves, nodes = 0;
 
 	if (depth == 0)
 	{
 		return 1;
-	}
-
-	if ((value = perftTTProbe(pos, depth)) != probeFailed)
-	{
-		return value;
 	}
 
 	Move moveStack[256];
@@ -47,8 +44,6 @@ uint64_t perft(Position & pos, int depth)
 		nodes += perft(pos, depth - 1);
 		pos.unmakeMove(moveStack[i]);
 	}
-
-	perftTTSave(pos, nodes, depth);
 
 	return nodes;
 }
@@ -140,6 +135,7 @@ void selectMove(Move * moveStack, int moveAmount, int i)
 	}
 }
 
+// Clean this function up.
 void reconstructPV(Position pos, vector<Move> & pv)
 {
 	ttEntry * hashEntry;
@@ -147,17 +143,26 @@ void reconstructPV(Position pos, vector<Move> & pv)
 	pv.clear();
 
 	int ply = 0;
+	int entry;
 	while (ply < 63)
 	{
 		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-		if (((hashEntry->hash ^ hashEntry->data) != pos.getHash())
-		|| ((hashEntry->data >> 56) != ttExact && ply >= 2)
+		for (entry = 0; entry < 4; entry++)
+		{
+			if ((hashEntry->getHash(entry) ^ hashEntry->getData(entry)) == pos.getHash())
+			{
+				break;
+			}
+		}
+
+		if ((entry > 3)
+		|| (hashEntry->getFlags(entry) != ttExact && ply >= 2)
 		|| (pos.repetitionDraw() && ply >= 2)
-		|| ((uint16_t)hashEntry->data == ttMoveNone))
+		|| (hashEntry->getBestMove(entry) == ttMoveNone))
 		{
 			break;
 		}
-		m.setMove((uint16_t)hashEntry->data);
+		m.setMove(hashEntry->getBestMove(entry));
 		pv.push_back(m);
 		pos.makeMove(m);
 		ply++;
@@ -201,11 +206,10 @@ void displayPV(vector<Move> pv, int length)
 
 void think()
 {
-	int score, alpha, beta;
-	int searchDepth, searchTime;
+	int score, alpha, beta, searchTime;
 
 	tt.startNewSearch();
-
+	
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));
 	memset(killer, 0, sizeof(killer));
@@ -231,8 +235,6 @@ void think()
 		{
 			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl << "bestmove ";
 			displayPV(pv, 1);
-			cout << endl;
-
 			return;
 		}
 
@@ -299,7 +301,9 @@ void think()
 
 int qsearch(Position & pos, int alpha, int beta)
 {
-	int value = eval(pos);
+	int value, bestScore, delta;
+
+	value = eval(pos);
 	if (value > alpha)
 	{
 		if (value >= beta)
@@ -308,12 +312,12 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		alpha = value;
 	}
-	else if (value + 1000 < alpha) // If we are doing extremly badly, so badly that even capturing a hanging queen can't help us just return alpha.
+	else if (value + 1000 < alpha) // If we are doing extremely badly, so badly that even capturing a hanging queen can't help us just return alpha.
 	{
 		return alpha;
 	}
-	int bestscore = value;
-	int delta = value + deltaPruningSafetyMargin;
+	bestScore = value;
+	delta = value + deltaPruningSafetyMargin;
 
 	Move moveStack[64];
 	int generatedMoves = generateCaptures(pos, moveStack);
@@ -330,7 +334,7 @@ int qsearch(Position & pos, int alpha, int beta)
 		// we can return alpha straight away as all captures following a failure are equal or worse to it - that is they will fail as well
 		if (delta + moveStack[i].getScore() < alpha)
 		{
-			return bestscore;
+			return bestScore;
 		}
 
 		if (!(pos.makeMove(moveStack[i])))
@@ -342,9 +346,9 @@ int qsearch(Position & pos, int alpha, int beta)
 		value = -qsearch(pos, -beta, -alpha);
 		pos.unmakeMove(moveStack[i]);
 
-		if (value > bestscore)
+		if (value > bestScore)
 		{
-			bestscore = value;
+			bestScore = value;
 			if (value > alpha)
 			{
 				if (value >= beta)
@@ -356,14 +360,14 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 	}
 
-	return bestscore;
+	return bestScore;
 }
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
 	bool movesFound = false, firstMove = true, ttAllowNull = true;
-	int value, generatedMoves, ttFlag = ttAlpha, bestscore = -mateScore;
-	uint16_t ttMove = ttMoveNone, bestmove = ttMoveNone;
+	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore;
+	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
 	if (countDown-- <= 0)
@@ -498,10 +502,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			return drawScore;
 		}
 
-		if (value > bestscore)
+		if (value > bestScore)
 		{
-			bestscore = value;
-			bestmove = moveStack[i].getMove();
+			bestScore = value;
+			bestMove = moveStack[i].getMove();
 			if (value > alpha)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
@@ -521,7 +525,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 				if (value >= beta)
 				{
-					ttSave(pos, depth, ply, value, ttBeta, bestmove);
+					ttSave(pos, ply, depth, value, ttBeta, bestMove);
 					return value;
 				}
 				alpha = value;
@@ -542,9 +546,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	ttSave(pos, depth, ply, bestscore, ttFlag, bestmove);
+	ttSave(pos, ply, depth, bestScore, ttFlag, bestMove);
 
-	return bestscore;
+	return bestScore;
 }
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
@@ -553,8 +557,8 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	bool check, ttAllowNull;
 	bool firstMove = true;
 	uint16_t ttMove = ttMoveNone;
-	uint16_t bestmove = ttMoveNone;
-	int bestscore = -mateScore;
+	uint16_t bestMove = ttMoveNone;
+	int bestScore = -mateScore;
 
 	check = pos.inCheck(pos.getSideToMove());
 	if (check)
@@ -597,10 +601,10 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			return drawScore;
 		}
 
-		if (value > bestscore)
+		if (value > bestScore)
 		{
-			bestscore = value;
-			bestmove = moveStack[i].getMove();
+			bestScore = value;
+			bestMove = moveStack[i].getMove();
 			if (value > alpha)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
@@ -620,12 +624,12 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 				if (value >= beta)
 				{
-					ttSave(pos, depth, ply, value, ttBeta, bestmove);
+					ttSave(pos, ply, depth, value, ttBeta, bestMove);
 					return value;
 				}
 
 				alpha = value;
-				ttSave(pos, depth, ply, value, ttAlpha, bestmove);
+				ttSave(pos, ply, depth, value, ttAlpha, bestMove);
 
 				int searchTime = (int)t.getms();
 				reconstructPV(pos, pv);
@@ -633,19 +637,19 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				{
 					int v;
 					alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
-					cout << "info " << "depth " << depth / onePly << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
 					displayPV(pv, (int)pv.size());
 				}
 				else
 				{
-					cout << "info " << "depth " << depth / onePly << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					cout << "info " << "depth " << searchDepth << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
 					displayPV(pv, (int)pv.size());
 				}
 			}
 		}
 	}
 
-	ttSave(pos, depth, ply, bestscore, ttExact, bestmove);
+	ttSave(pos, ply, depth, bestScore, ttExact, bestMove);
 
-	return bestscore;
+	return bestScore;
 }

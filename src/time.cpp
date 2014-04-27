@@ -52,6 +52,7 @@ void checkTimeAndInput()
 	{
 		uciProcessInput();
 	}
+	
 }
 
 void allocateSearchTime(string s)

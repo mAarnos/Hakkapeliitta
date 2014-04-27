@@ -3,18 +3,26 @@
 
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
-HashTable<ttEntry> perftTT;
 
 int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best, bool & ttAllowNull)
 {
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
-	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
+	int entry;
+	for (entry = 0; entry < 4; entry++)
 	{
-		best = (uint16_t)hashEntry->data;
-		int score = (int16_t)((hashEntry->data & 0xffff00000000) >> 32);
-		int hashDepth = (hashEntry->data & 0xff000000000000) >> 48;
-		int flags = hashEntry->data >> 56;
+		if ((hashEntry->getHash(entry) ^ hashEntry->getData(entry)) == pos.getHash())
+		{
+			break;
+		}
+	}
+
+	if (entry < 4)
+	{
+		best = hashEntry->getBestMove(entry);
+		int score = hashEntry->getScore(entry);
+		int hashDepth = hashEntry->getDepth(entry);
+		int flags = hashEntry->getFlags(entry);
 
 		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
 		{
@@ -34,7 +42,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_
 					score += ply;
 				}
 			}
-			
+
 			if (flags == ttExact)
 			{
 				return score;
@@ -71,19 +79,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_
 	return probeFailed;
 }
 
-int pttProbe(Position & pos)
-{
-	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
-
-	if ((hashEntry->hash ^ hashEntry->data) == (uint32_t)pos.getPawnHash())
-	{
-		return hashEntry->data;
-	}
-
-	return probeFailed;
-}
-
-void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t flags, int64_t best)
+void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best)
 {
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
 	if (isMateScore(score))
@@ -99,52 +95,50 @@ void ttSave(Position & pos, uint64_t depth, int ply, int64_t score, uint64_t fla
 	}
 	
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-	if (((hashEntry->data & 0xff000000000000) >> 48) <= depth || ((hashEntry->data & 0xffff0000) >> 16) < tt.getGeneration())
+	int replace = 0;
+	bool c1, c2;
+	for (int i = 0; i < 4; i++)
 	{
-		hashEntry->hash = pos.getHash();
-		hashEntry->data = ((best & 0xffff) | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56);
-		hashEntry->hash ^= hashEntry->data;
+		if ((hashEntry->getHash(i) ^ hashEntry->getData(i)) == pos.getHash())
+		{
+			replace = i;
+			if (best == ttMoveNone)
+			{
+				best = hashEntry->getBestMove(replace);
+			}
+			break;
+		}
+		// Here we check if we have found an entry which is worse than the current worse entry.
+		// If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
+		// The exception is when we have an exact entry which has a lower depth. In this case we never replace it.
+		// This avoids problems with reconstructing the pv.
+		// The exact entries are flushed out when we start a new search and notice the entry is from a previous search.
+		c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));// && hashEntry->getFlags(i) != ttExact);
+		c2 = (hashEntry->getDepth(replace) > hashEntry->getDepth(i));
+		if (c1 || c2)
+		{
+			replace = i;
+		}
 	}
+	hashEntry->setData(replace, (best | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56));
+	hashEntry->setHash(replace, pos.getHash() ^ hashEntry->getData(replace));
 }
 
 void pttSave(Position & pos, int score)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	hashEntry->hash = (uint32_t)pos.getPawnHash();
-	hashEntry->data = score;
-	hashEntry->hash ^= hashEntry->data;
+	hashEntry->setData(score);
+	hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
 }
 
-void perftTTSave(Position & pos, uint64_t nodes, int depth)
+int pttProbe(Position & pos)
 {
-	if (perftTT.isEmpty())
+	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
+
+	if ((hashEntry->getHash() ^ hashEntry->getData()) == (uint32_t)pos.getPawnHash())
 	{
-		return;
-	}
-
-	ttEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
-
-	hashEntry->hash = pos.getHash();
-	hashEntry->data = (nodes & 0xffffffffffffff) | (uint64_t)depth << 56;
-	hashEntry->hash ^= hashEntry->data;
-}
-
-uint64_t perftTTProbe(Position & pos, int depth)
-{
-	if (perftTT.isEmpty())
-	{
-		return probeFailed;
-	}
-
-	ttEntry * hashEntry = &perftTT.getEntry(pos.getHash() % perftTT.getSize());
-
-	if ((hashEntry->hash ^ hashEntry->data) == pos.getHash())
-	{
-		if ((hashEntry->data >> 56) == depth)
-		{
-			return (hashEntry->data & 0xffffffffffffff);
-		}
+		return hashEntry->getData();
 	}
 
 	return probeFailed;

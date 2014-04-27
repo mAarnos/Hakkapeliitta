@@ -1,5 +1,5 @@
-#ifndef BITBOARD_H
-#define BITBOARD_H
+#ifndef BITBOARD_H_
+#define BITBOARD_H_
 
 #include "defs.h"
 #include <intrin.h>
