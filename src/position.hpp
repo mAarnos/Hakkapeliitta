@@ -63,6 +63,9 @@ class Position
 
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
+		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }
+		inline void setKiller(int killerNumber, int ply, int newKiller) { killer[killerNumber][ply] = newKiller; }
+
 		bool repetitionDraw();
 
 		int SEE(Move m);
@@ -93,7 +96,10 @@ class Position
 		int hply;
 		int phase;
 		int scoreOp, scoreEd;
-		uint64_t hash, pawnHash, matHash;
+		uint64_t hash, pawnHash, matHash; 
+
+		// Killer moves. Since these are highly position specific we have to make them thread specific.
+		array<int, maxGameLength> killer[2];
 
 		// These functions can be used to calculate different hash keys for the current position.
 		// They are slow so they are only used when initializing, instead we update them incrementally.

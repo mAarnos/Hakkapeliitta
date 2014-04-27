@@ -10,7 +10,6 @@ uint64_t nodeCount = 0;
 
 int searchDepth;
 
-array<int, maxGameLength> killer[2];
 array<int, Squares> butterfly[Colours][Squares];
 
 vector<Move> pv;
@@ -85,19 +84,19 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 			}
 			moveStack[i].setScore(score);
 		}
-		else if (moveStack[i].getMove() == killer[0][ply])
+		else if (moveStack[i].getMove() == pos.getKiller(0, ply))
 		{
 			moveStack[i].setScore(killerMove1);
 		}
-		else if (moveStack[i].getMove() == killer[1][ply])
+		else if (moveStack[i].getMove() == pos.getKiller(1, ply))
 		{
 			moveStack[i].setScore(killerMove2);
 		}
-		else if (ply > 1 && moveStack[i].getMove() == killer[0][ply - 2])
+		else if (ply > 1 && moveStack[i].getMove() == pos.getKiller(0, ply - 2))
 		{
 			moveStack[i].setScore(killerMove3);
 		}
-		else if (ply > 1 && moveStack[i].getMove() == killer[1][ply - 2])
+		else if (ply > 1 && moveStack[i].getMove() == pos.getKiller(1, ply - 2))
 		{
 			moveStack[i].setScore(killerMove4);
 		}
@@ -212,7 +211,6 @@ void think()
 	
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));
-	memset(killer, 0, sizeof(killer));
 	nodeCount = 0;
 	countDown = stopInterval;
 
@@ -515,10 +513,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
 					if (value >= beta)
 					{
-						if (moveStack[i].getMove() != killer[0][ply])
+						if (moveStack[i].getMove() != pos.getKiller(0, ply))
 						{
-							killer[1][ply] = killer[0][ply];
-							killer[0][ply] = moveStack[i].getMove();
+							pos.setKiller(1, ply, pos.getKiller(0, ply));
+							pos.setKiller(0, ply, moveStack[i].getMove());
 						}
 					}
 				}
@@ -614,10 +612,10 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
 					if (value >= beta)
 					{
-						if (moveStack[i].getMove() != killer[0][ply])
+						if (moveStack[i].getMove() != pos.getKiller(0, ply))
 						{
-							killer[1][ply] = killer[0][ply];
-							killer[0][ply] = moveStack[i].getMove();
+							pos.setKiller(1, ply, pos.getKiller(0, ply));
+							pos.setKiller(0, ply, moveStack[i].getMove());
 						}
 					}
 				}
