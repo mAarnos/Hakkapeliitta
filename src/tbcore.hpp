@@ -1,15 +1,14 @@
 /*
-  Copyright (c) 2011-2013 Ronald de Man
+	Copyright (c) 2011-2013 Ronald de Man
 */
 
 #ifndef TBCORE_H_
 #define TBCORE_H_
 
 #include <cstdint>
+#include <string>
 
-// Comment the following line out to get a version for a non-windows os.
 #define __WIN32__
-// Comment the following line out to get a 32-bit version.
 #define DECOMP64
 
 #ifndef __WIN32__
@@ -55,109 +54,139 @@ typedef uint64_t base_t;
 typedef uint32_t base_t;
 #endif
 
-struct PairsData {
-	char * indextable;
-	uint16_t * sizetable;
-	uint8_t * data;
-	uint16_t * offset;
-	uint8_t * symlen;
-	uint8_t * sympat;
-	int blocksize;
-	int idxbits;
-	int min_len;
-	base_t base[1]; // C++ complains about base[]...
+struct PairsData
+{
+    char *indextable;
+    uint16_t *sizetable;
+    uint8_t *data;
+    uint16_t *offset;
+    uint8_t *symlen;
+    uint8_t *sympat;
+    int blocksize;
+    int idxbits;
+    int min_len;
+    base_t base[1]; // C++ complains about base[]...
 };
 
-struct TBEntry {
-	char * data;
-	uint64_t key;
-	uint64_t mapping;
-	uint8_t ready;
-	uint8_t num;
-	uint8_t symmetric;
-	uint8_t has_pawns;
+struct TBEntry
+{
+    char *data;
+    uint64_t key;
+    uint64_t mapping;
+    uint8_t ready;
+    uint8_t num;
+    uint8_t symmetric;
+    uint8_t has_pawns;
 };
 
-struct TBEntry_piece {
-	char * data;
-	uint64_t key;
-	uint64_t mapping;
-	uint8_t ready;
-	uint8_t num;
-	uint8_t symmetric;
-	uint8_t has_pawns;
-	uint8_t enc_type;
-	struct PairsData * precomp[2];
-	int factor[2][TBPIECES];
-	uint8_t pieces[2][TBPIECES];
-	uint8_t norm[2][TBPIECES];
+struct TBEntry_piece
+{
+    char *data;
+    uint64_t key;
+    uint64_t mapping;
+    uint8_t ready;
+    uint8_t num;
+    uint8_t symmetric;
+    uint8_t has_pawns;
+    uint8_t enc_type;
+    struct PairsData *precomp[2];
+    int factor[2][TBPIECES];
+    uint8_t pieces[2][TBPIECES];
+    uint8_t norm[2][TBPIECES];
 };
 
-struct TBEntry_pawn {
-	char * data;
-	uint64_t key;
-	uint64_t mapping;
-	uint8_t ready;
-	uint8_t num;
-	uint8_t symmetric;
-	uint8_t has_pawns;
-	uint8_t pawns[2];
-	struct {
-		struct PairsData * precomp[2];
-		int factor[2][TBPIECES];
-		uint8_t pieces[2][TBPIECES];
-		uint8_t norm[2][TBPIECES];
-	} file[4];
+struct TBEntry_pawn
+{
+    char *data;
+    uint64_t key;
+    uint64_t mapping;
+    uint8_t ready;
+    uint8_t num;
+    uint8_t symmetric;
+    uint8_t has_pawns;
+    uint8_t pawns[2];
+    struct
+    {
+        struct PairsData *precomp[2];
+        int factor[2][TBPIECES];
+        uint8_t pieces[2][TBPIECES];
+        uint8_t norm[2][TBPIECES];
+    } file[4];
 };
 
-struct DTZEntry_piece {
-	char * data;
-	uint64_t key;
-	uint64_t mapping;
-	uint8_t ready;
-	uint8_t num;
-	uint8_t symmetric;
-	uint8_t has_pawns;
-	uint8_t enc_type;
-	struct PairsData * precomp;
-	int factor[TBPIECES];
-	uint8_t pieces[TBPIECES];
-	uint8_t norm[TBPIECES];
-	uint8_t flags; // accurate, mapped, side
-	uint16_t map_idx[4];
-	uint8_t * map;
+struct DTZEntry_piece
+{
+    char *data;
+    uint64_t key;
+    uint64_t mapping;
+    uint8_t ready;
+    uint8_t num;
+    uint8_t symmetric;
+    uint8_t has_pawns;
+    uint8_t enc_type;
+    struct PairsData *precomp;
+    int factor[TBPIECES];
+    uint8_t pieces[TBPIECES];
+    uint8_t norm[TBPIECES];
+    uint8_t flags; // accurate, mapped, side
+    uint16_t map_idx[4];
+    uint8_t *map;
 };
 
-struct DTZEntry_pawn {
-	char * data;
-	uint64_t key;
-	uint64_t mapping;
-	uint8_t ready;
-	uint8_t num;
-	uint8_t symmetric;
-	uint8_t has_pawns;
-	uint8_t pawns[2];
-	struct {
-		struct PairsData * precomp;
-		int factor[TBPIECES];
-		uint8_t pieces[TBPIECES];
-		uint8_t norm[TBPIECES];
-	} file[4];
-	uint8_t flags[4];
-	uint16_t map_idx[4][4];
-	uint8_t * map;
+struct DTZEntry_pawn
+{
+    char *data;
+    uint64_t key;
+    uint64_t mapping;
+    uint8_t ready;
+    uint8_t num;
+    uint8_t symmetric;
+    uint8_t has_pawns;
+    uint8_t pawns[2];
+    struct
+    {
+        struct PairsData *precomp;
+        int factor[TBPIECES];
+        uint8_t pieces[TBPIECES];
+        uint8_t norm[TBPIECES];
+    } file[4];
+    uint8_t flags[4];
+    uint16_t map_idx[4][4];
+    uint8_t *map;
 };
 
-struct TBHashEntry {
-	uint64_t key;
-	struct TBEntry * ptr;
+struct TBHashEntry
+{
+    uint64_t key;
+    struct TBEntry *ptr;
 };
 
-struct DTZTableEntry {
-	uint64_t key1;
-	uint64_t key2;
-	struct TBEntry * entry;
+struct DTZTableEntry
+{
+    uint64_t key1;
+    uint64_t key2;
+    struct TBEntry *entry;
 };
+
+inline uint32_t bswap32(uint32_t x)
+{
+	return  ((x << 24) & 0xff000000) |
+		((x << 8) & 0x00ff0000) |
+		((x >> 8) & 0x0000ff00) |
+		((x >> 24) & 0x000000ff);
+}
+
+inline uint64_t bswap64(uint64_t x)
+{
+	uint32_t tl, th;
+	th = bswap32((uint32_t)(x & 0xffffffffULL));
+	tl = bswap32((uint32_t)((x >> 32) & 0xffffffffULL));
+	return ((uint64_t)th << 32) | tl;
+}
+
+extern int TBLargest;
+
+void init(std::string & path);
 
 #endif
 

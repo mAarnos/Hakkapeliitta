@@ -3,9 +3,6 @@
 
 #include "position.hpp"
 
-extern int TBLargest;
-
-void init(string & path);
 int probeWDL(Position & pos, int * success);
 int probeDTZ(Position & pos, int * success);
 bool rootProbe(Position & pos, int & TBScore);
