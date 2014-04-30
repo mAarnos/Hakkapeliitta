@@ -33,7 +33,7 @@
 #define UNLOCK(x) pthread_mutex_unlock(&(x))
 #else
 #define LOCK_T HANDLE
-#define LOCK_INIT(x) do { x = CreateMutex(NULL, FALSE, NULL); } while (0)
+#define LOCK_INIT(x) x = CreateMutex(NULL, FALSE, NULL)
 #define LOCK(x) WaitForSingleObject(x, INFINITE)
 #define UNLOCK(x) ReleaseMutex(x)
 #endif
@@ -215,15 +215,15 @@ const int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
 const uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
 const char pchr[] = { 'K', 'Q', 'R', 'B', 'N', 'P' };
 
-extern uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor);
-extern uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
-extern uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor);
-extern void free_dtz_entry(struct TBEntry *entry);
-extern void load_dtz_table(char *str, uint64_t key1, uint64_t key2);
-extern int pawn_file(struct TBEntry_pawn *ptr, int *pos);
-extern int init_table_wdl(struct TBEntry *entry, char *str);
+uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor);
+uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
+uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor);
+void free_dtz_entry(struct TBEntry *entry);
+void load_dtz_table(char *str, uint64_t key1, uint64_t key2);
+int pawn_file(struct TBEntry_pawn *ptr, int *pos);
+int init_table_wdl(struct TBEntry *entry, char *str);
 
-void init(std::string & path);
+void init(const std::string & path);
 
 #endif
 

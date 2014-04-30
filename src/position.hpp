@@ -31,7 +31,7 @@ class Position
 		void initializeBoardFromFEN(string FEN);
 		void displayBoard();
 
-		bool inCheck(bool side) { return isAttacked(bitScanForward(bitboards[King + side * 6]), !side); }
+		bool inCheck() { return isAttacked(bitScanForward(bitboards[King + sideToMove * 6]), !sideToMove); }
 		bool isAttacked(int sq, bool side);
 
 		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
@@ -57,6 +57,7 @@ class Position
 		inline bool getSideToMove() { return sideToMove; }
 		inline int getEnPassantSquare() { return enPassantSquare; }
 		inline int getCastlingRights() { return castlingRights; }
+		inline int getFiftyMoveDistance() { return fiftyMoveDistance; }
 
 		inline int getScoreOp() { return scoreOp; }
 		inline int getScoreEd() { return scoreEd; }

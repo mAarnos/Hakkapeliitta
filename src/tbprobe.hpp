@@ -3,9 +3,9 @@
 
 #include "position.hpp"
 
-int probeWDL(Position & pos, int * success);
-int probeDTZ(Position & pos, int * success);
-bool rootProbe(Position & pos, int & TBScore);
-bool rootProbeWDL(Position & pos, int & TBScore);
+int probe_wdl(Position & pos, int * success);
+int probe_dtz(Position & pos, int * success);
+bool root_probe(Position & pos, int & TBScore, Move * moveStack, int & generatedMoves);
+bool root_probe_wdl(Position & pos, int & TBScore, Move * moveStack, int & generatedMoves);
 
 #endif

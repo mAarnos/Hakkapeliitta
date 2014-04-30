@@ -7,14 +7,16 @@ This file should not need to much adaptation to add tablebase probing to
 a particular engine, provided the engine is written in C or C++.
 */
 
-#include <stdio.h>
+#include <cstdio>
 // #include <unistd.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include "tbcore.hpp"
+#include "eval.hpp"
+#include "bitboard.hpp"
 #ifndef __WIN32__
 #include <sys/mman.h>
 #endif
@@ -33,12 +35,33 @@ static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
 struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
 struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
-static void init_indices(void);
-static uint64_t calc_key_from_pcs(int *pcs, int mirror);
-static void free_wdl_entry(struct TBEntry *entry);
-static void free_dtz_entry(struct TBEntry *entry);
+void init_indices(void);
+void free_wdl_entry(struct TBEntry *entry);
+void free_dtz_entry(struct TBEntry *entry);
 
 int TBLargest = 0;
+
+// Produce a 64-bit material key corresponding to the material combination
+// defined by pcs[16], where pcs[1], ..., pcs[6] is the number of white
+// pawns, ..., kings and pcs[9], ..., pcs[14] is the number of black
+// pawns, ..., kings.
+static uint64_t calc_key_from_pcs(int *pcs, int mirror)
+{
+	int color;
+	int i, pt;
+	uint64_t key = 0;
+
+	color = !mirror ? 1 : 9;
+	for (pt = Pawn; pt <= King; ++pt)
+	for (i = 0; i < pcs[color + pt]; i++)
+		key ^= materialHash[White * 6 + pt][i];
+	color ^= 8;
+	for (pt = Pawn; pt <= King; ++pt)
+	for (i = 0; i < pcs[color + pt]; i++)
+		key ^= materialHash[Black * 6 + pt][i];
+
+	return key;
+}
 
 static FD open_tb(const char *str, const char *suffix)
 {
@@ -146,8 +169,6 @@ static void add_to_hash(struct TBEntry *ptr, uint64_t key)
     }
 }
 
-static char pchr[] = { 'K', 'Q', 'R', 'B', 'N', 'P' };
-
 static void init_tb(char *str)
 {
     FD fd;
@@ -216,7 +237,7 @@ static void init_tb(char *str)
     entry->ready = 0;
     entry->num = 0;
     for (i = 0; i < 16; i++)
-        entry->num += pcs[i];
+        entry->num += (uint8_t)pcs[i];
     entry->symmetric = (key == key2);
     entry->has_pawns = (pcs[TB_WPAWN] + pcs[TB_BPAWN] > 0);
     if (entry->num > TBLargest)
@@ -225,13 +246,13 @@ static void init_tb(char *str)
     if (entry->has_pawns)
     {
         struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
-        ptr->pawns[0] = pcs[TB_WPAWN];
-        ptr->pawns[1] = pcs[TB_BPAWN];
+		ptr->pawns[0] = (uint8_t)pcs[TB_WPAWN];
+		ptr->pawns[1] = (uint8_t)pcs[TB_BPAWN];
         if (pcs[TB_BPAWN] > 0
                 && (pcs[TB_WPAWN] == 0 || pcs[TB_BPAWN] < pcs[TB_WPAWN]))
         {
-            ptr->pawns[0] = pcs[TB_BPAWN];
-            ptr->pawns[1] = pcs[TB_WPAWN];
+			ptr->pawns[0] = (uint8_t)pcs[TB_BPAWN];
+			ptr->pawns[1] = (uint8_t)pcs[TB_WPAWN];
         }
     }
     else
@@ -247,7 +268,7 @@ static void init_tb(char *str)
             for (i = 0; i < 16; i++)
             {
                 if (pcs[i] < j && pcs[i] > 1) j = pcs[i];
-                ptr->enc_type = 1 + j;
+				ptr->enc_type = (uint8_t)(1 + j);
             }
         }
     }
@@ -255,7 +276,7 @@ static void init_tb(char *str)
     if (key2 != key) add_to_hash(entry, key2);
 }
 
-void init(const std::string& path)
+void init(const string & path)
 {
     char str[16];
     int i, j, k, l;
@@ -385,7 +406,7 @@ void init(const std::string& path)
                     init_tb(str);
                 }
 
-    printf("info string Found %d tablebases.\n", TBnum_piece + TBnum_pawn);
+    printf("info string found %d tablebases.\n", TBnum_piece + TBnum_pawn);
 }
 
 static const char offdiag[] =
@@ -663,7 +684,7 @@ static void init_indices(void)
     }
 }
 
-static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor)
+uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor)
 {
     uint64_t idx;
     int i, j, k, m, l, p;
@@ -748,7 +769,7 @@ static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos,
 }
 
 // determine file of leftmost pawn and sort pawns
-static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
+int pawn_file(struct TBEntry_pawn *ptr, int *pos)
 {
     int i;
 
@@ -759,7 +780,7 @@ static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
     return file_to_file[pos[0] & 0x07];
 }
 
-static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor)
+uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor)
 {
     uint64_t idx;
     int i, j, k, m, s, t;
@@ -821,7 +842,7 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, i
     return idx;
 }
 
-static uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
+uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
 
 // place k like pieces on n squares
 static int subfactor(int k, int n)
@@ -852,12 +873,12 @@ static uint64_t calc_factors_piece(int *factor, int num, int order, uint8_t *nor
     {
         if (k == order)
         {
-            factor[0] = f;
+            factor[0] = (int)f;
             f *= pivfac[enc_type];
         }
         else
         {
-            factor[i] = f;
+			factor[i] = (int)f;
             f *= subfactor(norm[i], n);
             n -= norm[i];
             i += norm[i];
@@ -881,17 +902,17 @@ static uint64_t calc_factors_pawn(int *factor, int num, int order, int order2, u
     {
         if (k == order)
         {
-            factor[0] = f;
+			factor[0] = (int)f;
             f *= pfactor[norm[0] - 1][file];
         }
         else if (k == order2)
         {
-            factor[norm[0]] = f;
+			factor[norm[0]] = (int)f;
             f *= subfactor(norm[norm[0]], 48 - norm[0]);
         }
         else
         {
-            factor[i] = f;
+			factor[i] = (int)f;
             f *= subfactor(norm[i], n);
             n -= norm[i];
             i += norm[i];
@@ -1060,7 +1081,7 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
     d->min_len = min_len;
     *next = &data[12 + 2 * h + 3 * num_syms + (num_syms & 1)];
 
-    int num_indices = (tb_size + (1ULL << idxbits) - 1) >> idxbits;
+    int num_indices = (int)((tb_size + (1ULL << idxbits) - 1) >> idxbits);
     size[0] = 6ULL * num_indices;
     size[1] = 2ULL * num_blocks;
     size[2] = (1ULL << blocksize) * real_num_blocks;
@@ -1089,7 +1110,7 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
     return d;
 }
 
-static int init_table_wdl(struct TBEntry *entry, char *str)
+int init_table_wdl(struct TBEntry *entry, char *str)
 {
     uint8_t *next;
     int f, s;
@@ -1225,7 +1246,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
     return 1;
 }
 
-static int init_table_dtz(struct TBEntry *entry)
+int init_table_dtz(struct TBEntry *entry)
 {
     uint8_t *data = (uint8_t *)entry->data;
     uint8_t *next;
@@ -1262,7 +1283,7 @@ static int init_table_dtz(struct TBEntry *entry)
             int i;
             for (i = 0; i < 4; i++)
             {
-                ptr->map_idx[i] = (data + 1 - ptr->map);
+				ptr->map_idx[i] = (uint16_t)(data + 1 - ptr->map);
                 data += 1 + data[0];
             }
             data += ((uintptr_t)data) & 0x01;
@@ -1303,7 +1324,7 @@ static int init_table_dtz(struct TBEntry *entry)
                 int i;
                 for (i = 0; i < 4; i++)
                 {
-                    ptr->map_idx[f][i] = (data + 1 - ptr->map);
+					ptr->map_idx[f][i] = (uint16_t)(data + 1 - ptr->map);
                     data += 1 + data[0];
                 }
             }
@@ -1333,12 +1354,12 @@ static int init_table_dtz(struct TBEntry *entry)
     return 1;
 }
 
-static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
+uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     if (!d->idxbits)
-        return d->min_len;
+        return (uint8_t)d->min_len;
 
-    uint32_t mainidx = idx >> d->idxbits;
+    uint32_t mainidx = (uint32_t)(idx >> d->idxbits);
     int litidx = (idx & ((1 << d->idxbits) - 1)) - (1 << (d->idxbits - 1));
     uint32_t block = *(uint32_t *)(d->indextable + 6 * mainidx);
     litidx += *(uint16_t *)(d->indextable + 6 * mainidx + 4);
@@ -1372,7 +1393,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     {
         int l = m;
         while (code < base[l]) l++;
-        sym = offset[l] + ((code - base[l]) >> (64 - l));
+        sym = (int)(offset[l] + ((code - base[l]) >> (64 - l)));
         if (litidx < (int)symlen[sym] + 1) break;
         litidx -= (int)symlen[sym] + 1;
         code <<= l;
@@ -1471,7 +1492,7 @@ void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
         DTZ_table[0].entry = ptr3;
 }
 
-static void free_wdl_entry(struct TBEntry *entry)
+void free_wdl_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns)
@@ -1494,7 +1515,7 @@ static void free_wdl_entry(struct TBEntry *entry)
     }
 }
 
-static void free_dtz_entry(struct TBEntry *entry)
+void free_dtz_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns)
@@ -1512,6 +1533,4 @@ static void free_dtz_entry(struct TBEntry *entry)
     free(entry);
 }
 
-static int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
-static uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
 

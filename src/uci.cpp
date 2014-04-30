@@ -7,6 +7,7 @@
 #include "ttable.hpp"
 #include "search.hpp"
 #include "time.hpp"
+#include "tbcore.hpp"
 
 int uciProcessInput();
 int uciSendInformation(string s);
@@ -202,6 +203,21 @@ int uciSetOption(string s)
 	{
 		tt.clear();
 		ptt.clear();
+	}
+	else if (option == "SyzygyProbeLimit")
+	{
+		try
+		{
+			syzygyProbeLimit = stoi(parameter);
+		}
+		catch (const exception&)
+		{
+			syzygyProbeLimit = 0;
+		}
+	}
+	else if (option == "SyzygyPath")
+	{
+		init(parameter);
 	}
 
 	return uciOk;

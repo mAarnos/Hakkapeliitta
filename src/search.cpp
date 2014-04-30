@@ -7,11 +7,10 @@
 #include "time.hpp"
 
 uint64_t nodeCount = 0;
-
 int searchDepth;
+int syzygyProbeLimit = 0;
 
 array<int, Squares> butterfly[Colours][Squares];
-
 vector<Move> pv;
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
@@ -26,7 +25,7 @@ uint64_t perft(Position & pos, int depth)
 	}
 
 	Move moveStack[256];
-	if (pos.inCheck(pos.getSideToMove()))
+	if (pos.inCheck())
 	{
 		generatedMoves = generateEvasions(pos, moveStack);
 	}
@@ -381,7 +380,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 	// Check extension.
 	// Makes sure that the quiescence search is NEVER started while being in check.
-	bool check = pos.inCheck(pos.getSideToMove());
+	bool check = pos.inCheck();
 	if (check)
 	{
 		depth += onePly;
@@ -558,7 +557,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	uint16_t bestMove = ttMoveNone;
 	int bestScore = -mateScore;
 
-	check = pos.inCheck(pos.getSideToMove());
+	check = pos.inCheck();
 	if (check)
 	{
 		depth += onePly;
