@@ -19,23 +19,7 @@ a particular engine, provided the engine is written in C or C++.
 #include <sys/mman.h>
 #endif
 
-#define TBMAX_PIECE 254
-#define TBMAX_PAWN 256
-#define HSHMAX 5
-
-#define Swap(a,b) {int tmp=a;a=b;b=tmp;}
-
-#define TB_PAWN 1
-#define TB_KNIGHT 2
-#define TB_BISHOP 3
-#define TB_ROOK 4
-#define TB_QUEEN 5
-#define TB_KING 6
-
-#define TB_WPAWN TB_PAWN
-#define TB_BPAWN (TB_PAWN | 8)
-
-static LOCK_T TB_mutex;
+LOCK_T TB_mutex;
 
 static bool initialized = false;
 static int num_paths = 0;
@@ -46,11 +30,8 @@ static int TBnum_piece, TBnum_pawn;
 static struct TBEntry_piece TB_piece[TBMAX_PIECE];
 static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
 
-static struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
-
-#define DTZ_ENTRIES 64
-
-static struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
+struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
+struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
 static void init_indices(void);
 static uint64_t calc_key_from_pcs(int *pcs, int mirror);

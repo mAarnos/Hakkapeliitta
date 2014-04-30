@@ -9,6 +9,9 @@
 #include <string>
 
 #define __WIN32__
+// Define DECOMP64 when compiling for a 64-bit platform.
+// 32-bit is only supported for 5-piece tables, because tables are mmap()ed
+// into memory.
 #define DECOMP64
 
 #ifndef __WIN32__
@@ -34,6 +37,7 @@
 #define LOCK(x) WaitForSingleObject(x, INFINITE)
 #define UNLOCK(x) ReleaseMutex(x)
 #endif
+extern LOCK_T TB_mutex;
 
 #define WDLSUFFIX ".rtbw"
 #define DTZSUFFIX ".rtbz"
@@ -46,7 +50,28 @@
 
 #define TBHASHBITS 10
 
+#define TBMAX_PIECE 254
+#define TBMAX_PAWN 256
+#define HSHMAX 5
+
+#define Swap(a,b) {int tmp=a;a=b;b=tmp;}
+
+#define TB_PAWN 1
+#define TB_KNIGHT 2
+#define TB_BISHOP 3
+#define TB_ROOK 4
+#define TB_QUEEN 5
+#define TB_KING 6
+
+#define TB_WPAWN TB_PAWN
+#define TB_BPAWN (TB_PAWN | 8)
+
+#define DTZ_ENTRIES 64
+
 struct TBHashEntry;
+
+extern struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
+extern struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
 #ifdef DECOMP64
 typedef uint64_t base_t;
@@ -70,7 +95,7 @@ struct PairsData
 
 struct TBEntry
 {
-    char *data;
+	char *data;
     uint64_t key;
     uint64_t mapping;
     uint8_t ready;
@@ -185,6 +210,18 @@ inline uint64_t bswap64(uint64_t x)
 }
 
 extern int TBLargest;
+
+const int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
+const uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
+const char pchr[] = { 'K', 'Q', 'R', 'B', 'N', 'P' };
+
+extern uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor);
+extern uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
+extern uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor);
+extern void free_dtz_entry(struct TBEntry *entry);
+extern void load_dtz_table(char *str, uint64_t key1, uint64_t key2);
+extern int pawn_file(struct TBEntry_pawn *ptr, int *pos);
+extern int init_table_wdl(struct TBEntry *entry, char *str);
 
 void init(std::string & path);
 

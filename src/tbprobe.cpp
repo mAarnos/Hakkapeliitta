@@ -9,49 +9,28 @@
 
 // The probing code currently expects a little-endian architecture (e.g. x86).
 
-// Define DECOMP64 when compiling for a 64-bit platform.
-// 32-bit is only supported for 5-piece tables, because tables are mmap()ed
-// into memory.
-#ifdef IS_64BIT
-#define DECOMP64
-#endif
-
-#include "position.h"
-#include "movegen.h"
-#include "bitboard.h"
-#include "search.h"
-#include "bitcount.h"
-
-#include "tbprobe.h"
-#include "tbcore.h"
-
-#include "tbcore.cpp"
-
-namespace Zobrist
-{
-extern Key psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
-}
-
-int Tablebases::TBLargest = 0;
+#include "tbprobe.hpp"
+#include "tbcore.hpp"
+#include "eval.hpp"
+#include "bitboard.hpp"
 
 // Given a position with 6 or fewer pieces, produce a text string
 // of the form KQPvKRP, where "KQP" represents the white pieces if
 // mirror == 0 and the black pieces if mirror == 1.
 static void prt_str(Position& pos, char *str, int mirror)
 {
-    Color color;
-    PieceType pt;
-    int i;
+    bool color;
+    int i, pt;
 
-    color = !mirror ? WHITE : BLACK;
-    for (pt = KING; pt >= PAWN; --pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            *str++ = pchr[6 - pt];
+    color = !mirror ? White : Black;
+    for (pt = King; pt >= Pawn; --pt)
+		for (i = popcnt(pos.getBitboard(color, pt)); i > 0; i--)
+            *str++ = pchr[5 - pt];
     *str++ = 'v';
     color = ~color;
-    for (pt = KING; pt >= PAWN; --pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            *str++ = pchr[6 - pt];
+	for (pt = King; pt >= Pawn; --pt)
+		for (i = popcnt(pos.getBitboard(color, pt)); i > 0; i--)
+            *str++ = pchr[5 - pt];
     *str++ = 0;
 }
 
@@ -59,19 +38,18 @@ static void prt_str(Position& pos, char *str, int mirror)
 // If the engine supports such a key, it should equal the engine's key.
 static uint64_t calc_key(Position& pos, int mirror)
 {
-    Color color;
-    PieceType pt;
-    int i;
+    bool color;
+    int i, pt;
     uint64_t key = 0;
 
-    color = !mirror ? WHITE : BLACK;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            key ^= Zobrist::psq[WHITE][pt][i - 1];
+    color = !mirror ? White : Black;
+    for (pt = Pawn; pt <= King; ++pt)
+		for (i = popcnt(pos.getBitboard(color, pt)); i > 0; i--)
+            key ^= materialHash[White * 6 + pt][i - 1];
     color = ~color;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            key ^= Zobrist::psq[BLACK][pt][i - 1];
+    for (pt = Pawn; pt <= King; ++pt)
+		for (i = popcnt(pos.getBitboard(color, pt)); i > 0; i--)
+			key ^= materialHash[Black * 6 + pt][i - 1];
 
     return key;
 }
@@ -83,18 +61,17 @@ static uint64_t calc_key(Position& pos, int mirror)
 static uint64_t calc_key_from_pcs(int *pcs, int mirror)
 {
     int color;
-    PieceType pt;
-    int i;
+    int i, pt;
     uint64_t key = 0;
 
-    color = !mirror ? 0 : 8;
-    for (pt = PAWN; pt <= KING; ++pt)
+    color = !mirror ? 1 : 9;
+    for (pt = Pawn; pt <= King; ++pt)
         for (i = 0; i < pcs[color + pt]; i++)
-            key ^= Zobrist::psq[WHITE][pt][i];
+			key ^= materialHash[White * 6 + pt][i];
     color ^= 8;
-    for (pt = PAWN; pt <= KING; ++pt)
+    for (pt = Pawn; pt <= King; ++pt)
         for (i = 0; i < pcs[color + pt]; i++)
-            key ^= Zobrist::psq[BLACK][pt][i];
+			key ^= materialHash[Black * 6 + pt][i];
 
     return key;
 }
@@ -111,10 +88,10 @@ static int probe_wdl_table(Position& pos, int *success)
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
-    key = pos.material_key();
+    key = pos.getMaterialHash();
 
     // Test for KvK.
-    if (key == (Zobrist::psq[WHITE][KING][0] ^ Zobrist::psq[BLACK][KING][0]))
+	if (key == (materialHash[WhiteKing][0] ^ materialHash[BlackKing][0]))
         return 0;
 
     ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
@@ -142,7 +119,7 @@ static int probe_wdl_table(Position& pos, int *success)
                 return 0;
             }
             // Memory barrier to ensure ptr->ready = 1 is not reordered.
-            __asm__ __volatile__ ("" ::: "memory");
+            // __asm__ __volatile__ ("" ::: "memory");
             ptr->ready = 1;
         }
         UNLOCK(TB_mutex);
@@ -155,18 +132,18 @@ static int probe_wdl_table(Position& pos, int *success)
         {
             cmirror = 8;
             mirror = 0x38;
-            bside = (pos.side_to_move() == WHITE);
+            bside = (pos.getSideToMove() == White);
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !(pos.side_to_move() == WHITE);
+			bside = !(pos.getSideToMove() == White);
         }
     }
     else
     {
-        cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-        mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+		cmirror = pos.getSideToMove() == White ? 0 : 8;
+		mirror = pos.getSideToMove() == White ? 0 : 0x38;
         bside = 0;
     }
 
@@ -179,11 +156,11 @@ static int probe_wdl_table(Position& pos, int *success)
         uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                                     (PieceType)(pc[i] & 0x07));
+            uint64_t bb = pos.getBitboard(((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb);
+				p[i++] = bitScanForward(bb);
+				bb &= (bb - 1);
             }
             while (bb);
         }
@@ -194,22 +171,25 @@ static int probe_wdl_table(Position& pos, int *success)
     {
         struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0][0] ^ cmirror;
-        Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+		// check this
+        uint64_t bb = pos.getBitboard((k >> 3), (k & 0x07));
         i = 0;
         do
         {
-            p[i++] = pop_lsb(&bb) ^ mirror;
+			p[i++] = bitScanForward(bb) ^ mirror;
+			bb &= (bb - 1);
         }
         while (bb);
         int f = pawn_file(entry, p);
         uint8_t *pc = entry->file[f].pieces[bside];
         for (; i < entry->num;)
         {
-            bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                            (PieceType)(pc[i] & 0x07));
+			// check this
+            bb = pos.getBitboard(((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb) ^ mirror;
+				p[i++] = bitScanForward(bb) ^ mirror;
+				bb &= (bb - 1);
             }
             while (bb);
         }
@@ -228,7 +208,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
-    uint64_t key = pos.material_key();
+	uint64_t key = pos.getMaterialHash();
 
     if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key)
     {
@@ -277,18 +257,18 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         {
             cmirror = 8;
             mirror = 0x38;
-            bside = (pos.side_to_move() == WHITE);
+            bside = (pos.getSideToMove() == White);
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !(pos.side_to_move() == WHITE);
+			bside = !(pos.getSideToMove() == White);
         }
     }
     else
     {
-        cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-        mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+		cmirror = pos.getSideToMove() == White ? 0 : 8;
+		mirror = pos.getSideToMove() == White ? 0 : 0x38;
         bside = 0;
     }
 
@@ -303,11 +283,12 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         uint8_t *pc = entry->pieces;
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                                     (PieceType)(pc[i] & 0x07));
+			// check this
+            uint64_t bb = pos.getBitboard(((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb);
+				p[i++] = bitScanForward(bb);
+				bb &= (bb - 1);
             }
             while (bb);
         }
@@ -324,11 +305,13 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     {
         struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0] ^ cmirror;
-        Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+		// check this
+        uint64_t bb = pos.getBitboard((k >> 3), (k & 0x07));
         i = 0;
         do
         {
-            p[i++] = pop_lsb(&bb) ^ mirror;
+			p[i++] = bitScanForward(bb) ^ mirror;
+			bb &= (bb - 1);
         }
         while (bb);
         int f = pawn_file((struct TBEntry_pawn *)entry, p);
@@ -340,11 +323,11 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         uint8_t *pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
-            bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                            (PieceType)(pc[i] & 0x07));
+            bb = pos.getBitboard(((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb) ^ mirror;
+				p[i++] = bitScanForward(bb) ^ mirror;
+				bb &= (bb - 1);
             }
             while (bb);
         }
@@ -361,25 +344,6 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     return res;
 }
 
-// Add underpromotion captures to list of captures.
-static ExtMove *add_underprom_caps(Position& pos, ExtMove *stack, ExtMove *end)
-{
-    ExtMove *moves, *extra = end;
-
-    for (moves = stack; moves < end; moves++)
-    {
-        Move move = moves->move;
-        if (type_of(move) == PROMOTION && !pos.empty(to_sq(move)))
-        {
-            (*extra++).move = (Move)(move - (1 << 12));
-            (*extra++).move = (Move)(move - (2 << 12));
-            (*extra++).move = (Move)(move - (3 << 12));
-        }
-    }
-
-    return extra;
-}
-
 static int probe_ab(Position& pos, int alpha, int beta, int *success)
 {
     int v;
@@ -392,8 +356,6 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
     if (!pos.checkers())
     {
         end = generate<CAPTURES>(pos, stack);
-        // Since underpromotion captures are not included, we need to add them.
-        end = add_underprom_caps(pos, stack, end);
     }
     else
         end = generate<EVASIONS>(pos, stack);
@@ -443,7 +405,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
 //  0 : draw
 //  1 : win, but draw under 50-move rule
 //  2 : win
-int Tablebases::probe_wdl(Position& pos, int *success)
+int probe_wdl(Position& pos, int *success)
 {
     int v;
 
@@ -451,7 +413,7 @@ int Tablebases::probe_wdl(Position& pos, int *success)
     v = probe_ab(pos, -2, 2, success);
 
     // If en passant is not possible, we are done.
-    if (pos.ep_square() == SQ_NONE)
+    if (pos.getEnPassantSquare() == NoSquare)
         return v;
     if (!(*success)) return 0;
 
@@ -571,7 +533,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
                     || !pos.legal(move, ci.pinned))
                 continue;
             pos.do_move(move, st, ci, pos.gives_check(move, ci));
-            int v = -Tablebases::probe_dtz(pos, success);
+            int v = -probe_dtz(pos, success);
             pos.undo_move(move);
             if (*success == 0) return 0;
             if (v > 0 && v + 1 < best)
@@ -604,7 +566,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
             }
             else
             {
-                v = -Tablebases::probe_dtz(pos, success) - 1;
+                v = -probe_dtz(pos, success) - 1;
             }
             pos.undo_move(move);
             if (*success == 0) return 0;
@@ -646,12 +608,12 @@ static int wdl_to_dtz[] =
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 //
-int Tablebases::probe_dtz(Position& pos, int *success)
+int probe_dtz(Position& pos, int *success)
 {
     *success = 1;
     int v = probe_dtz_no_ep(pos, success);
 
-    if (pos.ep_square() == SQ_NONE)
+    if (pos.getEnPassantSquare() == NoSquare)
         return v;
     if (*success == 0) return 0;
 
@@ -733,35 +695,13 @@ int Tablebases::probe_dtz(Position& pos, int *success)
     return v;
 }
 
-// Check whether there has been at least one repetition of positions
-// since the last capture or pawn move.
-static int has_repeated(StateInfo *st)
+static int wdl_to_Value[5] =
 {
-    while (1)
-    {
-        int i = 4, e = std::min(st->rule50, st->pliesFromNull);
-        if (e < i)
-            return 0;
-        StateInfo *stp = st->previous->previous;
-        do
-        {
-            stp = stp->previous->previous;
-            if (stp->key == st->key)
-                return 1;
-            i += 2;
-        }
-        while (i <= e);
-        st = st->previous;
-    }
-}
-
-static Value wdl_to_Value[5] =
-{
-    -VALUE_MATE + MAX_PLY + 1,
-    VALUE_DRAW - 2,
-    VALUE_DRAW,
-    VALUE_DRAW + 2,
-    VALUE_MATE - MAX_PLY - 1
+    -maxMateScore + 1,
+    0 - 2,
+    0,
+    0 + 2,
+	maxMateScore - 1
 };
 
 // Use the DTZ tables to filter out moves that don't preserve the win or draw.
@@ -770,7 +710,7 @@ static Value wdl_to_Value[5] =
 //
 // A return value false indicates that not all probes were successful and that
 // no moves were filtered out.
-bool Tablebases::root_probe(Position& pos, Value& TBScore)
+bool root_probe(Position& pos, int & TBScore)
 {
     int success;
 
@@ -796,13 +736,13 @@ bool Tablebases::root_probe(Position& pos, Value& TBScore)
         {
             if (st.rule50 != 0)
             {
-                v = -Tablebases::probe_dtz(pos, &success);
+                v = -probe_dtz(pos, &success);
                 if (v > 0) v++;
                 else if (v < 0) v--;
             }
             else
             {
-                v = -Tablebases::probe_wdl(pos, &success);
+                v = -probe_wdl(pos, &success);
                 v = wdl_to_dtz[v + 2];
             }
         }
@@ -890,14 +830,13 @@ bool Tablebases::root_probe(Position& pos, Value& TBScore)
 
 // Use the WDL tables to filter out moves that don't preserve the win or draw.
 // This is a fallback for the case that some or all DTZ tables are missing.
-//
 // A return value false indicates that not all probes were successful and that
 // no moves were filtered out.
-bool Tablebases::root_probe_wdl(Position& pos, Value& TBScore)
+bool root_probe_wdl(Position& pos, int & TBScore)
 {
     int success;
 
-    int wdl = Tablebases::probe_wdl(pos, &success);
+    int wdl = probe_wdl(pos, &success);
     if (!success) return false;
     TBScore = wdl_to_Value[wdl + 2];
 
@@ -911,7 +850,7 @@ bool Tablebases::root_probe_wdl(Position& pos, Value& TBScore)
     {
         Move move = Search::RootMoves[i].pv[0];
         pos.do_move(move, st, ci, pos.gives_check(move, ci));
-        int v = -Tablebases::probe_wdl(pos, &success);
+        int v = -probe_wdl(pos, &success);
         pos.undo_move(move);
         if (!success) return false;
         Search::RootMoves[i].score = (Value)v;
