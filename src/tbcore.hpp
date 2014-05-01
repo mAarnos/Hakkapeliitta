@@ -9,10 +9,10 @@
 #include <string>
 
 #define __WIN32__
-// Define DECOMP64 when compiling for a 64-bit platform.
+// Define IS_64BIT when compiling for a 64-bit platform.
 // 32-bit is only supported for 5-piece tables, because tables are mmap()ed
 // into memory.
-#define DECOMP64
+#define IS_64BIT
 
 #ifndef __WIN32__
 #include <pthread.h>
@@ -73,14 +73,13 @@ struct TBHashEntry;
 extern struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
 extern struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
-#ifdef DECOMP64
+#ifdef IS_64BIT
 typedef uint64_t base_t;
 #else
 typedef uint32_t base_t;
 #endif
 
-struct PairsData
-{
+struct PairsData {
     char *indextable;
     uint16_t *sizetable;
     uint8_t *data;
@@ -93,9 +92,8 @@ struct PairsData
     base_t base[1]; // C++ complains about base[]...
 };
 
-struct TBEntry
-{
-	char *data;
+struct TBEntry {
+    char *data;
     uint64_t key;
     uint64_t mapping;
     uint8_t ready;
@@ -104,8 +102,7 @@ struct TBEntry
     uint8_t has_pawns;
 };
 
-struct TBEntry_piece
-{
+struct TBEntry_piece {
     char *data;
     uint64_t key;
     uint64_t mapping;
@@ -120,8 +117,7 @@ struct TBEntry_piece
     uint8_t norm[2][TBPIECES];
 };
 
-struct TBEntry_pawn
-{
+struct TBEntry_pawn {
     char *data;
     uint64_t key;
     uint64_t mapping;
@@ -130,8 +126,7 @@ struct TBEntry_pawn
     uint8_t symmetric;
     uint8_t has_pawns;
     uint8_t pawns[2];
-    struct
-    {
+    struct {
         struct PairsData *precomp[2];
         int factor[2][TBPIECES];
         uint8_t pieces[2][TBPIECES];
@@ -139,8 +134,7 @@ struct TBEntry_pawn
     } file[4];
 };
 
-struct DTZEntry_piece
-{
+struct DTZEntry_piece {
     char *data;
     uint64_t key;
     uint64_t mapping;
@@ -158,8 +152,7 @@ struct DTZEntry_piece
     uint8_t *map;
 };
 
-struct DTZEntry_pawn
-{
+struct DTZEntry_pawn {
     char *data;
     uint64_t key;
     uint64_t mapping;
@@ -168,8 +161,7 @@ struct DTZEntry_pawn
     uint8_t symmetric;
     uint8_t has_pawns;
     uint8_t pawns[2];
-    struct
-    {
+    struct {
         struct PairsData *precomp;
         int factor[TBPIECES];
         uint8_t pieces[TBPIECES];
@@ -180,14 +172,12 @@ struct DTZEntry_pawn
     uint8_t *map;
 };
 
-struct TBHashEntry
-{
+struct TBHashEntry {
     uint64_t key;
     struct TBEntry *ptr;
 };
 
-struct DTZTableEntry
-{
+struct DTZTableEntry {
     uint64_t key1;
     uint64_t key2;
     struct TBEntry *entry;
@@ -195,18 +185,18 @@ struct DTZTableEntry
 
 inline uint32_t bswap32(uint32_t x)
 {
-	return  ((x << 24) & 0xff000000) |
-		((x << 8) & 0x00ff0000) |
-		((x >> 8) & 0x0000ff00) |
-		((x >> 24) & 0x000000ff);
+    return  ((x << 24) & 0xff000000) |
+            ((x << 8) & 0x00ff0000) |
+            ((x >> 8) & 0x0000ff00) |
+            ((x >> 24) & 0x000000ff);
 }
 
 inline uint64_t bswap64(uint64_t x)
 {
-	uint32_t tl, th;
-	th = bswap32((uint32_t)(x & 0xffffffffULL));
-	tl = bswap32((uint32_t)((x >> 32) & 0xffffffffULL));
-	return ((uint64_t)th << 32) | tl;
+    uint32_t tl, th;
+    th = bswap32((uint32_t)(x & 0xffffffffULL));
+    tl = bswap32((uint32_t)((x >> 32) & 0xffffffffULL));
+    return ((uint64_t)th << 32) | tl;
 }
 
 extern int TBLargest;
