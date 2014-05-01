@@ -5,10 +5,13 @@
 #include "uci.hpp"
 #include "movegen.hpp"
 #include "time.hpp"
+#include "tbprobe.hpp"
 
 uint64_t nodeCount = 0;
+uint64_t tbHits = 0;
 int searchDepth;
 int syzygyProbeLimit = 0;
+bool probeTB;
 
 array<int, Squares> butterfly[Colours][Squares];
 vector<Move> pv;
@@ -211,6 +214,7 @@ void think()
 	searching = true;
 	memset(butterfly, 0, sizeof(butterfly));
 	nodeCount = 0;
+	tbHits = 0;
 	countDown = stopInterval;
 
 	alpha = -infinity;
@@ -398,6 +402,18 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		return value;
 	}
 
+	// Probe the Syzygy tablebases.
+	if (probeTB && popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+	{
+		int found, v = probe_wdl(pos, &found);
+		if (found)
+		{
+			tbHits++;
+			value = v < -1 ? -mateScore + ply + 200 : v >  1 ? mateScore - ply - 200 : drawScore + 2 * v;
+			return value;
+		}
+	}
+
 	// Null move pruning, both static and dynamic.
 	if ((alpha + 1) == beta && allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
 	{
@@ -550,8 +566,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int value, generatedMoves;
-	bool check, ttAllowNull;
+	int value, generatedMoves, tbScore;
+	bool check, ttAllowNull, rootInTB = false;
 	bool firstMove = true;
 	uint16_t ttMove = ttMoveNone;
 	uint16_t bestMove = ttMoveNone;
@@ -568,6 +584,28 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 	Move moveStack[256];
 	generatedMoves = generateMoves(pos, moveStack);
+
+	// Check if the root position is in tablebases, and if it is remove moves which do not maintain the correct result.
+	if (popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+	{
+		rootInTB = root_probe(pos, tbScore, moveStack, generatedMoves);
+		if (rootInTB)
+		{
+			tbHits += generatedMoves;
+			probeTB = false; // Do not probe tablebases during the search
+		}
+		else // If DTZ tables are missing, use WDL tables as a fallback
+		{
+			// Filter out moves that do not preserve a draw or win
+			rootInTB = root_probe_wdl(pos, tbScore, moveStack, generatedMoves);
+			if (rootInTB)
+			{
+				tbHits += generatedMoves;
+				probeTB = false; // Do not probe tablebases during the search
+			}
+		}
+	}
+
 	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
 	for (int i = 0; i < generatedMoves; i++)
 	{

@@ -135,7 +135,7 @@ static int probe_wdl_table(Position& pos, int *success)
         uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
-            uint64_t bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            uint64_t bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07)-1);
             do
             {
 				p[i++] = bitScanForward(bb);
@@ -150,8 +150,7 @@ static int probe_wdl_table(Position& pos, int *success)
     {
         struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0][0] ^ cmirror;
-		// check this
-        uint64_t bb = pos.getBitboard(!!(k >> 3), (k & 0x07));
+        uint64_t bb = pos.getBitboard(!!(k >> 3), (k & 0x07)-1);
         i = 0;
         do
         {
@@ -164,7 +163,7 @@ static int probe_wdl_table(Position& pos, int *success)
         for (; i < entry->num;)
         {
 			// check this
-            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07)-1);
             do
             {
 				p[i++] = bitScanForward(bb) ^ mirror;
@@ -263,7 +262,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         for (i = 0; i < entry->num;)
         {
 			// check this
-            uint64_t bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            uint64_t bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07)-1);
             do
             {
 				p[i++] = bitScanForward(bb);
@@ -285,7 +284,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0] ^ cmirror;
 		// check this
-        uint64_t bb = pos.getBitboard(!!(k >> 3), (k & 0x07));
+        uint64_t bb = pos.getBitboard(!!(k >> 3), (k & 0x07)-1);
         i = 0;
         do
         {
@@ -302,7 +301,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         uint8_t *pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
-            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07)-1);
             do
             {
 				p[i++] = bitScanForward(bb) ^ mirror;
@@ -698,11 +697,11 @@ int probe_dtz(Position& pos, int *success)
 
 static int wdl_to_Value[5] =
 {
-    -maxMateScore + 1,
+    -mateScore + 200 + 1,
     0 - 2,
     0,
     0 + 2,
-	maxMateScore - 1
+	mateScore - 200 - 1
 };
 
 // Use the DTZ tables to filter out moves that don't preserve the win or draw.
@@ -768,7 +767,6 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
     TBScore = wdl_to_Value[wdl + 2];
     // If the position is winning or losing, but too few moves left, adjust the
     // score to show how close it is to winning or losing.
-    // NOTE: int(PawnValueEg) is used as scaling factor in score_to_uci().
     if (wdl == 1 && dtz <= 100)
         TBScore = (200 - dtz - cnt50);
     else if (wdl == -1 && dtz >= -100)

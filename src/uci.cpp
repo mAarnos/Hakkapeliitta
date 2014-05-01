@@ -146,6 +146,8 @@ int uciSendInformation(string s)
 	cout << "option name Hash type spin default 1 min 1 max 65536" << endl;
 	cout << "option name Clear Hash type button" << endl;
 	cout << "option name Drawscore type spin default 0 min -75 max 75" << endl;
+	cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << endl;
+	cout << "option name SyzygyPath type string default c:\\wdl\\" << endl;
 
 	// Send a response telling the listener that we are ready in UCI-mode.
 	cout << "uciok" << endl;
@@ -209,6 +211,7 @@ int uciSetOption(string s)
 		try
 		{
 			syzygyProbeLimit = stoi(parameter);
+			cout << "info string syzygyProbeLimit set to " << syzygyProbeLimit << endl;
 		}
 		catch (const exception&)
 		{
