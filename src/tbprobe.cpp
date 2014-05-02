@@ -605,6 +605,7 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
     if (!success) return false;
 
     // Probe each move.
+	int j = 0;
     for (int i = 0; i < generatedMoves; i++) {
         if (!(pos.makeMove(moveStack[i]))) {
             continue;
@@ -612,12 +613,10 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
         int v = 0;
         if (pos.inCheck() && dtz > 0) {
             Move s[192];
-            // check this
             if (generateEvasions(pos, s) == 0)
                 v = 1;
         }
         if (!v) {
-            // check this
             if (pos.getFiftyMoveDistance() != 0) {
                 v = -probe_dtz(pos, &success);
                 if (v > 0) v++;
@@ -629,8 +628,10 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
         }
         pos.unmakeMove(moveStack[i]);
         if (!success) return false;
-        moveStack[i].setScore(v);
+		moveStack[j].setScore(v);
+		moveStack[j++].setMove(moveStack[i].getMove());
     }
+	generatedMoves = j;
 
     // Obtain 50-move counter for the root position.
     int cnt50 = pos.getFiftyMoveDistance();
@@ -645,15 +646,9 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
 
     // Determine the score to report to the user.
     TBScore = wdl_to_Value[wdl + 2];
-    // If the position is winning or losing, but too few moves left, adjust the
-    // score to show how close it is to winning or losing.
-    if (wdl == 1 && dtz <= 100)
-        TBScore = (200 - dtz - cnt50);
-    else if (wdl == -1 && dtz >= -100)
-        TBScore = -(200 + dtz - cnt50);
 
+	j = 0;
     // Now be a bit smart about filtering out moves.
-    int j = 0;
     if (dtz > 0) { // winning (or 50-move rule draw)
         int best = 0xffff;
         for (int i = 0; i < generatedMoves; i++) {
@@ -668,8 +663,10 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
             max = 99 - cnt50;
         for (int i = 0; i < generatedMoves; i++) {
             int v = moveStack[i].getScore();
-            if (v > 0 && v <= max)
-                moveStack[j++] = moveStack[i];
+			if (v > 0 && v <= max) {
+				moveStack[j].setScore(v);
+				moveStack[j++].setMove(moveStack[i].getMove());
+			}
         }
     } else if (dtz < 0) { // losing (or 50-move rule draw)
         int best = 0;
@@ -682,14 +679,19 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
         if (-best * 2 + cnt50 < 100)
             return true;
         for (int i = 0; i < generatedMoves; i++) {
-            if (moveStack[i].getScore() == best)
-                moveStack[j++] = moveStack[i];
+			if (moveStack[i].getScore() == best) {
+				moveStack[j].setScore(best);
+				moveStack[j++].setMove(moveStack[i].getMove());
+			}
+
         }
     } else { // drawing
         // Try all moves that preserve the draw.
         for (int i = 0; i < generatedMoves; i++) {
-            if (moveStack[i].getScore() == 0)
-                moveStack[j++] = moveStack[i];
+			if (moveStack[i].getScore() == 0) {
+				moveStack[j].setScore(0);
+				moveStack[j++].setMove(moveStack[i].getMove());
+			}
         }
     }
     // Update generatedMoves to reflect the new status.
@@ -727,8 +729,11 @@ bool root_probe_wdl(Position& pos, int & TBScore, Move * moveStack, int & genera
 
     int j = 0;
     for (int i = 0; i < generatedMoves; i++) {
-        if (moveStack[i].getScore() == best)
-            moveStack[j++] = moveStack[i];
+		if (moveStack[i].getScore() == best)
+		{
+			moveStack[j].setScore(best);
+			moveStack[j++].setMove(moveStack[i].getMove());
+		}
     }
     // Update generatedMoves to reflect the new status.
     generatedMoves = j;
