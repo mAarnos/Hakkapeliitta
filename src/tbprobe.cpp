@@ -415,7 +415,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         }
 
         for (int i = 0; i < generatedMoves; i++) {
-            if (pos.getPieceType(moveStack[i].getFrom()) != Pawn || pos.getPiece(moveStack[i].getTo() != Empty))
+			if (pos.getPieceType(moveStack[i].getFrom()) != Pawn || pos.getPiece(moveStack[i].getTo()) != Empty)
                 continue;
             if (!(pos.makeMove(moveStack[i]))) {
                 continue;
@@ -437,7 +437,7 @@ static int probe_dtz_no_ep(Position& pos, int *success)
     if (wdl > 0) {
         int best = 0xffff;
         for (int i = 0; i < generatedMoves; i++) {
-            if (pos.getPiece(moveStack[i].getTo() != Empty) || pos.getPieceType(moveStack[i].getFrom()) == Pawn)
+            if (pos.getPiece(moveStack[i].getTo()) != Empty || pos.getPieceType(moveStack[i].getFrom()) == Pawn)
                 continue;
             if (!(pos.makeMove(moveStack[i]))) {
                 continue;
