@@ -586,6 +586,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	generatedMoves = generateMoves(pos, moveStack);
 
 	// Check if the root position is in tablebases, and if it is remove moves which do not maintain the correct result.
+	probeTB = true;
 	if (popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
 	{
 		rootInTB = root_probe(pos, tbScore, moveStack, generatedMoves);

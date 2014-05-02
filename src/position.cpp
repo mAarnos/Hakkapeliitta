@@ -40,10 +40,7 @@ void Position::initializeBoardFromFEN(string FEN)
 	char letter;
 	int aRank, aFile;
 
-	for (sq = A1; sq <= H8; sq++)
-	{
-		board[sq] = Empty;
-	}
+	board.fill(Empty);
 
 	// Split the FEN into parts.
 	vector<string> strList;
