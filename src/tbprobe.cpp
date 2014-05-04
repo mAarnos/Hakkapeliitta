@@ -367,7 +367,7 @@ int probe_wdl(Position& pos, int *success)
             // Check whether there is at least one legal non-ep move.
             for (i = 0; i < generatedMoves; i++) {
                 if (moveStack[i].getPromotion() == Pawn) continue;
-                if (!(pos.makeMove(moveStack[i]))) {
+                if (pos.makeMove(moveStack[i])) {
                     pos.unmakeMove(moveStack[i]);
                     break;
                 }
@@ -375,7 +375,7 @@ int probe_wdl(Position& pos, int *success)
             if (i == generatedMoves && !pos.inCheck()) {
                 generatedMoves = generateMoves(pos, moveStack);
                 for (i = 0; i < generatedMoves; i++) {
-                    if (!(pos.makeMove(moveStack[i]))) {
+                    if (pos.makeMove(moveStack[i])) {
                         pos.unmakeMove(moveStack[i]);
                         break;
                     }
@@ -561,7 +561,7 @@ int probe_dtz(Position& pos, int *success)
             int i;
             for (i = 0; i < generatedMoves; i++) {
                 if (moveStack[i].getPromotion() == Pawn) continue;
-                if (!(pos.makeMove(moveStack[i]))) {
+                if (pos.makeMove(moveStack[i])) {
                     pos.unmakeMove(moveStack[i]);
                     break;
                 }
@@ -569,7 +569,7 @@ int probe_dtz(Position& pos, int *success)
             if (i == generatedMoves && !pos.inCheck()) {
                 generatedMoves = generateMoves(pos, moveStack);
                 for (i = 0; i < generatedMoves; i++) {
-                    if (!(pos.makeMove(moveStack[i]))) {
+                    if (pos.makeMove(moveStack[i])) {
                         pos.unmakeMove(moveStack[i]);
                         break;
                     }
@@ -713,7 +713,7 @@ bool root_probe_wdl(Position& pos, int & TBScore, Move * moveStack, int & genera
     TBScore = wdl_to_Value[wdl + 2];
 
     int best = -2;
-
+	int j = 0;
     // Probe each move.
     for (int i = 0; i < generatedMoves; i++) {
         if (!(pos.makeMove(moveStack[i]))) {
@@ -722,15 +722,16 @@ bool root_probe_wdl(Position& pos, int & TBScore, Move * moveStack, int & genera
         int v = -probe_wdl(pos, &success);
         pos.unmakeMove(moveStack[i]);
         if (!success) return false;
-        moveStack[i].setScore(v);
+		moveStack[j].setScore(v);
+		moveStack[j++].setMove(moveStack[i].getMove());
         if (v > best)
             best = v;
     }
+	generatedMoves = j;
 
-    int j = 0;
+    j = 0;
     for (int i = 0; i < generatedMoves; i++) {
-		if (moveStack[i].getScore() == best)
-		{
+		if (moveStack[i].getScore() == best) {
 			moveStack[j].setScore(best);
 			moveStack[j++].setMove(moveStack[i].getMove());
 		}

@@ -189,6 +189,8 @@ void Position::initializeBoardFromFEN(string FEN)
 		phase -= popcnt(bitboards[White + i] | bitboards[Black * 6 + i]) * piecePhase[i];
 	}
 
+	memset(historyStack, 0, sizeof(historyStack));
+
 	return;
 }
 

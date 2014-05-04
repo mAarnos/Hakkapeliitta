@@ -12,6 +12,7 @@
 #include <sstream>
 #include <map>
 #include <regex>
+#include <cassert>
 
 using namespace std;
 

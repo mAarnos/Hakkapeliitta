@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <string>
 
+// Define __WIN32__ when compiling for a windows platform.
 #define __WIN32__
 // Define IS_64BIT when compiling for a 64-bit platform.
 // 32-bit is only supported for 5-piece tables, because tables are mmap()ed
