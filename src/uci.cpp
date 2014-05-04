@@ -139,7 +139,7 @@ int uciProcessInput()
 int uciSendInformation(string s)
 {
 	// Send the name of the engine and the name of it's author.
-	cout << "id name Hakkapeliitta v2.19" << endl;
+	cout << "id name Hakkapeliitta v2.20" << endl;
 	cout << "id author Mikko Aarnos" << endl;
 
 	// Send all possible options the engine has that can be modified.
@@ -221,7 +221,6 @@ int uciSetOption(string s)
 	else if (option == "SyzygyPath")
 	{
 		init(parameter);
-		useTB = true;
 	}
 
 	return uciOk;

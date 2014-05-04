@@ -12,7 +12,6 @@ uint64_t tbHits = 0;
 int searchDepth;
 int syzygyProbeLimit = 0;
 bool probeTB;
-bool useTB = false;
 
 array<int, Squares> butterfly[Colours][Squares];
 vector<Move> pv;
@@ -235,7 +234,7 @@ void think()
 		// Also stop searching if there is only one root move or if we have searched too far.
 		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
 		{
-			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << endl << "bestmove ";
+			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << endl << "bestmove ";
 			displayPV(pv, 1);
 			return;
 		}
@@ -248,12 +247,12 @@ void think()
 			{
 				int v;
 				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchDepth << " score mate " << v << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				cout << "info " << "depth " << searchDepth << " score mate " << v << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 				displayPV(pv, (int)pv.size());
 			}
 			else
 			{
-				cout << "info " << "depth " << searchDepth << " score cp " << score << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				cout << "info " << "depth " << searchDepth << " score cp " << score << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 				displayPV(pv, (int)pv.size());
 			}
 			continue;
@@ -265,12 +264,12 @@ void think()
 			{
 				int v;
 				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchDepth << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				cout << "info " << "depth " << searchDepth << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 				displayPV(pv, (int)pv.size());
 			}
 			else
 			{
-				cout << "info " << "depth " << searchDepth << " score cp " << score << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+				cout << "info " << "depth " << searchDepth << " score cp " << score << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 				displayPV(pv, (int)pv.size());
 			}
 			continue;
@@ -280,12 +279,12 @@ void think()
 		{
 			int v;
 			score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-			cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+			cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 			displayPV(pv, (int)pv.size());
 		}
 		else
 		{
-			cout << "info " << "depth " << searchDepth << " score cp " << score << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+			cout << "info " << "depth " << searchDepth << " score cp " << score << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 			displayPV(pv, (int)pv.size());
 		}
 
@@ -367,8 +366,8 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool movesFound = false, firstMove = true, ttAllowNull = true, check;
-	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, newDepth;
+	bool ttAllowNull = true, check;
+	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, newDepth;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -489,7 +488,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			continue;
 		}
 		nodeCount++;
-		movesFound = true;
 
 		newDepth = depth - onePly;
 		pos.setIsInCheck(ply + 1, pos.inCheck());
@@ -498,10 +496,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			newDepth += onePly;
 		}
 
-		if (firstMove)
+		if (!movesSearched)
 		{
 			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
-			firstMove = false;
 		}
 		else
 		{
@@ -512,6 +509,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			}
 		}
 		pos.unmakeMove(moveStack[i]);
+		movesSearched++;
 
 		if (!searching)
 		{
@@ -550,7 +548,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	if (!movesFound)
+	if (!movesSearched)
 	{
 		if (check)
 		{
@@ -569,8 +567,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int value, generatedMoves, tbScore, newDepth, bestScore = -mateScore;
-	bool ttAllowNull, rootInTB = false, firstMove = true;
+	int value, generatedMoves, tbScore, newDepth, bestScore = -mateScore, movesSearched = 0;
+	bool ttAllowNull, rootInTB = false;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Probe the transposition table to get the PV-Move, if any.
@@ -618,10 +616,9 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			newDepth += onePly;
 		}
 
-		if (firstMove)
+		if (!movesSearched)
 		{
 			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
-			firstMove = false;
 		}
 		else
 		{
@@ -631,8 +628,8 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			}
 		}
-
 		pos.unmakeMove(moveStack[i]);
+		movesSearched++;
 
 		if (!searching)
 		{
@@ -675,12 +672,12 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				{
 					int v;
 					alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
-					cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 					displayPV(pv, (int)pv.size());
 				}
 				else
 				{
-					cout << "info " << "depth " << searchDepth << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " pv ";
+					cout << "info " << "depth " << searchDepth << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
 					displayPV(pv, (int)pv.size());
 				}
 			}
