@@ -221,6 +221,7 @@ int uciSetOption(string s)
 	else if (option == "SyzygyPath")
 	{
 		init(parameter);
+		useTB = true;
 	}
 
 	return uciOk;

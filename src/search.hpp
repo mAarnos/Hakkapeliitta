@@ -14,5 +14,6 @@ const int deltaPruningSafetyMargin = 50;
 const int aspirationWindow = 50;
 
 extern int syzygyProbeLimit;
+extern bool useTB;
 
 #endif

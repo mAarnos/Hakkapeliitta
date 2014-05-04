@@ -190,6 +190,7 @@ void Position::initializeBoardFromFEN(string FEN)
 	}
 
 	memset(historyStack, 0, sizeof(historyStack));
+	isInCheck.fill(false);
 
 	return;
 }

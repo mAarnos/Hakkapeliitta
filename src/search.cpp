@@ -12,6 +12,7 @@ uint64_t tbHits = 0;
 int searchDepth;
 int syzygyProbeLimit = 0;
 bool probeTB;
+bool useTB = false;
 
 array<int, Squares> butterfly[Colours][Squares];
 vector<Move> pv;
@@ -366,8 +367,8 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool movesFound = false, firstMove = true, ttAllowNull = true;
-	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore;
+	bool movesFound = false, firstMove = true, ttAllowNull = true, check;
+	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, newDepth;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -382,13 +383,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		return drawScore;
 	}
 
-	// Check extension.
-	// Makes sure that the quiescence search is NEVER started while being in check.
-	bool check = pos.inCheck();
-	if (check)
-	{
-		depth += onePly;
-	}
+	check = pos.getIsInCheck(ply);
 
 	// If we have gone as far as we wanted to go drop into quiescence search.
 	if (depth <= 0)
@@ -495,17 +490,25 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		nodeCount++;
 		movesFound = true;
+
+		newDepth = depth - onePly;
+		pos.setIsInCheck(ply + 1, pos.inCheck());
+		if (pos.getIsInCheck(ply + 1))
+		{
+			newDepth += onePly;
+		}
+
 		if (firstMove)
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			firstMove = false;
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
+			value = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
 			if (value > alpha && value < beta)
 			{
-				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+				value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			}
 		}
 		pos.unmakeMove(moveStack[i]);
@@ -566,18 +569,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int value, generatedMoves, tbScore;
-	bool check, ttAllowNull, rootInTB = false;
-	bool firstMove = true;
-	uint16_t ttMove = ttMoveNone;
-	uint16_t bestMove = ttMoveNone;
-	int bestScore = -mateScore;
-
-	check = pos.inCheck();
-	if (check)
-	{
-		depth += onePly;
-	}
+	int value, generatedMoves, tbScore, newDepth, bestScore = -mateScore;
+	bool ttAllowNull, rootInTB = false, firstMove = true;
+	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Probe the transposition table to get the PV-Move, if any.
 	ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
@@ -616,17 +610,25 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			continue;
 		}
 		nodeCount++;
+
+		newDepth = depth - onePly;
+		pos.setIsInCheck(ply + 1, pos.inCheck());
+		if (pos.getIsInCheck(ply + 1))
+		{
+			newDepth += onePly;
+		}
+
 		if (firstMove)
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			firstMove = false;
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply + 1, depth - onePly, -alpha - 1, -alpha, true);
+			value = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
 			if (value > alpha && value < beta)
 			{
-				value = -alphabetaPVS(pos, ply + 1, depth - onePly, -beta, -alpha, true);
+				value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			}
 		}
 
