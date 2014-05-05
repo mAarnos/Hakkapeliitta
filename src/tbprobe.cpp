@@ -375,6 +375,7 @@ int probe_wdl(Position& pos, int *success)
             if (i == generatedMoves && !pos.inCheck()) {
                 generatedMoves = generateMoves(pos, moveStack);
                 for (i = 0; i < generatedMoves; i++) {
+					if (moveStack[i].getPromotion() == Pawn) continue;
                     if (pos.makeMove(moveStack[i])) {
                         pos.unmakeMove(moveStack[i]);
                         break;
@@ -569,6 +570,7 @@ int probe_dtz(Position& pos, int *success)
             if (i == generatedMoves && !pos.inCheck()) {
                 generatedMoves = generateMoves(pos, moveStack);
                 for (i = 0; i < generatedMoves; i++) {
+					if (moveStack[i].getPromotion() == Pawn) continue;
                     if (pos.makeMove(moveStack[i])) {
                         pos.unmakeMove(moveStack[i]);
                         break;
