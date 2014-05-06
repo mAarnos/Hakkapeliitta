@@ -279,16 +279,11 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
 static int probe_ab(Position& pos, int alpha, int beta, int *success)
 {
     int v, generatedMoves;
-    Move moveStack[64];
+    Move moveStack[256];
 
     // Generate (at least) all legal non-ep captures including (under)promotions.
     // It is OK to generate more, as long as they are filtered out below.
-    if (!pos.inCheck()) {
-        generatedMoves = generateCaptures(pos, moveStack);
-    } else {
-        generatedMoves = generateEvasions(pos, moveStack);
-    }
-
+	generatedMoves = generateMoves(pos, moveStack);
     for (int i = 0; i < generatedMoves; i++) {
         if (pos.getPiece(moveStack[i].getTo()) == Empty || moveStack[i].getPromotion() == Pawn)
             continue;
@@ -341,14 +336,8 @@ int probe_wdl(Position& pos, int *success)
     // Now handle en passant.
     int v1 = -3;
     // Generate (at least) all legal en passant captures.
-    Move moveStack[192];
-
-    if (!pos.inCheck()) {
-        generatedMoves = generateCaptures(pos, moveStack);
-    } else {
-        generatedMoves = generateEvasions(pos, moveStack);
-    }
-
+    Move moveStack[256];
+	generatedMoves = generateMoves(pos, moveStack);
     for (int i = 0; i < generatedMoves; i++) {
         if (moveStack[i].getPromotion() != Pawn)
             continue;
@@ -370,16 +359,6 @@ int probe_wdl(Position& pos, int *success)
                 if (pos.makeMove(moveStack[i])) {
                     pos.unmakeMove(moveStack[i]);
                     break;
-                }
-            }
-            if (i == generatedMoves && !pos.inCheck()) {
-                generatedMoves = generateMoves(pos, moveStack);
-                for (i = 0; i < generatedMoves; i++) {
-					if (moveStack[i].getPromotion() == Pawn) continue;
-                    if (pos.makeMove(moveStack[i])) {
-                        pos.unmakeMove(moveStack[i]);
-                        break;
-                    }
                 }
             }
             // If not, then we are forced to play the losing ep capture.
@@ -404,17 +383,11 @@ static int probe_dtz_no_ep(Position& pos, int *success)
     if (*success == 2)
         return wdl == 2 ? 1 : 101;
 
-    Move moveStack[192];
-
+    Move moveStack[256];
+	// Generate at least all legal non-capturing pawn moves
+	// including non-capturing promotions.
+	generatedMoves = generateMoves(pos, moveStack);
     if (wdl > 0) {
-        // Generate at least all legal non-capturing pawn moves
-        // including non-capturing promotions.
-        if (!pos.inCheck()) {
-            generatedMoves = generateMoves(pos, moveStack);
-        } else {
-            generatedMoves = generateEvasions(pos, moveStack);
-        }
-
         for (int i = 0; i < generatedMoves; i++) {
 			if (pos.getPieceType(moveStack[i].getFrom()) != Pawn || pos.getPiece(moveStack[i].getTo()) != Empty)
                 continue;
@@ -452,11 +425,6 @@ static int probe_dtz_no_ep(Position& pos, int *success)
         return best;
     } else {
         int best = -1;
-        if (!pos.inCheck()) {
-            generatedMoves = generateMoves(pos, moveStack);
-        } else {
-            generatedMoves = generateEvasions(pos, moveStack);
-        }
         for (int i = 0; i < generatedMoves; i++) {
             int v;
             if (!(pos.makeMove(moveStack[i]))) {
@@ -523,14 +491,8 @@ int probe_dtz(Position& pos, int *success)
     // Now handle en passant.
     int v1 = -3, generatedMoves;
 
-    Move moveStack[192];
-
-    if (!pos.inCheck()) {
-        generatedMoves = generateCaptures(pos, moveStack);
-    } else {
-        generatedMoves = generateEvasions(pos, moveStack);
-    }
-
+    Move moveStack[256];
+	generatedMoves = generateMoves(pos, moveStack);
     for (int i = 0; i < generatedMoves; i++) {
         if (moveStack[i].getPromotion() != Pawn)
             continue;
@@ -564,16 +526,6 @@ int probe_dtz(Position& pos, int *success)
                 if (pos.makeMove(moveStack[i])) {
                     pos.unmakeMove(moveStack[i]);
                     break;
-                }
-            }
-            if (i == generatedMoves && !pos.inCheck()) {
-                generatedMoves = generateMoves(pos, moveStack);
-                for (i = 0; i < generatedMoves; i++) {
-					if (moveStack[i].getPromotion() == Pawn) continue;
-                    if (pos.makeMove(moveStack[i])) {
-                        pos.unmakeMove(moveStack[i]);
-                        break;
-                    }
                 }
             }
             if (i == generatedMoves)
