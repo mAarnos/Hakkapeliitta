@@ -3,6 +3,9 @@
 
 #include "position.hpp"
 
+extern int TBLargest;
+
+void init(const std::string & path);
 int probe_wdl(Position & pos, int * success);
 int probe_dtz(Position & pos, int * success);
 bool root_probe(Position & pos, int & TBScore, Move * moveStack, int & generatedMoves);

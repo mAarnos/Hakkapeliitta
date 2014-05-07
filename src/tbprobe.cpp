@@ -9,11 +9,23 @@
 
 // The probing code currently expects a little-endian architecture (e.g. x86).
 
+// Define __WIN32__ when compiling for a windows platform.
+#define __WIN32__
+// Define IS_64BIT when compiling for a 64-bit platform.
+// 32-bit is only supported for 5-piece tables, because tables are mmap()ed
+// into memory.
+#define IS_64BIT
+
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
 #include "eval.hpp"
 #include "bitboard.hpp"
 #include "movegen.hpp"
+
+// Please forgive me.
+#include "tbcore.cpp"
+
+int TBLargest = 0;
 
 // Given a position with 6 or fewer pieces, produce a text string
 // of the form KQPvKRP, where "KQP" represents the white pieces if
@@ -53,6 +65,28 @@ static uint64_t calc_key(Position& pos, int mirror)
             key ^= materialHash[Black * 6 + pt][i - 1];
 
     return key;
+}
+
+// Produce a 64-bit material key corresponding to the material combination
+// defined by pcs[16], where pcs[1], ..., pcs[6] is the number of white
+// pawns, ..., kings and pcs[9], ..., pcs[14] is the number of black
+// pawns, ..., kings.
+static uint64_t calc_key_from_pcs(int *pcs, int mirror)
+{
+	int color;
+	int i, pt;
+	uint64_t key = 0;
+
+	color = !mirror ? 1 : 9;
+	for (pt = Pawn; pt <= King; ++pt)
+	for (i = 0; i < pcs[color + pt]; i++)
+		key ^= materialHash[White * 6 + pt][i];
+	color ^= 8;
+	for (pt = Pawn; pt <= King; ++pt)
+	for (i = 0; i < pcs[color + pt]; i++)
+		key ^= materialHash[Black * 6 + pt][i];
+
+	return key;
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.

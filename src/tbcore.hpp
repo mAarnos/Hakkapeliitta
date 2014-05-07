@@ -8,13 +8,6 @@
 #include <cstdint>
 #include <string>
 
-// Define __WIN32__ when compiling for a windows platform.
-#define __WIN32__
-// Define IS_64BIT when compiling for a 64-bit platform.
-// 32-bit is only supported for 5-piece tables, because tables are mmap()ed
-// into memory.
-#define IS_64BIT
-
 #ifndef __WIN32__
 #include <pthread.h>
 #define SEP_CHAR ':'
@@ -38,7 +31,6 @@
 #define LOCK(x) WaitForSingleObject(x, INFINITE)
 #define UNLOCK(x) ReleaseMutex(x)
 #endif
-extern LOCK_T TB_mutex;
 
 #define WDLSUFFIX ".rtbw"
 #define DTZSUFFIX ".rtbz"
@@ -70,9 +62,6 @@ extern LOCK_T TB_mutex;
 #define DTZ_ENTRIES 64
 
 struct TBHashEntry;
-
-extern struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
-extern struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
 #ifdef IS_64BIT
 typedef uint64_t base_t;
@@ -199,22 +188,6 @@ inline uint64_t bswap64(uint64_t x)
     tl = bswap32((uint32_t)((x >> 32) & 0xffffffffULL));
     return ((uint64_t)th << 32) | tl;
 }
-
-extern int TBLargest;
-
-const int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
-const uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
-const char pchr[] = { 'K', 'Q', 'R', 'B', 'N', 'P' };
-
-uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor);
-uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
-uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor);
-void free_dtz_entry(struct TBEntry *entry);
-void load_dtz_table(char *str, uint64_t key1, uint64_t key2);
-int pawn_file(struct TBEntry_pawn *ptr, int *pos);
-int init_table_wdl(struct TBEntry *entry, char *str);
-
-void init(const std::string & path);
 
 #endif
 

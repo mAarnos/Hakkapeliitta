@@ -21,7 +21,7 @@ a particular engine, provided the engine is written in C or C++.
 #include <sys/mman.h>
 #endif
 
-LOCK_T TB_mutex;
+static LOCK_T TB_mutex;
 
 static bool initialized = false;
 static int num_paths = 0;
@@ -32,36 +32,13 @@ static int TBnum_piece, TBnum_pawn;
 static struct TBEntry_piece TB_piece[TBMAX_PIECE];
 static struct TBEntry_pawn TB_pawn[TBMAX_PAWN];
 
-struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
-struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
+static struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
+static struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
 static void init_indices(void);
-void free_wdl_entry(struct TBEntry *entry);
-void free_dtz_entry(struct TBEntry *entry);
-
-int TBLargest = 0;
-
-// Produce a 64-bit material key corresponding to the material combination
-// defined by pcs[16], where pcs[1], ..., pcs[6] is the number of white
-// pawns, ..., kings and pcs[9], ..., pcs[14] is the number of black
-// pawns, ..., kings.
-static uint64_t calc_key_from_pcs(int *pcs, int mirror)
-{
-    int color;
-    int i, pt;
-    uint64_t key = 0;
-
-    color = !mirror ? 1 : 9;
-    for (pt = Pawn; pt <= King; ++pt)
-        for (i = 0; i < pcs[color + pt]; i++)
-            key ^= materialHash[White * 6 + pt][i];
-    color ^= 8;
-    for (pt = Pawn; pt <= King; ++pt)
-        for (i = 0; i < pcs[color + pt]; i++)
-            key ^= materialHash[Black * 6 + pt][i];
-
-    return key;
-}
+static uint64_t calc_key_from_pcs(int *pcs, int mirror);
+static void free_wdl_entry(struct TBEntry *entry);
+static void free_dtz_entry(struct TBEntry *entry);
 
 static FD open_tb(const char *str, const char *suffix)
 {
@@ -161,6 +138,8 @@ static void add_to_hash(struct TBEntry *ptr, uint64_t key)
         TB_hash[hshidx][i].ptr = ptr;
     }
 }
+
+static char pchr[] = { 'K', 'Q', 'R', 'B', 'N', 'P' };
 
 static void init_tb(char *str)
 {
@@ -629,7 +608,7 @@ static void init_indices(void)
     }
 }
 
-uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor)
+static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor)
 {
     uint64_t idx;
     int i, j, k, m, l, p;
@@ -708,7 +687,7 @@ uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *f
 }
 
 // determine file of leftmost pawn and sort pawns
-int pawn_file(struct TBEntry_pawn *ptr, int *pos)
+static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
 {
     int i;
 
@@ -719,7 +698,7 @@ int pawn_file(struct TBEntry_pawn *ptr, int *pos)
     return file_to_file[pos[0] & 0x07];
 }
 
-uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor)
+static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor)
 {
     uint64_t idx;
     int i, j, k, m, s, t;
@@ -777,7 +756,7 @@ uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *fac
     return idx;
 }
 
-uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
+static uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
 
 // place k like pieces on n squares
 static int subfactor(int k, int n)
@@ -1030,7 +1009,7 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
     return d;
 }
 
-int init_table_wdl(struct TBEntry *entry, char *str)
+static int init_table_wdl(struct TBEntry *entry, char *str)
 {
     uint8_t *next;
     int f, s;
@@ -1146,7 +1125,7 @@ int init_table_wdl(struct TBEntry *entry, char *str)
     return 1;
 }
 
-int init_table_dtz(struct TBEntry *entry)
+static int init_table_dtz(struct TBEntry *entry)
 {
     uint8_t *data = (uint8_t *)entry->data;
     uint8_t *next;
@@ -1240,13 +1219,13 @@ int init_table_dtz(struct TBEntry *entry)
     return 1;
 }
 
-uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
+static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     if (!d->idxbits)
         return (uint8_t)d->min_len;
 
     uint32_t mainidx = (uint32_t)(idx >> d->idxbits);
-    int litidx = (idx & ((1 << d->idxbits) - 1)) - (1 << (d->idxbits - 1));
+    int litidx = (idx & ((1LL << d->idxbits) - 1)) - (1LL << (d->idxbits - 1));
     uint32_t block = *(uint32_t *)(d->indextable + 6 * mainidx);
     litidx += *(uint16_t *)(d->indextable + 6 * mainidx + 4);
     if (litidx < 0) {
@@ -1323,7 +1302,7 @@ uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     return *(sympat + 3 * sym);
 }
 
-void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
+static void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
 {
     int i;
     struct TBEntry *ptr, *ptr3;
@@ -1363,7 +1342,7 @@ void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
         DTZ_table[0].entry = ptr3;
 }
 
-void free_wdl_entry(struct TBEntry *entry)
+static void free_wdl_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns) {
@@ -1382,7 +1361,7 @@ void free_wdl_entry(struct TBEntry *entry)
     }
 }
 
-void free_dtz_entry(struct TBEntry *entry)
+static void free_dtz_entry(struct TBEntry *entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns) {
@@ -1396,5 +1375,8 @@ void free_dtz_entry(struct TBEntry *entry)
     }
     free(entry);
 }
+
+static int wdl_to_map[5] = { 1, 3, 0, 2, 0 };
+static uint8_t pa_flags[5] = { 8, 0, 0, 0, 4 };
 
 
