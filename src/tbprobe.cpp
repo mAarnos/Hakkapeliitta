@@ -651,8 +651,7 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
         for (int i = 0; i < generatedMoves; i++) {
             int v = moveStack[i].getScore();
 			if (v > 0 && v <= max) {
-				moveStack[j].setScore(v);
-				moveStack[j++].setMove(moveStack[i].getMove());
+				moveStack[j++] = moveStack[i];
 			}
         }
     } else if (dtz < 0) { // losing (or 50-move rule draw)
@@ -667,8 +666,7 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
             return true;
         for (int i = 0; i < generatedMoves; i++) {
 			if (moveStack[i].getScore() == best) {
-				moveStack[j].setScore(best);
-				moveStack[j++].setMove(moveStack[i].getMove());
+				moveStack[j++] = moveStack[i];
 			}
 
         }
@@ -676,8 +674,7 @@ bool root_probe(Position& pos, int & TBScore, Move * moveStack, int & generatedM
         // Try all moves that preserve the draw.
         for (int i = 0; i < generatedMoves; i++) {
 			if (moveStack[i].getScore() == 0) {
-				moveStack[j].setScore(0);
-				moveStack[j++].setMove(moveStack[i].getMove());
+				moveStack[j++] = moveStack[i];
 			}
         }
     }
