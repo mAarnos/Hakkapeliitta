@@ -96,7 +96,6 @@ void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t fla
 	
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 	int replace = 0;
-	bool c1, c2;
 	for (int i = 0; i < 4; i++)
 	{
 		if ((hashEntry->getHash(i) ^ hashEntry->getData(i)) == pos.getHash())
@@ -110,8 +109,8 @@ void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t fla
 		}
 		// Here we check if we have found an entry which is worse than the current worse entry.
 		// If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-		c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));
-		c2 = (hashEntry->getDepth(replace) > hashEntry->getDepth(i));
+		bool c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));
+		bool c2 = (hashEntry->getDepth(replace) > hashEntry->getDepth(i));
 		if (c1 || c2)
 		{
 			replace = i;

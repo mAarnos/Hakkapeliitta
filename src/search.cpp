@@ -139,7 +139,6 @@ void selectMove(Move * moveStack, int moveAmount, int i)
 // Clean this function up.
 void reconstructPV(Position pos, vector<Move> & pv)
 {
-	ttEntry * hashEntry;
 	Move m;
 	pv.clear();
 
@@ -147,7 +146,7 @@ void reconstructPV(Position pos, vector<Move> & pv)
 	int entry;
 	while (ply < 63)
 	{
-		hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
+		ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 		for (entry = 0; entry < 4; entry++)
 		{
 			if ((hashEntry->getHash(entry) ^ hashEntry->getData(entry)) == pos.getHash())
@@ -207,7 +206,7 @@ void displayPV(vector<Move> pv, int length)
 
 void think()
 {
-	int score, alpha, beta, searchTime;
+	int alpha, beta;
 
 	tt.startNewSearch();
 	
@@ -225,10 +224,10 @@ void think()
 
 	for (searchDepth = 1;;)
 	{
-		score = searchRoot(root, 0, searchDepth * onePly, alpha, beta);
+		int score = searchRoot(root, 0, searchDepth * onePly, alpha, beta);
 		reconstructPV(root, pv);
 
-		searchTime = (int)t.getms();
+		uint64_t searchTime = t.getms();
 
 		// If more than 70% of our has been used or we have been ordered to stop searching return the best move.
 		// Also stop searching if there is only one root move or if we have searched too far.
@@ -567,8 +566,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int value, generatedMoves, tbScore, newDepth, bestScore = -mateScore, movesSearched = 0;
-	bool ttAllowNull, rootInTB = false;
+	int value, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
+	bool ttAllowNull;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Probe the transposition table to get the PV-Move, if any.
@@ -581,7 +580,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	probeTB = true;
 	if (popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
 	{
-		rootInTB = root_probe(pos, tbScore, moveStack, generatedMoves);
+		bool rootInTB = root_probe(pos, value, moveStack, generatedMoves);
 		if (rootInTB)
 		{
 			tbHits += generatedMoves;
@@ -590,7 +589,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		else // If DTZ tables are missing, use WDL tables as a fallback
 		{
 			// Filter out moves that do not preserve a draw or win
-			rootInTB = root_probe_wdl(pos, tbScore, moveStack, generatedMoves);
+			rootInTB = root_probe_wdl(pos, value, moveStack, generatedMoves);
 			if (rootInTB)
 			{
 				tbHits += generatedMoves;

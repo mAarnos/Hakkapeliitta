@@ -8,6 +8,11 @@ int maxTime;
 
 int countDown;
 
+Timer::Timer():
+startTime(0), stopTime(0), currentTime(0), running(0)
+{
+}
+
 void Timer::start()
 {
 	startTime = clock();

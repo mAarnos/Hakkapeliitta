@@ -146,7 +146,7 @@ MagicInit rookInit[Squares] =
 // TODO: check that this works.
 void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 {
-	int sq88, d;
+	int d;
 	uint64_t bb, bb2;
 	array<int, 12> squares;
 
@@ -156,7 +156,7 @@ void initMagics(MagicInit * magicInit, Magic * magic, int dir[][2], int shift)
 		magic[sq].data = &lookupTable[magicInit[sq].index];
 
 		// Calculate the mask.
-		sq88 = sq + (sq & ~7);
+		int sq88 = sq + (sq & ~7);
 		bb = 0;
 		for (int i = 0; i < 4; i++)
 		{

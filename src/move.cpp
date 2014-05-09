@@ -3,6 +3,7 @@
 void Move::clear()
 {
 	move = 0;
+	score = 0;
 }    
 
 void Move::setFrom(int from)  

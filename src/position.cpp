@@ -17,6 +17,11 @@ array<int, Squares> castlingMask = {
 	8, 0, 0, 0, 12, 0, 0, 4
 };
 
+Position::Position()
+{
+	initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+}
+
 void Position::displayBoard()
 {
 	string pieceToMark = "PNBRQKpnbrqk.";
@@ -36,8 +41,6 @@ void Position::displayBoard()
 void Position::initializeBoardFromFEN(string FEN)
 {
 	unsigned int i, j;
-	int sq;
-	char letter;
 	int aRank, aFile;
 
 	board.fill(Empty);
@@ -55,11 +58,11 @@ void Position::initializeBoardFromFEN(string FEN)
 	// Translate the FEN string into piece locations on the board.
 	while ((j <= 64) && (i <= strList[0].length())) 
 	{
-		letter = strList[0].at(i);
+		char letter = strList[0].at(i);
 		i++;
 		aFile = 1 + ((j - 1) % 8);
 		aRank = 8 - ((j - 1) / 8);
-		sq = (int)(((aRank - 1) * 8) + (aFile - 1));
+		int sq = (int)(((aRank - 1) * 8) + (aFile - 1));
 		switch (letter)
 		{
 			case 'p': board[sq] = BlackPawn; break;

@@ -11,7 +11,7 @@
 
 int main()
 {
-	cout << "Hakkapeliitta v2.22, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta v2.23, (C) 2013-2014 Mikko Aarnos" << endl;
 
 	// Initialize the engine.
 	initInput();
@@ -19,7 +19,6 @@ int main()
 	initializeMagics();
 	initializeHash();
 	initializeEval();
-	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	tt.setSize(1024 * 1024);
 	ptt.setSize((1024 * 1024) / 8);
 

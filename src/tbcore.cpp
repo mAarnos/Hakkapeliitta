@@ -43,7 +43,6 @@ static void free_dtz_entry(struct TBEntry *entry);
 static FD open_tb(const char *str, const char *suffix)
 {
     int i;
-    FD fd;
     char file[256];
 
     for (i = 0; i < num_paths; i++) {
@@ -52,9 +51,9 @@ static FD open_tb(const char *str, const char *suffix)
         strcat(file, str);
         strcat(file, suffix);
 #ifndef __WIN32__
-        fd = open(file, O_RDONLY);
+        FD fd = open(file, O_RDONLY);
 #else
-        fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
+        FD fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
                         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
         if (fd != FD_ERR) return fd;
@@ -145,7 +144,7 @@ static void init_tb(char *str)
 {
     FD fd;
     struct TBEntry *entry;
-    int i, j, pcs[16];
+    int i, pcs[16];
     uint64_t key, key2;
     int color;
     char *s;
@@ -220,6 +219,7 @@ static void init_tb(char *str)
         }
     } else {
         struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
+		int j;
         for (i = 0, j = 0; i < 16; i++)
             if (pcs[i] == 1) j++;
         if (j >= 3) ptr->enc_type = 0;
@@ -931,14 +931,14 @@ static void setup_pieces_pawn_dtz(struct DTZEntry_pawn *ptr, unsigned char *data
 
 static void calc_symlen(struct PairsData *d, int s, char *tmp)
 {
-    int s1, s2;
+    int s2;
 
     int w = *(int *)(d->sympat + 3 * s);
     s2 = (w >> 12) & 0x0fff;
     if (s2 == 0x0fff)
         d->symlen[s] = 0;
     else {
-        s1 = w & 0x0fff;
+        int s1 = w & 0x0fff;
         if (!tmp[s1]) calc_symlen(d, s1, tmp);
         if (!tmp[s2]) calc_symlen(d, s2, tmp);
         d->symlen[s] = d->symlen[s1] + d->symlen[s2] + 1;
@@ -1012,7 +1012,6 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
 static int init_table_wdl(struct TBEntry *entry, char *str)
 {
     uint8_t *next;
-    int f, s;
     uint64_t tb_size[8];
     uint64_t size[8 * 3];
     uint8_t flags;
@@ -1075,14 +1074,14 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
         }
     } else {
         struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
-        s = 1 + (ptr->pawns[1] > 0);
-        for (f = 0; f < 4; f++) {
+        int s = 1 + (ptr->pawns[1] > 0);
+        for (int f = 0; f < 4; f++) {
             setup_pieces_pawn((struct TBEntry_pawn *)ptr, data, &tb_size[2 * f], f);
             data += ptr->num + s;
         }
         data += ((uintptr_t)data) & 0x01;
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp[0] = setup_pairs(data, tb_size[2 * f], &size[6 * f], &next, &flags, 1);
             data = next;
             if (split) {
@@ -1092,7 +1091,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
                 ptr->file[f].precomp[1] = NULL;
         }
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp[0]->indextable = (char *)data;
             data += size[6 * f];
             if (split) {
@@ -1101,7 +1100,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
             }
         }
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp[0]->sizetable = (uint16_t *)data;
             data += size[6 * f + 1];
             if (split) {
@@ -1110,7 +1109,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
             }
         }
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp[0]->data = data;
             data += size[6 * f + 2];
@@ -1129,7 +1128,6 @@ static int init_table_dtz(struct TBEntry *entry)
 {
     uint8_t *data = (uint8_t *)entry->data;
     uint8_t *next;
-    int f, s;
     uint64_t tb_size[4];
     uint64_t size[4 * 3];
 
@@ -1175,20 +1173,20 @@ static int init_table_dtz(struct TBEntry *entry)
         data += size[2];
     } else {
         struct DTZEntry_pawn *ptr = (struct DTZEntry_pawn *)entry;
-        s = 1 + (ptr->pawns[1] > 0);
-        for (f = 0; f < 4; f++) {
+        int s = 1 + (ptr->pawns[1] > 0);
+        for (int f = 0; f < 4; f++) {
             setup_pieces_pawn_dtz(ptr, data, &tb_size[f], f);
             data += ptr->num + s;
         }
         data += ((uintptr_t)data) & 0x01;
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp = setup_pairs(data, tb_size[f], &size[3 * f], &next, &(ptr->flags[f]), 0);
             data = next;
         }
 
         ptr->map = data;
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             if (ptr->flags[f] & 2) {
                 int i;
                 for (i = 0; i < 4; i++) {
@@ -1199,17 +1197,17 @@ static int init_table_dtz(struct TBEntry *entry)
         }
         data += ((uintptr_t)data) & 0x01;
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp->indextable = (char *)data;
             data += size[3 * f];
         }
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             ptr->file[f].precomp->sizetable = (uint16_t *)data;
             data += size[3 * f + 1];
         }
 
-        for (f = 0; f < files; f++) {
+        for (int f = 0; f < files; f++) {
             data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp->data = data;
             data += size[3 * f + 2];

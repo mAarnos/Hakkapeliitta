@@ -716,8 +716,7 @@ bool root_probe_wdl(Position& pos, int & TBScore, Move * moveStack, int & genera
     j = 0;
     for (int i = 0; i < generatedMoves; i++) {
 		if (moveStack[i].getScore() == best) {
-			moveStack[j].setScore(best);
-			moveStack[j++].setMove(moveStack[i].getMove());
+			moveStack[j++] = moveStack[i];
 		}
     }
     // Update generatedMoves to reflect the new status.
