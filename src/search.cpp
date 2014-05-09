@@ -402,7 +402,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		if (found)
 		{
 			tbHits++;
-			value = v < -1 ? -mateScore + ply + 200 : v >  1 ? mateScore - ply - 200 : drawScore + 2 * v;
+			if (v < -1) value = -mateScore + ply + 200;
+			else if (v > 1) value = mateScore - ply - 200;
+			else value = drawScore + v;
+			ttSave(pos, ply, depth + 4 * onePly, value, ttExact, ttMoveNone);
 			return value;
 		}
 	}
