@@ -179,6 +179,10 @@ const int backwardPenaltyEnding = 9;
 const int bishopPairBonusOpening = 32;
 const int bishopPairBonusEnding = 32;
 
+const int rookOnOpenFileBonus = 10;
+const int rookOnSemiOpenFileBonus = 5;
+const int rookBehindPassedBonus = 20;
+
 const int pawnShelterAdvancedPawnPenalty = 11;
 const int pawnShelterMissingPawnPenalty = 38;
 const int pawnShelterMissingOpponentPawnPenalty = -2;

@@ -194,6 +194,35 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		scoreOp += mobilityOpening[Rook][count];
 		scoreEd += mobilityEnding[Rook][count];
 		kingTropismScore += rookTropism[from][kingLocation];
+
+		if (!(files[from % 8] & pos.getBitboard(White, Pawn)))
+		{
+			if (!(files[from % 8] & pos.getBitboard(Black, Pawn)))
+			{
+				scoreOp += rookOnOpenFileBonus;
+			}
+			else
+			{
+				scoreOp += rookOnSemiOpenFileBonus;
+			}
+		}
+
+		uint64_t temp = rays[N][from] & tempMove & pos.getBitboard(White, Pawn);
+		if (temp)
+		{
+			if (!(pos.getBitboard(Black, Pawn) & passed[White][bitScanForward(temp)]))
+			{
+				scoreEd += rookBehindPassedBonus;
+			}
+		}
+		temp = rays[S][from] & tempMove & pos.getBitboard(Black, Pawn);
+		if (temp)
+		{
+			if (!(pos.getBitboard(White, Pawn) & passed[Black][bitScanForward(temp)]))
+			{
+				scoreEd += rookBehindPassedBonus;
+			}
+		}
 	}
 
 	tempPiece = pos.getBitboard(White, Queen);
@@ -254,6 +283,35 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		scoreOp -= mobilityOpening[Rook][count];
 		scoreEd -= mobilityEnding[Rook][count];
 		kingTropismScore -= rookTropism[from][kingLocation];
+
+		if (!(files[from % 8] & pos.getBitboard(Black, Pawn)))
+		{
+			if (!(files[from % 8] & pos.getBitboard(White, Pawn)))
+			{
+				scoreOp -= rookOnOpenFileBonus;
+			}
+			else
+			{
+				scoreOp -= rookOnSemiOpenFileBonus;
+			}
+		}
+
+		uint64_t temp = rays[N][from] & tempMove & pos.getBitboard(White, Pawn);
+		if (temp)
+		{
+			if (!(pos.getBitboard(Black, Pawn) & passed[White][bitScanForward(temp)]))
+			{
+				scoreEd -= rookBehindPassedBonus;
+			}
+		}
+		temp = rays[S][from] & tempMove & pos.getBitboard(Black, Pawn);
+		if (temp)
+		{
+			if (!(pos.getBitboard(White, Pawn) & passed[Black][bitScanForward(temp)]))
+			{
+				scoreEd -= rookBehindPassedBonus;
+			}
+		}
 	}
 
 	tempPiece = pos.getBitboard(Black, Queen);
@@ -366,6 +424,11 @@ int kingSafetyEval(Position & pos, int phase, int score)
 		// Penalize pawns which have moved more than one square.
 		zone1 = popcnt(0x00E0E0E0E0000000 & pos.getBitboard(White, Pawn));
 		score -= pawnShelterAdvancedPawnPenalty * zone1;
+		// A moved f-pawn isn't that severe, compensate.
+		if (pos.getBitboard(White, Pawn) & rays[N][21])
+		{
+			score += (pawnShelterAdvancedPawnPenalty / 2);
+		}
 
 		// Penalize missing pawns from our pawn shelter.
 		// Penalize missing opponent pawns as they allow the opponent to use his semi-open/open files to attack us.
@@ -374,6 +437,10 @@ int kingSafetyEval(Position & pos, int phase, int score)
 			if (!(files[i] & pos.getBitboard(White, Pawn)))
 			{
 				score -= pawnShelterMissingPawnPenalty;
+				if (i == 5)
+				{
+					score += (pawnShelterMissingPawnPenalty / 2);
+				}
 			}
 			if (!(files[i] & pos.getBitboard(Black, Pawn)))
 			{
@@ -394,12 +461,20 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x0007070707000000 & pos.getBitboard(White, Pawn));
 		score -= pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(White, Pawn) & rays[N][18])
+		{
+			score += (pawnShelterAdvancedPawnPenalty / 2);
+		}
 
 		for (int i = 0; i < 3; i++)
 		{
 			if (!(files[i] & pos.getBitboard(White, Pawn)))
 			{
 				score -= pawnShelterMissingPawnPenalty;
+				if (i == 2)
+				{
+					score += (pawnShelterMissingPawnPenalty / 2);
+				}
 			}
 			if (!(files[i] & pos.getBitboard(Black, Pawn)))
 			{
@@ -431,12 +506,20 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x000000E0E0E0E000 & pos.getBitboard(Black, Pawn));
 		score += pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(Black, Pawn) & rays[S][45])
+		{
+			score -= (pawnShelterAdvancedPawnPenalty / 2);
+		}
 
 		for (int i = 5; i < 8; i++)
 		{
 			if (!(files[i] & pos.getBitboard(Black, Pawn)))
 			{
 				score += pawnShelterMissingPawnPenalty;
+				if (i == 5)
+				{
+					score -= (pawnShelterMissingPawnPenalty / 2);
+				}
 			}
 			if (!(files[i] & pos.getBitboard(White, Pawn)))
 			{
@@ -454,12 +537,20 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	{
 		zone1 = popcnt(0x0000000707070700 & pos.getBitboard(Black, Pawn));
 		score += pawnShelterAdvancedPawnPenalty * zone1;
+		if (pos.getBitboard(Black, Pawn) & rays[S][42])
+		{
+			score -= (pawnShelterAdvancedPawnPenalty / 2);
+		}
 
 		for (int i = 0; i < 3; i++)
 		{
 			if (!(files[i] & pos.getBitboard(Black, Pawn)))
 			{
 				score += pawnShelterMissingPawnPenalty;
+				if (i == 2)
+				{
+					score -= (pawnShelterMissingPawnPenalty / 2);
+				}
 			}
 			if (!(files[i] & pos.getBitboard(White, Pawn)))
 			{
