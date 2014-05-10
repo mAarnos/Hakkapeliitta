@@ -28,8 +28,6 @@ class History
 class Position
 {
 	public:
-		Position();
-
 		void initializeBoardFromFEN(string FEN);
 		void displayBoard();
 

@@ -19,6 +19,7 @@ int main()
 	initializeMagics();
 	initializeHash();
 	initializeEval();
+	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	tt.setSize(1024 * 1024);
 	ptt.setSize((1024 * 1024) / 8);
 
