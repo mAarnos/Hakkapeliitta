@@ -6,7 +6,8 @@
 #include "move.hpp"
 #include "hash.hpp"
 
-const int maxGameLength = 600;
+// The maxinum supported game length in plies.
+const int maxGameLength = 1200;
 
 const array<int, Pieces> piecePhase = {
 	0, 1, 1, 2, 4, 0

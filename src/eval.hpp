@@ -9,7 +9,7 @@ const int maxMateScore = 32767 - maxGameLength;
 // Is the value here enough?
 const int infinity = mateScore + 1;
 
-// Watch out with Infinite as it is bigger than mateScore therefore it could be detected as an mate score even though it is not.
+// Watch out with infinite as it is bigger than mateScore therefore it could be detected as an mate score even though it is not.
 inline bool isMateScore(int64_t score)
 {
 	return (score <= -maxMateScore || score >= maxMateScore);
