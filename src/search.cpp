@@ -365,7 +365,7 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool ttAllowNull = true, check;
+	bool ttAllowNull = true, pvNode = ((alpha + 1) != beta), check;
 	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, newDepth;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
@@ -411,7 +411,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Null move pruning, both static and dynamic.
-	if ((alpha + 1) == beta && allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
+	if (!pvNode && allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
 	{
 		// Here's static.
 		if (depth <= 3 * onePly)
@@ -456,7 +456,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Internal iterative deepening
-	if ((alpha + 1) != beta && ttMove == ttMoveNone && depth > 2 * onePly)
+	if (pvNode && ttMove == ttMoveNone && depth > 2 * onePly)
 	{
 		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, true);
 		if (value <= alpha)
