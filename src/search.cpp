@@ -366,7 +366,7 @@ int qsearch(Position & pos, int alpha, int beta)
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
 	bool pvNode = ((alpha + 1) != beta), futileNode = false, check;
-	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0;
+	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -506,9 +506,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			newDepth += onePly;
 		}
 
-		if (futileNode && moveStack[i].getScore() < captureMove && !givesCheck && movesSearched)
+		if (futileNode && moveStack[i].getScore() < killerMove4 && !givesCheck)
 		{
 			pos.unmakeMove(moveStack[i]);
+			prunedMoves++;
 			continue;
 		}
 
@@ -564,7 +565,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	if (!movesSearched)
+	if (!movesSearched && !prunedMoves)
 	{
 		if (check)
 		{
