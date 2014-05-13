@@ -365,8 +365,8 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool ttAllowNull = true, pvNode = ((alpha + 1) != beta), futileNode = false, check;
-	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
+	bool pvNode = ((alpha + 1) != beta), futileNode = false, check;
+	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -390,7 +390,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Probe the transposition table.
-	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull)) != probeFailed)
+	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove)) != probeFailed)
 	{
 		return value;
 	}
@@ -414,7 +414,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	int staticEval = eval(pos);
 
 	// Null move pruning, both static and dynamic.
-	if (!pvNode && allowNullMove && ttAllowNull && !check && pos.calculateGamePhase() != 256)
+	if (!pvNode && allowNullMove && !check && pos.calculateGamePhase() != 256)
 	{
 		// Here's static.
 		if (depth <= 3 * onePly)
@@ -465,7 +465,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		{
 			value = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, true);
 		}
-		ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
+		ttProbe(pos, ply, depth, alpha, beta, ttMove);
 	}
 
 	if (!pvNode && !check && depth <= futilityDepth && staticEval + futilityMargin[depth] <= alpha)
@@ -506,10 +506,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			newDepth += onePly;
 		}
 
-		if (futileNode && moveStack[i].getScore() < captureMove && !givesCheck)
+		if (futileNode && moveStack[i].getScore() < captureMove && !givesCheck && movesSearched)
 		{
 			pos.unmakeMove(moveStack[i]);
-			prunedMoves++;
 			continue;
 		}
 
@@ -565,7 +564,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	if (!movesSearched && !prunedMoves)
+	if (!movesSearched)
 	{
 		if (check)
 		{
@@ -585,11 +584,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
 	int value, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
-	bool ttAllowNull;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Probe the transposition table to get the PV-Move, if any.
-	ttProbe(pos, ply, depth, alpha, beta, ttMove, ttAllowNull);
+	ttProbe(pos, ply, depth, alpha, beta, ttMove);
 
 	Move moveStack[256];
 	generatedMoves = generateMoves(pos, moveStack);

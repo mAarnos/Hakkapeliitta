@@ -4,7 +4,7 @@
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 
-int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best, bool & ttAllowNull)
+int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best)
 {
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
@@ -24,10 +24,6 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_
 		int hashDepth = hashEntry->getDepth(entry);
 		int flags = hashEntry->getFlags(entry);
 
-		if (flags == ttAlpha && hashDepth >= depth - onePly - (depth > 6 * onePly ? 3 * onePly : 2 * onePly) && score < beta)
-		{
-			ttAllowNull = false;
-		}
 		if (hashDepth >= depth)
 		{
 			// Correct the mate score back.
