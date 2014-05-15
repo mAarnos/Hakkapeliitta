@@ -19,21 +19,21 @@ void initializeKnownEndgames()
 {
 	// King vs king: draw
 	uint64_t matHash = materialHash[WhiteKing][0] ^ materialHash[BlackKing][0];
-	knownEndgames[matHash] = drawScore;
+	knownEndgames[matHash] = 0;
 
 	// King and a minor piece vs king: draw
 	for (int i = White; i <= Black; i++)
 	{
 		for (int j = Knight; j <= Bishop; j++)
 		{
-			knownEndgames[matHash ^ materialHash[j + i * 6][0]] = drawScore;
+			knownEndgames[matHash ^ materialHash[j + i * 6][0]] = 0;
 		}
 	}
 
 	// King and two knights vs king: draw
 	for (int i = White; i <= Black; i++)
 	{
-		knownEndgames[matHash ^ materialHash[Knight + i * 6][0] ^ materialHash[Knight + i * 6][1]] = drawScore;
+		knownEndgames[matHash ^ materialHash[Knight + i * 6][0] ^ materialHash[Knight + i * 6][1]] = 0;
 	}
 
 	// King and a minor piece vs king and a minor piece: draw
@@ -41,14 +41,14 @@ void initializeKnownEndgames()
 	{
 		for (int j = Knight; j <= Bishop; j++)
 		{
-			knownEndgames[matHash ^ materialHash[White + i][0] ^ materialHash[Black * 6 + j][0]] = drawScore;
+			knownEndgames[matHash ^ materialHash[White + i][0] ^ materialHash[Black * 6 + j][0]] = 0;
 		}
 	}
 
 	// King and two bishops vs king and a bishop: draw
 	for (int i = White; i <= Black; i++)
 	{
-		knownEndgames[matHash ^ materialHash[Bishop + i * 6][0] ^ materialHash[Bishop + i * 6][1] ^ materialHash[Bishop + !i * 6][0]] = drawScore;
+		knownEndgames[matHash ^ materialHash[Bishop + i * 6][0] ^ materialHash[Bishop + i * 6][1] ^ materialHash[Bishop + !i * 6][0]] = 0;
 	}
 
 	// King and either two knights or a knight and a bishop vs king and a minor piece: draw
@@ -58,7 +58,7 @@ void initializeKnownEndgames()
 		{
 			for (int k = Knight; k <= Bishop; k++)
 			{
-				knownEndgames[matHash ^ materialHash[Knight + i * 6][0] ^ materialHash[j + i * 6][j == Knight] ^ materialHash[k + !i * 6][0]] = drawScore;
+				knownEndgames[matHash ^ materialHash[Knight + i * 6][0] ^ materialHash[j + i * 6][j == Knight] ^ materialHash[k + !i * 6][0]] = 0;
 			}
 		}
 	}
