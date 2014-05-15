@@ -333,12 +333,12 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 
 int pawnStructureEval(Position & pos, int phase)
 {
-	int scoreOp = 0, scoreEd = 0, value, from;
+	int scoreOp = 0, scoreEd = 0, score, from;
 	uint64_t whitePawns, blackPawns, tempPiece;
 
-	if ((value = pttProbe(pos)) != probeFailed)
+	if ((score = pttProbe(pos)) != probeFailed)
 	{
-		return value;
+		return score;
 	}
 
 	tempPiece = whitePawns = pos.getBitboard(White, Pawn);
@@ -407,11 +407,11 @@ int pawnStructureEval(Position & pos, int phase)
 		}
 	}
 
-	value = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+	score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 
-	pttSave(pos, value);
+	pttSave(pos, score);
 
-	return value;
+	return score;
 }
 
 int kingSafetyEval(Position & pos, int phase, int score)

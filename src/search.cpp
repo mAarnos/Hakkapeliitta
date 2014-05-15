@@ -301,23 +301,23 @@ void think()
 
 int qsearch(Position & pos, int alpha, int beta)
 {
-	int value, bestScore, delta;
+	int score, bestScore, delta;
 
-	value = eval(pos);
-	if (value > alpha)
+	score = eval(pos);
+	if (score > alpha)
 	{
-		if (value >= beta)
+		if (score >= beta)
 		{
-			return value;
+			return score;
 		}
-		alpha = value;
+		alpha = score;
 	}
-	else if (value + 1000 < alpha) // If we are doing extremely badly, so badly that even capturing a hanging queen can't help us just return alpha.
+	else if (score + 1000 < alpha) // If we are doing extremely badly, so badly that even capturing a hanging queen can't help us just return alpha.
 	{
 		return alpha;
 	}
-	bestScore = value;
-	delta = value + futilityMargin[0];
+	bestScore = score;
+	delta = score + futilityMargin[0];
 
 	Move moveStack[64];
 	int generatedMoves = generateCaptures(pos, moveStack);
@@ -343,19 +343,19 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 
 		nodeCount++;
-		value = -qsearch(pos, -beta, -alpha);
+		score = -qsearch(pos, -beta, -alpha);
 		pos.unmakeMove(moveStack[i]);
 
-		if (value > bestScore)
+		if (score > bestScore)
 		{
-			bestScore = value;
-			if (value > alpha)
+			bestScore = score;
+			if (score > alpha)
 			{
-				if (value >= beta)
+				if (score >= beta)
 				{
-					return value;
+					return score;
 				}
-				alpha = value;
+				alpha = score;
 			}
 		}
 	}
@@ -366,7 +366,7 @@ int qsearch(Position & pos, int alpha, int beta)
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
 	bool pvNode = ((alpha + 1) != beta), futileNode = false, check;
-	int value, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
+	int score, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -390,9 +390,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Probe the transposition table.
-	if ((value = ttProbe(pos, ply, depth, alpha, beta, ttMove)) != probeFailed)
+	if ((score = ttProbe(pos, ply, depth, alpha, beta, ttMove)) != probeFailed)
 	{
-		return value;
+		return score;
 	}
 
 	// Probe the Syzygy tablebases.
@@ -402,11 +402,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		if (found)
 		{
 			tbHits++;
-			if (v < -1) value = -mateScore + ply + 200;
-			else if (v > 1) value = mateScore - ply - 200;
-			else value = drawScore + v;
-			ttSave(pos, ply, depth + 4 * onePly, value, ttExact, ttMoveNone);
-			return value;
+			if (v < -1) score = -mateScore + ply + 200;
+			else if (v > 1) score = mateScore - ply - 200;
+			else score = drawScore + v;
+			ttSave(pos, ply, depth + 4 * onePly, score, ttExact, ttMoveNone);
+			return score;
 		}
 	}
 
@@ -438,11 +438,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		nodeCount++;
 		if (depth <= 3 * onePly)
 		{
-			value = -qsearch(pos, -beta, -beta + 1);
+			score = -qsearch(pos, -beta, -beta + 1);
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply, (depth - onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
+			score = -alphabetaPVS(pos, ply, (depth - onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
 		}
 		pos.unmakeNullMove();
 
@@ -451,19 +451,19 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			return drawScore;
 		}
 
-		if (value >= beta)
+		if (score >= beta)
 		{
-			return value;
+			return score;
 		}
 	}
 
 	// Internal iterative deepening
 	if (pvNode && ttMove == ttMoveNone && depth > 2 * onePly)
 	{
-		value = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, true);
-		if (value <= alpha)
+		score = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, true);
+		if (score <= alpha)
 		{
-			value = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, true);
+			score = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, true);
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove);
 	}
@@ -515,14 +515,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!movesSearched)
 		{
-			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
-			if (value > alpha && value < beta)
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+			if (score > alpha && score < beta)
 			{
-				value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			}
 		}
 		pos.unmakeMove(moveStack[i]);
@@ -533,18 +533,18 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			return drawScore;
 		}
 
-		if (value > bestScore)
+		if (score > bestScore)
 		{
-			bestScore = value;
+			bestScore = score;
 			bestMove = moveStack[i].getMove();
-			if (value > alpha)
+			if (score > alpha)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
 				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
-					if (value >= beta)
+					if (score >= beta)
 					{
 						if (moveStack[i].getMove() != pos.getKiller(0, ply))
 						{
@@ -554,12 +554,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 					}
 				}
 
-				if (value >= beta)
+				if (score >= beta)
 				{
-					ttSave(pos, ply, depth, value, ttBeta, bestMove);
-					return value;
+					ttSave(pos, ply, depth, score, ttBeta, bestMove);
+					return score;
 				}
-				alpha = value;
+				alpha = score;
 				ttFlag = ttExact;
 			}
 		}
@@ -584,7 +584,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int value, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
+	int score, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Probe the transposition table to get the PV-Move, if any.
@@ -597,7 +597,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	probeTB = true;
 	if (popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
 	{
-		bool rootInTB = root_probe(pos, value, moveStack, generatedMoves);
+		bool rootInTB = root_probe(pos, score, moveStack, generatedMoves);
 		if (rootInTB)
 		{
 			tbHits += generatedMoves;
@@ -606,7 +606,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		else // If DTZ tables are missing, use WDL tables as a fallback
 		{
 			// Filter out moves that do not preserve a draw or win
-			rootInTB = root_probe_wdl(pos, value, moveStack, generatedMoves);
+			rootInTB = root_probe_wdl(pos, score, moveStack, generatedMoves);
 			if (rootInTB)
 			{
 				tbHits += generatedMoves;
@@ -634,14 +634,14 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 		if (!movesSearched)
 		{
-			value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 		}
 		else
 		{
-			value = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
-			if (value > alpha && value < beta)
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+			if (score > alpha && score < beta)
 			{
-				value = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
 			}
 		}
 		pos.unmakeMove(moveStack[i]);
@@ -652,18 +652,18 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			return drawScore;
 		}
 
-		if (value > bestScore)
+		if (score > bestScore)
 		{
-			bestScore = value;
+			bestScore = score;
 			bestMove = moveStack[i].getMove();
-			if (value > alpha)
+			if (score > alpha)
 			{
 				// Update the history heuristic when a move which improves alpha is found.
 				// Don't update if the move is not a quiet move.
 				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
 				{
 					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
-					if (value >= beta)
+					if (score >= beta)
 					{
 						if (moveStack[i].getMove() != pos.getKiller(0, ply))
 						{
@@ -673,14 +673,14 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 					}
 				}
 
-				if (value >= beta)
+				if (score >= beta)
 				{
-					ttSave(pos, ply, depth, value, ttBeta, bestMove);
-					return value;
+					ttSave(pos, ply, depth, score, ttBeta, bestMove);
+					return score;
 				}
 
-				alpha = value;
-				ttSave(pos, ply, depth, value, ttAlpha, bestMove);
+				alpha = score;
+				ttSave(pos, ply, depth, score, ttAlpha, bestMove);
 
 				int searchTime = (int)t.getms();
 				reconstructPV(pos, pv);
