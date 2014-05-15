@@ -71,7 +71,7 @@ int generateMoves(Position & pos, Move * mlist)
 		}
 
 		// Beware with Null move, you might be en passanting your own pawns.
-		if (pos.getEnPassantSquare() != 64)
+		if (pos.getEnPassantSquare() != NoSquare)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{
@@ -273,7 +273,7 @@ int generateCaptures(Position & pos, Move * mlist)
 		}
 
 		// Beware with Null move, you might be en passanting your own pawns.
-		if (pos.getEnPassantSquare() != 64)
+		if (pos.getEnPassantSquare() != NoSquare)
 		{
 			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
 			{

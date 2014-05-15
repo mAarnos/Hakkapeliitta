@@ -60,7 +60,7 @@ uint64_t Position::calculateHash()
 			h ^= pieceHash[board[i]][i];
 		}
 	}
-	if (enPassantSquare != 64)
+	if (enPassantSquare != NoSquare)
 	{
 		h ^= enPassantHash[enPassantSquare];
 	}

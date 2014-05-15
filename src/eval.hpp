@@ -194,8 +194,8 @@ extern int drawScore;
 
 extern map<uint64_t, int> knownEndgames;
 
-extern array<int, 64> pieceSquareTableOpening[12];
-extern array<int, 64> pieceSquareTableEnding[12];
+extern array<int, Squares> pieceSquareTableOpening[12];
+extern array<int, Squares> pieceSquareTableEnding[12];
 
 void initializeEval();
 int eval(Position & pos);

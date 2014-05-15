@@ -5,8 +5,8 @@
 
 int drawScore = 0;
 
-array<int, 64> pieceSquareTableOpening[12];
-array<int, 64> pieceSquareTableEnding[12];
+array<int, Squares> pieceSquareTableOpening[12];
+array<int, Squares> pieceSquareTableEnding[12];
 
 map<uint64_t, int> knownEndgames;
 
@@ -66,8 +66,8 @@ void initializeKnownEndgames()
 
 void initializeKingTropism()
 {
-	int Distance[64][64];
-	int DistanceNW[64] = {
+	int Distance[Squares][Squares];
+	int DistanceNW[Squares] = {
 		0, 1, 2, 3, 4, 5, 6, 7,
 		1, 2, 3, 4, 5, 6, 7, 8,
 		2, 3, 4, 5, 6, 7, 8, 9,
@@ -77,7 +77,7 @@ void initializeKingTropism()
 		6, 7, 8, 9,10,11,12,13,
 		7, 8, 9,10,11,12,13,14
 	};
-	int DistanceNE[64] = {
+	int DistanceNE[Squares] = {
 		 7, 6, 5, 4, 3, 2, 1, 0,
 		 8, 7, 6, 5, 4, 3, 2, 1,
 		 9, 8, 7, 6, 5, 4, 3, 2,
