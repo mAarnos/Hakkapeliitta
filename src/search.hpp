@@ -16,4 +16,7 @@ const array<int, 1 + futilityDepth> futilityMargin = {
 
 extern int syzygyProbeLimit;
 
+const int fullDepthMoves = 4;
+const int reductionLimit = 3 * onePly;
+
 #endif

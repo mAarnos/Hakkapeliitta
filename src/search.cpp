@@ -519,10 +519,23 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		else
 		{
-			score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
-			if (score > alpha && score < beta)
+			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
+			&& !check && !givesCheck && moveStack[i].getScore() < captureMove && moveStack[i].getScore() >= 0)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
+			}
+			else
+			{
+				score = alpha + 1; // Hack to ensure that full-depth search is done.
+			}
+
+			if (score > alpha)
+			{
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+				if (score > alpha && score < beta)
+				{
+					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				}
 			}
 		}
 		pos.unmakeMove(moveStack[i]);

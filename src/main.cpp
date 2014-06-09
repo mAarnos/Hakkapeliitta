@@ -11,7 +11,7 @@
 
 int main()
 {
-	cout << "Hakkapeliitta 1.0 alpha, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta 1.0 beta, (C) 2013-2014 Mikko Aarnos" << endl;
 
 	// Initialize the engine.
 	initInput();
