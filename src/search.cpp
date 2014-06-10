@@ -598,7 +598,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
 	int score, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
-	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
+	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone; 
+	bool givesCheck, inCheck = pos.inCheck();
 
 	// Probe the transposition table to get the PV-Move, if any.
 	ttProbe(pos, ply, depth, alpha, beta, ttMove);
@@ -639,8 +640,9 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		nodeCount++;
 
 		newDepth = depth - onePly;
-		pos.setIsInCheck(ply + 1, pos.inCheck());
-		if (pos.getIsInCheck(ply + 1))
+		givesCheck = pos.inCheck();
+		pos.setIsInCheck(ply + 1, givesCheck);
+		if (givesCheck)
 		{
 			newDepth += onePly;
 		}
@@ -651,10 +653,23 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		}
 		else
 		{
-			score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
-			if (score > alpha && score < beta)
+			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
+				&& !inCheck && !givesCheck && moveStack[i].getScore() < captureMove && moveStack[i].getScore() >= 0)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
+			}
+			else
+			{
+				score = alpha + 1; // Hack to ensure that full-depth search is done.
+			}
+
+			if (score > alpha)
+			{
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+				if (score > alpha && score < beta)
+				{
+					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+				}
 			}
 		}
 		pos.unmakeMove(moveStack[i]);

@@ -86,7 +86,7 @@ const array<int, Squares> openingPST[Pieces] = {
 	}
 };
 
-const array<int, Squares> endingPST[6] = {
+const array<int, Squares> endingPST[Pieces] = {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		-22, -22, -22, -22, -22, -22, -22, -22,
@@ -149,7 +149,7 @@ const array<int, Squares> endingPST[6] = {
 	}
 };
 
-const array<int, Squares> mobilityOpening[6] = {
+const array<int, Squares> mobilityOpening[Pieces] = {
 	{},
 	{ -12, -8, -4, 0, 4, 8, 10, 12, 13 },
 	{ -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
@@ -158,7 +158,7 @@ const array<int, Squares> mobilityOpening[6] = {
 	{}
 };
 
-const array<int, Squares> mobilityEnding[6] = {
+const array<int, Squares> mobilityEnding[Pieces] = {
 	{},
 	{ -12, -8, -4, 0, 4, 8, 10, 12, 13 },
 	{ -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
