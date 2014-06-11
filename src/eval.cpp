@@ -195,9 +195,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		scoreEd += mobilityEnding[Rook][count];
 		kingTropismScore += rookTropism[from][kingLocation];
 
-		if (!(files[from % 8] & pos.getBitboard(White, Pawn)))
+		if (!(files[File(from)] & pos.getBitboard(White, Pawn)))
 		{
-			if (!(files[from % 8] & pos.getBitboard(Black, Pawn)))
+			if (!(files[File(from)] & pos.getBitboard(Black, Pawn)))
 			{
 				scoreOp += rookOnOpenFileBonus;
 			}
@@ -284,9 +284,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		scoreEd -= mobilityEnding[Rook][count];
 		kingTropismScore -= rookTropism[from][kingLocation];
 
-		if (!(files[from % 8] & pos.getBitboard(Black, Pawn)))
+		if (!(files[File(from)] & pos.getBitboard(Black, Pawn)))
 		{
-			if (!(files[from % 8] & pos.getBitboard(White, Pawn)))
+			if (!(files[File(from)] & pos.getBitboard(White, Pawn)))
 			{
 				scoreOp -= rookOnOpenFileBonus;
 			}

@@ -378,7 +378,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	// Check for aborted search(either due to going beyond the allocated time or a new command) and repetition+fifty move draws.
 	if (!searching || pos.repetitionDraw())
 	{
-		return drawScore;
+		return contempt(pos.getSideToMove());
 	}
 
 	check = pos.getIsInCheck(ply);
@@ -404,7 +404,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			tbHits++;
 			if (v < -1) score = -mateScore + ply + 200;
 			else if (v > 1) score = mateScore - ply - 200;
-			else score = drawScore + v;
+			else score = contempt(pos.getSideToMove()) + v;
 			ttSave(pos, ply, depth + 4 * onePly, score, ttExact, ttMoveNone);
 			return score;
 		}
@@ -448,7 +448,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!searching)
 		{
-			return drawScore;
+			return 0;
 		}
 
 		if (score >= beta)
@@ -543,7 +543,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!searching)
 		{
-			return drawScore;
+			return 0;
 		}
 
 		if (score > bestScore)
@@ -586,7 +586,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		else
 		{
-			return drawScore;
+			return contempt(pos.getSideToMove());
 		}
 	}
 
@@ -677,7 +677,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 		if (!searching)
 		{
-			return drawScore;
+			return 0;
 		}
 
 		if (score > bestScore)

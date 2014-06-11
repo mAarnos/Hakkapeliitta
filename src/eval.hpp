@@ -191,6 +191,10 @@ const int pawnStormFarPenalty = 6;
 const int kingInCenterOpenFilePenalty = 23;
 
 extern int drawScore;
+inline int contempt(bool side)
+{
+	return side ? -drawScore : drawScore;
+}
 
 extern map<uint64_t, int> knownEndgames;
 

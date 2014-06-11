@@ -1,15 +1,27 @@
 Hakkapeliitta is my UCI-compatible chess engine written in C++11. At the moment of writing it is not yet a release version, but this should change soon.
 
-On compiling:
- -This program is written in C++11, so you have to have a compiler which supports that. The Visual Studio compiler works for sure, haven't tested GCC or Intel. 
- -You MUST NOT compile tbcore.cpp. It is included by tbprobe.cpp already.
- -bitboard.h includes software bitscanforward and popcnt alternatives when compiling for a 32-bit machine or a machine with no hardware popcnt.
- -If compiling for a 32-bit platform you must also undefine IS_64BIT found in tbprobe.cpp
- -Linux is not supported yet, but I plan to add support to it right after I figure out how to check if the user has inputted data.
+On UCI-parameters:
+	1. Drawscore: negative values make the program avoid draws, positive values make it prefer them.
+	2. SyzygyPath: path to the Syzygy tablebases. Multiple directories possible, for example C:\tb;D:\tb 
+	3. SyzygyProbeLimit: 0, 1 or 2 means tablebases aren't probed, 3 means 3-man tablebases are probed, 4 means 4-man etc.
 
+Compilation instructions:
+	General instructions: 
+		1. Do NOT compiler tbcore.cpp, it is included by tbprobe.cpp.
+		2. This program is written in C++11, so a compiler which supports it is required. The Visual Studio compiler works for sure, haven't tested GCC or Intel. 
+		3. Only Windows is supported, this might change someday.
+	w32:
+		1. Go to bitboard.h, comment out the default bitScanForward, bitScanReverse and popcnt, and comment in the alternatives.
+		2. Go to tbprobe.cpp and undefine IS_64BIT.
+		3. Compile.
+	x64:
+		1. Go to bitboard.h, comment out the default popcnt and comment in the alternative.
+		2. Compile.
+	x64 popcnt:
+		1. Compile.
+		
 Known bugs:
  -A very small hash table size(<=8MB) starts causing crashes. These crashes get more frequent the longer the time control is. I have a solution for this(probably) but it isn't high on my list of priorities since who even uses less than 64MB hash nowadays?
- -UCI-parameter drawscore might not work, haven't tested. Not high on my list of priorities since Hakkapeliitta is pretty weak so drawscore isn't that useful.
 
 Thanks to the following people(or organizations) my engine is what it is today:
 
