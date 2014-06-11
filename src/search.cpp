@@ -436,13 +436,13 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		// And here's dynamic.
 		pos.makeNullMove();
 		nodeCount++;
-		if (depth <= 3 * onePly)
+		if (depth <= 4 * onePly)
 		{
 			score = -qsearch(pos, -beta, -beta + 1);
 		}
 		else
 		{
-			score = -alphabetaPVS(pos, ply, (depth - onePly - (depth > (6 * onePly) ? 3 * onePly : 2 * onePly)), -beta, -beta + 1, false);
+			score = -alphabetaPVS(pos, ply, depth - onePly - nullReduction, -beta, -beta + 1, false);
 		}
 		pos.unmakeNullMove();
 

@@ -9,6 +9,8 @@ uint64_t perft(Position & pos, int depth);
 
 const int aspirationWindow = 50;
 
+const int nullReduction = 3 * onePly;
+
 const int futilityDepth = 4 * onePly;
 const array<int, 1 + futilityDepth> futilityMargin = {
 	50, 125, 125, 125, 125, 300, 300, 300, 300
