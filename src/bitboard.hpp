@@ -4,7 +4,7 @@
 #include "defs.hpp"
 #include <intrin.h>
 
-void initializeBitboards();	
+void initializeBitboards();
 
 extern array<uint64_t, Squares> bit;
 extern array<uint64_t, Squares> kingAttacks;
@@ -30,7 +30,7 @@ const array<uint64_t, 8> ranks = {
 	0x000000FF00000000,
 	0x0000FF0000000000,
 	0x00FF000000000000,
-	0x00FF000000000000
+	0xFF00000000000000
 };
 
 const array<uint64_t, 8> files = {
@@ -49,16 +49,25 @@ const uint64_t queenSide = 0x0707070707070707;
 const uint64_t center = 0x1818181818181818;
 
 // Returns the least significant set bit in the mask.
-// Precondition: mask != 0
 inline int bitScanForward(uint64_t mask)
 {
-    unsigned long index; 
+	assert(mask);
+	unsigned long index;
 	_BitScanForward64(&index, mask);
-    return (int)index;
+	return (int)index;
 }
 
-// If the machine you are compiling this engine for has no hardware bitScanForward(only w32 nowadays?), use the below bitScanForward instead of the above.
-// The code for this software bitScanFotward is by Kim Walisch(2012)
+// Returns the most significant set bit in the mask.
+inline int bitScanReverse(uint64_t mask)
+{
+	assert(mask);
+	unsigned long index;
+	_BitScanReverse64(&index, mask);
+	return (int)index;
+}
+
+// If the machine you are compiling this engine for has no hardware bitScanForward and/or bitScanReverse(only w32 nowadays?), use the below ones instead.
+// The author of both the bitScanForward and bitScanReverse is Kim Walisch (2012).
 /*
 const array<int, Squares> index64 = {
 	0, 47, 1, 56, 48, 27, 2, 60,
@@ -71,9 +80,22 @@ const array<int, Squares> index64 = {
 	13, 18, 8, 12, 7, 6, 5, 63
 };
 
-inline int bitScanForward(uint64_t bb) 
+inline int bitScanForward(uint64_t mask)
 {
-	return index64[((bb ^ (bb - 1)) * 0x03f79d71b4cb0a89) >> 58];
+	assert(mask);
+	return index64[((mask ^ (mask-1)) * 0x03f79d71b4cb0a89) >> 58];
+}
+
+inline int bitScanReverse(uint64_t mask) 
+{
+	assert(mask);
+	mask |= mask >> 1;
+	mask |= mask >> 2;
+	mask |= mask >> 4;
+	mask |= mask >> 8;
+	mask |= mask >> 16;
+	mask |= mask >> 32;
+	return index64[(mask * 0x03f79d71b4cb0a89) >> 58];
 }
 */
 
@@ -83,7 +105,7 @@ inline int popcnt(uint64_t mask)
 	return (int)_mm_popcnt_u64(mask);
 }
 
-// If the machine you are compiling this engine for has no hardware popcnt(w32 and old x64 machines), use the below popnct instead of the above.
+// If the machine you are compiling this engine for has no hardware popcnt(w32 and old x64 machines), use the below popnct instead.
 /*
 inline int popcnt(uint64_t mask)
 {
