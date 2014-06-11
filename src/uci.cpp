@@ -199,7 +199,6 @@ int uciSetOption(string s)
 		}
 
 		tt.setSize(size);
-		ptt.setSize(size / 8);
 	}
 	else if (option == "Clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
 	{
@@ -211,7 +210,6 @@ int uciSetOption(string s)
 		try
 		{
 			syzygyProbeLimit = stoi(parameter);
-			cout << "info string syzygyProbeLimit set to " << syzygyProbeLimit << endl;
 		}
 		catch (const exception&)
 		{
@@ -236,7 +234,6 @@ int uciNewGame(string s)
 {
 	tt.clear();
 	ptt.clear();
-	cout << "info string hash cleared" << endl;
 	return uciOk;
 }
 

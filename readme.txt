@@ -10,7 +10,6 @@ On compiling:
 Known bugs:
  -A very small hash table size(<=8MB) starts causing crashes. These crashes get more frequent the longer the time control is. I have a solution for this(probably) but it isn't high on my list of priorities since who even uses less than 64MB hash nowadays?
  -UCI-parameter drawscore might not work, haven't tested. Not high on my list of priorities since Hakkapeliitta is pretty weak so drawscore isn't that useful.
- -The size of the pawn hash table is independent of the UCI-parameter Hash. That is, if you specify Hash=32 what you get is 32 for the transposition table and some for the pawn hash table, and not 32 in total.
 
 Thanks to the following people(or organizations) my engine is what it is today:
 

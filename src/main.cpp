@@ -20,8 +20,8 @@ int main()
 	initializeHash();
 	initializeEval();
 	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	tt.setSize(1024 * 1024);
-	ptt.setSize((1024 * 1024) / 8);
+	tt.setSize(1 * 1024 * 1024);
+	ptt.setSize(4 * 1024 * 1024);
 
 	// Perft 1-8 correct.
 	// root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
