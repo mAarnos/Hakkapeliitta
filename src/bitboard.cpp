@@ -50,18 +50,14 @@ void initializeBitMasks()
 
 void initializeKingAttacks()
 {
-	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
-	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
-
+	uint64_t kingSet;
 	kingAttacks.fill(0);
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
-		uint64_t kingSet = 0;
-
-		kingSet |= bit[sq];
-		kingSet |= (((uint64_t)1 << sq) << 1) & notAFile;
-		kingSet |= (((uint64_t)1 << sq) >> 1) & notHFile;
+		kingSet = bit[sq];
+		kingSet |= (((uint64_t)1 << sq) << 1) & 0xFEFEFEFEFEFEFEFE;
+		kingSet |= (((uint64_t)1 << sq) >> 1) & 0x7F7F7F7F7F7F7F7F;
 
 		kingAttacks[sq] |= kingSet << 8;
 		kingAttacks[sq] |= kingSet >> 8;
@@ -72,25 +68,19 @@ void initializeKingAttacks()
 
 void initializeKnightAttacks()
 {
-	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
-	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
-	uint64_t notABFile = 0xFCFCFCFCFCFCFCFC;
-	uint64_t notGHFile = 0x3F3F3F3F3F3F3F3F;
-
+	uint64_t knightSet;
 	knightAttacks.fill(0);
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
-		uint64_t knightSet = 0;
-
-		knightSet |= (((uint64_t)1 << sq) << 17) & notAFile;
-		knightSet |= (((uint64_t)1 << sq) << 10) & notABFile;
-		knightSet |= (((uint64_t)1 << sq) << 15) & notHFile;
-		knightSet |= (((uint64_t)1 << sq) << 6) & notGHFile;
-		knightSet |= (((uint64_t)1 << sq) >> 17) & notHFile;
-		knightSet |= (((uint64_t)1 << sq) >> 10) & notGHFile;
-		knightSet |= (((uint64_t)1 << sq) >> 15) & notAFile;
-		knightSet |= (((uint64_t)1 << sq) >> 6) & notABFile;
+		knightSet = (((uint64_t)1 << sq) << 17) & 0xFEFEFEFEFEFEFEFE;
+		knightSet |= (((uint64_t)1 << sq) << 10) & 0xFCFCFCFCFCFCFCFC;
+		knightSet |= (((uint64_t)1 << sq) << 15) & 0x7F7F7F7F7F7F7F7F;
+		knightSet |= (((uint64_t)1 << sq) << 6) & 0x3F3F3F3F3F3F3F3F;
+		knightSet |= (((uint64_t)1 << sq) >> 17) & 0x7F7F7F7F7F7F7F7F;
+		knightSet |= (((uint64_t)1 << sq) >> 10) & 0x3F3F3F3F3F3F3F3F;
+		knightSet |= (((uint64_t)1 << sq) >> 15) & 0xFEFEFEFEFEFEFEFE;
+		knightSet |= (((uint64_t)1 << sq) >> 6) & 0xFCFCFCFCFCFCFCFC;
 
 		knightAttacks[sq] = knightSet;
 	}
@@ -98,18 +88,15 @@ void initializeKnightAttacks()
 	
 void initializePawnAttacks()
 {
-	uint64_t notAFile = 0xFEFEFEFEFEFEFEFE;
-	uint64_t notHFile = 0x7F7F7F7F7F7F7F7F;
-
 	memset(pawnAttacks, 0, sizeof(pawnAttacks));
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
-		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 9) & notAFile;
-		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 7) & notHFile;
+		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 9) & 0xFEFEFEFEFEFEFEFE;
+		pawnAttacks[White][sq] |= (((uint64_t)1 << sq) << 7) & 0x7F7F7F7F7F7F7F7F;
 
-		pawnAttacks[Black][sq] |= (((uint64_t)1 << sq) >> 9) & notHFile;
-		pawnAttacks[Black][sq] |= (((uint64_t)1 << sq) >> 7) & notAFile;
+		pawnAttacks[Black][sq] |= (((uint64_t)1 << sq) >> 9) & 0x7F7F7F7F7F7F7F7F;
+		pawnAttacks[Black][sq] |= (((uint64_t)1 << sq) >> 7) & 0xFEFEFEFEFEFEFEFE;
 	}
 }
    
@@ -148,8 +135,8 @@ void initializeRays()
 
 	for (int sq = A1; sq <= H8; sq++)
 	{
-		int rank = sq / 8;
-		int file = sq % 8;
+		int rank = Rank(sq);
+		int file = File(sq);
 
 		for (int i = SW; i <= NE; i++)
 		{
@@ -177,7 +164,7 @@ void initializePawnEvaluationBitboards()
 
 	for (int sq = A2; sq <= H7; sq++)
 	{
-		int file = sq % 8;
+		int file = File(sq);
 		
 		passed[White][sq] = rays[N][sq];
 		passed[Black][sq] = rays[S][sq];

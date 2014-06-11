@@ -62,4 +62,16 @@ const int killerMove4 = hashMove >> 5;
 
 const int onePly = 2;
 
+inline int File(int sq)
+{
+	assert(sq >= 0 && sq <= 63);
+	return sq % 8;
+}
+
+inline int Rank(int sq)
+{
+	assert(sq >= 0 && sq <= 63);
+	return sq / 8;
+}
+
 #endif

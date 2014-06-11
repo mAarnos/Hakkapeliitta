@@ -97,7 +97,7 @@ void initializeKingTropism()
 	{
 		for (j = A1; j <= H8; j++)
 		{
-			Distance[i][j] = (abs((i % 8) - (j % 8)) + abs((i / 8) - (j / 8)));
+			Distance[i][j] = (abs((File(i)) - (File(j))) + abs((Rank(i)) - (Rank(j))));
 		}
 	}
 	for (i = A1; i <= H8; i++)
@@ -491,7 +491,7 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	else 
 	{
 		// Penalize open files near the king.
-		int kingFile = (bitScanForward(pos.getBitboard(White, King))) % 8;
+		int kingFile = File(bitScanForward(pos.getBitboard(White, King)));
 		for (int i = -1; i <= 1; i++)
 		{
 			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))
@@ -566,7 +566,7 @@ int kingSafetyEval(Position & pos, int phase, int score)
 	}
 	else
 	{
-		int kingFile = (bitScanForward(pos.getBitboard(Black, King))) % 8;
+		int kingFile = File(bitScanForward(pos.getBitboard(Black, King)));
 		for (int i = -1; i <= 1; i++)
 		{
 			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))

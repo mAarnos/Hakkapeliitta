@@ -55,8 +55,8 @@ void Position::initializeBoardFromFEN(string FEN)
 	{
 		char letter = strList[0].at(i);
 		i++;
-		aFile = 1 + ((j - 1) % 8);
-		aRank = 8 - ((j - 1) / 8);
+		aFile = 1 + File(j - 1);
+		aRank = 8 - Rank(j - 1);
 		int sq = (int)(((aRank - 1) * 8) + (aFile - 1));
 		switch (letter)
 		{
