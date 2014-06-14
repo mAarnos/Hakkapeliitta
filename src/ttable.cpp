@@ -136,7 +136,7 @@ void pttSave(const Position & pos, int score)
 	hashEntry->setData(score);
 	hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
 
-	assert(hashEntry->getData() == score);
+	assert((int)hashEntry->getData() == score);
 }
 
 int pttProbe(const Position & pos)

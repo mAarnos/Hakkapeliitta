@@ -365,8 +365,8 @@ int qsearch(Position & pos, int alpha, int beta)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
 {
-	bool pvNode = ((alpha + 1) != beta), futileNode = false, check;
-	int score, generatedMoves, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
+	bool pvNode = ((alpha + 1) != beta), futileNode = false, check = pos.getIsInCheck(ply);
+	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
@@ -380,8 +380,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	{
 		return contempt(pos.getSideToMove());
 	}
-
-	check = pos.getIsInCheck(ply);
 
 	// If we have gone as far as we wanted to go drop into quiescence search.
 	if (depth <= 0)
@@ -411,7 +409,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Get the static evaluation of the position.
-	int staticEval = eval(pos);
+	if (!check)
+		staticEval = eval(pos);
 
 	// Null move pruning, both static and dynamic.
 	if (!pvNode && allowNullMove && !check && pos.calculateGamePhase() != 256)
