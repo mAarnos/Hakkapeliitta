@@ -114,6 +114,12 @@ void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t fla
 	}
 	hashEntry->setData(replace, (best | tt.getGeneration() << 16 | (score & 0xffff) << 32 | ((depth & 0xff) << 48) | flags << 56));
 	hashEntry->setHash(replace, pos.getHash() ^ hashEntry->getData(replace));
+
+	assert(hashEntry->getBestMove(replace) == best);
+	assert(hashEntry->getGeneration(replace) == tt.getGeneration());
+	assert((hashEntry->getScore(replace)) == score);
+	assert(hashEntry->getDepth(replace) == depth);
+	assert(hashEntry->getFlags(replace) == flags);
 }
 
 void pttSave(Position & pos, int score)

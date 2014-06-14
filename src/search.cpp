@@ -579,15 +579,15 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-	if (!movesSearched && !prunedMoves)
+	if (!movesSearched)
 	{
-		if (check)
+		if (!prunedMoves)
 		{
-			return -mateScore + ply;
+			return check ? -mateScore + ply : contempt(pos.getSideToMove());
 		}
 		else
 		{
-			return contempt(pos.getSideToMove());
+			return alpha;
 		}
 	}
 
