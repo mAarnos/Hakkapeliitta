@@ -77,6 +77,11 @@ int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, u
 
 void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best)
 {
+	assert(depth >= 0 && depth <= 255);
+	assert(score < infinity && score > -infinity);
+	assert(flags >= 0 && flags <= 255);
+	assert(best >= 0 && best <= 65535);
+
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
 	if (isMateScore(score))
 	{
@@ -124,6 +129,8 @@ void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64
 
 void pttSave(const Position & pos, int score)
 {
+	assert(score < infinity && score > -infinity);
+
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
 	hashEntry->setData(score);
