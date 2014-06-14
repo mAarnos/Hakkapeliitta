@@ -96,10 +96,10 @@ class HashTable
 extern HashTable<ttEntry> tt;
 extern HashTable<pttEntry> ptt;
 
-void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best);
-int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best);
+void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best);
+int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best);
 
-void pttSave(Position & pos, int score);
-int pttProbe(Position & pos);
+void pttSave(const Position & pos, int score);
+int pttProbe(const Position & pos);
 
 #endif

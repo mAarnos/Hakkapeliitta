@@ -4,7 +4,7 @@
 HashTable<ttEntry> tt;
 HashTable<pttEntry> ptt;
 
-int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best)
+int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best)
 {
 	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
 
@@ -75,7 +75,7 @@ int ttProbe(Position & pos, int ply, int depth, int & alpha, int & beta, uint16_
 	return probeFailed;
 }
 
-void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best)
+void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best)
 {
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
 	if (isMateScore(score))
@@ -122,15 +122,17 @@ void ttSave(Position & pos, int ply, uint64_t depth, int64_t score, uint64_t fla
 	assert(hashEntry->getFlags(replace) == flags);
 }
 
-void pttSave(Position & pos, int score)
+void pttSave(const Position & pos, int score)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
 	hashEntry->setData(score);
 	hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
+
+	assert(hashEntry->getData() == score);
 }
 
-int pttProbe(Position & pos)
+int pttProbe(const Position & pos)
 {
 	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 

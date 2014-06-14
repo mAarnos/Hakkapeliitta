@@ -51,9 +51,9 @@ class Position
 		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
 		inline uint64_t getFreeSquares() { return ~bitboards[14]; }
 
-		inline uint64_t getHash() { return hash; }
-		inline uint64_t getPawnHash() { return pawnHash; }
-		inline uint64_t getMaterialHash() { return matHash; }
+		inline uint64_t getHash() const { return hash; }
+		inline uint64_t getPawnHash() const { return pawnHash; }
+		inline uint64_t getMaterialHash() const { return matHash; }
 		
 		inline bool getSideToMove() { return sideToMove; }
 		inline int getEnPassantSquare() { return enPassantSquare; }
