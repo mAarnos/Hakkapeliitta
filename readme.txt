@@ -7,9 +7,9 @@ On UCI-parameters:
 
 Compilation instructions:
 	General instructions: 
-		1. Do NOT compiler tbcore.cpp, it is included by tbprobe.cpp.
-		2. This program is written in C++11, so a compiler which supports it is required. The Visual Studio compiler works for sure, haven't tested GCC or Intel. 
-		3. Only Windows is supported, this might change someday.
+		-Do NOT compile tbcore.cpp, it is included by tbprobe.cpp.
+		-This program is written in C++11, so a compiler which supports it is required. The Visual Studio compiler works for sure, haven't tested GCC or Intel. 
+		-Only Windows is supported, this might change someday.
 	w32:
 		1. Go to bitboard.h, comment out the default bitScanForward, bitScanReverse and popcnt, and comment in the alternatives.
 		2. Go to tbprobe.cpp and undefine IS_64BIT.

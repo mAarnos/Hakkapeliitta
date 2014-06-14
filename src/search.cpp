@@ -453,6 +453,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (score >= beta)
 		{
+			ttSave(pos, ply, depth, score, ttBeta, ttMoveNone);
 			return score;
 		}
 	}
