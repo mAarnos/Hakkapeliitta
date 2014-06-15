@@ -381,6 +381,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		return contempt(pos.getSideToMove());
 	}
 
+	// Mate distance pruning.
+	alpha = max(-mateScore + ply, alpha);
+	beta = min(mateScore - ply - 1, beta);
+	if (alpha >= beta)
+		return alpha;
+
 	// If we have gone as far as we wanted to go drop into quiescence search.
 	if (depth <= 0)
 	{
