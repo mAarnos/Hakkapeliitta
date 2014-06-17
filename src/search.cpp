@@ -483,12 +483,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	if (check)
 	{
 		generatedMoves = generateEvasions(pos, moveStack);
-		/*
 		if (generatedMoves == 1)
-		{
 			depth += onePly;
-		}
-		*/
 	}
 	else
 	{
