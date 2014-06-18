@@ -1,35 +1,18 @@
 #include "random.hpp"
+#include <chrono>
 
-WELL512::WELL512(uint32_t seed) :
-index(0)
+// TODO: nothing
+
+MT19937::MT19937()
 {
-	for (int i = 0; i < 16; i++)
-	{
-		if (!seed)
-		{
-			seed = (uint32_t)time(0);
-		}
-		uint32_t mask = ~0u;
-		state[0] = seed & mask;
-		for (int j = 1; j < 16; ++j)
-		{
-			state[j] = (1812433253UL * (state[j - 1] ^ (state[j - 1] >> 30)) + j) & mask;
-		}
-	}
+	// First we get the amount of nanoseconds since epoch and get the first 32 bits of that.
+	auto seed = (uint32_t)std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	// Then we xor that with some random 32-bit value and we have our seed, hopefully of good quality.
+	seed ^= 0x8BD3DF2F;
+	rng.seed(seed);
 }
 
-uint32_t WELL512::rand()
+MT19937::MT19937(uint32_t seed) :
+rng(seed)
 {
-	uint32_t a, b, c, d;
-	a = state[index];
-	c = state[(index + 13) & 15];
-	b = a ^ c ^ (a << 16) ^ (c << 15);
-	c = state[(index + 9) & 15];
-	c ^= (c >> 11);
-	a = state[index] = b ^ c;
-	d = a ^ ((a << 5) & 0xDA442D24UL);
-	index = (index + 15) & 15;
-	a = state[index];
-	state[index] = a ^ b ^ d ^ (a << 2) ^ (b << 18) ^ (c << 28);
-	return state[index];
-};
+}

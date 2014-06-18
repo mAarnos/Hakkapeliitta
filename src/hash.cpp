@@ -10,36 +10,36 @@ uint64_t turnHash;
 
 void initializeHash()
 {
-	WELL512 rng(123456789);
+	MT19937 rng(123456789);
 
 	for (int i = WhitePawn; i <= BlackKing; i++)
 	{
 		for (int j = A1; j <= H8; j++)
 		{
-			pieceHash[i][j] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+			pieceHash[i][j] = rng.rand64();
 		}
 		for (int j = 0; j < 8; j++)
 		{
-			materialHash[i][j] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+			materialHash[i][j] = rng.rand64();
 		}
 	}
 
 	for (int i = A1; i <= H8; i++)
 	{
-		enPassantHash[i] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+		enPassantHash[i] = rng.rand64();
 	}
 
-	turnHash = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	turnHash = rng.rand64();
 
 	// Do something about this mess.
-	castlingRightsHash[1] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
-	castlingRightsHash[2] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[1] = rng.rand64();
+	castlingRightsHash[2] = rng.rand64();
 	castlingRightsHash[3] = castlingRightsHash[1] ^ castlingRightsHash[2];
-	castlingRightsHash[4] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[4] = rng.rand64();
 	castlingRightsHash[5] = castlingRightsHash[1] ^ castlingRightsHash[4];
 	castlingRightsHash[6] = castlingRightsHash[2] ^ castlingRightsHash[4];
 	castlingRightsHash[7] = castlingRightsHash[1] ^ castlingRightsHash[2] ^ castlingRightsHash[4];
-	castlingRightsHash[8] = (uint64_t(rng.rand()) << 32) | uint64_t(rng.rand());
+	castlingRightsHash[8] = rng.rand64();
 	castlingRightsHash[9] = castlingRightsHash[1] ^ castlingRightsHash[8];
 	castlingRightsHash[10] = castlingRightsHash[2] ^ castlingRightsHash[8];
 	castlingRightsHash[11] = castlingRightsHash[1] ^ castlingRightsHash[2] ^ castlingRightsHash[8];

@@ -1,22 +1,19 @@
-#ifndef RANDOM_H_
-#define RANDOM_H_
+#ifndef RANDOM_HPP_
+#define RANDOM_HPP_
 
-#include "defs.hpp"
+#include <random>
+#include <cstdint>
 
-// Our PRNG of choice is WELL, or Well Equidistributed Long-period Linear. It is an improved version of Mersenne Twister. For more details see
-// L'Ecuyer, Pierre; Panneton, Francois; Matsumoto, Makoto (2006), Improved Long-Period Generators Based on Linear Recurrences Modulo 2
-// Our implementation is based on the code given by Chris Lomont.
-class WELL512
+class MT19937
 {
-	public:
-		// Initializes the PRNG with either the current time(default) or a specific number as the seed.
-		WELL512(uint32_t seed = 0);
+public:
+	MT19937();
+	MT19937(uint32_t seed);
 
-		// Generates random 32-bit values.
-		uint32_t rand();
-	private:
-		array<uint32_t, 16> state;
-		uint32_t index;
+	inline uint32_t rand32() { return rng(); }
+	inline uint64_t rand64() { return (((uint64_t)rng() << 32) | (uint64_t)rng()); }
+private:
+	std::mt19937 rng;
 };
 
 #endif
