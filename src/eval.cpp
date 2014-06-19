@@ -107,7 +107,7 @@ void initializeKingTropism()
 			queenTropism[i][j] = qTropism[Distance[i][j]];
 			rookTropism[i][j] = rTropism[Distance[i][j]];
 			knightTropism[i][j] = nTropism[Distance[i][j]];
-			bishopTropism[i][j] += bTropism[abs(DistanceNE[i] - DistanceNE[j])];
+			bishopTropism[i][j] = bTropism[abs(DistanceNE[i] - DistanceNE[j])];
 			bishopTropism[i][j] += bTropism[abs(DistanceNW[i] - DistanceNW[j])];
 		}
 	}
