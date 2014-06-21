@@ -522,7 +522,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		else
 		{
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-			&& !check && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
+			&& !check && !givesCheck && moveStack[i].getScore() < killerMove4)
 			{
 				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
 			}
