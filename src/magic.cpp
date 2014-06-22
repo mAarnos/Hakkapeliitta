@@ -1,6 +1,8 @@
 #include "magic.hpp"
 #include "bitboard.hpp"
 
+// Based on Ronald de Man's fixed shift magic code.
+
 uint64_t lookupTable[97264];
 
 Magic bishopMagic[Squares];

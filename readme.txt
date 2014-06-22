@@ -2,8 +2,8 @@ Hakkapeliitta is my UCI-compatible chess engine written in C++11. At the moment 
 
 On UCI-parameters:
 	1. Drawscore: negative values make the program avoid draws, positive values make it prefer them.
-	2. SyzygyPath: path to the Syzygy tablebases. Multiple directories possible, for example C:\tb;D:\tb 
-	3. SyzygyProbeLimit: 0, 1 or 2 means tablebases aren't probed, 3 means 3-man tablebases are probed, 4 means 4-man etc.
+	2. SyzygyPath: path to the Syzygy tablebases. Multiple directories are possible, for example C:\tb;D:\tb 
+	3. SyzygyProbeLimit: 0, 1 or 2 means tablebases aren't probed, 3 means 3-man tablebases are probed, 4 means 4-man etc. On a 32-bit machine syzygyProbeLimit can only be set at maximum to 5.
 
 Compilation instructions:
 	General instructions: 
@@ -21,7 +21,7 @@ Compilation instructions:
 		1. Compile.
 		
 Known bugs:
- -A very small hash table size(<=8MB) starts causing crashes. These crashes get more frequent the longer the time control is. I have a solution for this(probably) but it isn't high on my list of priorities since who even uses less than 64MB hash nowadays?
+ -A very small hash table size(<=8MB) starts causing crashes. These crashes get more frequent the longer the time control is. No known solution so don't use extremely small tablebase sizes.
 
 Thanks to the following people(or organizations) my engine is what it is today:
 
@@ -30,6 +30,7 @@ Thanks to the following people(or organizations) my engine is what it is today:
  Glaurung, Tord Romstad
  Ronald de Man(Syzygy tablebases and their probing code, fixed shift magic code)
  Stockfish,  Tord Romstad, Marco Costalba, and Joona Kiiski
+ Crafty, Robert Hyatt
  Inside Prodeo, Ed Schroeder
  Winglet(time management, a bit of search, move structure)
  Maverick(Internal Iterative Deepening), Steve Maughan

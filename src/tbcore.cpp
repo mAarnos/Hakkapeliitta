@@ -1262,7 +1262,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     }
 #else
     uint32_t next = 0;
-    uint32_t code = __builtin_bswap32(*ptr++);
+    uint32_t code = bswap32(*ptr++);
     bitcnt = 0; // number of bits in next
     for (;;) {
         int l = m;
@@ -1276,7 +1276,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
                 code |= (next >> (32 - l));
                 l -= bitcnt;
             }
-            next = __builtin_bswap32(*ptr++);
+            next = bswap32(*ptr++);
             bitcnt = 32;
         }
         code |= (next >> (32 - l));
