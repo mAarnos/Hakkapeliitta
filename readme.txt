@@ -36,3 +36,5 @@ Thanks to the following people(or organizations) my engine is what it is today:
  Maverick(Internal Iterative Deepening), Steve Maughan
  Peter Osterlund(basic tuning method although significant changes were required)
  TSCP(basic move generation, not used for a long time), Tom Kerrigan
+ 
+ Copyright of the Hakkapeliitta logo belongs to Ruxy Sylwyka.
