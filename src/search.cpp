@@ -656,7 +656,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		else
 		{
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-				&& !inCheck && !givesCheck && moveStack[i].getScore() < captureMove && moveStack[i].getScore() >= 0)
+				&& !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 			{
 				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
 			}
