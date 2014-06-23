@@ -98,7 +98,7 @@ int Position::SEE(Move m)
 	int from = m.getFrom();
 	int to = m.getTo();
 	int promotion = m.getPromotion();
-	bool toAtPromoRank = false, side = sideToMove;
+	bool toAtPromoRank = (to <= 7 || to >= 56), side = sideToMove;
 
 	if (promotion == King)
 	{
@@ -117,7 +117,6 @@ int Position::SEE(Move m)
 		{
 			materialGains[0] += pieceValues[promotion] - pieceValues[Pawn];
 			attackerValue += pieceValues[promotion] - pieceValues[Pawn];
-			toAtPromoRank = true;
 		}
 	}
 	numberOfCaptures++;
