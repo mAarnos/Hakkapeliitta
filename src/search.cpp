@@ -426,11 +426,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		{
 			if (depth <= onePly && staticEval - 260 >= beta)
 			{
-				return staticEval;
+				return staticEval - 260;
 			}
 			else if (depth <= 2 * onePly && staticEval - 445 >= beta)
 			{
-				return staticEval;
+				return staticEval - 445;
 			}
 			else if (staticEval - 900 >= beta)
 			{
