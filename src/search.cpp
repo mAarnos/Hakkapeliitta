@@ -206,7 +206,7 @@ void displayPV(vector<Move> pv, int length)
 
 void think()
 {
-	int alpha, beta;
+	int alpha, beta, delta;
 
 	tt.startNewSearch();
 	
@@ -218,6 +218,7 @@ void think()
 
 	alpha = -infinity;
 	beta = infinity;
+    delta = aspirationWindow;
 
 	t.reset();
 	t.start();
@@ -241,7 +242,8 @@ void think()
 		// if our score is outside the aspiration window do a research with no windows
 		if (score <= alpha)
 		{
-			alpha = -infinity;
+			alpha -= delta;
+            delta *= 2;
 			if (isMateScore(score))
 			{
 				int v;
@@ -258,7 +260,8 @@ void think()
 		}
 		if (score >= beta)
 		{
-			beta = infinity;
+			beta += delta;
+            delta *= 2;
 			if (isMateScore(score))
 			{
 				int v;
@@ -293,6 +296,7 @@ void think()
 		{
 			alpha = score - aspirationWindow;
 			beta = score + aspirationWindow;
+            delta = aspirationWindow;
 		}
 
 		searchDepth++;
