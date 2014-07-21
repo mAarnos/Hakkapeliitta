@@ -60,8 +60,6 @@ const int killerMove2 = hashMove >> 3;
 const int killerMove3 = hashMove >> 4;
 const int killerMove4 = hashMove >> 5;
 
-const int onePly = 2;
-
 inline int File(int sq)
 {
 	assert(sq >= 0 && sq <= 63);

@@ -225,7 +225,7 @@ void think()
 
 	for (searchDepth = 1;;)
 	{
-		int score = searchRoot(root, 0, searchDepth * onePly, alpha, beta);
+		int score = searchRoot(root, 0, searchDepth, alpha, beta);
 		reconstructPV(root, pv);
 
 		uint64_t searchTime = t.getms();
@@ -413,7 +413,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			if (v < -1) score = -mateScore + ply + 200;
 			else if (v > 1) score = mateScore - ply - 200;
 			else score = contempt(pos.getSideToMove()) + v;
-			ttSave(pos, ply, depth + 4 * onePly, score, ttExact, ttMoveNone);
+			ttSave(pos, ply, depth + 4, score, ttExact, ttMoveNone);
 			return score;
 		}
 	}
@@ -426,32 +426,32 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	if (!pvNode && allowNullMove && !check && pos.calculateGamePhase() != 256)
 	{
 		// Here's static.
-		if (depth <= 3 * onePly)
+		if (depth <= 3)
 		{
-			if (depth <= onePly && staticEval - 260 >= beta)
+			if (depth <= 1 && staticEval - 260 >= beta)
 			{
 				return staticEval - 260;
 			}
-			else if (depth <= 2 * onePly && staticEval - 445 >= beta)
+			else if (depth <= 2 && staticEval - 445 >= beta)
 			{
 				return staticEval - 445;
 			}
 			else if (staticEval - 900 >= beta)
 			{
-				depth -= onePly;
+				depth--;
 			}
 		}
 
 		// And here's dynamic.
 		pos.makeNullMove();
 		nodeCount++;
-		if (depth <= 4 * onePly)
+		if (depth <= 4)
 		{
 			score = -qsearch(pos, -beta, -beta + 1);
 		}
 		else
 		{
-			score = -alphabetaPVS(pos, ply, depth - onePly - nullReduction, -beta, -beta + 1, false);
+			score = -alphabetaPVS(pos, ply, depth - 1 - nullReduction, -beta, -beta + 1, false);
 		}
 		pos.unmakeNullMove();
 
@@ -468,12 +468,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Internal iterative deepening
-	if (pvNode && ttMove == ttMoveNone && depth > 2 * onePly)
+	if (pvNode && ttMove == ttMoveNone && depth > 2)
 	{
-		score = alphabetaPVS(pos, ply, depth - 2 * onePly, alpha, beta, true);
+		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, true);
 		if (score <= alpha)
 		{
-			score = alphabetaPVS(pos, ply, depth - 2 * onePly, -infinity, beta, true);
+			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, true);
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove);
 	}
@@ -488,7 +488,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	{
 		generatedMoves = generateEvasions(pos, moveStack);
 		if (generatedMoves == 1)
-			depth += onePly;
+			depth++;
 	}
 	else
 	{
@@ -504,12 +504,12 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		nodeCount++;
 
-		int newDepth = depth - onePly;
+		int newDepth = depth - 1;
 		bool givesCheck = pos.inCheck();
 		pos.setIsInCheck(ply + 1, givesCheck);
 		if (givesCheck)
 		{
-			newDepth += onePly;
+			newDepth++;
 		}
 
 		if (futileNode && moveStack[i].getScore() < killerMove4 && !givesCheck)
@@ -528,7 +528,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
 			&& !check && !givesCheck && moveStack[i].getScore() < killerMove4)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth - 1, -alpha - 1, -alpha, true);
 			}
 			else
 			{
@@ -645,12 +645,12 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		}
 		nodeCount++;
 
-		newDepth = depth - onePly;
+		newDepth = depth - 1;
 		givesCheck = pos.inCheck();
 		pos.setIsInCheck(ply + 1, givesCheck);
 		if (givesCheck)
 		{
-			newDepth += onePly;
+			newDepth++;
 		}
 
 		if (!movesSearched)
@@ -662,7 +662,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
 				&& !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth - onePly, -alpha - 1, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth - 1, -alpha - 1, -alpha, true);
 			}
 			else
 			{
