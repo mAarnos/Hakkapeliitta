@@ -252,6 +252,8 @@ int Evaluation::evaluate(const Position & pos)
 
 template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & pos)
 {
+    auto score = 0;
+
     // Checks if we are in a known endgame.
     // If we are we can straight away return the score for the endgame.
     // At the moment only detects draws, if wins will be included this must be made to return things in negamax fashion.
@@ -259,9 +261,68 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
     {
         return knownEndgames[pos.getMaterialHashKey()];
     }
+
+    return score;
 }
 
 template int Evaluation::evaluate<false>(const Position & pos);
 template int Evaluation::evaluate<true>(const Position & pos);
+
+template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Position & pos, int phase)
+{
+    auto scoreOp = 0, scoreEd = 0;
+    auto occupied = pos.getOccupiedSquares();
+
+    auto targetBitboard = ~pos.getPieces(Color::White);
+
+    auto tempPiece = pos.getBitboard(Color::White, Piece::Knight);
+    while (tempPiece)
+    {
+        auto from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
+        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+        scoreOp += mobilityOpening[Piece::Knight][count];
+        scoreEd += mobilityEnding[Piece::Knight][count];
+    }
+
+    tempPiece = pos.getBitboard(Color::White, Piece::Bishop);
+    while (tempPiece)
+    {
+        auto from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
+        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+        scoreOp += mobilityOpening[Piece::Bishop][count];
+        scoreEd += mobilityEnding[Piece::Bishop][count];
+    }
+
+    tempPiece = pos.getBitboard(Color::White, Piece::Rook);
+    while (tempPiece)
+    {
+        auto from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
+        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+        scoreOp += mobilityOpening[Piece::Rook][count];
+        scoreEd += mobilityEnding[Piece::Rook][count];
+    }
+
+    tempPiece = pos.getBitboard(Color::White, Piece::Queen);
+    while (tempPiece)
+    {
+        auto from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
+        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+        scoreOp += mobilityOpening[Piece::Queen][count];
+        scoreEd += mobilityEnding[Piece::Queen][count];
+    }
+
+    return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+}
+
+template int Evaluation::mobilityEval<false>(const Position & pos, int phase);
+template int Evaluation::mobilityEval<true>(const Position & pos, int phase);
 
 

@@ -2,6 +2,7 @@
 #include "uci.hpp"
 #include "benchmark.hpp"
 #include "tuning.hpp"
+#include "threadpool.hpp"
 
 int main() 
 {
@@ -14,7 +15,9 @@ int main()
 
     // Benchmark::runPerft();
 
-    Tuning tuning;
+    // Tuning tuning;
+
+    ThreadPool pool(1);
 
     uci.mainLoop();
 
