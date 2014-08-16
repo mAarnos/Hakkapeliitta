@@ -17,7 +17,7 @@ int main()
 
     // Tuning tuning;
 
-    ThreadPool pool(1);
+    // ThreadPool pool(1);
 
     uci.mainLoop();
 

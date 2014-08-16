@@ -7,7 +7,7 @@
 #include "color.hpp"
 #include "square.hpp"
 
-const std::array<int, 64> castlingMask = {
+const std::array<int, 64> Position::castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -17,6 +17,16 @@ const std::array<int, 64> castlingMask = {
 	0, 0, 0, 0, 0, 0, 0, 0,
 	8, 0, 0, 0, 12, 0, 0, 4
 };
+
+const std::array<int, 6> Position::piecePhase = {
+    0, 1, 1, 2, 4, 0
+};
+
+const int Position::totalPhase = piecePhase[Piece::Pawn] * 16 +
+                                 piecePhase[Piece::Knight] * 4 +
+                                 piecePhase[Piece::Bishop] * 4 +
+                                 piecePhase[Piece::Rook] * 4 +
+                                 piecePhase[Piece::Queen] * 2;
 
 void Position::displayBoard() const
 {

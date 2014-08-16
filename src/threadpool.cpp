@@ -12,6 +12,8 @@ terminate(false)
 
 ThreadPool::~ThreadPool()
 {
+    terminate = true;
+
     for (auto & thread : threads)
     {
         thread.join();
@@ -20,7 +22,7 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::loop()
 {
-    for (;;)
+    while (!terminate)
     {
         std::cout << "do something" << std::endl;
     }

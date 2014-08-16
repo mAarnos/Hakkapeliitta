@@ -72,6 +72,10 @@ private:
     template <bool side> bool makeMove(const Move & move, History & history);
     template <bool side> void unmakeMove(const Move & move, History & history);
     template <bool side> bool isAttacked(Square sq) const;
+
+    static const std::array<int, 64> castlingMask;
+    static const std::array<int, 6> piecePhase;
+    static const int totalPhase;
 };
 
 #endif

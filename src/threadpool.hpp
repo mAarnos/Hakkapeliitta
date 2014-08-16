@@ -18,7 +18,7 @@ private:
 
     std::mutex jobQueueMutex;
     std::condition_variable cv;
-    bool terminate;
+    volatile bool terminate;
 };
 
 #endif
