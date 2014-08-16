@@ -1,119 +1,137 @@
-#ifndef BITBOARD_H_
-#define BITBOARD_H_
+#ifndef BITBOARD_HPP_
+#define BITBOARD_HPP_
 
-#include "defs.hpp"
-#include <intrin.h>
+#include <cstdint>
+#include <cassert>
+#include <array>
+#include "square.hpp"
 
-void initializeBitboards();
+typedef uint64_t Bitboard;
 
-extern array<uint64_t, Squares> bit;
-extern array<uint64_t, Squares> kingAttacks;
-extern array<uint64_t, Squares> knightAttacks;
-extern array<uint64_t, Squares> pawnAttacks[Colours];
-extern array<uint64_t, Squares> pawnSingleMoves[Colours];
-extern array<uint64_t, Squares> pawnDoubleMoves[Colours];
-extern array<uint64_t, Squares> rays[8];
+class Bitboards
+{
+public:
+    static void initialize();
 
-extern array<int, Squares> heading[Squares];
+    static Bitboard bishopAttacks(Square sq, Bitboard occupied)
+    {
+        assert(isSquareOk(sq));
+        const Magic & mag = bishopMagic[sq];
+        return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 9)];
+    }
 
-extern array<uint64_t, Squares> between[Squares];
+    static Bitboard rookAttacks(Square sq, Bitboard occupied)
+    {
+        assert(isSquareOk(sq));
+        const Magic & mag = rookMagic[sq];
+        return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 12)];
+    }
 
-extern array<uint64_t, Squares> passed[Colours];
-extern array<uint64_t, Squares> backward[Colours];
-extern array<uint64_t, Squares> isolated;
+    static Bitboard queenAttacks(Square sq, Bitboard occupied)
+    {
+        return (bishopAttacks(sq, occupied) | rookAttacks(sq, occupied));
+    }
 
-const array<uint64_t, 8> ranks = {
-	0x00000000000000FF,
-	0x000000000000FF00,
-	0x0000000000FF0000,
-	0x00000000FF000000,
-	0x000000FF00000000,
-	0x0000FF0000000000,
-	0x00FF000000000000,
-	0xFF00000000000000
+    static std::array<Bitboard, 64> bit;
+    static std::array<Bitboard, 64> kingAttacks;
+    static std::array<Bitboard, 64> knightAttacks;
+    static std::array<Bitboard, 64> pawnAttacks[2];
+    static std::array<Bitboard, 64> pawnSingleMoves[2];
+    static std::array<Bitboard, 64> pawnDoubleMoves[2];
+    static std::array<Bitboard, 64> rays[8];
+    static std::array<Bitboard, 64> between[64];
+
+    static std::array<Bitboard, 64> passed[2];
+    static std::array<Bitboard, 64> backward[2];
+    static std::array<Bitboard, 64> isolated;
+
+    static const std::array<Bitboard, 8> ranks;
+
+    static const std::array<Bitboard, 8> files;
+
+    // Returns the amount of set bits in bb.
+    // We have two versions, one using hardware and the other using sofware.
+    // We automatically detect which one to use.
+    static long long hardwarePopcnt(Bitboard bb)
+    {
+        return _mm_popcnt_u64(bb);
+    }
+
+    static long long softwarePopcnt(Bitboard bb)
+    {
+        bb -= ((bb >> 1) & 0x5555555555555555);
+        bb = (bb & 0x3333333333333333) + ((bb >> 2) & 0x3333333333333333);
+        bb = (bb + (bb >> 4)) & 0x0f0f0f0f0f0f0f0f;
+        return (bb * 0x0101010101010101) >> 56;
+    }
+#ifdef _WIN64
+    // Returns the least significant set bit in the mask.
+    static unsigned long lsb(Bitboard bb)
+    {
+        assert(bb);
+        unsigned long index;
+        _BitScanForward64(&index, bb);
+        return index;
+    }
+
+    // Returns the most significant set bit in the mask.
+    static unsigned long msb(Bitboard bb)
+    {
+        assert(bb);
+        unsigned long index;
+        _BitScanReverse64(&index, bb);
+        return index;
+    }
+#else
+    // The author of both the lsb and msb is Kim Walisch (2012).
+    static const std::array<int, 64> index;
+
+    static int lsb(Bitboard bb)
+    {
+        assert(bb);
+        return index[((bb ^ (bb - 1)) * 0x03f79d71b4cb0a89) >> 58];
+    }
+
+    static int msb(Bitboard bb)
+    {
+        assert(bb);
+        bb |= bb >> 1;
+        bb |= bb >> 2;
+        bb |= bb >> 4;
+        bb |= bb >> 8;
+        bb |= bb >> 16;
+        bb |= bb >> 32;
+        return index[(bb * 0x03f79d71b4cb0a89) >> 58];
+    }
+#endif
+
+    static bool isHardwarePopcntSupported() { return hardwarePopcntSupported; }
+private:
+    class Magic
+    {
+    public:
+        Bitboard * data;
+        Bitboard mask;
+        Bitboard magic;
+    };
+
+    class MagicInit
+    {
+    public:
+        Bitboard magic;
+        int32_t index;
+    };
+
+    static std::array<Magic, 64> bishopMagic;
+    static std::array<Magic, 64> rookMagic;
+    static std::array<Bitboard, 97264> lookupTable;
+
+    static std::array<MagicInit, 64> rookInit;
+    static std::array<MagicInit, 64> bishopInit;
+
+    static void initMagics(std::array<MagicInit, 64> & magicInit, std::array<Magic, 64> & magic, std::array<int, 2> dir[], int shift);
+
+    static bool hardwarePopcntSupported;
 };
-
-const array<uint64_t, 8> files = {
-	0x0101010101010101,
-	0x0202020202020202,
-	0x0404040404040404,
-	0x0808080808080808,
-	0x1010101010101010,
-	0x2020202020202020,
-	0x4040404040404040,
-	0x8080808080808080
-};
-
-const uint64_t kingSide = 0xE0E0E0E0E0E0E0E0;
-const uint64_t queenSide = 0x0707070707070707;
-const uint64_t center = 0x1818181818181818;
-
-// Returns the least significant set bit in the mask.
-inline int bitScanForward(uint64_t mask)
-{
-	assert(mask);
-	unsigned long index;
-	_BitScanForward64(&index, mask);
-	return (int)index;
-}
-
-// Returns the most significant set bit in the mask.
-inline int bitScanReverse(uint64_t mask)
-{
-	assert(mask);
-	unsigned long index;
-	_BitScanReverse64(&index, mask);
-	return (int)index;
-}
-
-// If the machine you are compiling this engine for has no hardware bitScanForward and/or bitScanReverse(only w32 nowadays?), use the below ones instead.
-// The author of both the bitScanForward and bitScanReverse is Kim Walisch (2012).
-/*
-const array<int, Squares> index64 = {
-	0, 47, 1, 56, 48, 27, 2, 60,
-	57, 49, 41, 37, 28, 16, 3, 61,
-	54, 58, 35, 52, 50, 42, 21, 44,
-	38, 32, 29, 23, 17, 11, 4, 62,
-	46, 55, 26, 59, 40, 36, 15, 53,
-	34, 51, 20, 43, 31, 22, 10, 45,
-	25, 39, 14, 33, 19, 30, 9, 24,
-	13, 18, 8, 12, 7, 6, 5, 63
-};
-
-inline int bitScanForward(uint64_t mask)
-{
-	assert(mask);
-	return index64[((mask ^ (mask-1)) * 0x03f79d71b4cb0a89) >> 58];
-}
-
-inline int bitScanReverse(uint64_t mask) 
-{
-	assert(mask);
-	mask |= mask >> 1;
-	mask |= mask >> 2;
-	mask |= mask >> 4;
-	mask |= mask >> 8;
-	mask |= mask >> 16;
-	mask |= mask >> 32;
-	return index64[(mask * 0x03f79d71b4cb0a89) >> 58];
-}
-*/
-
-// Returns the amount of set bits in the mask.
-inline int popcnt(uint64_t mask)
-{
-	return (int)_mm_popcnt_u64(mask);
-}
-
-// If the machine you are compiling this engine for has no hardware popcnt(w32 and old x64 machines), use the below popnct instead.
-/*
-inline int popcnt(uint64_t mask)
-{
-	mask = mask - ((mask >> 1) & 0x5555555555555555ULL);
-	mask = (mask & 0x3333333333333333ULL) + ((mask >> 2) & 0x3333333333333333ULL);
-	mask = (mask + (mask >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
-	return (mask * 0x0101010101010101ull) >> 56;
-}
-*/
 
 #endif

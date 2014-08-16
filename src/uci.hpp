@@ -1,26 +1,46 @@
-#ifndef UCI_H_
-#define UCI_H_
+#ifndef UCI_HPP_
+#define UCI_HPP_
 
-#include "defs.hpp"
+#include <iostream>
+#include <map>
 
-typedef int(*uciFunctionPointer)(string s);
-
-class uciCommand
+class UCI
 {
-	public:
-		string name;
-		uciFunctionPointer function;
+public:
+    UCI();
+
+    void mainLoop();
+private:
+    // A single command from the controller to us.
+    class Command
+    {
+    public:
+        Command(std::string name, std::string arguments) :
+            name(name), arguments(arguments)
+        {
+        }
+
+        std::string getName() const { return name; }
+        std::string getArguments() const { return arguments; }
+    private:
+        std::string name;
+        std::string arguments;
+    };
+
+    typedef void(*FunctionPointer)(const Command & c);
+
+    void addCommand(std::string name, FunctionPointer fp);
+    std::map<std::string, FunctionPointer> commands;
+
+    static void preprocessLine(std::string & line);
+
+    // UCI commands.
+
+    static void sendInformation(const Command & c);
+    static void isReady(const Command & c);
+    static void stop(const Command &);
+    static void quit(const Command & c);
 };
 
-bool inputAvailable();
-
-void uciMainLoop();
-int uciProcessInput();
-void initInput();
-
-const int uciQuit = 0;
-const int uciOk = 1;
-
-extern bool searching;
 
 #endif

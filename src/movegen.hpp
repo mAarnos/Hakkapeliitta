@@ -1,12 +1,16 @@
-#ifndef MOVEGEN_H_
-#define MOVEGEN_H_
+#ifndef MOVEGEN_HPP_
+#define MOVEGEN_HPP_
 
-#include "defs.hpp"
-#include "move.hpp"
+#include <vector>
 #include "position.hpp"
+#include "move.hpp"
 
-int generateMoves(Position & pos, Move * mlist);
-int generateCaptures(Position & pos, Move * mlist);
-int generateEvasions(Position & pos, Move * mlist);
+class MoveGen
+{
+public:
+    static void generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves);
+private:
+    template <bool side> static void generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves);
+};
 
 #endif

@@ -1,24 +1,6 @@
-#ifndef SEARCH_H_
-#define SEARCH_H_
+#ifndef SEARCH_HPP_
+#define SEARCH_HPP_
 
-#include "defs.hpp"
 #include "position.hpp"
-
-void think();
-uint64_t perft(Position & pos, int depth);
-
-const int aspirationWindow = 50;
-
-const int nullReduction = 3;
-
-const int futilityDepth = 4;
-const array<int, 1 + futilityDepth> futilityMargin = {
-	50, 125, 125, 300, 300, 
-};
-
-extern int syzygyProbeLimit;
-
-const int fullDepthMoves = 4;
-const int reductionLimit = 3;
 
 #endif

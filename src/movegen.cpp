@@ -1,592 +1,175 @@
 #include "movegen.hpp"
-#include "bitboard.hpp"
-#include "magic.hpp"
+#include <iostream>
 
-int generateMoves(Position & pos, Move * mlist)
+void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
 {
-	int from, to;
-	bool side = pos.getSideToMove();
-	int generatedMoves = 0;
-	uint64_t tempPiece, tempMove;
-
-	Move m;
-	m.clear(); 
-	m.setPromotion(Empty);
-
-	uint64_t freeSquares = pos.getFreeSquares();
-	uint64_t enemyPieces = pos.getPieces(!side);
-	uint64_t targetBB = freeSquares | enemyPieces;
-	uint64_t occupiedSquares = pos.getOccupiedSquares();
-
-	tempPiece = pos.getBitboard(side, Pawn);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		m.setFrom(from);
-		tempPiece &= (tempPiece - 1);
-
-		if (freeSquares & pawnSingleMoves[side][from])
-		{
-			to = from + 8 - side * 16;
-			m.setTo(to);
-			if (to >= A8 || to <= H1)
-			{
-				m.setPromotion(Queen); mlist[generatedMoves++] = m;
-				m.setPromotion(Rook); mlist[generatedMoves++] = m;
-				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-				m.setPromotion(Knight); mlist[generatedMoves++] = m;
-				m.setPromotion(Empty); 
-			}
-			else
-			{
-				mlist[generatedMoves++] = m;
-			}
-
-			if (freeSquares & pawnDoubleMoves[side][from])
-			{
-				to = from + 16 - side * 32;
-				m.setTo(to);
-				mlist[generatedMoves++] = m;
-			}
-		}
-
-		uint64_t tempCapture = pawnAttacks[side][from] & enemyPieces;
-		while (tempCapture)
-		{
-			to = bitScanForward(tempCapture);
-			tempCapture &= (tempCapture - 1);
-			m.setTo(to);
-			if (to >= A8 || to <= H1)
-			{
-				m.setPromotion(Queen); mlist[generatedMoves++] = m;
-				m.setPromotion(Rook); mlist[generatedMoves++] = m;
-				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-				m.setPromotion(Knight); mlist[generatedMoves++] = m;
-				m.setPromotion(Empty);
-			}
-			else
-			{
-				mlist[generatedMoves++] = m;
-			}
-		}
-
-		// Beware with Null move, you might be en passanting your own pawns.
-		if (pos.getEnPassantSquare() != NoSquare)
-		{
-			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
-			{
-				m.setPromotion(Pawn);
-				m.setTo(pos.getEnPassantSquare());
-				mlist[generatedMoves++] = m;
-				m.setPromotion(Empty);
-			}
-		}
-	}
-	
-	tempPiece = pos.getBitboard(side, Knight);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
-		
-		tempMove = knightAttacks[from] & targetBB;
-
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Bishop);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
-
-		tempMove = bishopAttacks(from, occupiedSquares) & targetBB;
-
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Rook);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
-
-		tempMove = rookAttacks(from, occupiedSquares) & targetBB;
-
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Queen);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
-
-		tempMove = queenAttacks(from, occupiedSquares) & targetBB;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	from = bitScanForward(pos.getBitboard(side, King));
-	m.setFrom(from);
-	tempMove = kingAttacks[from] & targetBB;
-	while (tempMove)
-	{
-		to = bitScanForward(tempMove);
-		tempMove &= (tempMove - 1);
-		m.setTo(to);
-		mlist[generatedMoves++] = m;
-	}
-
-	// TODO: make this part cleaner and faster.
-	m.setPromotion(King);
-	if (side == White)
-	{
-		if (pos.isAttacked(E1, Black))
-		{
-			return generatedMoves;
-		}
-		m.setFrom(E1);
-		if (pos.getCastlingRights() & 1)
-		{
-			if (!(occupiedSquares & (uint64_t)0x0000000000000060))
-			{
-				if (!(pos.isAttacked(F1, Black)))
-				{
-					m.setTo(G1);
-					mlist[generatedMoves++] = m;
-				}
-			}
-		}
-		if (pos.getCastlingRights() & 2)
-		{
-			if (!(occupiedSquares & (uint64_t)0x000000000000000E))
-			{
-				if (!(pos.isAttacked(D1, Black)))
-				{
-					m.setTo(C1);
-					mlist[generatedMoves++] = m;
-				}
-			}
-		}
-	}
-	else
-	{
-		if (pos.isAttacked(E8, White))
-		{
-			return generatedMoves;
-		}
-		m.setFrom(E8);
-		if (pos.getCastlingRights() & 4)
-		{
-			if (!(occupiedSquares & (uint64_t)0x6000000000000000))
-			{
-				if (!(pos.isAttacked(F8, White)))
-				{
-					m.setTo(G8);
-					mlist[generatedMoves++] = m;
-				}
-			}
-		}
-		if (pos.getCastlingRights() & 8)
-		{
-			if (!(occupiedSquares & (uint64_t)0x0E00000000000000))
-			{
-				if (!(pos.isAttacked(D8, White)))
-				{
-					m.setTo(C8);
-					mlist[generatedMoves++] = m;
-				}
-			}
-		}
-	}
-	return generatedMoves;
+    pos.getSideToMove() ? generatePseudoLegalMoves<true>(pos, moves) : generatePseudoLegalMoves<false>(pos, moves);
 }
 
-int generateCaptures(Position & pos, Move * mlist)
+template <bool side> void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
 {
-	int from, to;
-	bool side = pos.getSideToMove();
-	int generatedMoves = 0;
-	uint64_t tempPiece, tempMove;
+    assert(moves.empty());
+    moves.reserve(128);
 
-	Move m;
-	m.clear();
-	m.setPromotion(Empty);
+    int from, to;
+    Bitboard tempMove;
+    auto freeSquares = pos.getFreeSquares();
+    auto enemyPieces = pos.getPieces(!side);
+    auto targetBB = freeSquares | enemyPieces;
+    auto occupiedSquares = pos.getOccupiedSquares();
 
-	uint64_t enemyPieces = pos.getPieces(!side);
-	uint64_t occupiedSquares = pos.getOccupiedSquares();
+    auto tempPiece = pos.getBitboard(side, Piece::Pawn);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
 
-	tempPiece = pos.getBitboard(side, Pawn);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		m.setFrom(from);
-		tempPiece &= (tempPiece - 1);
+        if (freeSquares & Bitboards::pawnSingleMoves[side][from])
+        {
+            to = from + 8 - side * 16;
+            if (to >= Square::A8 || to <= Square::H1)
+            {
+                moves.push_back(Move(from, to, Piece::Queen, 0));
+                moves.push_back(Move(from, to, Piece::Rook, 0));
+                moves.push_back(Move(from, to, Piece::Bishop, 0));
+                moves.push_back(Move(from, to, Piece::Knight, 0));
+            }
+            else
+            {
+                moves.push_back(Move(from, to, Piece::Empty, 0));
+            }
 
-		tempMove = pawnAttacks[side][from] & enemyPieces;
-		tempMove |= pawnSingleMoves[side][from] & ~occupiedSquares & 0xFF000000000000FF;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			if (to >= A8 || to <= H1)
-			{
-				m.setPromotion(Queen); mlist[generatedMoves++] = m;
-				m.setPromotion(Rook); mlist[generatedMoves++] = m;
-				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-				m.setPromotion(Knight); mlist[generatedMoves++] = m;
-				m.setPromotion(Empty);
-			}
-			else
-			{
-				mlist[generatedMoves++] = m;
-			}
-		}
+            if (freeSquares & Bitboards::pawnDoubleMoves[side][from])
+            {
+                to = from ^ 16;
+                moves.push_back(Move(from, to, Piece::Empty, 0));
+            }
+        }
 
-		// Beware with Null move, you might be en passanting your own pawns.
-		if (pos.getEnPassantSquare() != NoSquare)
-		{
-			if (pawnAttacks[side][from] & bit[pos.getEnPassantSquare()])
-			{
-				m.setPromotion(Pawn);
-				m.setTo(pos.getEnPassantSquare());
-				mlist[generatedMoves++] = m;
-				m.setPromotion(Empty);
-			}
-		}
-	}
+        auto tempCapture = Bitboards::pawnAttacks[side][from] & enemyPieces;
+        while (tempCapture)
+        {
+            to = Bitboards::lsb(tempCapture);
+            tempCapture &= (tempCapture - 1);
 
-	tempPiece = pos.getBitboard(side, Knight);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
+            if (to >= Square::A8 || to <= Square::H1)
+            {
+                moves.push_back(Move(from, to, Piece::Queen, 0));
+                moves.push_back(Move(from, to, Piece::Rook, 0));
+                moves.push_back(Move(from, to, Piece::Bishop, 0));
+                moves.push_back(Move(from, to, Piece::Knight, 0));
+            }
+            else
+            {
+                moves.push_back(Move(from, to, Piece::Empty, 0));
+            }
+        }
 
-		tempMove = knightAttacks[from] & enemyPieces;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
+        if (pos.getEnPassantSquare() != Square::NoSquare)
+        {
+            if (Bitboards::pawnAttacks[side][from] & Bitboards::bit[pos.getEnPassantSquare()])
+            {
+                moves.push_back(Move(from, pos.getEnPassantSquare(), Piece::Pawn, 0));
+            }
+        }
+    }
 
-	tempPiece = pos.getBitboard(side, Bishop);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
+    tempPiece = pos.getBitboard(side, Piece::Knight);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::knightAttacks[from] & targetBB;
 
-		tempMove = bishopAttacks(from, occupiedSquares) & enemyPieces;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
 
-	tempPiece = pos.getBitboard(side, Rook);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
+    tempPiece = pos.getBitboard(side, Piece::Bishop);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & targetBB;
 
-		tempMove = rookAttacks(from, occupiedSquares) & enemyPieces;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
 
-	tempPiece = pos.getBitboard(side, Queen);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		m.setFrom(from);
+    tempPiece = pos.getBitboard(side, Piece::Rook);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::rookAttacks(from, occupiedSquares) & targetBB;
 
-		tempMove = queenAttacks(from, occupiedSquares) & enemyPieces;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
 
-	from = bitScanForward(pos.getBitboard(side, King));
-	m.setFrom(from);
-	tempMove = kingAttacks[from] & enemyPieces;
-	while (tempMove)
-	{
-		to = bitScanForward(tempMove);
-		tempMove &= (tempMove - 1);
-		m.setTo(to);
-		mlist[generatedMoves++] = m;
-	}
+    tempPiece = pos.getBitboard(side, Piece::Queen);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::queenAttacks(from, occupiedSquares) & targetBB;
 
-	return generatedMoves;
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+
+    from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    tempMove = Bitboards::kingAttacks[from] & targetBB;
+
+    while (tempMove)
+    {
+        to = Bitboards::lsb(tempMove);
+        tempMove &= (tempMove - 1);
+        moves.push_back(Move(from, to, Piece::Empty, 0));
+    }
+
+    if (!pos.isAttacked(Square::E1 + 56 * side, !side))
+    {
+        if (pos.getCastlingRights() & (1 << (2 * side))) // Short castling.
+        {
+            if (!(occupiedSquares & (0x0000000000000060ull << (56 * side))))
+            {
+                if (!(pos.isAttacked(Square::F1 + 56 * side, !side)))
+                {
+                    moves.push_back(Move(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0));
+                }
+            }
+        }
+        if (pos.getCastlingRights() & (2 << (2 * side))) // Long castling.
+        {
+            if (!(occupiedSquares & (0x000000000000000Eull << (56 * side))))
+            {
+                if (!(pos.isAttacked(Square::D1 + 56 * side, !side)))
+                {
+                    moves.push_back(Move(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0));
+                }
+            }
+        }
+    }
 }
 
-// This works if and only if the side to move is in check.
-int generateEvasions(Position & pos, Move * mlist)
-{
-	int from, to, generatedMoves = 0;
-	bool side = pos.getSideToMove();
-	uint64_t tempPiece, tempMove, pinned = 0;
-	uint64_t occupied = pos.getOccupiedSquares();
-	uint64_t targetBitboard = ~pos.getPieces(side);
+template void MoveGen::generatePseudoLegalMoves<false>(Position & pos, std::vector<Move> & moves);
+template void MoveGen::generatePseudoLegalMoves<true>(Position & pos, std::vector<Move> & moves);
 
-	Move m;
-	m.clear();
-	m.setPromotion(Empty);
-	
-	from = bitScanForward(pos.getBitboard(side, King));
-	m.setFrom(from);
-	tempMove = kingAttacks[from] & targetBitboard;
-	// Now we take the king out from the board and see which squares are attacked.
-	pos.replaceBitboard(occupied ^ bit[from], 14);
-	while (tempMove)
-	{
-		to = bitScanForward(tempMove);
-		tempMove &= (tempMove - 1);
-		if (pos.isAttacked(to, !side))
-		{
-			continue;
-		}
-		m.setTo(to);
-		mlist[generatedMoves++] = m;
-	}
-	// And here we put the king back in. 
-	pos.replaceBitboard(occupied, 14);
 
-	// If we are checked by more than two pieces only the king can move. Therefore we can return.
-	uint64_t checkers = pos.attacksTo(from, !side);
-	if (popcnt(checkers) > 1)
-	{
-		return generatedMoves;
-	}
-
-	// find the pinned pieces
-	uint64_t b = bishopAttacks(from, 0) & (pos.getBitboard(!side, Bishop) | pos.getBitboard(!side, Queen));
-	while (b)
-	{
-		int pinner = bitScanForward(b);
-		b &= (b - 1);
-		uint64_t potentialPinned = (between[from][pinner] & occupied);
-		if (popcnt(potentialPinned) == 1)
-		{
-			pinned |= potentialPinned & pos.getPieces(side);
-		}
-	}
-	b = rookAttacks(from, 0) & (pos.getBitboard(!side, Rook) | pos.getBitboard(!side, Queen));
-	while (b)
-	{
-		int pinner = bitScanForward(b);
-		b &= (b - 1);
-		uint64_t potentialPinned = (between[from][pinner] & occupied);
-		if (popcnt(potentialPinned) == 1)
-		{
-			pinned |= potentialPinned & pos.getPieces(side);
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Pawn);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		if (bit[from] & pinned)
-		{
-			continue;
-		}
-		m.setFrom(from);
-		tempMove = pawnAttacks[side][from] & checkers;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			if (to >= A8 || to <= H1)
-			{
-				m.setPromotion(Queen); mlist[generatedMoves++] = m;
-				m.setPromotion(Rook); mlist[generatedMoves++] = m;
-				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-				m.setPromotion(Knight); mlist[generatedMoves++] = m;
-				m.setPromotion(Empty);
-			}
-			else
-			{
-				mlist[generatedMoves++] = m;
-			}
-		}
-		int enPassant = pos.getEnPassantSquare();
-		if (enPassant != NoSquare)
-		{
-			if (pawnAttacks[side][from] & bit[enPassant])
-			{
-				if (bitScanForward(checkers) == (enPassant - 8 + side * 16))
-				{
-					m.setPromotion(Pawn);
-					m.setTo(enPassant);
-					mlist[generatedMoves++] = m;
-					m.setPromotion(Empty);
-				}
-			}
-		}
-
-		uint64_t interpose = between[bitScanForward(pos.getBitboard(side, King))][bitScanForward(checkers)];
-		if (interpose)
-		{
-			if (pawnSingleMoves[side][from] & occupied)
-			{
-				continue;
-			}
-			tempMove = pawnSingleMoves[side][from] & interpose;
-			if (!(pawnDoubleMoves[side][from] & occupied))
-			{
-				tempMove |= pawnDoubleMoves[side][from] & interpose;
-			}
-			while (tempMove)
-			{
-				to = bitScanForward(tempMove);
-				tempMove &= (tempMove - 1);
-				m.setTo(to);
-				if (to >= A8 || to <= H1)
-				{
-					m.setPromotion(Queen); mlist[generatedMoves++] = m;
-					m.setPromotion(Rook); mlist[generatedMoves++] = m;
-					m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-					m.setPromotion(Knight); mlist[generatedMoves++] = m;
-					m.setPromotion(Empty); 
-				}
-				else
-				{
-					mlist[generatedMoves++] = m;
-				}
-			}
-		}
-	}
-
-	uint64_t interpose = between[bitScanForward(pos.getBitboard(side, King))][bitScanForward(checkers)] | bit[bitScanForward(checkers)];
-	tempPiece = pos.getBitboard(side, Knight);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		if (bit[from] & pinned)
-		{
-			continue;
-		}
-		m.setFrom(from);
-		tempMove = knightAttacks[from] & interpose;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Bishop);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		if (bit[from] & pinned)
-		{
-			continue;
-		}
-		m.setFrom(from);
-		tempMove = bishopAttacks(from, occupied) & interpose;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);	
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Rook);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		if (bit[from] & pinned)
-		{
-			continue;
-		}
-		m.setFrom(from);
-		tempMove = rookAttacks(from, occupied) & interpose;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;
-		}
-	}
-
-	tempPiece = pos.getBitboard(side, Queen);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
-		if (bit[from] & pinned)
-		{
-			continue;
-		}
-		m.setFrom(from);
-		tempMove = queenAttacks(from, occupied) & interpose;
-		while (tempMove)
-		{
-			to = bitScanForward(tempMove);
-			tempMove &= (tempMove - 1);
-			m.setTo(to);
-			mlist[generatedMoves++] = m;	
-		}
-	}
-
-	return generatedMoves;
-}
