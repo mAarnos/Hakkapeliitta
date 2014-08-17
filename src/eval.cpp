@@ -140,7 +140,7 @@ std::array<int, 64> Evaluation::endingPST[6] = {
 	}
 };
 
-std::array<int, 64> Evaluation::mobilityOpening[6] = {
+std::vector<int> Evaluation::mobilityOpening[6] = {
     {},
     { -12, -8, -4, 0, 4, 8, 10, 12, 13 },
     { -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
@@ -149,7 +149,7 @@ std::array<int, 64> Evaluation::mobilityOpening[6] = {
     {}
 };
 
-std::array<int, 64> Evaluation::mobilityEnding[6] = {
+std::vector<int> Evaluation::mobilityEnding[6] = {
     {},
     { -12, -8, -4, 0, 4, 8, 10, 12, 13 },
     { -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
