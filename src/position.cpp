@@ -195,6 +195,13 @@ void Position::initializeBoardFromFEN(const std::string & fen)
 	hashKey = calculateHash();
 	pawnHashKey = calculatePawnHash();
 	materialHashKey = calculateMaterialHash();
+
+    // Calculate the phase of the game.
+    phase = totalPhase;
+    for (Piece i = Piece::Knight; i < Piece::King; ++i)
+    {
+        phase -= (pieceCount[Color::White + i] + pieceCount[Color::Black * 6 + i]) * piecePhase[i];
+    }
 }
 
 bool Position::makeMove(const Move & m, History & history)
@@ -253,6 +260,7 @@ template <bool side> bool Position::makeMove(const Move & m, History & history)
         materialHashKey ^= Zobrist::materialHash[captured][--pieceCount[captured]];
 
         auto pieceType = (captured % 6);
+        phase += piecePhase[pieceType];
         if (pieceType == Piece::Pawn)
         {
             pawnHashKey ^= Zobrist::pieceHash[captured][to];
@@ -290,9 +298,10 @@ template <bool side> bool Position::makeMove(const Move & m, History & history)
         {
             // This needs to be above the rest due to reasons. Try to fix that.
             materialHashKey ^= Zobrist::materialHash[promotion + side * 6][pieceCount[promotion + side * 6]++];
-
+            phase -= piecePhase[promotion];
             bitboards[Piece::Pawn + side * 6] ^= Bitboards::bit[to];
             bitboards[promotion + side * 6] |= Bitboards::bit[to];
+            board[to] = promotion + sideToMove * 6;
             hashKey ^= Zobrist::pieceHash[board[to]][to] ^ Zobrist::pieceHash[promotion + side * 6][to];
             pawnHashKey ^= Zobrist::pieceHash[board[to]][to];
             materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][--pieceCount[Piece::Pawn + side * 6]];
@@ -382,6 +391,7 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
         piece = Piece::Pawn + !side * 6;
         bitboards[piece] ^= Bitboards::bit[to];
         bitboards[promotion + !side * 6] ^= Bitboards::bit[to];
+        phase += piecePhase[promotion];
         --pieceCount[promotion + !side * 6];
         ++pieceCount[piece];
     }
@@ -397,6 +407,7 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
         bitboards[captured] |= Bitboards::bit[to];
         bitboards[12 + side] |= Bitboards::bit[to];
         bitboards[14] |= Bitboards::bit[from];
+        phase -= piecePhase[captured % 6];
         ++pieceCount[captured];
     }
     else

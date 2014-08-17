@@ -13,7 +13,7 @@ int main()
 
     UCI uci;
 
-    // Benchmark::runPerft();
+    Benchmark::runPerft();
 
     // Tuning tuning;
 

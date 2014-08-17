@@ -61,6 +61,7 @@ private:
     Square enPassant;
 	int fiftyMoveDistance;
 	int hply;
+    int phase;
     std::array<int, 12> pieceCount;
 
 	// These functions can be used to calculate different hash keys for the current position.
