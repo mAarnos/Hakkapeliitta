@@ -158,9 +158,7 @@ std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
-std::unordered_map<HashKey, int> Evaluation::knownEndgames;
-
-std::array<int, 64> flip = {
+const std::array<int, 64> Evaluation::flip = {
     56, 57, 58, 59, 60, 61, 62, 63,
     48, 49, 50, 51, 52, 53, 54, 55,
     40, 41, 42, 43, 44, 45, 46, 47,
@@ -170,6 +168,8 @@ std::array<int, 64> flip = {
     8, 9, 10, 11, 12, 13, 14, 15,
     0, 1, 2, 3, 4, 5, 6, 7
 };
+
+std::unordered_map<HashKey, int> Evaluation::knownEndgames;
 
 void Evaluation::initializeKnownEndgames()
 {
@@ -247,7 +247,7 @@ void Evaluation::initialize()
 
 int Evaluation::evaluate(const Position & pos)
 {
-    return Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos);
+    return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
 }
 
 template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & pos)

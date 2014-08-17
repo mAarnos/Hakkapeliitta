@@ -26,6 +26,8 @@ private:
     static std::vector<int> mobilityOpening[6];
     static std::vector<int> mobilityEnding[6];
 
+    const static std::array<int, 64> flip;
+
     static void initializeKnownEndgames();
     static std::unordered_map<HashKey, int> knownEndgames;
 
