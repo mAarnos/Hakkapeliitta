@@ -12,7 +12,7 @@ public:
     void start();
     void stop();
     void reset();
-    uint64_t getTimeInMilliSeconds();
+    template <typename resolution> uint64_t elapsed();
 private:
     std::chrono::high_resolution_clock::time_point startTime;
     std::chrono::high_resolution_clock::time_point stopTime;

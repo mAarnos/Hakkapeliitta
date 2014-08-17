@@ -3,7 +3,8 @@
 #include <fstream>
 #include <string>
 
-Tuning::Tuning()
+Tuning::Tuning():
+scalingConstant(1.0)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");

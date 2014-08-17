@@ -25,18 +25,11 @@ void Stopwatch::reset()
 	running = false;
 }
 
-uint64_t Stopwatch::getTimeInMilliSeconds()
+template <typename resolution> uint64_t Stopwatch::elapsed()
 {
-	uint64_t time;
-	if (running)
-	{
-		auto elapsed = std::chrono::high_resolution_clock::now() - startTime;
-		time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-	}
-	else
-	{
-		auto elapsed = stopTime - startTime;
-		time = std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count();
-	}
+    auto elapsed = (running ? std::chrono::high_resolution_clock::now() - startTime : stopTime - startTime);
+    auto time = std::chrono::duration_cast<resolution>(elapsed).count();
 	return time;
 }
+
+template uint64_t Stopwatch::elapsed<std::chrono::milliseconds>();

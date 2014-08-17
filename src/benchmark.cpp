@@ -22,8 +22,8 @@ void Benchmark::runPerft()
     sw.stop();
 
     std::cout << perftResult << std::endl;
-    std::cout << "Time in ms = " << sw.getTimeInMilliSeconds() << std::endl;
-    std::cout << "NPS = " << perftResult / ((sw.getTimeInMilliSeconds() + 1) / 1000.0) << std::endl;
+    std::cout << "Time in ms = " << sw.elapsed<std::chrono::milliseconds>() << std::endl;
+    std::cout << "NPS = " << perftResult / ((sw.elapsed<std::chrono::milliseconds>() + 1) / 1000.0) << std::endl;
 }
 
 uint64_t Benchmark::perft(Position & pos, int depth)
