@@ -2,7 +2,7 @@
 #include <iostream>
 
 ThreadPool::ThreadPool(int amountOfThreads) :
-terminate(false)
+terminateFlag(false)
 {
     for (auto i = 0; i < amountOfThreads; ++i)
     {
@@ -12,7 +12,7 @@ terminate(false)
 
 ThreadPool::~ThreadPool()
 {
-    terminate = true;
+    terminateFlag = true;
 
     for (auto & thread : threads)
     {
@@ -22,8 +22,10 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::loop()
 {
-    while (!terminate)
+    for (;;)
     {
+        // Critical section
+        std::unique_lock<std::mutex> lock(jobQueueMutex);
         std::cout << "do something" << std::endl;
     }
 }

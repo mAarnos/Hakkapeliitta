@@ -4,6 +4,7 @@
 #include <mutex>
 #include <vector>
 #include <thread>
+#include <atomic>
 #include <condition_variable>
 
 class ThreadPool
@@ -18,7 +19,7 @@ private:
 
     std::mutex jobQueueMutex;
     std::condition_variable cv;
-    volatile bool terminate;
+    std::atomic<bool> terminateFlag;
 };
 
 #endif

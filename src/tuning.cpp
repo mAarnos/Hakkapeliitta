@@ -6,7 +6,7 @@
 #include "eval.hpp"
 
 Tuning::Tuning():
-scalingConstant(0.68)
+scalingConstant(1.00)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -43,7 +43,7 @@ double Tuning::sigmoid(double x) const
 
 double Tuning::evalError() const
 {
-    Evaluation::initialize();
+    Evaluation::initialize(); // reinitialize eval
     auto sum = 0.0;
 
     for (auto i = 0; i < positions.size(); ++i)
@@ -61,30 +61,34 @@ void Tuning::calculateScalingConstant()
     auto best = evalError();
     auto step = 0.01;
     auto improved = true;
+    auto direction = 1;
 
     while (improved)
     {
         improved = false;
-        scalingConstant += step;
+        scalingConstant += step * direction;
         auto error = evalError();
         if (error >= best)
         {
-            scalingConstant -= 2 * step;
+            scalingConstant -= 2 * step * direction;
             error = evalError();
             if (error >= best)
             {
-                scalingConstant += step;
+                scalingConstant += step * direction;
             }
             else
             {
                 improved = true;
                 best = error;
+                direction *= -1; // Change the direction.
+                std::cout << scalingConstant << std::endl;
             }
         }
         else
         {
             improved = true;
             best = error;
+            std::cout << scalingConstant << std::endl;
         }
     }
 
