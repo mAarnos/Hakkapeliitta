@@ -14,6 +14,7 @@ private:
     void calculateScalingConstant();
 
     double sigmoid(double x) const;
+    double evalError() const;
 
     double scalingConstant;
     std::vector<Position> positions;

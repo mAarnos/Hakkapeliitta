@@ -3,6 +3,7 @@
 #include "benchmark.hpp"
 #include "tuning.hpp"
 #include "threadpool.hpp"
+#include "eval.hpp"
 
 int main() 
 {
@@ -10,12 +11,14 @@ int main()
 
     Bitboards::initialize();
     Zobrist::initialize();
+    Evaluation::initialize();
 
     UCI uci;
 
-    Benchmark::runPerft();
+    // Benchmark::runPerft();
 
-    // Tuning tuning;
+    Tuning tuning;
+    tuning.tune();
 
     // ThreadPool pool(1);
 

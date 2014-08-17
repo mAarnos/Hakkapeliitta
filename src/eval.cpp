@@ -260,9 +260,22 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
         return knownEndgames[pos.getMaterialHashKey()];
     }
 
-    auto score = 0;
+    auto phase = pos.calculateGamePhase();
+    auto scoreOp = 0, scoreEd = 0;
+    auto score = mobilityEval<hardwarePopcntEnabled>(pos, phase);
 
-    return score;
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+    {
+        if (pos.getBoard(sq) != Piece::Empty)
+        {
+            scoreOp += pieceSquareTableOpening[pos.getBoard(sq)][sq];
+            scoreEd += pieceSquareTableOpening[pos.getBoard(sq)][sq];
+        }
+    }
+
+    score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+
+    return (pos.getSideToMove() ? -score : score);
 }
 
 template int Evaluation::evaluate<false>(const Position & pos);

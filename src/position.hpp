@@ -26,6 +26,8 @@ public:
 	void initializeBoardFromFEN(const std::string & fen);
 	void displayBoard() const;
 
+    Piece getBoard(Square sq) const { return board[sq]; }
+
     Bitboard getBitboard(Color colour, Piece piece) const { return bitboards[piece + colour * 6]; }
     Bitboard getPieces(Color colour) const { return bitboards[12 + colour]; }
     Bitboard getOccupiedSquares() const { return bitboards[14]; }
@@ -44,6 +46,8 @@ public:
     void unmakeMove(const Move & move, History & history);
 
     bool isAttacked(Square sq, Color side) const;
+
+    int calculateGamePhase() const { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.
