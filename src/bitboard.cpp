@@ -3,6 +3,7 @@
 #include <iostream>
 #include "color.hpp"
 
+// TODO: move inside Bitboards?
 std::array<int, 64> heading[64];
 
 std::array<Bitboard, 64> Bitboards::bit;

@@ -1,5 +1,4 @@
 #include "threadpool.hpp"
-#include <iostream>
 
 ThreadPool::ThreadPool(int amountOfThreads) :
 terminateFlag(false)
@@ -12,7 +11,8 @@ terminateFlag(false)
 
 ThreadPool::~ThreadPool()
 {
-    terminateFlag = true;
+    terminateFlag = true; 
+    cv.notify_all();
 
     for (auto & thread : threads)
     {
@@ -20,12 +20,25 @@ ThreadPool::~ThreadPool()
     }
 }
 
+void ThreadPool::addJob(std::function<void()> job)
+{ 
+    std::unique_lock<std::mutex> lock(jobQueueMutex);
+    jobQueue.push(job);
+    cv.notify_one();
+}
+
 void ThreadPool::loop()
 {
     for (;;)
     {
-        // Critical section
         std::unique_lock<std::mutex> lock(jobQueueMutex);
-        std::cout << "do something" << std::endl;
+        while (!terminateFlag && jobQueue.empty())
+            cv.wait(lock);
+        if (terminateFlag)
+            return;
+        auto job = jobQueue.front();
+        jobQueue.pop();
+        lock.unlock();
+        job();
     }
 }
