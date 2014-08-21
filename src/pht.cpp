@@ -16,6 +16,8 @@ void PawnHashTable::clear()
     table.resize(tableSize);
 }
 
+// Pawn hash table is broken, should save scoreOp and scoreEd but for some reason this is -5 elo.
+// Retest in 2015.
 void PawnHashTable::save(const Position & pos, int score)
 {
     // assert(score < infinity && score > -infinity);

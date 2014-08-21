@@ -5,6 +5,21 @@
 #include "threadpool.hpp"
 #include "eval.hpp"
 
+void job()
+{
+    std::cout << "hello" << std::endl;
+}
+
+void job2()
+{
+    std::cout << "hello2" << std::endl;
+}
+
+void job3(int i)
+{
+    std::cout << "hello" << i << std::endl;
+}
+
 int main() 
 {
     std::cout << "Hakkapeliitta, (C) 2013-2014 Mikko Aarnos" << std::endl;
@@ -18,16 +33,13 @@ int main()
     // Benchmark::runPerft();
 
   //  Tuning tuning;
-//    tuning.tune();
+  //  tuning.tune();
 
     ThreadPool pool(2);
 
-    std::function<void()> job = []() { std::cout << "hello" << std::endl; };
-    std::function<void()> job2 = []() { std::cout << "hello2" << std::endl; };
-    std::function<void()> job3 = []() { std::cout << "hello3" << std::endl; };
     pool.addJob(job);
     pool.addJob(job2);
-    pool.addJob(job3);
+    pool.addJob(job3, 7);
 
     uci.mainLoop();
 
