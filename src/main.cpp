@@ -27,15 +27,13 @@ int main()
     Bitboards::initialize();
     Zobrist::initialize();
     Evaluation::initialize();
-
     UCI uci;
+    ThreadPool pool(1);
 
     // Benchmark::runPerft();
 
     // Tuning tuning;
     // tuning.tune();
-
-    // ThreadPool pool(2);
 
     // pool.addJob(job);
     // pool.addJob(job2);

@@ -286,96 +286,57 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
     auto scoreOp = 0, scoreEd = 0;
     auto occupied = pos.getOccupiedSquares();
 
-    auto targetBitboard = ~pos.getPieces(Color::White);
-
-    auto tempPiece = pos.getBitboard(Color::White, Piece::Knight);
-    while (tempPiece)
+    for (Color c = Color::White; c <= Color::Black; ++c)
     {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp += mobilityOpening[Piece::Knight][count];
-        scoreEd += mobilityEnding[Piece::Knight][count];
-    }
+        auto targetBitboard = ~pos.getPieces(c);
+        auto scoreOpForColor = 0, scoreEdForColor = 0;
 
-    tempPiece = pos.getBitboard(Color::White, Piece::Bishop);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp += mobilityOpening[Piece::Bishop][count];
-        scoreEd += mobilityEnding[Piece::Bishop][count];
-    }
+        auto tempPiece = pos.getBitboard(c, Piece::Knight);
+        while (tempPiece)
+        {
+            auto from = Bitboards::lsb(tempPiece);
+            tempPiece &= (tempPiece - 1);
+            auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
+            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            scoreOpForColor += mobilityOpening[Piece::Knight][count];
+            scoreEdForColor += mobilityEnding[Piece::Knight][count];
+        }
 
-    tempPiece = pos.getBitboard(Color::White, Piece::Rook);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp += mobilityOpening[Piece::Rook][count];
-        scoreEd += mobilityEnding[Piece::Rook][count];
-    }
+        tempPiece = pos.getBitboard(c, Piece::Bishop);
+        while (tempPiece)
+        {
+            auto from = Bitboards::lsb(tempPiece);
+            tempPiece &= (tempPiece - 1);
+            auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
+            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            scoreOpForColor += mobilityOpening[Piece::Bishop][count];
+            scoreEdForColor += mobilityEnding[Piece::Bishop][count];
+        }
 
-    tempPiece = pos.getBitboard(Color::White, Piece::Queen);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp += mobilityOpening[Piece::Queen][count];
-        scoreEd += mobilityEnding[Piece::Queen][count];
-    }
+        tempPiece = pos.getBitboard(c, Piece::Rook);
+        while (tempPiece)
+        {
+            auto from = Bitboards::lsb(tempPiece);
+            tempPiece &= (tempPiece - 1);
+            auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
+            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            scoreOpForColor += mobilityOpening[Piece::Rook][count];
+            scoreEdForColor += mobilityEnding[Piece::Rook][count];
+        }
 
-    targetBitboard = ~pos.getPieces(Color::Black);
+        tempPiece = pos.getBitboard(c, Piece::Queen);
+        while (tempPiece)
+        {
+            auto from = Bitboards::lsb(tempPiece);
+            tempPiece &= (tempPiece - 1);
+            auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
+            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            scoreOpForColor += mobilityOpening[Piece::Queen][count];
+            scoreEdForColor += mobilityEnding[Piece::Queen][count];
+        }
 
-    tempPiece = pos.getBitboard(Color::Black, Piece::Knight);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp -= mobilityOpening[Piece::Knight][count];
-        scoreEd -= mobilityEnding[Piece::Knight][count];
-    }
-
-    tempPiece = pos.getBitboard(Color::Black, Piece::Bishop);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp -= mobilityOpening[Piece::Bishop][count];
-        scoreEd -= mobilityEnding[Piece::Bishop][count];
-    }
-
-    tempPiece = pos.getBitboard(Color::Black, Piece::Rook);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp -= mobilityOpening[Piece::Rook][count];
-        scoreEd -= mobilityEnding[Piece::Rook][count];
-    }
-
-    tempPiece = pos.getBitboard(Color::Black, Piece::Queen);
-    while (tempPiece)
-    {
-        auto from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
-        auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
-        auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
-        scoreOp -= mobilityOpening[Piece::Queen][count];
-        scoreEd -= mobilityEnding[Piece::Queen][count];
+        scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
+        scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
     return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
