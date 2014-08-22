@@ -57,6 +57,7 @@ void ThreadPool::addJob(Fn&& fn, Args&&... args)
     cv.notify_one();
 }
 
+// Could be replaced with a lambda in the constructor.
 inline void ThreadPool::loop()
 {
     for (;;)

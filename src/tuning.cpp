@@ -6,7 +6,7 @@
 #include "eval.hpp"
 
 Tuning::Tuning():
-scalingConstant(1.00)
+scalingConstant(254.48)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -38,7 +38,7 @@ scalingConstant(1.00)
 
 double Tuning::sigmoid(double x) const
 {
-	return (1.0 / (1.0 + pow(10.0, -scalingConstant * x / 400.0)));
+	return (1.0 / (1.0 + exp(x / -scalingConstant)));
 }
 
 double Tuning::evalError() const

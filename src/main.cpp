@@ -32,14 +32,14 @@ int main()
 
     // Benchmark::runPerft();
 
-  //  Tuning tuning;
-  //  tuning.tune();
+    // Tuning tuning;
+    // tuning.tune();
 
-    ThreadPool pool(2);
+    // ThreadPool pool(2);
 
-    pool.addJob(job);
-    pool.addJob(job2);
-    pool.addJob(job3, 7);
+    // pool.addJob(job);
+    // pool.addJob(job2);
+    // pool.addJob(job3, 7);
 
     uci.mainLoop();
 
