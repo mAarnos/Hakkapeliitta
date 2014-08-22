@@ -4,8 +4,7 @@
 PawnHashTable::PawnHashTable()
 {
     auto sizeInBytes = 1024 * 1024 * 4; // 4MB
-    // Here, just like with the transposition table, - 1 could avoid some nasty things.
-    auto sizeInEntries = sizeInBytes / sizeof(PawnHashTableEntry) - 1;
+    auto sizeInEntries = sizeInBytes / sizeof(PawnHashTableEntry);
     table.resize(sizeInEntries); 
 }
 

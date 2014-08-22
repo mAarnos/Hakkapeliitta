@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include "position.hpp"
 #include "zobrist.hpp"
+#include "pht.hpp"
 
 class Evaluation
 {
@@ -17,6 +18,8 @@ public:
     static std::array<int, 64> pieceSquareTableOpening[12];
     static std::array<int, 64> pieceSquareTableEnding[12];
 private:
+    static PawnHashTable pawnHashTable;
+
     static std::array<int, 6> pieceValuesOpening;
     static std::array<int, 6> pieceValuesEnding;
 

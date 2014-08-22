@@ -150,8 +150,7 @@ void TranspositionTable::setSize(size_t sizeInBytes)
         sizeInBytes = 1024 * 1024;
     }
 
-    // Apparently the -1 part is pretty important in some cases. Can't hurt so...
-    auto tableSize = (sizeInBytes / sizeof(TranspositionTableEntry)) - 1;
+    auto tableSize = (sizeInBytes / sizeof(TranspositionTableEntry));
     table.resize(tableSize);
 }
 

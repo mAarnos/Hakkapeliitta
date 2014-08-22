@@ -32,8 +32,8 @@ int main()
 
     // Benchmark::runPerft();
 
-    // Tuning tuning;
-    // tuning.tune();
+    Tuning tuning;
+    tuning.tune();
 
     // pool.addJob(job);
     // pool.addJob(job2);
