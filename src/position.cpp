@@ -28,6 +28,20 @@ const int Position::totalPhase = piecePhase[Piece::Pawn] * 16 +
                                  piecePhase[Piece::Rook] * 4 +
                                  piecePhase[Piece::Queen] * 2;
 
+Position::Position()
+{
+    bitboards.fill(0);
+    board.fill(Piece::Empty);
+    hashKey = pawnHashKey = materialHashKey = 0;
+    sideToMove = Color::White;
+    castlingRights = 0;
+    enPassant = Square::NoSquare;
+    phase = 0;
+    fiftyMoveDistance = 0;
+    hply = 0;
+    pieceCount.fill(0);
+}
+
 void Position::displayBoard() const
 {
 	static std::string pieceToMark = "PNBRQKpnbrqk.";

@@ -23,6 +23,8 @@ public:
 class Position
 {
 public:
+    Position();
+
 	void initializeBoardFromFEN(const std::string & fen);
 	void displayBoard() const;
 
