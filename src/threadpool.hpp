@@ -9,6 +9,8 @@
 #include <functional>
 #include <condition_variable>
 
+// A simple thread pool implementation.
+// All functions given as jobs must return nothing(i.e. be void).
 class ThreadPool
 {
 public:
@@ -58,6 +60,7 @@ void ThreadPool::addJob(Fn&& fn, Args&&... args)
 }
 
 // Could be replaced with a lambda in the constructor.
+// On the other hand if the threadpool size is dynamic this is better to avoid code duplication.
 inline void ThreadPool::loop()
 {
     for (;;)

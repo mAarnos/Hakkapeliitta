@@ -3,6 +3,8 @@
 #include "color.hpp"
 #include "square.hpp"
 
+PawnHashTable Evaluation::pawnHashTable;
+
 std::array<int, 64> Evaluation::pieceSquareTableOpening[12];
 std::array<int, 64> Evaluation::pieceSquareTableEnding[12];
 
