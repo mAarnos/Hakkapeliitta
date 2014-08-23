@@ -4,26 +4,31 @@
 #include <cstdint>
 #include <chrono>
 
+// TODO: make everything that is possible noexcept
+
 class Stopwatch
 {
 public:
-    Stopwatch();
+    Stopwatch(bool autoStart = false);
 
     void start();
     void stop();
     void reset();
-
-    template <typename Resolution> uint64_t elapsed();
+    bool isRunning() const;
+    template <typename Resolution> uint64_t elapsed() const;
 private:
     std::chrono::high_resolution_clock::time_point startTime;
     std::chrono::high_resolution_clock::time_point stopTime;
-    std::chrono::high_resolution_clock::time_point currentTime;
     bool running;
 };
 
-inline Stopwatch::Stopwatch()
+inline Stopwatch::Stopwatch(bool autoStart)
 {
     reset();
+    if (autoStart)
+    {
+        start();
+    }
 }
 
 inline void Stopwatch::start()
@@ -40,16 +45,19 @@ inline void Stopwatch::stop()
 
 inline void Stopwatch::reset()
 {
-    startTime = std::chrono::high_resolution_clock::now();
-    stopTime = startTime;
-    currentTime = startTime;
+    startTime = stopTime = std::chrono::high_resolution_clock::now();
     running = false;
 }
 
-template <typename resolution> uint64_t Stopwatch::elapsed()
+inline bool Stopwatch::isRunning() const
+{
+    return running;
+}
+
+template <typename Resolution> uint64_t Stopwatch::elapsed() const
 {
     auto elapsed = (running ? (std::chrono::high_resolution_clock::now() - startTime) : (stopTime - startTime));
-    auto time = std::chrono::duration_cast<resolution>(elapsed).count();
+    auto time = std::chrono::duration_cast<Resolution>(elapsed).count();
     return time;
 }
 

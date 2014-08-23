@@ -4,6 +4,7 @@
 #include "tuning.hpp"
 #include "threadpool.hpp"
 #include "eval.hpp"
+#include "stopwatch.hpp"
 
 void job()
 {
