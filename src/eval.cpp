@@ -10,11 +10,6 @@ array<int, Squares> pieceSquareTableEnding[12];
 
 map<uint64_t, int> knownEndgames;
 
-array<int, Squares> queenTropism[Squares];
-array<int, Squares> rookTropism[Squares];
-array<int, Squares> knightTropism[Squares];
-array<int, Squares> bishopTropism[Squares];
-
 void initializeKnownEndgames()
 {
 	// King vs king: draw
@@ -64,59 +59,9 @@ void initializeKnownEndgames()
 	}
 }
 
-void initializeKingTropism()
-{
-	int Distance[Squares][Squares];
-	int DistanceNW[Squares] = {
-		0, 1, 2, 3, 4, 5, 6, 7,
-		1, 2, 3, 4, 5, 6, 7, 8,
-		2, 3, 4, 5, 6, 7, 8, 9,
-		3, 4, 5, 6, 7, 8, 9,10,
-		4, 5, 6, 7, 8, 9, 10,11,
-		5, 6, 7, 8, 9,10, 11,12,
-		6, 7, 8, 9,10,11,12,13,
-		7, 8, 9,10,11,12,13,14
-	};
-	int DistanceNE[Squares] = {
-		 7, 6, 5, 4, 3, 2, 1, 0,
-		 8, 7, 6, 5, 4, 3, 2, 1,
-		 9, 8, 7, 6, 5, 4, 3, 2,
-		10, 9, 8, 7, 6, 5, 4, 3,
-		11,10, 9, 8, 7, 6, 5, 4,
-		12,11,10, 9, 8, 7, 6, 5,
-		13,12,11,10, 9, 8, 7, 6,
-		14,13,12,11,10, 9, 8, 7
-	};
-	int nTropism[15] = { 14, 22, 29, 28, 19, -1, -6, -10, -11, -12, -13, -14, -15, -16, -17 };
-	int bTropism[15] = { 6, -12, 4, -16, -11, -17, -6, -14, -9, -17, -1, -17, -4, 3, 7 };
-	int rTropism[15] = { 7, 22, 23, 22, 22, 16, -2, -5, -14, -10, -8, -15, -16, -17, -17 };
-	int qTropism[15] = { 35, 49, 47, 44, 40, 14, 3, 0, -2, 1, 4, -3, -5, -6, -9 };
-	int i, j;
-
-	for (i = A1; i <= H8; i++)
-	{
-		for (j = A1; j <= H8; j++)
-		{
-			Distance[i][j] = (abs((File(i)) - (File(j))) + abs((Rank(i)) - (Rank(j))));
-		}
-	}
-	for (i = A1; i <= H8; i++)
-	{
-		for (j = A1; j <= H8; j++)
-		{
-			queenTropism[i][j] = qTropism[Distance[i][j]];
-			rookTropism[i][j] = rTropism[Distance[i][j]];
-			knightTropism[i][j] = nTropism[Distance[i][j]];
-			bishopTropism[i][j] = bTropism[abs(DistanceNE[i] - DistanceNE[j])];
-			bishopTropism[i][j] += bTropism[abs(DistanceNW[i] - DistanceNW[j])];
-		}
-	}
-}
-
 void initializeEval()
 {
 	initializeKnownEndgames();
-	initializeKingTropism();
 
 	array<int, Squares> flip = {
 		56, 57, 58, 59, 60, 61, 62, 63,
@@ -142,17 +87,18 @@ void initializeEval()
 	}
 }
 
-int mobilityEval(Position & pos, int phase, int & kingTropismScore)
+int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
 {
 	int scoreOp = 0;
 	int scoreEd = 0;
 	int from, count;
 	uint64_t occupied = pos.getOccupiedSquares();
 	uint64_t tempPiece, tempMove;
+    auto attackUnits = 0;
 
 	// White
 	uint64_t targetBitboard = ~pos.getPieces(White);
-	int kingLocation = bitScanForward(pos.getBitboard(Black, King));
+	auto opponentKingZone = kingZone[Black][bitScanForward(pos.getBitboard(Black, King))];
 
 	tempPiece = pos.getBitboard(White, Knight);
 	while (tempPiece)
@@ -165,7 +111,8 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Knight][count];
 		scoreEd += mobilityEnding[Knight][count];
-		kingTropismScore += knightTropism[from][kingLocation];
+
+        attackUnits += attackWeight[Knight] * popcnt(tempMove & opponentKingZone);
 	}
 
 	tempPiece = pos.getBitboard(White, Bishop);
@@ -179,7 +126,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Bishop][count];
 		scoreEd += mobilityEnding[Bishop][count];
-		kingTropismScore += bishopTropism[from][kingLocation];
+
+        tempMove = bishopAttacks(from, occupied ^ pos.getBitboard(White, Queen)) & targetBitboard;
+        attackUnits += attackWeight[Bishop] * popcnt(tempMove & opponentKingZone);
 	}
 
 	tempPiece = pos.getBitboard(White, Rook);
@@ -193,7 +142,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Rook][count];
 		scoreEd += mobilityEnding[Rook][count];
-		kingTropismScore += rookTropism[from][kingLocation];
+
+        tempMove = rookAttacks(from, occupied ^ pos.getBitboard(White, Queen) ^ pos.getBitboard(White, Rook)) & targetBitboard;
+        attackUnits += attackWeight[Rook] * popcnt(tempMove & opponentKingZone);
 
 		if (!(files[File(from)] & pos.getBitboard(White, Pawn)))
 		{
@@ -236,12 +187,16 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Queen][count];
 		scoreEd += mobilityEnding[Queen][count];
-		kingTropismScore += queenTropism[from][kingLocation];
+
+        attackUnits += attackWeight[Queen] * popcnt(tempMove & opponentKingZone);
 	}
 
+    kingSafetyScore = kingSafetyTable[attackUnits];
+
 	// Black
-	kingLocation = bitScanForward(pos.getBitboard(White, King));
+    opponentKingZone = kingZone[White][bitScanForward(pos.getBitboard(White, King))];
 	targetBitboard = ~pos.getPieces(Black);
+    attackUnits = 0;
 
 	tempPiece = pos.getBitboard(Black, Knight);
 	while (tempPiece)
@@ -254,7 +209,8 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Knight][count];
 		scoreEd -= mobilityEnding[Knight][count];
-		kingTropismScore -= knightTropism[from][kingLocation];
+
+        attackUnits += attackWeight[Knight] * popcnt(tempMove & opponentKingZone);
 	}
 
 	tempPiece = pos.getBitboard(Black, Bishop);
@@ -268,7 +224,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Bishop][count];
 		scoreEd -= mobilityEnding[Bishop][count];
-		kingTropismScore -= bishopTropism[from][kingLocation];
+
+        tempMove = bishopAttacks(from, occupied ^ pos.getBitboard(Black, Queen)) & targetBitboard;
+        attackUnits += attackWeight[Bishop] * popcnt(tempMove & opponentKingZone);
 	}
 
 	tempPiece = pos.getBitboard(Black, Rook);
@@ -282,7 +240,9 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Rook][count];
 		scoreEd -= mobilityEnding[Rook][count];
-		kingTropismScore -= rookTropism[from][kingLocation];
+
+        tempMove = rookAttacks(from, occupied ^ pos.getBitboard(Black, Queen) ^ pos.getBitboard(Black, Rook)) & targetBitboard;
+        attackUnits += attackWeight[Rook] * popcnt(tempMove & opponentKingZone);
 
 		if (!(files[File(from)] & pos.getBitboard(Black, Pawn)))
 		{
@@ -325,8 +285,11 @@ int mobilityEval(Position & pos, int phase, int & kingTropismScore)
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Queen][count];
 		scoreEd -= mobilityEnding[Queen][count];
-		kingTropismScore -= queenTropism[from][kingLocation];
+
+        attackUnits += attackWeight[Queen] * popcnt(tempMove & opponentKingZone);
 	}
+
+    kingSafetyScore -= kingSafetyTable[attackUnits];
 
 	return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }

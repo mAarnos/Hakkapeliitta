@@ -8,6 +8,8 @@ array<uint64_t, Squares> pawnSingleMoves[2];
 array<uint64_t, Squares> pawnDoubleMoves[2];
 array<uint64_t, Squares> rays[8];
 
+array<uint64_t, Squares> kingZone[2];
+
 // Not really a bitboard but it is easiest to initialize here.
 array<int, Squares> heading[Squares];
 
@@ -64,6 +66,14 @@ void initializeKingAttacks()
 		kingAttacks[sq] |= kingSet;
 		kingAttacks[sq] ^= bit[sq];
 	}
+
+    for (int sq = A1; sq <= H8; sq++)
+    {
+        if (sq < A8)
+            kingZone[White][sq] = kingAttacks[sq] | kingAttacks[sq + 8];
+        if (sq > H1)
+            kingZone[Black][sq] = kingAttacks[sq] | kingAttacks[sq - 8];
+    }
 }
 
 void initializeKnightAttacks()

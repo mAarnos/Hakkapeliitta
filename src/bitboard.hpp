@@ -18,6 +18,8 @@ extern array<int, Squares> heading[Squares];
 
 extern array<uint64_t, Squares> between[Squares];
 
+extern array<uint64_t, Squares> kingZone[2];
+
 extern array<uint64_t, Squares> passed[Colours];
 extern array<uint64_t, Squares> backward[Colours];
 extern array<uint64_t, Squares> isolated;
