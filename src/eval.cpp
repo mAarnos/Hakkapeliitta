@@ -280,9 +280,6 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
     return (pos.getSideToMove() ? -score : score);
 }
 
-template int Evaluation::evaluate<false>(const Position & pos);
-template int Evaluation::evaluate<true>(const Position & pos);
-
 template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Position & pos, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
@@ -344,7 +341,5 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
     return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
 
-template int Evaluation::mobilityEval<false>(const Position & pos, int phase);
-template int Evaluation::mobilityEval<true>(const Position & pos, int phase);
 
 
