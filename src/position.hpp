@@ -12,8 +12,7 @@ class History
 {
 public:
     HashKey hash;
-    HashKey pHash;
-    HashKey mHash;    
+    HashKey pHash;  
     Piece captured;
     Square ep;
     int fifty;

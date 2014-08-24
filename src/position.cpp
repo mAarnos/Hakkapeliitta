@@ -245,7 +245,6 @@ template <bool side> bool Position::makeMove(const Move & m, History & history)
     // Save all information needed to take back a move.
     history.hash = hashKey;
     history.pHash = pawnHashKey;
-    history.mHash = materialHashKey;
     history.captured = captured;
     history.ep = enPassant;
     history.fifty = fiftyMoveDistance;
@@ -370,7 +369,6 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
     // Back up irreversible information from history.
     hashKey = history.hash;
     pawnHashKey = history.pHash;
-    materialHashKey = history.mHash;
     auto captured = history.captured;
     enPassant = history.ep;
     fiftyMoveDistance = history.fifty;
@@ -385,7 +383,7 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
         bitboards[12 + side] |= Bitboards::bit[enPassantSquare];
         bitboards[14] |= Bitboards::bit[enPassantSquare];
         board[enPassantSquare] = Piece::Pawn + side * 6;
-        ++pieceCount[Piece::Pawn + side * 6];
+        materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][pieceCount[Piece::Pawn + side * 6]++];
     }
     else if (promotion == Piece::King)
     {
@@ -406,8 +404,8 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
         bitboards[piece] ^= Bitboards::bit[to];
         bitboards[promotion + !side * 6] ^= Bitboards::bit[to];
         phase += piecePhase[promotion];
-        --pieceCount[promotion + !side * 6];
-        ++pieceCount[piece];
+        materialHashKey ^= Zobrist::materialHash[promotion + !side * 6][--pieceCount[promotion + !side * 6]];
+        materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][pieceCount[piece]++];
     }
 
     bitboards[piece] ^= fromToBB;
@@ -422,7 +420,7 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
         bitboards[12 + side] |= Bitboards::bit[to];
         bitboards[14] |= Bitboards::bit[from];
         phase -= piecePhase[captured % 6];
-        ++pieceCount[captured];
+        materialHashKey ^= Zobrist::materialHash[captured][pieceCount[captured]++];
     }
     else
     {
