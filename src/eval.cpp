@@ -584,12 +584,7 @@ int eval(Position & pos)
 	// King safety
 	score += kingSafetyEval(pos, phase, kingTropismScore);
 
-	if (pos.getSideToMove())
-	{
-		return -score;
-	}
-	else
-	{
-		return score;
-	}
+    score += (pos.getSideToMove() ? -5 : 5);
+
+    return (pos.getSideToMove() ? -score : score);
 }
