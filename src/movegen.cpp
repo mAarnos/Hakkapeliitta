@@ -6,7 +6,13 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     pos.getSideToMove() ? generatePseudoLegalMoves<true>(pos, moves) : generatePseudoLegalMoves<false>(pos, moves);
 }
 
-template <bool side> void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
+void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> & moves)
+{
+    pos.getSideToMove() ? generatePseudoLegalCaptureMoves<true>(pos, moves) : generatePseudoLegalCaptureMoves<false>(pos, moves);
+}
+
+template <bool side> 
+void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
 {
     assert(moves.empty());
     moves.reserve(128);
@@ -169,7 +175,119 @@ template <bool side> void MoveGen::generatePseudoLegalMoves(Position & pos, std:
     }
 }
 
-template void MoveGen::generatePseudoLegalMoves<false>(Position & pos, std::vector<Move> & moves);
-template void MoveGen::generatePseudoLegalMoves<true>(Position & pos, std::vector<Move> & moves);
+template <bool side>
+void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> & moves)
+{
+    assert(moves.empty());
+    moves.reserve(64);
+
+    int from, to;
+    Bitboard tempMove;
+    auto enemyPieces = pos.getPieces(!side);
+    auto occupiedSquares = pos.getOccupiedSquares();
+
+    auto tempPiece = pos.getBitboard(side, Piece::Pawn);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+
+        tempMove = Bitboards::pawnAttacks[side][from] & enemyPieces;
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+
+            if (to >= Square::A8 || to <= Square::H1)
+            {
+                moves.push_back(Move(from, to, Piece::Queen, 0));
+                moves.push_back(Move(from, to, Piece::Rook, 0));
+                moves.push_back(Move(from, to, Piece::Bishop, 0));
+                moves.push_back(Move(from, to, Piece::Knight, 0));
+            }
+            else
+            {
+                moves.push_back(Move(from, to, Piece::Empty, 0));
+            }
+        }
+
+        if (pos.getEnPassantSquare() != Square::NoSquare)
+        {
+            if (Bitboards::pawnAttacks[side][from] & Bitboards::bit[pos.getEnPassantSquare()])
+            {
+                moves.push_back(Move(from, pos.getEnPassantSquare(), Piece::Pawn, 0));
+            }
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Knight);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::knightAttacks[from] & enemyPieces;
+
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Bishop);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & enemyPieces;
+
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Rook);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::rookAttacks(from, occupiedSquares) & enemyPieces;
+
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Queen);
+    while (tempPiece)
+    {
+        from = Bitboards::lsb(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        tempMove = Bitboards::queenAttacks(from, occupiedSquares) & enemyPieces;
+
+        while (tempMove)
+        {
+            to = Bitboards::lsb(tempMove);
+            tempMove &= (tempMove - 1);
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+
+    from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    tempMove = Bitboards::kingAttacks[from] & enemyPieces;
+    while (tempMove)
+    {
+        to = Bitboards::lsb(tempMove);
+        tempMove &= (tempMove - 1);
+        moves.push_back(Move(from, to, Piece::Empty, 0));
+    }
+}
 
 

@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <chrono>
 
-// TODO: make everything that is possible noexcept
-
 class Stopwatch
 {
 public:

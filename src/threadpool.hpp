@@ -11,6 +11,7 @@
 
 // A simple thread pool implementation.
 // All functions given as jobs must return nothing(i.e. be void).
+// Return types are simulated by a reference input parameter.
 class ThreadPool
 {
 public:
