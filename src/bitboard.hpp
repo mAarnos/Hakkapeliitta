@@ -54,7 +54,11 @@ public:
     // We automatically detect which one to use.
     static long long hardwarePopcnt(Bitboard bb)
     {
+#ifdef __clang__
+        return __builtin_popcountll(bb);
+#else
         return _mm_popcnt_u64(bb);
+#endif
     }
 
     static long long softwarePopcnt(Bitboard bb)

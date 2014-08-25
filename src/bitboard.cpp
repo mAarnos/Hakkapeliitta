@@ -336,7 +336,7 @@ void Bitboards::initialize()
     initMagics(bishopInit, bishopMagic, bishopDirections, 64 - 9);
     initMagics(rookInit, rookMagic, rookDirections, 64 - 12);
 
-#ifndef _WIN64
+#if !(defined _WIN64 || defined __x86_64__)
     hardwarePopcntSupported = false;
 #else
     // Detect support for hardware popcnt.
