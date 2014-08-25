@@ -201,9 +201,6 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
             if (to >= Square::A8 || to <= Square::H1)
             {
                 moves.push_back(Move(from, to, Piece::Queen, 0));
-                moves.push_back(Move(from, to, Piece::Rook, 0));
-                moves.push_back(Move(from, to, Piece::Bishop, 0));
-                moves.push_back(Move(from, to, Piece::Knight, 0));
             }
             else
             {

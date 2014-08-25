@@ -4,22 +4,6 @@
 #include "tuning.hpp"
 #include "threadpool.hpp"
 #include "eval.hpp"
-#include "stopwatch.hpp"
-
-void job()
-{
-    std::cout << "hello" << std::endl;
-}
-
-void job2()
-{
-    std::cout << "hello2" << std::endl;
-}
-
-void job3(int i)
-{
-    std::cout << "hello" << i << std::endl;
-}
 
 int main() 
 {
@@ -29,16 +13,12 @@ int main()
     Zobrist::initialize();
     Evaluation::initialize();
     UCI uci;
-    ThreadPool pool(1);
+    // ThreadPool pool(1);
 
     Benchmark::runPerft();
 
     // Tuning tuning;
     // tuning.tune();
-
-    // pool.addJob(job);
-    // pool.addJob(job2);
-    // pool.addJob(job3, 7);
 
     uci.mainLoop();
 
