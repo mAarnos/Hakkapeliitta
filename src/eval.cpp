@@ -160,6 +160,8 @@ std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
+int sideToMoveBonus = 5;
+
 const std::array<int, 64> Evaluation::flip = {
     56, 57, 58, 59, 60, 61, 62, 63,
     48, 49, 50, 51, 52, 53, 54, 55,
@@ -274,8 +276,9 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
             scoreEd += pieceSquareTableOpening[pos.getBoard(sq)][sq];
         }
     }
-
     score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+
+    score += (pos.getSideToMove() ? -sideToMoveBonus : sideToMoveBonus);
 
     return (pos.getSideToMove() ? -score : score);
 }
