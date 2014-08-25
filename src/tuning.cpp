@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <cmath>
 #include "stopwatch.hpp"
 #include "eval.hpp"
 

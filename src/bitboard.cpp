@@ -1,6 +1,7 @@
 #include "bitboard.hpp"
 #include <vector>
 #include <iostream>
+#include <cstring>
 #include "color.hpp"
 
 // TODO: move inside Bitboards?

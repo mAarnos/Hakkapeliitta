@@ -1,5 +1,6 @@
 #include "tt.hpp"
 #include <cassert>
+#include <cmath>
 
 TranspositionTable::TranspositionTable(size_t sizeInBytes)
 {

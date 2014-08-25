@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <sstream>
+#include <stdexcept>
 #include "bitboard.hpp"
 #include "zobrist.hpp"
 #include "color.hpp"

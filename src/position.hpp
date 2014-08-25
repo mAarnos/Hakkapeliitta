@@ -2,6 +2,7 @@
 #define POSITION_H_
 
 #include <array>
+#include <string>
 #include "bitboard.hpp"
 #include "move.hpp"
 #include "zobrist.hpp"
