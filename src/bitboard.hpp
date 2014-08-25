@@ -78,18 +78,26 @@ public:
     static unsigned long lsb(Bitboard bb)
     {
         assert(bb);
+#ifdef _MSC_VER
         unsigned long index;
         _BitScanForward64(&index, bb);
         return index;
+#else
+	return __builtin_ctzll(bb);
+#endif
     }
 
     // Returns the most significant set bit in the mask.
     static unsigned long msb(Bitboard bb)
     {
         assert(bb);
+#ifdef _MSC_VER
         unsigned long index;
         _BitScanReverse64(&index, bb);
         return index;
+#else
+        return (63 - __builtin_clzll(bb));
+#endif
     }
 #else
     // The author of both the lsb and msb is Kim Walisch (2012).
