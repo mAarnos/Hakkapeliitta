@@ -160,7 +160,7 @@ std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
-int sideToMoveBonus = 5;
+int Evaluation::sideToMoveBonus = 5;
 
 const std::array<int, 64> Evaluation::flip = {
     56, 57, 58, 59, 60, 61, 62, 63,
