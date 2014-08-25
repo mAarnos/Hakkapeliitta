@@ -47,7 +47,7 @@ double Tuning::evalError() const
     Evaluation::initialize(); // reinitialize eval
     auto sum = 0.0;
 
-    for (auto i = 0; i < positions.size(); ++i)
+    for (size_t i = 0; i < positions.size(); ++i)
     {
         auto v = Evaluation::evaluate(positions[i]);
         if (positions[i].getSideToMove() == Color::Black) v = -v; // correct the negamax evaluation back

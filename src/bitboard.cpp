@@ -44,7 +44,7 @@ const std::array<Bitboard, 8> Bitboards::files = {
 
 bool Bitboards::hardwarePopcntSupported;
 
-#ifndef _WIN64
+#if !(defined _WIN64 || defined __x86_64__)
 const std::array<int, 64> Bitboards::index = {
     0, 47, 1, 56, 48, 27, 2, 60,
     57, 49, 41, 37, 28, 16, 3, 61,

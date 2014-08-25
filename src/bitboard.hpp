@@ -52,23 +52,28 @@ public:
     // Returns the amount of set bits in bb.
     // We have two versions, one using hardware and the other using sofware.
     // We automatically detect which one to use.
-    static long long hardwarePopcnt(Bitboard bb)
+    static int hardwarePopcnt(Bitboard bb)
     {
+#if (defined _WIN64 || defined __x86_64__)
 #ifdef __clang__
-        return __builtin_popcountll(bb);
+        return static_cast<int>(__builtin_popcountll(bb));
 #else
-        return _mm_popcnt_u64(bb);
+        return static_cast<int>(_mm_popcnt_u64(bb));
+#endif
+#else
+        bb = 0; // gets rid of unreferenced formal parameter warning
+        throw std::logic_error("no hardware POPCNT on a 32-bit system");
 #endif
     }
 
-    static long long softwarePopcnt(Bitboard bb)
+    static int softwarePopcnt(Bitboard bb)
     {
         bb -= ((bb >> 1) & 0x5555555555555555);
         bb = (bb & 0x3333333333333333) + ((bb >> 2) & 0x3333333333333333);
         bb = (bb + (bb >> 4)) & 0x0f0f0f0f0f0f0f0f;
         return (bb * 0x0101010101010101) >> 56;
     }
-#ifdef _WIN64
+#if (defined _WIN64 || defined __x86_64__)
     // Returns the least significant set bit in the mask.
     static unsigned long lsb(Bitboard bb)
     {
