@@ -61,8 +61,8 @@ public:
         return static_cast<int>(_mm_popcnt_u64(bb));
 #endif
 #else
-        bb = 0; // gets rid of unreferenced formal parameter warning
-        throw std::logic_error("no hardware POPCNT on a 32-bit system");
+        assert(false);
+        return bb != 0; // gets rid of unreferenced formal parameter warning
 #endif
     }
 

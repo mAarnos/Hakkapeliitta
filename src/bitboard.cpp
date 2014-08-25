@@ -341,7 +341,17 @@ void Bitboards::initialize()
 #else
     // Detect support for hardware popcnt.
     int regs[4];
+#ifdef __clang__
+    regs[0] = 0x00000001;
+    __asm__ __volatile__ (
+     "cpuid;"
+    : "+a" (regs[0]),
+      "=b" (regs[1]),
+      "=c" (regs[2]),
+      "=d" (regs[3]));
+#else
     __cpuid(regs, 0x00000001);
+#endif
     hardwarePopcntSupported = (regs[3] & (1 << 23)) != 0;
 #endif
     if (hardwarePopcntSupported)
