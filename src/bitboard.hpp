@@ -55,11 +55,11 @@ public:
     static int hardwarePopcnt(Bitboard bb)
     {
 #if (defined _WIN64 || defined __x86_64__)
-#ifdef __clang__
+ #if (defined __clang__ || defined __GNUC__)
         return static_cast<int>(__builtin_popcountll(bb));
-#else
+ #else
         return static_cast<int>(_mm_popcnt_u64(bb));
-#endif
+ #endif
 #else
         assert(false);
         return bb != 0; // gets rid of unreferenced formal parameter warning
@@ -78,26 +78,26 @@ public:
     static unsigned long lsb(Bitboard bb)
     {
         assert(bb);
-#ifdef _MSC_VER
+ #ifdef _MSC_VER
         unsigned long index;
         _BitScanForward64(&index, bb);
         return index;
-#else
+ #else
 	return __builtin_ctzll(bb);
-#endif
+ #endif
     }
 
     // Returns the most significant set bit in the mask.
     static unsigned long msb(Bitboard bb)
     {
         assert(bb);
-#ifdef _MSC_VER
+ #ifdef _MSC_VER
         unsigned long index;
         _BitScanReverse64(&index, bb);
         return index;
-#else
+ #else
         return (63 - __builtin_clzll(bb));
-#endif
+ #endif
     }
 #else
     // The author of both the lsb and msb is Kim Walisch (2012).

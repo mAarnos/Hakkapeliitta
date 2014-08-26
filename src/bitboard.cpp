@@ -237,7 +237,7 @@ void Bitboards::initialize()
         Bitboard kingSet = bit[sq];
         kingSet |= (bit[sq] << 1) & 0xFEFEFEFEFEFEFEFE;
         kingSet |= (bit[sq] >> 1) & 0x7F7F7F7F7F7F7F7F;
-        kingSet = ((kingSet << 8) | (kingSet >> 8) | kingSet ^ bit[sq]);
+        kingSet = ((kingSet << 8) | (kingSet >> 8) | (kingSet ^ bit[sq]));
         kingAttacks[sq] = kingSet;
     }
 
@@ -341,7 +341,7 @@ void Bitboards::initialize()
 #else
     // Detect support for hardware popcnt.
     int regs[4];
-#ifdef __clang__
+ #if (defined __clang__ || defined __GNUC__)
     regs[0] = 0x00000001;
     __asm__ __volatile__ (
      "cpuid;"
@@ -349,9 +349,9 @@ void Bitboards::initialize()
       "=b" (regs[1]),
       "=c" (regs[2]),
       "=d" (regs[3]));
-#else
+ #else
     __cpuid(regs, 0x00000001);
-#endif
+ #endif
     hardwarePopcntSupported = (regs[3] & (1 << 23)) != 0;
 #endif
     if (hardwarePopcntSupported)
@@ -378,7 +378,7 @@ void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Mag
         auto bb = 0ull;
         for (auto i = 0; i < 4; ++i)
         {
-            if (sq88 + dir[i][1] & 0x88)
+            if ((sq88 + dir[i][1]) & 0x88)
                 continue;
             for (auto d = 2; !((sq88 + d * dir[i][1]) & 0x88); ++d)
             {
