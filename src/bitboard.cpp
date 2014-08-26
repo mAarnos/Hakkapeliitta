@@ -44,19 +44,6 @@ const std::array<Bitboard, 8> Bitboards::files = {
 
 bool Bitboards::hardwarePopcntSupported;
 
-#if !(defined _WIN64 || defined __x86_64__)
-const std::array<int, 64> Bitboards::index = {
-    0, 47, 1, 56, 48, 27, 2, 60,
-    57, 49, 41, 37, 28, 16, 3, 61,
-    54, 58, 35, 52, 50, 42, 21, 44,
-    38, 32, 29, 23, 17, 11, 4, 62,
-    46, 55, 26, 59, 40, 36, 15, 53,
-    34, 51, 20, 43, 31, 22, 10, 45,
-    25, 39, 14, 33, 19, 30, 9, 24,
-    13, 18, 8, 12, 7, 6, 5, 63
-};
-#endif
-
 std::array<Bitboards::Magic, 64> Bitboards::bishopMagic;
 std::array<Bitboards::Magic, 64> Bitboards::rookMagic;
 
@@ -341,16 +328,16 @@ void Bitboards::initialize()
 #else
     // Detect support for hardware popcnt.
     int regs[4];
- #if (defined __clang__ || defined __GNUC__)
+ #ifdef _MSC_VER
+    __cpuid(regs, 0x00000001);
+ #else
     regs[0] = 0x00000001;
     __asm__ __volatile__ (
-     "cpuid;"
-    : "+a" (regs[0]),
-      "=b" (regs[1]),
-      "=c" (regs[2]),
-      "=d" (regs[3]));
- #else
-    __cpuid(regs, 0x00000001);
+        "cpuid;"
+        : "+a" (regs[0]),
+        "=b" (regs[1]),
+        "=c" (regs[2]),
+        "=d" (regs[3]));
  #endif
     hardwarePopcntSupported = (regs[3] & (1 << 23)) != 0;
 #endif
