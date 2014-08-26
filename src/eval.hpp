@@ -29,6 +29,9 @@ private:
     static std::vector<int> mobilityOpening[6];
     static std::vector<int> mobilityEnding[6];
 
+    static std::array<int, 6> attackWeight;
+    static std::array<int, 100> kingSafetyTable;
+
     static int sideToMoveBonus;
 
     static const std::array<int, 64> flip;
