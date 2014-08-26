@@ -73,56 +73,54 @@ public:
         bb = (bb + (bb >> 4)) & 0x0f0f0f0f0f0f0f0f;
         return (bb * 0x0101010101010101) >> 56;
     }
-
+#if (defined _WIN64 || defined __x86_64__)
     // Returns the least significant set bit in the mask.
     static unsigned long lsb(Bitboard bb)
     {
         assert(bb);
-#ifdef _MSC_VER
+ #ifdef _MSC_VER
         unsigned long index;
- #ifdef _WIN64 
         _BitScanForward64(&index, bb);
- #else
-        if (static_cast<uint32_t>(bb))
-        {
-            _BitScanForward(&index, static_cast<uint32_t>(bb));
-        }
-        else
-        {
-            _BitScanForward(&index, static_cast<uint32_t>(bb >> 32));
-            index += 32;
-        }
- #endif
         return index;
-#else
-	    return __builtin_ctzll(bb);
-#endif
+ #else
+	return __builtin_ctzll(bb);
+ #endif
     }
 
     // Returns the most significant set bit in the mask.
     static unsigned long msb(Bitboard bb)
     {
         assert(bb);
-#ifdef _MSC_VER
+ #ifdef _MSC_VER
         unsigned long index;
- #ifdef _WIN64 
         _BitScanReverse64(&index, bb);
- #else
-        if (static_cast<uint32_t>(bb >> 32))
-        {
-            _BitScanForward(&index, static_cast<uint32_t>(bb >> 32));
-        }
-        else
-        {
-            _BitScanForward(&index, static_cast<uint32_t>(bb));
-            index += 32;
-        }
- #endif
         return index;
-#else
+ #else
         return (63 - __builtin_clzll(bb));
-#endif
+ #endif
     }
+#else
+    // The author of both the lsb and msb is Kim Walisch (2012).
+    static const std::array<int, 64> index;
+
+    static int lsb(Bitboard bb)
+    {
+        assert(bb);
+        return index[((bb ^ (bb - 1)) * 0x03f79d71b4cb0a89) >> 58];
+    }
+
+    static int msb(Bitboard bb)
+    {
+        assert(bb);
+        bb |= bb >> 1;
+        bb |= bb >> 2;
+        bb |= bb >> 4;
+        bb |= bb >> 8;
+        bb |= bb >> 16;
+        bb |= bb >> 32;
+        return index[(bb * 0x03f79d71b4cb0a89) >> 58];
+    }
+#endif
 
     static bool isHardwarePopcntSupported() { return hardwarePopcntSupported; }
 private:
