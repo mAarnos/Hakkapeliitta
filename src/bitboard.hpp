@@ -189,7 +189,8 @@ public:
     template<bool side>
     static Bitboard doubledPawns(Bitboard pawnsForSide)
     {
-        return 0; // UNFINISHED
+        // More accurately, all pawns with at least one pawn behind on the same file.
+        return (pawnsForSide & frontSpans<side>(pawnsForSide)); 
     }
 
     // Returns the amount of set bits in bb.
