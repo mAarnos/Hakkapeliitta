@@ -294,7 +294,7 @@ int Evaluation::evaluate(const Position & pos)
     return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
 }
 
-template <bool hardwarePopcntEnabled> 
+template <bool hardwarePopcnt> 
 int Evaluation::evaluate(const Position & pos)
 {
     // Checks if we are in a known endgame.
@@ -309,7 +309,7 @@ int Evaluation::evaluate(const Position & pos)
     auto scoreOp = 0, scoreEd = 0;
     auto kingSafetyScore = 0;
 
-    auto score = mobilityEval<hardwarePopcntEnabled>(pos, kingSafetyScore, phase);
+    auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
@@ -323,8 +323,7 @@ int Evaluation::evaluate(const Position & pos)
     // Bishop pair bonus.
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
-        auto bishops = pos.getBitboard(c, Piece::Bishop);
-        if ((hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(bishops) : Bitboards::softwarePopcnt(bishops)) == 2)
+        if (Bitboards::popcnt<hardwarePopcnt>(pos.getBitboard(c, Piece::Bishop)) == 2)
         {
             auto bishopPairBonus = ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
             score += (c ? -bishopPairBonus : bishopPairBonus);
@@ -337,7 +336,7 @@ int Evaluation::evaluate(const Position & pos)
     return (pos.getSideToMove() ? -score : score);
 }
 
-template <bool hardwarePopcntEnabled> 
+template <bool hardwarePopcnt> 
 int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
@@ -356,13 +355,12 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
             auto from = Bitboards::lsb(tempPiece);
             tempPiece &= (tempPiece - 1);
             auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
-            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
 
             tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Knight] * 
-                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            attackUnits += attackWeight[Piece::Knight] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
 
         tempPiece = pos.getBitboard(c, Piece::Bishop);
@@ -371,13 +369,12 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
             auto from = Bitboards::lsb(tempPiece);
             tempPiece &= (tempPiece - 1);
             auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
-            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
 
             tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Bishop] *
-                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            attackUnits += attackWeight[Piece::Bishop] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
 
         tempPiece = pos.getBitboard(c, Piece::Rook);
@@ -386,13 +383,12 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
             auto from = Bitboards::lsb(tempPiece);
             tempPiece &= (tempPiece - 1);
             auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
-            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
 
             tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Rook] *
-                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            attackUnits += attackWeight[Piece::Rook] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
 
         tempPiece = pos.getBitboard(c, Piece::Queen);
@@ -401,13 +397,12 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
             auto from = Bitboards::lsb(tempPiece);
             tempPiece &= (tempPiece - 1);
             auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
-            auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
 
             tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Queen] *
-                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+            attackUnits += attackWeight[Piece::Queen] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
         
         kingSafetyScore += (c ? -kingSafetyTable[attackUnits] : kingSafetyTable[attackUnits]);
