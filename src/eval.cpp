@@ -160,6 +160,14 @@ const std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
+const std::array<int, 8> Evaluation::passedBonusOpening = {
+    0, -4, -4, -4, -4, -4, -4, 0
+};
+
+const std::array<int, 8> Evaluation::passedBonusEnding = {
+    0, 51, 51, 51, 51, 51, 51, 0
+};
+
 const int Evaluation::bishopPairBonusOpening = 32;
 const int Evaluation::bishopPairBonusEnding = 32;
 const int Evaluation::sideToMoveBonus = 5;

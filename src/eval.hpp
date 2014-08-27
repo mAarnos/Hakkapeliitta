@@ -32,6 +32,9 @@ private:
     static const std::array<int, 6> attackWeight;
     static const std::array<int, 100> kingSafetyTable;
 
+    static const std::array<int, 8> passedBonusOpening;
+    static const std::array<int, 8> passedBonusEnding;
+
     static const int bishopPairBonusOpening;
     static const int bishopPairBonusEnding;
     static const int sideToMoveBonus;
