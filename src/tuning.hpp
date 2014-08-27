@@ -20,8 +20,8 @@ private:
     std::vector<Position> positions;
     std::vector<double> results;
 
-    std::vector<int> evalTerms;
-    int evaluate(Position & pos);
+    static std::vector<int> evalTerms;
+    static int evaluate(const Position & pos);
 };
 
 #endif
