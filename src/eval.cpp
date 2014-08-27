@@ -8,15 +8,15 @@ PawnHashTable Evaluation::pawnHashTable;
 std::array<int, 64> Evaluation::pieceSquareTableOpening[12];
 std::array<int, 64> Evaluation::pieceSquareTableEnding[12];
 
-std::array<int, 6> Evaluation::pieceValuesOpening = {
+const std::array<int, 6> Evaluation::pieceValuesOpening = {
     88, 235, 263, 402, 892, 0
 };
 
-std::array<int, 6> Evaluation::pieceValuesEnding = {
+const std::array<int, 6> Evaluation::pieceValuesEnding = {
     112, 258, 286, 481, 892, 0
 };
 
-std::array<int, 64> Evaluation::openingPST[6] = {
+const std::array<int, 64> Evaluation::openingPST[6] = {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		-33,-18,-13,-18,-18,-13,-18,-33,
@@ -79,7 +79,7 @@ std::array<int, 64> Evaluation::openingPST[6] = {
 	}
 };
 
-std::array<int, 64> Evaluation::endingPST[6] = {
+const std::array<int, 64> Evaluation::endingPST[6] = {
 	{
 		0, 0, 0, 0, 0, 0, 0, 0,
 		-22, -22, -22, -22, -22, -22, -22, -22,
@@ -142,7 +142,7 @@ std::array<int, 64> Evaluation::endingPST[6] = {
 	}
 };
 
-std::vector<int> Evaluation::mobilityOpening[6] = {
+const std::vector<int> Evaluation::mobilityOpening[6] = {
     {},
     { -12, -8, -4, 0, 4, 8, 10, 12, 13 },
     { -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
@@ -151,7 +151,7 @@ std::vector<int> Evaluation::mobilityOpening[6] = {
     {}
 };
 
-std::vector<int> Evaluation::mobilityEnding[6] = {
+const std::vector<int> Evaluation::mobilityEnding[6] = {
     {},
     { -12, -8, -4, 0, 4, 8, 10, 12, 13 },
     { -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
@@ -160,13 +160,15 @@ std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
-int Evaluation::sideToMoveBonus = 5;
+const int Evaluation::bishopPairBonusOpening = 32;
+const int Evaluation::bishopPairBonusEnding = 32;
+const int Evaluation::sideToMoveBonus = 5;
 
-std::array<int, 6> Evaluation::attackWeight = {
+const std::array<int, 6> Evaluation::attackWeight = {
     0, 2, 2, 3, 5, 0
 };
 
-std::array<int, 100> Evaluation::kingSafetyTable = {
+const std::array<int, 100> Evaluation::kingSafetyTable = {
     0, 0, 1, 2, 3, 5, 7, 9, 12, 15,
     18, 22, 26, 30, 35, 39, 44, 50, 56, 62,
     68, 75, 82, 85, 89, 97, 105, 113, 122, 131,

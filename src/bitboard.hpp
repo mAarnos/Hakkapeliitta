@@ -46,8 +46,23 @@ public:
     static std::array<Bitboard, 64> isolated;
 
     static const std::array<Bitboard, 8> ranks;
-
     static const std::array<Bitboard, 8> files;
+
+    static Bitboard northFill(Bitboard bb)
+    {
+        bb |= (bb << 8);
+        bb |= (bb << 16);
+        bb |= (bb << 32);
+        return bb;
+    }
+
+    static Bitboard southFill(Bitboard bb)
+    {
+        bb |= (bb >> 8);
+        bb |= (bb >> 16);
+        bb |= (bb >> 32);
+        return bb;
+    }
 
     // Returns the amount of set bits in bb.
     // We have two versions, one using hardware and the other using sofware.
