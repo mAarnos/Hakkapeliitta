@@ -398,7 +398,8 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
 
 int Evaluation::pawnStructureEval(const Position & pos, int phase)
 {
-    int scoreOp = 0, scoreEd = 0, score;
+    auto scoreOp = 0, scoreEd = 0;
+    int score;
 
     if (pawnHashTable.probe(pos, score))
     {
@@ -415,13 +416,19 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
         while (tempPawns)
         {
             auto from = Bitboards::lsb(tempPawns);
+            tempPawns &= (tempPawns - 1);
             auto pawnFile = file(from);
             auto pawnRank = rank(from);
-            tempPawns &= (tempPawns - 1);
 
             auto passed = !(opponentPawns & Bitboards::passed[c][from]);
-            auto doubled = ownPawns & (c ? Bitboards::rays[1][from] : Bitboards::rays[6][from]);
+            auto doubled = (ownPawns & (c ? Bitboards::rays[1][from] : Bitboards::rays[6][from])) != 0;
             auto isolated = !(ownPawns & Bitboards::isolated[from]);
+            // 1. The pawn must be able to move forward.
+            // 2. The stop square must be controlled by an enemy pawn.
+            // 3. There musn't be any own pawns capable of defending the pawn. 
+            auto backward = ((pos.getBoard(from + 8 - 16 * c) == Piece::Empty) 
+                          && (Bitboards::pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
+                          && !(ownPawns & Bitboards::backward[c][from]));
 
             if (passed)
             {
@@ -441,7 +448,11 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
                 scoreEdForColor -= isolatedPenaltyEnding[pawnFile];
             }
 
-            // Add backward pawn.
+            if (backward)
+            {
+                scoreOpForColor -= backwardPenaltyOpening[pawnFile];
+                scoreEdForColor -= backwardPenaltyEnding[pawnFile];
+            }
         }
 
         scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
