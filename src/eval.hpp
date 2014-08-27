@@ -181,7 +181,6 @@ const int bishopPairBonusEnding = 32;
 
 const int rookOnOpenFileBonus = 10;
 const int rookOnSemiOpenFileBonus = 5;
-const int rookBehindPassedBonus = 20;
 
 const int pawnShelterAdvancedPawnPenalty = 11;
 const int pawnShelterMissingPawnPenalty = 38;

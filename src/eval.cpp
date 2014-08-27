@@ -157,23 +157,6 @@ int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
 				scoreOp += rookOnSemiOpenFileBonus;
 			}
 		}
-
-		uint64_t temp = rays[N][from] & tempMove & pos.getBitboard(White, Pawn);
-		if (temp)
-		{
-			if (!(pos.getBitboard(Black, Pawn) & passed[White][bitScanForward(temp)]))
-			{
-				scoreEd += rookBehindPassedBonus;
-			}
-		}
-		temp = rays[S][from] & tempMove & pos.getBitboard(Black, Pawn);
-		if (temp)
-		{
-			if (!(pos.getBitboard(White, Pawn) & passed[Black][bitScanForward(temp)]))
-			{
-				scoreEd += rookBehindPassedBonus;
-			}
-		}
 	}
 
 	tempPiece = pos.getBitboard(White, Queen);
@@ -253,23 +236,6 @@ int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
 			else
 			{
 				scoreOp -= rookOnSemiOpenFileBonus;
-			}
-		}
-
-		uint64_t temp = rays[N][from] & tempMove & pos.getBitboard(White, Pawn);
-		if (temp)
-		{
-			if (!(pos.getBitboard(Black, Pawn) & passed[White][bitScanForward(temp)]))
-			{
-				scoreEd -= rookBehindPassedBonus;
-			}
-		}
-		temp = rays[S][from] & tempMove & pos.getBitboard(Black, Pawn);
-		if (temp)
-		{
-			if (!(pos.getBitboard(White, Pawn) & passed[Black][bitScanForward(temp)]))
-			{
-				scoreEd -= rookBehindPassedBonus;
 			}
 		}
 	}
