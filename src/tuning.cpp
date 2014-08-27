@@ -6,7 +6,7 @@
 #include "stopwatch.hpp"
 #include "eval.hpp"
 
-std::vector<int> evalTerms = {
+std::vector<int> Tuning::evalTerms = {
     88, 235, 263, 402, 892, 0, // 0-5: materialOpening
     112, 258, 286, 481, 892, 0, // 6-11: materialEnding
     0, 0, 0, 0, 0, 0, 0, 0, // 12-75: pawnPSTOpening
