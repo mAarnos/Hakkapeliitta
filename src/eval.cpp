@@ -294,7 +294,8 @@ int Evaluation::evaluate(const Position & pos)
     return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
 }
 
-template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & pos)
+template <bool hardwarePopcntEnabled> 
+int Evaluation::evaluate(const Position & pos)
 {
     // Checks if we are in a known endgame.
     // If we are we can straight away return the score for the endgame.
@@ -306,7 +307,9 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
 
     auto phase = pos.calculateGamePhase();
     auto scoreOp = 0, scoreEd = 0;
-    auto score = mobilityEval<hardwarePopcntEnabled>(pos, phase);
+    auto kingSafetyScore = 0;
+
+    auto score = mobilityEval<hardwarePopcntEnabled>(pos, kingSafetyScore, phase);
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
@@ -316,14 +319,15 @@ template <bool hardwarePopcntEnabled> int Evaluation::evaluate(const Position & 
             scoreEd += pieceSquareTableOpening[pos.getBoard(sq)][sq];
         }
     }
-    score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 
+    score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
     score += (pos.getSideToMove() ? -sideToMoveBonus : sideToMoveBonus);
 
     return (pos.getSideToMove() ? -score : score);
 }
 
-template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Position & pos, int phase)
+template <bool hardwarePopcntEnabled> 
+int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
     auto occupied = pos.getOccupiedSquares();
@@ -332,6 +336,8 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
     {
         auto targetBitboard = ~pos.getPieces(c);
         auto scoreOpForColor = 0, scoreEdForColor = 0;
+        auto opponentKingZone = Bitboards::kingZone[!c][Bitboards::lsb(pos.getBitboard(!c, Piece::King))];
+        auto attackUnits = 0;
 
         auto tempPiece = pos.getBitboard(c, Piece::Knight);
         while (tempPiece)
@@ -342,6 +348,10 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
             auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
+
+            tempMove &= opponentKingZone;
+            attackUnits += attackWeight[Piece::Knight] * 
+                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
         }
 
         tempPiece = pos.getBitboard(c, Piece::Bishop);
@@ -353,6 +363,10 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
             auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
+
+            tempMove &= opponentKingZone;
+            attackUnits += attackWeight[Piece::Bishop] *
+                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
         }
 
         tempPiece = pos.getBitboard(c, Piece::Rook);
@@ -364,6 +378,10 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
             auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
+
+            tempMove &= opponentKingZone;
+            attackUnits += attackWeight[Piece::Rook] *
+                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
         }
 
         tempPiece = pos.getBitboard(c, Piece::Queen);
@@ -375,10 +393,15 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
             auto count = (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
-        }
 
-        scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
-        scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
+            tempMove &= opponentKingZone;
+            attackUnits += attackWeight[Piece::Queen] *
+                (hardwarePopcntEnabled ? Bitboards::hardwarePopcnt(tempMove) : Bitboards::softwarePopcnt(tempMove));
+        }
+        
+        kingSafetyScore += (c ? -kingSafetyTable[attackUnits] : kingSafetyTable[attackUnits]);
+        scoreOp += (c ? -scoreOpForColor : scoreOpForColor);
+        scoreEd += (c ? -scoreEdForColor : scoreEdForColor);
     }
 
     return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
@@ -415,6 +438,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
             // 1. The pawn must be able to move forward.
             // 2. The stop square must be controlled by an enemy pawn.
             // 3. There musn't be any own pawns capable of defending the pawn. 
+            // TODO: Check that this is correct.
             auto backward = ((pos.getBoard(from + 8 - 16 * c) == Piece::Empty) 
                           && (Bitboards::pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
                           && !(ownPawns & Bitboards::backward[c][from]));

@@ -48,8 +48,12 @@ private:
     static void initializeKnownEndgames();
     static std::unordered_map<HashKey, int> knownEndgames;
 
-    template <bool hardwarePopcntEnabled> static int evaluate(const Position & pos);
-    template <bool hardwarePopcntEnabled> static int mobilityEval(const Position & pos, int phase);
+    template <bool hardwarePopcntEnabled> 
+    static int evaluate(const Position & pos);
+
+    template <bool hardwarePopcntEnabled> 
+    static int mobilityEval(const Position & pos, int & kingSafetyScore, int phase);
+
     static int pawnStructureEval(const Position & pos, int phase);
 };
 

@@ -206,28 +206,31 @@ int Tuning::evaluate(const Position & pos)
     auto phase = pos.calculateGamePhase();
     auto scoreOp = 0, scoreEd = 0;
     
+    // Material + piece-square tables.
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
         if (pos.getBoard(sq) != Piece::Empty)
         {
             auto pieceType = pos.getBoard(sq) % 6;
-            if (pos.getBoard(sq) > 5) // if the piece is black
+            if (pos.getBoard(sq) > 5) // black piece?
             {
                 scoreOp -= evalTerms[pieceType];
-                scoreEd -= evalTerms[pieceType];
+                scoreEd -= evalTerms[pieceType + 6];
+                scoreOp -= evalTerms[pieceType * 64 + 12 + (sq ^ 56)];
+                scoreOp -= evalTerms[pieceType * 64 + 396 + (sq ^ 56)];
             }
             else
             {
                 scoreOp += evalTerms[pieceType];
-                scoreEd += evalTerms[pieceType];
+                scoreEd += evalTerms[pieceType + 6];
+                scoreOp += evalTerms[pieceType * 64 + 12 + sq];
+                scoreOp += evalTerms[pieceType * 64 + 396 + sq];
             }
         }
     }
     
     auto score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
-
-    // Side to move bonus.
-    score += (pos.getSideToMove() ? -evalTerms[779] : evalTerms[779]);
+    score += (pos.getSideToMove() ? -evalTerms[779] : evalTerms[779]); // Side to move bonus.
 
     return score;
 }
