@@ -567,14 +567,6 @@ int eval(Position & pos)
 		score -= ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
 	}
 
-	// Most important rule of king and pawn endgames - the side with more pawns wins.
-	// Therefore add a big bonus for the side with more pawns.
-	// Maybe add code dealing with doubled isolated pawns? Make them only worth one pawn?
-	if (phase == 256)
-	{
-		score += (popcnt(pos.getBitboard(White, Pawn)) - popcnt(pos.getBitboard(Black, Pawn))) * pieceValuesEnding[Pawn];
-	}
-
 	// Mobility
 	score += mobilityEval(pos, phase, kingTropismScore);
 
