@@ -41,19 +41,14 @@ public:
     static std::array<Bitboard, 64> rays[8];
     static std::array<Bitboard, 64> between[64];
 
+    static std::array<Bitboard, 64> passed[2];
+    static std::array<Bitboard, 64> backward[2];
+    static std::array<Bitboard, 64> isolated;
+
     static const std::array<Bitboard, 8> ranks;
     static const std::array<Bitboard, 8> files;
 
-    static Bitboard sOne(Bitboard bb) { return bb >> 8; }
-    static Bitboard nOne(Bitboard bb) { return bb << 8; }
-    static Bitboard eOne(Bitboard bb) { return (bb << 1) & 0xfefefefefefefefe; }
-    static Bitboard neOne(Bitboard bb) { return (bb << 9) & 0xfefefefefefefefe; }
-    static Bitboard seOne(Bitboard bb) { return (bb >> 7) & 0xfefefefefefefefe; }
-    static Bitboard wOne(Bitboard bb) { return (bb >> 1) & 0x7f7f7f7f7f7f7f7f; }
-    static Bitboard swOne(Bitboard bb) { return (bb >> 9) & 0x7f7f7f7f7f7f7f7f; }
-    static Bitboard nwOne(Bitboard bb) { return (bb << 7) & 0x7f7f7f7f7f7f7f7f; }
-
-    static Bitboard nFill(Bitboard bb)
+    static Bitboard northFill(Bitboard bb)
     {
         bb |= (bb << 8);
         bb |= (bb << 16);
@@ -61,135 +56,12 @@ public:
         return bb;
     }
 
-    static Bitboard sFill(Bitboard bb)
+    static Bitboard southFill(Bitboard bb)
     {
         bb |= (bb >> 8);
         bb |= (bb >> 16);
         bb |= (bb >> 32);
         return bb;
-    }
-
-    template<bool side>
-    static Bitboard stopSquares(Bitboard pawnsForSide)
-    {
-        return (side ? sOne(pawnsForSide) : nOne(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard frontSpans(Bitboard pawnsForSide)
-    {
-        auto ss = stopSquares<side>(pawnsForSide);
-        return (side ? sFill(ss) : nFill(ss));
-    }
-
-    template<bool side>
-    static Bitboard frontFill(Bitboard pawnsForSide)
-    {
-        return (side ? sFill(pawnsForSide) : nFill(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard rearFill(Bitboard pawnsForSide)
-    {
-        return (side ? nFill(pawnsForSide) : sFill(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard fileFill(Bitboard pawnsForSide)
-    {
-        return (rearFill<side>(pawnsForSide) | frontFill<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard eastAttackFrontSpans(Bitboard pawnsForSide)
-    {
-        return eOne(frontSpans<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard westAttackFrontSpans(Bitboard pawnsForSide)
-    {
-        return wOne(frontSpans<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard eastAttackRearSpans(Bitboard pawnsForSide)
-    {
-        return eOne(rearFill<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard westAttackRearSpans(Bitboard pawnsForSide)
-    {
-        return wOne(rearFill<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard eastAttackFileFill(Bitboard pawnsForSide)
-    {
-        return (eOne(fileFill<side>(pawnsForSide)));
-    }
-
-    template<bool side>
-    static Bitboard westAttackFileFill(Bitboard pawnsForSide)
-    {
-        return (wOne(fileFill<side>(pawnsForSide)));
-    }
-
-    template<bool side>
-    static Bitboard eastPawnAttacks(Bitboard pawnsForSide)
-    {
-        return (side ? seOne(pawnsForSide) : neOne(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard westPawnAttacks(Bitboard pawnsForSide)
-    {
-        return (side ? swOne(pawnsForSide) : nwOne(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard noNeighborEastFile(Bitboard pawnsForSide)
-    {
-        return (pawnsForSide & ~westAttackFileFill<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard noNeighborWestFile(Bitboard pawnsForSide)
-    {
-        return (pawnsForSide & ~eastAttackFileFill<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard passedPawns(Bitboard pawnsForSide, Bitboard pawnsForOpponent)
-    {
-        auto allFrontSpans = frontSpans<!side>(pawnsForOpponent);
-        allFrontSpans |= (eOne(allFrontSpans) | wOne(allFrontSpans));
-        return (pawnsForSide & ~allFrontSpans);
-    }
-
-    template<bool side>
-    static Bitboard backwardPawns(Bitboard pawnsForSide, Bitboard pawnsForOpponent)
-    {
-        auto stops = stopSquares<side>(pawnsForSide);
-        auto attackSpans = (eastAttackFrontSpans<side>(pawnsForSide)
-                         | westAttackFrontSpans<side>(pawnsForSide));
-        auto enemyAttacks = (eastPawnAttacks<!side>(pawnsForOpponent)
-                          | westPawnAttacks<!side>(pawnsForOpponent));
-        return (stops & enemyAttacks & ~attackSpans);
-    }
-
-    template<bool side>
-    static Bitboard isolatedPawns(Bitboard pawnsForSide)
-    {
-        return (noNeighborEastFile<side>(pawnsForSide) 
-              & noNeighborWestFile<side>(pawnsForSide));
-    }
-
-    template<bool side>
-    static Bitboard doubledPawns(Bitboard pawnsForSide)
-    {
-        return 0; // UNFINISHED
     }
 
     // Returns the amount of set bits in bb.

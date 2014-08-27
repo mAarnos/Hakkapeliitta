@@ -395,10 +395,5 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
     return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
 
-int Evaluation::pawnStructureEval(const Position & pos, int phase)
-{
-
-}
-
 
 
