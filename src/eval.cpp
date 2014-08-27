@@ -320,6 +320,16 @@ int Evaluation::evaluate(const Position & pos)
         }
     }
 
+    // Bishop pair bonus.
+    for (Color c = Color::White; c <= Color::Black; ++c)
+    {
+        if (popcnt(pos.getBitboard(c, Piece::Bishop)) == 2)
+        {
+            auto bishopPairBonus = ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+            score += (c ? -bishopPairBonus : bishopPairBonus);
+        }
+    }
+
     score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
     score += (pos.getSideToMove() ? -sideToMoveBonus : sideToMoveBonus);
 
