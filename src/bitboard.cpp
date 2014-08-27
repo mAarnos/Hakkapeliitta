@@ -16,10 +16,6 @@ std::array<Bitboard, 64> Bitboards::pawnDoubleMoves[2];
 std::array<Bitboard, 64> Bitboards::rays[8];
 std::array<Bitboard, 64> Bitboards::between[64];
 
-std::array<Bitboard, 64> Bitboards::passed[2];
-std::array<Bitboard, 64> Bitboards::backward[2];
-std::array<Bitboard, 64> Bitboards::isolated;
-
 const std::array<Bitboard, 8> Bitboards::ranks = {
     0x00000000000000FF,
     0x000000000000FF00,
@@ -220,31 +216,28 @@ void Bitboards::initialize()
     memset(pawnDoubleMoves, 0, sizeof(pawnDoubleMoves));
     memset(heading, -1, sizeof(heading));
     memset(rays, 0, sizeof(rays));
-    memset(passed, 0, sizeof(passed));
-    memset(backward, 0, sizeof(backward));
-    isolated.fill(0);
     lookupTable.fill(0);
 
     // Single bits
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        bit[sq] = (Bitboard)1 << sq;
+        bit[sq] = 1ull << sq;
     }
 
     // King attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        Bitboard kingSet = bit[sq];
-        kingSet |= (bit[sq] << 1) & 0xFEFEFEFEFEFEFEFE;
-        kingSet |= (bit[sq] >> 1) & 0x7F7F7F7F7F7F7F7F;
-        kingSet = ((kingSet << 8) | (kingSet >> 8) | (kingSet ^ bit[sq]));
+        auto kingSet = bit[sq];
+        kingSet |= eOne(bit[sq]);
+        kingSet |= wOne(bit[sq]);
+        kingSet = ((nOne(kingSet)) | (sOne(kingSet)) | (kingSet ^ bit[sq]));
         kingAttacks[sq] = kingSet;
     }
 
     // Knight attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        Bitboard knightSet = (bit[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
+        auto knightSet = (bit[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
         knightSet |= (bit[sq] << 10) & 0xFCFCFCFCFCFCFCFC;
         knightSet |= (bit[sq] << 15) & 0x7F7F7F7F7F7F7F7F;
         knightSet |= (bit[sq] << 6) & 0x3F3F3F3F3F3F3F3F;
@@ -258,8 +251,8 @@ void Bitboards::initialize()
     // Pawn attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        pawnAttacks[Color::White][sq] = ((bit[sq] << 9) & 0xFEFEFEFEFEFEFEFE) | ((bit[sq] << 7) & 0x7F7F7F7F7F7F7F7F);
-        pawnAttacks[Color::Black][sq] = ((bit[sq] >> 9) & 0x7F7F7F7F7F7F7F7F) | ((bit[sq] >> 7) & 0xFEFEFEFEFEFEFEFE);
+        pawnAttacks[Color::White][sq] = (neOne(bit[sq]) | nwOne(bit[sq]));
+        pawnAttacks[Color::Black][sq] = (swOne(bit[sq]) | seOne(bit[sq]));
     }
 
     // Pawn moves
@@ -303,33 +296,6 @@ void Bitboards::initialize()
             auto h = heading[i][j];
             if (h != -1)
                 between[i][j] = rays[h][i] & rays[7 - h][j];
-        }
-    }
-
-    // Pawn evaluation bitboards: passed pawn, backward pawns, isolated pawns.
-    for (Square sq = Square::A2; sq <= Square::H7; ++sq)
-    {
-        auto f = file(sq);
-
-        passed[Color::White][sq] = rays[6][sq];
-        passed[Color::Black][sq] = rays[1][sq];
-
-        if (f != 7)
-        {
-            passed[Color::White][sq] |= rays[6][sq + 1];
-            passed[Color::Black][sq] |= rays[1][sq + 1];
-            backward[Color::White][sq] |= rays[1][sq + 9];
-            backward[Color::Black][sq] |= rays[6][sq - 7];
-            isolated[sq] |= files[f + 1];
-        }
-
-        if (f != 0)
-        {
-            passed[Color::White][sq] |= rays[6][sq - 1];
-            passed[Color::Black][sq] |= rays[1][sq - 1];
-            backward[Color::White][sq] |= rays[1][sq + 7];
-            backward[Color::Black][sq] |= rays[6][sq - 9];
-            isolated[sq] |= files[f - 1];
         }
     }
 
