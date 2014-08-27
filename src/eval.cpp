@@ -168,6 +168,30 @@ const std::array<int, 8> Evaluation::passedBonusEnding = {
     0, 51, 51, 51, 51, 51, 51, 0
 };
 
+const std::array<int, 8> Evaluation::doubledPenaltyOpening = {
+    15, 15, 15, 15, 15, 15, 15, 15
+};
+
+const std::array<int, 8> Evaluation::doubledPenaltyEnding = {
+    16, 16, 16, 16, 16, 16, 16, 16
+};
+
+const std::array<int, 8> Evaluation::isolatedPenaltyOpening = {
+    13, 13, 13, 13, 13, 13, 13, 13
+};
+
+const std::array<int, 8> Evaluation::isolatedPenaltyEnding = {
+    17, 17, 17, 17, 17, 17, 17, 17
+};
+
+const std::array<int, 8> Evaluation::backwardPenaltyOpening = {
+    13, 13, 13, 13, 13, 13, 13, 13
+};
+
+const std::array<int, 8> Evaluation::backwardPenaltyEnding = {
+    9, 9, 9, 9, 9, 9, 9, 9
+};
+
 const int Evaluation::bishopPairBonusOpening = 32;
 const int Evaluation::bishopPairBonusEnding = 32;
 const int Evaluation::sideToMoveBonus = 5;

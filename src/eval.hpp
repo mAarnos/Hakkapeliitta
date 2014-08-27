@@ -34,6 +34,12 @@ private:
 
     static const std::array<int, 8> passedBonusOpening;
     static const std::array<int, 8> passedBonusEnding;
+    static const std::array<int, 8> doubledPenaltyOpening;
+    static const std::array<int, 8> doubledPenaltyEnding;
+    static const std::array<int, 8> isolatedPenaltyOpening;
+    static const std::array<int, 8> isolatedPenaltyEnding;
+    static const std::array<int, 8> backwardPenaltyOpening;
+    static const std::array<int, 8> backwardPenaltyEnding;
 
     static const int bishopPairBonusOpening;
     static const int bishopPairBonusEnding;
