@@ -42,6 +42,8 @@ const std::array<Bitboard, 8> Bitboards::files = {
     0x8080808080808080
 };
 
+std::array<Bitboard, 64> Bitboards::kingZone[2];
+
 bool Bitboards::hardwarePopcntSupported;
 
 #if !(defined _WIN64 || defined __x86_64__)
@@ -331,6 +333,14 @@ void Bitboards::initialize()
             backward[Color::Black][sq] |= rays[6][sq - 9];
             isolated[sq] |= files[f - 1];
         }
+    }
+
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+    {
+        if (sq < Square::A8)
+            kingZone[Color::White][sq] = kingAttacks[sq] | kingAttacks[sq + 8];
+        if (sq > Square::H1)
+            kingZone[Color::Black][sq] = kingAttacks[sq] | kingAttacks[sq - 8];
     }
 
     initMagics(bishopInit, bishopMagic, bishopDirections, 64 - 9);

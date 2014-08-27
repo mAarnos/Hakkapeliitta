@@ -228,5 +228,7 @@ int Tuning::evaluate(const Position & pos)
 
     // Side to move bonus.
     score += (pos.getSideToMove() ? -evalTerms[779] : evalTerms[779]);
+
+    return score;
 }
 

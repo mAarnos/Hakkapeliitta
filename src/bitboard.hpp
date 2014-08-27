@@ -48,6 +48,8 @@ public:
     static const std::array<Bitboard, 8> ranks;
     static const std::array<Bitboard, 8> files;
 
+    static std::array<Bitboard, 64> kingZone[2];
+
     static Bitboard northFill(Bitboard bb)
     {
         bb |= (bb << 8);

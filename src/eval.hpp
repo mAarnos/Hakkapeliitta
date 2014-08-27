@@ -45,8 +45,6 @@ private:
     static const int bishopPairBonusEnding;
     static const int sideToMoveBonus;
 
-    static const std::array<int, 64> flip;
-
     static void initializeKnownEndgames();
     static std::unordered_map<HashKey, int> knownEndgames;
 
