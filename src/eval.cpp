@@ -396,4 +396,61 @@ template <bool hardwarePopcntEnabled> int Evaluation::mobilityEval(const Positio
 }
 
 
+int Evaluation::pawnStructureEval(const Position & pos, int phase)
+{
+    int scoreOp = 0, scoreEd = 0, score;
+
+    if (pawnHashTable.probe(pos, score))
+    {
+        return score;
+    } 
+
+    for (Color c = Color::White; c <= Color::Black; ++c)
+    {
+        auto scoreOpForColor = 0, scoreEdForColor = 0;
+        auto ownPawns = pos.getBitboard(c, Piece::Pawn);
+        auto tempPawns = ownPawns;
+        auto opponentPawns = pos.getBitboard(!c, Piece::Pawn);
+
+        while (tempPawns)
+        {
+            auto from = Bitboards::lsb(tempPawns);
+            auto pawnFile = file(from);
+            auto pawnRank = rank(from);
+            tempPawns &= (tempPawns - 1);
+
+            auto passed = !(opponentPawns & Bitboards::passed[c][from]);
+            auto doubled = ownPawns & (c ? Bitboards::rays[1][from] : Bitboards::rays[6][from]);
+            auto isolated = !(ownPawns & Bitboards::isolated[from]);
+
+            if (passed)
+            {
+                scoreOpForColor += passedBonusOpening[pawnRank];
+                scoreEdForColor += passedBonusEnding[pawnRank];
+            }
+
+            if (doubled)
+            {
+                scoreOpForColor -= doubledPenaltyOpening[pawnFile];
+                scoreEdForColor -= doubledPenaltyEnding[pawnFile];
+            }
+
+            if (isolated)
+            {
+                scoreOpForColor -= isolatedPenaltyOpening[pawnFile];
+                scoreEdForColor -= isolatedPenaltyEnding[pawnFile];
+            }
+
+            // Add backward pawn.
+        }
+
+        scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
+        scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
+    }
+
+    score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    pawnHashTable.save(pos, score);
+
+    return score;
+}
 
