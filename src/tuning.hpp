@@ -12,6 +12,7 @@ public:
     void tune();
 private:
     void calculateScalingConstant();
+    bool optimizeParameter(int & parameter);
 
     double sigmoid(double x) const;
     double evalError() const;

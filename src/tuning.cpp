@@ -3,12 +3,13 @@
 #include <fstream>
 #include <string>
 #include <cmath>
+#include <omp.h>
 #include "stopwatch.hpp"
 #include "eval.hpp"
 
 std::vector<int> Tuning::evalTerms = {
-    88, 235, 263, 402, 892, 0, // 0-5: materialOpening
-    112, 258, 286, 481, 892, 0, // 6-11: materialEnding
+    100, 235, 263, 402, 892, 0, // 0-5: materialOpening
+    100, 258, 286, 481, 892, 0, // 6-11: materialEnding
     0, 0, 0, 0, 0, 0, 0, 0, // 12-75: pawnPSTOpening
     -33, -18, -13, -18, -18, -13, -18, -33,
     -28, -23, -13, -3, -3, -13, -23, -28,
@@ -109,7 +110,7 @@ std::vector<int> Tuning::evalTerms = {
 };
 
 Tuning::Tuning():
-scalingConstant(244.93)
+scalingConstant(260.23)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -123,8 +124,8 @@ scalingConstant(244.93)
 		positions.push_back(pos);
 		results.push_back(1.0);
 	}
-    
-	while (std::getline(blackWins, text))
+
+    while (std::getline(blackWins, text))
 	{
         pos.initializeBoardFromFEN(text);
         positions.push_back(pos);
@@ -137,7 +138,6 @@ scalingConstant(244.93)
         positions.push_back(pos);
 		results.push_back(0.5);
 	}
- 
 }
 
 double Tuning::sigmoid(double x) const
@@ -149,9 +149,12 @@ double Tuning::evalError() const
 {
     auto sum = 0.0;
 
-    for (size_t i = 0; i < positions.size(); ++i)
+#pragma omp parallel for reduction(+ : sum)
+    for (auto i = 0; i < positions.size(); ++i)
     {
         auto v = Tuning::evaluate(positions[i]);
+        // remember to negate the sum when using cross entropy
+        // sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
         sum += pow((results[i] - sigmoid(v)), 2); // least squares
     }
 
@@ -161,7 +164,7 @@ double Tuning::evalError() const
 void Tuning::calculateScalingConstant()
 {
     auto best = evalError();
-    auto step = 0.01;
+    auto step = 0.1;
     auto improved = true;
     auto direction = 1;
 
@@ -183,14 +186,12 @@ void Tuning::calculateScalingConstant()
                 improved = true;
                 best = error;
                 direction *= -1; // Change the direction.
-                std::cout << scalingConstant << std::endl;
             }
         }
         else
         {
             improved = true;
             best = error;
-            std::cout << scalingConstant << std::endl;
         }
     }
 
@@ -199,7 +200,47 @@ void Tuning::calculateScalingConstant()
 
 void Tuning::tune()
 {
+    omp_set_num_threads(8);
     calculateScalingConstant();
+
+    auto bestError = evalError();
+    auto improved = true;
+    while (improved)
+    {
+        improved = false;
+        for (auto i = 1; i <= 11; ++i)
+        {
+            if (i == 6)
+                continue;
+
+            evalTerms[i] += 1;
+            auto error = evalError();
+            if (error >= bestError)
+            {
+                evalTerms[i] -= 2;
+                error = evalError();
+                if (error >= bestError)
+                {
+                    evalTerms[i] += 1;
+                }
+                else
+                {
+                    improved = true;
+                    bestError = error;
+                }
+            }
+            else
+            {
+                improved = true;
+                bestError = error;
+            }
+        }
+        for (auto i = 0; i <= 11; ++i)
+        {
+            std::cout << evalTerms[i] << std::endl;
+        }
+        std::cout << std::endl;
+    }
 }
 
 int Tuning::evaluate(const Position & pos)
