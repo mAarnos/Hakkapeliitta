@@ -316,7 +316,7 @@ int Evaluation::evaluate(const Position & pos)
         if (pos.getBoard(sq) != Piece::Empty)
         {
             scoreOp += pieceSquareTableOpening[pos.getBoard(sq)][sq];
-            scoreEd += pieceSquareTableOpening[pos.getBoard(sq)][sq];
+            scoreEd += pieceSquareTableEnding[pos.getBoard(sq)][sq];
         }
     }
 

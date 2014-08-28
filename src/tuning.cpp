@@ -16,7 +16,7 @@ std::vector<int> Tuning::evalTerms = {
     -18, -13, -8, 17, 17, -8, -13, -18,
     7, 12, 17, 22, 22, 17, 12, 7,
     42, 42, 42, 42, 42, 42, 42, 42,
-    0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, 0, 0, 0, 0,
     - 36, -26, -16, -6, -6, -16, -26, -36, // 76-139: knightPSTOpening
     -26, -16, -6, 9, 9, -6, -16, -26,
     -16, -6, 9, 29, 29, 9, -6, -16,
@@ -109,7 +109,7 @@ std::vector<int> Tuning::evalTerms = {
 };
 
 Tuning::Tuning():
-scalingConstant(254.48)
+scalingConstant(244.93)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -123,20 +123,21 @@ scalingConstant(254.48)
 		positions.push_back(pos);
 		results.push_back(1.0);
 	}
-
+    
 	while (std::getline(blackWins, text))
 	{
         pos.initializeBoardFromFEN(text);
         positions.push_back(pos);
 		results.push_back(0.0);
 	}
-
+ 
     while (std::getline(draws, text))
 	{
         pos.initializeBoardFromFEN(text);
         positions.push_back(pos);
 		results.push_back(0.5);
 	}
+ 
 }
 
 double Tuning::sigmoid(double x) const
@@ -203,6 +204,11 @@ void Tuning::tune()
 
 int Tuning::evaluate(const Position & pos)
 {
+    if (Evaluation::knownEndgames.count(pos.getMaterialHashKey()))
+    {
+        return Evaluation::knownEndgames[pos.getMaterialHashKey()];
+    }
+
     auto phase = pos.calculateGamePhase();
     auto scoreOp = 0, scoreEd = 0;
     
@@ -217,20 +223,20 @@ int Tuning::evaluate(const Position & pos)
                 scoreOp -= evalTerms[pieceType];
                 scoreEd -= evalTerms[pieceType + 6];
                 scoreOp -= evalTerms[pieceType * 64 + 12 + (sq ^ 56)];
-                scoreOp -= evalTerms[pieceType * 64 + 396 + (sq ^ 56)];
+                scoreEd -= evalTerms[pieceType * 64 + 396 + (sq ^ 56)];
             }
             else
             {
                 scoreOp += evalTerms[pieceType];
                 scoreEd += evalTerms[pieceType + 6];
                 scoreOp += evalTerms[pieceType * 64 + 12 + sq];
-                scoreOp += evalTerms[pieceType * 64 + 396 + sq];
+                scoreEd += evalTerms[pieceType * 64 + 396 + sq];
             }
         }
     }
     
     auto score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
-    score += (pos.getSideToMove() ? -evalTerms[779] : evalTerms[779]); // Side to move bonus.
+    score += (pos.getSideToMove() ? -evalTerms[780] : evalTerms[780]); // Side to move bonus.
 
     return score;
 }

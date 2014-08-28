@@ -17,6 +17,8 @@ public:
 
     static std::array<int, 64> pieceSquareTableOpening[12];
     static std::array<int, 64> pieceSquareTableEnding[12];
+
+    static std::unordered_map<HashKey, int> knownEndgames;
 private:
     static PawnHashTable pawnHashTable;
 
@@ -46,7 +48,6 @@ private:
     static const int sideToMoveBonus;
 
     static void initializeKnownEndgames();
-    static std::unordered_map<HashKey, int> knownEndgames;
 
     template <bool hardwarePopcnt> 
     static int evaluate(const Position & pos);
