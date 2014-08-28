@@ -110,7 +110,7 @@ std::vector<int> Tuning::evalTerms = {
 };
 
 Tuning::Tuning():
-scalingConstant(209.23)
+scalingConstant(1.00)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -120,21 +120,21 @@ scalingConstant(209.23)
 
 	while (std::getline(whiteWins, text))
 	{
-        pos.initializeBoardFromFEN(text);
+        pos.initializePositionFromFen(text);
 		positions.push_back(pos);
 		results.push_back(1.0);
 	}
 
     while (std::getline(blackWins, text))
 	{
-        pos.initializeBoardFromFEN(text);
+        pos.initializePositionFromFen(text);
         positions.push_back(pos);
 		results.push_back(0.0);
 	}
  
     while (std::getline(draws, text))
 	{
-        pos.initializeBoardFromFEN(text);
+        pos.initializePositionFromFen(text);
         positions.push_back(pos);
 		results.push_back(0.5);
 	}
@@ -142,7 +142,7 @@ scalingConstant(209.23)
 
 double Tuning::sigmoid(double x) const
 {
-	return (1.0 / (1.0 + exp(x / -scalingConstant)));
+	return (1.0 / (1.0 + std::pow(10.0, -scalingConstant * x / 400.0)));
 }
 
 double Tuning::evalError() const
@@ -153,18 +153,16 @@ double Tuning::evalError() const
     for (auto i = 0; i < positions.size(); ++i)
     {
         auto v = Tuning::evaluate(positions[i]);
-        // Remember to negate the sum when using cross entropy.
-        // sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
-        sum += pow((results[i] - sigmoid(v)), 2); // least squares
+        sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
     }
 
-    return (sum / static_cast<double>(positions.size()));
+    return -(sum / static_cast<double>(positions.size()));
 }
 
 void Tuning::calculateScalingConstant()
 {
     auto best = evalError();
-    auto step = 0.1;
+    auto step = 0.01;
     auto improved = true;
     auto direction = 1;
 
@@ -201,7 +199,7 @@ void Tuning::calculateScalingConstant()
 void Tuning::tune()
 {
     omp_set_num_threads(8);
-    calculateScalingConstant();
+    // calculateScalingConstant();
 
     auto bestError = evalError();
     auto improved = true;

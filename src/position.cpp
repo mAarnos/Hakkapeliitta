@@ -60,7 +60,7 @@ void Position::displayBoard() const
 	std::cout << "   A  B  C  D  E  F  G  H" << std::endl;
 }
 
-void Position::initializeBoardFromFEN(const std::string & fen)
+void Position::initializePositionFromFen(const std::string & fen)
 {
 	board.fill(Piece::Empty);
 
@@ -218,6 +218,101 @@ void Position::initializeBoardFromFEN(const std::string & fen)
         phase -= (pieceCount[Color::White + i] + pieceCount[Color::Black * 6 + i]) * piecePhase[i];
     }
 }
+
+std::string Position::positionToFen() const
+{
+    std::string fen;
+
+    for (auto r = 7; r >= 0; --r)
+    {
+        auto emptySquares = 0;
+        for (auto f = 0; f < 8; ++f)
+        {
+            auto piece = board[r * 8 + f];
+            if (piece == Piece::Empty)
+            {
+                ++emptySquares;
+            }
+            else
+            {
+                if (emptySquares > 0)
+                {
+                    fen += static_cast<char>('0' + emptySquares);
+                    emptySquares = 0;
+                }
+
+                switch (piece)
+                {
+                case Piece::BlackPawn: fen += "p"; break;
+                case Piece::BlackRook: fen += "r"; break;
+                case Piece::BlackKnight: fen += "n"; break;
+                case Piece::BlackBishop: fen += "b"; break;
+                case Piece::BlackQueen: fen += "q"; break;
+                case Piece::BlackKing: fen += "k"; break;
+                case Piece::WhitePawn: fen += "P"; break;
+                case Piece::WhiteRook: fen += "R"; break;
+                case Piece::WhiteKnight: fen += "N"; break;
+                case Piece::WhiteBishop: fen += "B"; break;
+                case Piece::WhiteQueen: fen += "Q"; break;
+                case Piece::WhiteKing: fen += "K"; break;
+                default: return "";
+                }
+            }
+        }
+
+        if (emptySquares > 0)
+        {
+            fen += static_cast<char>('0' + emptySquares);
+        }
+        if (rank > 0)
+        {
+            fen += '/';
+        }
+    }
+
+    fen += (sideToMove ? " b " : " w ");
+
+    auto sizeBeforeCastling = fen.size();
+    if (castlingRights & 1)
+    {
+        fen += "K";
+    }
+    if (castlingRights & 2)
+    {
+        fen += "Q";
+    }
+    if (castlingRights & 4)
+    {
+        fen += "k";
+    }
+    if (castlingRights & 8)
+    {
+        fen += "q";
+    }
+    if (sizeBeforeCastling == fen.size())
+    {
+        fen += "-";
+    }
+
+    fen += " ";
+    if (enPassant != Square::NoSquare)
+    {
+        fen += static_cast<char>('a' + file(enPassant));
+        fen += static_cast<char>('1' + rank(enPassant));
+    }
+    else
+    {
+        fen += "-";
+    }
+
+    fen += " ";
+    fen += std::to_string(fiftyMoveDistance);
+    fen += " ";
+    fen += std::to_string((hply + 1) / 2);
+
+    return fen;
+}
+
 
 bool Position::makeMove(const Move & m, History & history)
 {

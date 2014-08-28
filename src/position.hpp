@@ -25,7 +25,8 @@ class Position
 public:
     Position();
 
-	void initializeBoardFromFEN(const std::string & fen);
+	void initializePositionFromFen(const std::string & fen);
+    std::string positionToFen() const;
 	void displayBoard() const;
 
     Piece getBoard(Square sq) const { return board[sq]; }
