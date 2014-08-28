@@ -193,6 +193,100 @@ void Position::initializeBoardFromFEN(string FEN)
 	return;
 }
 
+std::string Position::boardToFen() const
+{
+    std::string fen;
+
+    for (auto rank = 7; rank >= 0; --rank)
+    {
+        auto emptySquares = 0;
+        for (auto file = 0; file < 8; ++file)
+        {
+            auto piece = board[rank * 8 + file];
+            if (piece == Empty)
+            {
+                ++emptySquares;
+            }
+            else
+            {
+                if (emptySquares > 0)
+                {
+                    fen += static_cast<char>('0' + emptySquares);
+                    emptySquares = 0;
+                }
+
+                switch (piece)
+                {
+                case BlackPawn: fen += "p"; break;
+                case BlackRook: fen += "r"; break;
+                case BlackKnight: fen += "n"; break;
+                case BlackBishop: fen += "b"; break;
+                case BlackQueen: fen += "q"; break;
+                case BlackKing: fen += "k"; break;
+                case WhitePawn: fen += "P"; break;
+                case WhiteRook: fen += "R"; break;
+                case WhiteKnight: fen += "N"; break;
+                case WhiteBishop: fen += "B"; break;
+                case WhiteQueen: fen += "Q"; break;
+                case WhiteKing: fen += "K"; break;
+                default: return "";
+                }
+            }
+        }
+
+        if (emptySquares > 0)
+        {
+            fen += static_cast<char>('0' + emptySquares);
+        }
+        if (rank > 0)
+        {
+            fen += '/';
+        }
+    }
+
+    fen += (sideToMove ? " b " : " w ");
+
+    auto sizeBeforeCastling = fen.size();
+    if (castlingRights & 1)
+    {
+        fen += "K";
+    }
+    if (castlingRights & 2)
+    {
+        fen += "Q";
+    }
+    if (castlingRights & 4)
+    {
+        fen += "k";
+    }
+    if (castlingRights & 8)
+    {
+        fen += "q";
+    }
+    if (sizeBeforeCastling == fen.size())
+    {
+        fen += "-";
+    }
+
+    fen += " ";
+    if (enPassantSquare != NoSquare)
+    {
+        fen += static_cast<char>('a' + File(enPassantSquare));
+        fen += static_cast<char>('1' + Rank(enPassantSquare));
+    }
+    else
+    {
+        fen += "-";
+    }
+
+    fen += " ";
+    fen += std::to_string(fiftyMoveDistance);
+    fen += " ";
+    fen += std::to_string((hply + 1) / 2);
+
+    return fen;
+}
+
 // Template or this? Can't pick my poison at least yet.
 bool Position::isAttacked(int sq, bool side)
 {

@@ -30,6 +30,7 @@ class Position
 {
 	public:
 		void initializeBoardFromFEN(string FEN);
+        std::string boardToFen() const;
 		void displayBoard();
 
 		bool inCheck() { return isAttacked(bitScanForward(bitboards[King + sideToMove * 6]), !sideToMove); }
