@@ -110,7 +110,7 @@ std::vector<int> Tuning::evalTerms = {
 };
 
 Tuning::Tuning():
-scalingConstant(260.23)
+scalingConstant(209.23)
 {
     std::ifstream whiteWins("C:\\whiteWins.txt");
     std::ifstream blackWins("C:\\blackWins.txt");
@@ -153,7 +153,7 @@ double Tuning::evalError() const
     for (auto i = 0; i < positions.size(); ++i)
     {
         auto v = Tuning::evaluate(positions[i]);
-        // remember to negate the sum when using cross entropy
+        // Remember to negate the sum when using cross entropy.
         // sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
         sum += pow((results[i] - sigmoid(v)), 2); // least squares
     }
@@ -208,9 +208,9 @@ void Tuning::tune()
     while (improved)
     {
         improved = false;
-        for (auto i = 1; i <= 11; ++i)
+        for (auto i = 1; i < 11; ++i)
         {
-            if (i == 6)
+            if (i == 6 || i == 5)
                 continue;
 
             evalTerms[i] += 1;
@@ -235,6 +235,7 @@ void Tuning::tune()
                 bestError = error;
             }
         }
+
         for (auto i = 0; i <= 11; ++i)
         {
             std::cout << evalTerms[i] << std::endl;

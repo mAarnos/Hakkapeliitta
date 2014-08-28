@@ -4,14 +4,16 @@
 #include "position.hpp"
 #include "history.hpp"
 #include "killer.hpp"
+#include <vector>
 
 class Search
 {
 public:
-    static int qSearch(Position & pos, int alpha, int beta);
 private:
     HistoryTable historyTable;
     KillerTable killerTable;
+
+    static int qSearch(Position & pos, int ply, int alpha, int beta);
 
     static const int aspirationWindow;
     static const int nullReduction;

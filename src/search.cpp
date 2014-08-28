@@ -11,7 +11,7 @@ const std::array<int, 1 + 4> Search::futilityMargins = {
 const int Search::lmrFullDepthMoves = 4;
 const int Search::lmrReductionLimit = 3;
 
-int Search::qSearch(Position & pos, int alpha, int beta)
+int Search::qSearch(Position & pos, int ply, int alpha, int beta)
 {
     auto score = Evaluation::evaluate(pos);
     if (score > alpha)
@@ -47,7 +47,7 @@ int Search::qSearch(Position & pos, int alpha, int beta)
             continue;
         }
 
-        score = -qSearch(pos, -beta, -alpha);
+        score = -qSearch(pos, ply + 1, -beta, -alpha);
         pos.unmakeMove(move, history);
 
         if (score > bestScore)
