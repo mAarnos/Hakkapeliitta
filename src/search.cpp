@@ -558,24 +558,20 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			bestMove = moveStack[i].getMove();
 			if (score > alpha)
 			{
-				// Update the history heuristic when a move which improves alpha is found.
-				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
-				{
-					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
-					if (score >= beta)
-					{
-						if (moveStack[i].getMove() != pos.getKiller(0, ply))
-						{
-							pos.setKiller(1, ply, pos.getKiller(0, ply));
-							pos.setKiller(0, ply, moveStack[i].getMove());
-						}
-					}
-				}
-
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
+                    // Update the history heuristic when a move which improves alpha is found.
+                    // Don't update if the move is not a quiet move.
+                    if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
+                    {
+                        butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
+                        if (moveStack[i].getMove() != pos.getKiller(0, ply))
+                        {
+                            pos.setKiller(1, ply, pos.getKiller(0, ply));
+                            pos.setKiller(0, ply, moveStack[i].getMove());
+                        }
+                    }
 					return score;
 				}
 				alpha = score;
@@ -692,24 +688,20 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			bestMove = moveStack[i].getMove();
 			if (score > alpha)
 			{
-				// Update the history heuristic when a move which improves alpha is found.
-				// Don't update if the move is not a quiet move.
-				if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
-				{
-					butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
-					if (score >= beta)
-					{
-						if (moveStack[i].getMove() != pos.getKiller(0, ply))
-						{
-							pos.setKiller(1, ply, pos.getKiller(0, ply));
-							pos.setKiller(0, ply, moveStack[i].getMove());
-						}
-					}
-				}
-
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
+                    // Update the history heuristic when a move which improves alpha is found.
+                    // Don't update if the move is not a quiet move.
+                    if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
+                    {
+                        butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
+                        if (moveStack[i].getMove() != pos.getKiller(0, ply))
+                        {
+                            pos.setKiller(1, ply, pos.getKiller(0, ply));
+                            pos.setKiller(0, ply, moveStack[i].getMove());
+                        }
+                    }
 					return score;
 				}
 
