@@ -8,16 +8,16 @@ HistoryTable::HistoryTable()
 
 void HistoryTable::clear()
 {
-    memset(butterfly, 0, sizeof(butterfly));
+    memset(history, 0, sizeof(history));
 }
 
-void HistoryTable::addMove(const Move & move, int color, int depth)
+void HistoryTable::addMove(const Position & pos, const Move & move, int depth)
 {
-    butterfly[color][move.getFrom()][move.getTo()] = depth * depth;
+    history[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
 }
 
-int HistoryTable::getScore(const Move & move, int color) const
+int HistoryTable::getScore(const Position & pos, const Move & move) const
 {
-    return butterfly[color][move.getFrom()][move.getTo()];
+    return history[pos.getBoard(move.getFrom())][move.getTo()];
 }
 

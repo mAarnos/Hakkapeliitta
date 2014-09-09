@@ -310,6 +310,7 @@ int Evaluation::evaluate(const Position & pos)
     auto kingSafetyScore = 0;
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
+    score += pawnStructureEval(pos, phase);
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {

@@ -3,18 +3,18 @@
 
 #include <array>
 #include "move.hpp"
+#include "position.hpp"
 
 class HistoryTable
 {
 public:
     HistoryTable();
 
-    void addMove(const Move & move, int color, int depth);
-    int getScore(const Move & move, int color) const;
+    void addMove(const Position & pos, const Move & move, int depth);
+    int getScore(const Position & pos, const Move & move) const;
 
     void clear();
 private:
-    std::array<int, 64> butterfly[2][64];
-};
+    std::array<int, 64> history[12];
 
 #endif

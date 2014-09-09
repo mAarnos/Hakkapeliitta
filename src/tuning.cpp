@@ -4,12 +4,13 @@
 #include <string>
 #include <cmath>
 #include <omp.h>
+#include "search.hpp"
 #include "stopwatch.hpp"
 #include "eval.hpp"
 
 std::vector<int> Tuning::evalTerms = {
-    100, 235, 263, 402, 892, 0, // 0-5: materialOpening
-    100, 258, 286, 481, 892, 0, // 6-11: materialEnding
+    88, 235, 263, 402, 892, 0, // 0-5: materialOpening
+    112, 258, 286, 481, 892, 0, // 6-11: materialEnding
     0, 0, 0, 0, 0, 0, 0, 0, // 12-75: pawnPSTOpening
     -33, -18, -13, -18, -18, -13, -18, -33,
     -28, -23, -13, -3, -3, -13, -23, -28,
@@ -123,6 +124,7 @@ scalingConstant(1.00)
         pos.initializePositionFromFen(text);
 		positions.push_back(pos);
 		results.push_back(1.0);
+
 	}
 
     while (std::getline(blackWins, text))
@@ -138,6 +140,28 @@ scalingConstant(1.00)
         positions.push_back(pos);
 		results.push_back(0.5);
 	}
+
+    History history;
+    for (auto i = 0; i < positions.size(); ++i)
+    {
+        memset(Search::pv, 0, sizeof(Search::pv)); 
+        Search::pvLength.fill(0);
+
+        auto stm = positions[i].getSideToMove();
+        auto v = Search::qSearch(positions[i], 0, -100000, 100000);
+
+        for (auto j = 0; j < Search::pvLength[0]; ++j)
+        {
+            positions[i].makeMove(Search::pv[0][j], history);
+        }
+
+        auto v2 = Evaluation::evaluate(positions[i]);
+        if (v != (stm != positions[i].getSideToMove() ? -v2 : v2))
+        {
+            std::cout << "error" << std::endl;
+        }
+
+    }
 }
 
 double Tuning::sigmoid(double x) const
@@ -153,10 +177,11 @@ double Tuning::evalError() const
     for (auto i = 0; i < positions.size(); ++i)
     {
         auto v = Tuning::evaluate(positions[i]);
-        sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
+        // sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
+        sum += pow((results[i] - sigmoid(v)), 2);
     }
 
-    return -(sum / static_cast<double>(positions.size()));
+    return (sum / static_cast<double>(positions.size()));
 }
 
 void Tuning::calculateScalingConstant()
@@ -199,16 +224,17 @@ void Tuning::calculateScalingConstant()
 void Tuning::tune()
 {
     omp_set_num_threads(8);
-    // calculateScalingConstant();
+    calculateScalingConstant();
 
     auto bestError = evalError();
     auto improved = true;
+    auto iterationCount = 0;
     while (improved)
     {
         improved = false;
-        for (auto i = 1; i < 11; ++i)
+        for (auto i = 332; i <= 395; ++i)
         {
-            if (i == 6 || i == 5)
+            if (i == 5 || i == 11) // Skip king material, that cannot change.
                 continue;
 
             evalTerms[i] += 1;
@@ -234,11 +260,13 @@ void Tuning::tune()
             }
         }
 
-        for (auto i = 0; i <= 11; ++i)
-        {
-            std::cout << evalTerms[i] << std::endl;
-        }
-        std::cout << std::endl;
+        std::cout << "Iteration " << ++iterationCount << " finished." << std::endl;
+    }
+
+    std::cout << "Local optimum found." << std::endl;
+    for (auto i = 332; i <= 395; ++i)
+    {
+        std::cout << evalTerms[i] << std::endl;
     }
 }
 

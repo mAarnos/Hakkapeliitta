@@ -1,6 +1,7 @@
 #include "search.hpp"
 #include "eval.hpp"
 #include "movegen.hpp"
+#include <iostream>
 
 const int Search::aspirationWindow = 50;
 const int Search::nullReduction = 3;
@@ -11,8 +12,13 @@ const std::array<int, 1 + 4> Search::futilityMargins = {
 const int Search::lmrFullDepthMoves = 4;
 const int Search::lmrReductionLimit = 3;
 
+std::array<Move, 32> Search::pv[32];
+std::array<int, 32> Search::pvLength;
+
 int Search::qSearch(Position & pos, int ply, int alpha, int beta)
 {
+    pvLength[ply] = ply;
+
     auto score = Evaluation::evaluate(pos);
     if (score > alpha)
     {
@@ -60,6 +66,12 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
                     return score;
                 }
                 alpha = score;
+                pv[ply][ply] = move;
+                for (auto i = ply + 1; i < pvLength[ply + 1]; ++i)
+                {
+                    pv[ply][i] = pv[ply + 1][i];
+                }
+                pvLength[ply] = pvLength[ply + 1];
             }
         }
     }
