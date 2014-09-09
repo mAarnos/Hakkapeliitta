@@ -261,9 +261,6 @@ int generateCaptures(Position & pos, Move * mlist)
 			if (to >= A8 || to <= H1)
 			{
 				m.setPromotion(Queen); mlist[generatedMoves++] = m;
-				m.setPromotion(Rook); mlist[generatedMoves++] = m;
-				m.setPromotion(Bishop); mlist[generatedMoves++] = m;
-				m.setPromotion(Knight); mlist[generatedMoves++] = m;
 				m.setPromotion(Empty);
 			}
 			else
