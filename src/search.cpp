@@ -13,7 +13,7 @@ int searchDepth;
 int syzygyProbeLimit = 0;
 bool probeTB;
 
-array<int, Squares> butterfly[Colours][Squares];
+array<int, Squares> history[12];
 vector<Move> pv;
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
@@ -104,7 +104,7 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 		}
 		else
 		{
-			moveStack[i].setScore(butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()]);
+			moveStack[i].setScore(history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()]);
 		}
 	}
 }
@@ -211,7 +211,7 @@ void think()
 	tt.startNewSearch();
 	
 	searching = true;
-	memset(butterfly, 0, sizeof(butterfly));
+	memset(history, 0, sizeof(history));
 	nodeCount = 0;
 	tbHits = 0;
 	countDown = stopInterval;
@@ -565,7 +565,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
                     // Don't update if the move is not a quiet move.
                     if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
                     {
-                        butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth * depth;
+                        history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
                         if (moveStack[i].getMove() != pos.getKiller(0, ply))
                         {
                             pos.setKiller(1, ply, pos.getKiller(0, ply));
@@ -695,7 +695,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
                     // Don't update if the move is not a quiet move.
                     if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
                     {
-                        butterfly[pos.getSideToMove()][moveStack[i].getFrom()][moveStack[i].getTo()] += depth*depth;
+                        history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
                         if (moveStack[i].getMove() != pos.getKiller(0, ply))
                         {
                             pos.setKiller(1, ply, pos.getKiller(0, ply));
