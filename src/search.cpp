@@ -467,6 +467,13 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
+    if (!pvNode && !check && depth <= 3 && staticEval + 300 <= alpha)
+    {
+        score = qsearch(pos, alpha, beta);
+        if (score <= alpha)
+            return score;
+    }
+
 	// Internal iterative deepening
 	if (pvNode && ttMove == ttMoveNone && depth > 2)
 	{
