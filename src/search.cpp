@@ -535,7 +535,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
 			&& !check && !givesCheck && moveStack[i].getScore() < killerMove4)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth - 1, -alpha - 1, -alpha, true);
+                // Progressively reduce later moves more and more.
+                auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
+				score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, true);
 			}
 			else
 			{
@@ -568,7 +570,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
-                    // Update the history heuristic when a move which improves alpha is found.
+                    // Update the history heuristic when a move which causes a cutoff.
                     // Don't update if the move is not a quiet move.
                     if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
                     {
