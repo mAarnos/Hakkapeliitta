@@ -533,7 +533,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		else
 		{
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-			&& !check && !givesCheck && moveStack[i].getScore() < killerMove4)
+                && !check && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 			{
                 // Progressively reduce later moves more and more.
                 auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
