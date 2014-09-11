@@ -664,11 +664,13 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		}
 		else
 		{
-			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-				&& !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4)
-			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth - 1, -alpha - 1, -alpha, true);
-			}
+            if (movesSearched >= fullDepthMoves && depth >= reductionLimit
+                && !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
+            {
+                // Progressively reduce later moves more and more.
+                auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
+                score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, true);
+            }
 			else
 			{
 				score = alpha + 1; // Hack to ensure that full-depth search is done.
