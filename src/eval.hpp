@@ -167,15 +167,6 @@ const array<int, Squares> mobilityEnding[Pieces] = {
 	{}
 };
 
-const int doubledPenaltyOpening = 15;
-const int doubledPenaltyEnding = 16;
-const int passedBonusOpening = -4;
-const int passedBonusEnding = 51;
-const int isolatedPenaltyOpening = 13;
-const int isolatedPenaltyEnding = 17;
-const int backwardPenaltyOpening = 13;
-const int backwardPenaltyEnding = 9; 
-
 const int bishopPairBonusOpening = 32;
 const int bishopPairBonusEnding = 32;
 

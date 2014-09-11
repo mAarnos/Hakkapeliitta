@@ -10,6 +10,38 @@ array<int, Squares> pieceSquareTableEnding[12];
 
 map<uint64_t, int> knownEndgames;
 
+const std::array<int, 8> passedBonusOpening = {
+    0, -4, -4, -4, -4, -4, -4, 0
+};
+
+const std::array<int, 8> passedBonusEnding = {
+    0, 51, 51, 51, 51, 51, 51, 0
+};
+
+const std::array<int, 8> doubledPenaltyOpening = {
+    8, 12, 16, 16, 16, 16, 12, 8
+};
+
+const std::array<int, 8> doubledPenaltyEnding = {
+    16, 20, 24, 24, 24, 24, 20, 16
+};
+
+const std::array<int, 8> isolatedPenaltyOpening = {
+    13, 13, 13, 13, 13, 13, 13, 13
+};
+
+const std::array<int, 8> isolatedPenaltyEnding = {
+    17, 17, 17, 17, 17, 17, 17, 17
+};
+
+const std::array<int, 8> backwardPenaltyOpening = {
+    13, 13, 13, 13, 13, 13, 13, 13
+};
+
+const std::array<int, 8> backwardPenaltyEnding = {
+    9, 9, 9, 9, 9, 9, 9, 9
+};
+
 void initializeKnownEndgames()
 {
 	// King vs king: draw
@@ -262,86 +294,74 @@ int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
 
 int pawnStructureEval(Position & pos, int phase)
 {
-	int scoreOp = 0, scoreEd = 0, score, from;
-	uint64_t whitePawns, blackPawns, tempPiece;
+    auto scoreOp = 0, scoreEd = 0;
+    int score;
 
-	if ((score = pttProbe(pos)) != probeFailed)
-	{
-		return score;
-	}
+    if ((score = pttProbe(pos)) != probeFailed)
+    {
+        return score;
+    }
 
-	tempPiece = whitePawns = pos.getBitboard(White, Pawn);
-	blackPawns = pos.getBitboard(Black, Pawn);
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
+    for (int c = White; c <= Black; ++c)
+    {
+        auto scoreOpForColor = 0, scoreEdForColor = 0;
+        auto ownPawns = pos.getBitboard(c, Pawn);
+        auto tempPawns = ownPawns;
+        auto opponentPawns = pos.getBitboard(!c, Pawn);
 
-		if (whitePawns & rays[N][from])
-		{
-			scoreOp -= doubledPenaltyOpening;
-			scoreEd -= doubledPenaltyEnding;
-		}
+        while (tempPawns)
+        {
+            auto from = bitScanForward(tempPawns);
+            tempPawns &= (tempPawns - 1);
+            auto pawnFile = File(from);
+            auto pawnRank = Rank(from);
 
-		if (!(blackPawns & passed[White][from]))
-		{
-			scoreOp += passedBonusOpening;
-			scoreEd += passedBonusEnding;
-		}
+            auto passedPawn = !(opponentPawns & passed[c][from]);
+            auto doubledPawn = (ownPawns & (c ? rays[1][from] : rays[6][from])) != 0;
+            auto isolatedPawn = !(ownPawns & isolated[from]);
+            // 1. The pawn must be able to move forward.
+            // 2. The stop square must be controlled by an enemy pawn.
+            // 3. There musn't be any own pawns capable of defending the pawn. 
+            // TODO: Check that this is correct.
+            auto backwardPawn = (pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
+                //  && ((pos.getPiece(from + 8 - 16 * c) == Empty)
+                && !(ownPawns & backward[c][from]);
 
-		if (!(whitePawns & isolated[from]))
-		{
-			scoreOp -= isolatedPenaltyOpening;
-			scoreEd -= isolatedPenaltyEnding;
-		}
+            if (passedPawn)
+            {
+                scoreOpForColor += passedBonusOpening[pawnRank];
+                scoreEdForColor += passedBonusEnding[pawnRank];
+            }
 
-		if ((pawnAttacks[White][from + 8] & blackPawns)) // && pos.getPiece(from - 8) == Empty)
-		{
-			if (!(whitePawns & backward[White][from]))
-			{
-				scoreOp -= backwardPenaltyOpening;
-				scoreEd -= backwardPenaltyEnding;
-			}
-		}
-	}
+            if (doubledPawn)
+            {
+                scoreOpForColor -= doubledPenaltyOpening[pawnFile];
+                scoreEdForColor -= doubledPenaltyEnding[pawnFile];
+            }
 
-	tempPiece = blackPawns;
-	while (tempPiece)
-	{
-		from = bitScanForward(tempPiece);
-		tempPiece &= (tempPiece - 1);
+            if (isolatedPawn)
+            {
+                scoreOpForColor -= isolatedPenaltyOpening[pawnFile];
+                scoreEdForColor -= isolatedPenaltyEnding[pawnFile];
+            }
 
-		if (blackPawns & rays[S][from])
-		{
-			scoreOp += doubledPenaltyOpening;
-			scoreEd += doubledPenaltyEnding;
-		}
-		if (!(whitePawns & passed[Black][from]))
-		{
-			scoreOp -= passedBonusOpening;
-			scoreEd -= passedBonusEnding;
-		}
-		if (!(blackPawns & isolated[from]))
-		{
-			scoreOp += isolatedPenaltyOpening;
-			scoreEd += isolatedPenaltyEnding;
-		}
-		if ((pawnAttacks[Black][from - 8] & whitePawns))// && pos.getPiece(from - 8) == Empty)
-		{
-			if (!(blackPawns & backward[Black][from]))
-			{
-				scoreOp += backwardPenaltyOpening;
-				scoreEd += backwardPenaltyEnding;
-			}
-		}
-	}
+            if (backwardPawn)
+            {
+                scoreOpForColor -= backwardPenaltyOpening[pawnFile];
+                scoreEdForColor -= backwardPenaltyEnding[pawnFile];
+            }
+        }
 
-	score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+        scoreOp += (c == Black ? -scoreOpForColor : scoreOpForColor);
+        scoreEd += (c == Black ? -scoreEdForColor : scoreEdForColor);
+    }
 
-	pttSave(pos, score);
+    score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    pttSave(pos, score);
 
-	return score;
+    return score;
 }
+
 
 int kingSafetyEval(Position & pos, int phase, int score)
 {
