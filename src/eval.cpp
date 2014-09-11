@@ -35,11 +35,11 @@ const std::array<int, 8> isolatedPenaltyEnding = {
 };
 
 const std::array<int, 8> backwardPenaltyOpening = {
-    13, 13, 13, 13, 13, 13, 13, 13
+    6, 10, 12, 12, 12, 12, 10, 6
 };
 
 const std::array<int, 8> backwardPenaltyEnding = {
-    9, 9, 9, 9, 9, 9, 9, 9
+    12, 14, 16, 16, 16, 16, 14, 12
 };
 
 void initializeKnownEndgames()
