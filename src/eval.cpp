@@ -27,11 +27,11 @@ const std::array<int, 8> doubledPenaltyEnding = {
 };
 
 const std::array<int, 8> isolatedPenaltyOpening = {
-    13, 13, 13, 13, 13, 13, 13, 13
+    8, 12, 16, 16, 16, 16, 12, 8
 };
 
 const std::array<int, 8> isolatedPenaltyEnding = {
-    17, 17, 17, 17, 17, 17, 17, 17
+    12, 16, 20, 20, 20, 20, 16, 12
 };
 
 const std::array<int, 8> backwardPenaltyOpening = {
@@ -323,6 +323,7 @@ int pawnStructureEval(Position & pos, int phase)
             // 2. The stop square must be controlled by an enemy pawn.
             // 3. There musn't be any own pawns capable of defending the pawn. 
             // TODO: Check that this is correct.
+            // TODO: test is the empty condition helping?
             auto backwardPawn = (pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
                 //  && ((pos.getPiece(from + 8 - 16 * c) == Empty)
                 && !(ownPawns & backward[c][from]);
