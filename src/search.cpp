@@ -14,6 +14,7 @@ int syzygyProbeLimit = 0;
 bool probeTB;
 
 array<int, Squares> history[12];
+array<int, Squares> butterfly[12];
 vector<Move> pv;
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
@@ -104,7 +105,10 @@ void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, in
 		}
 		else
 		{
-			moveStack[i].setScore(history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()]);
+            auto relativeHistoryScore = history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] * 100 /
+                (butterfly[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] + 1);
+            assert(relativeHistoryScore < killerMove4);
+			moveStack[i].setScore(relativeHistoryScore);
 		}
 	}
 }
@@ -212,6 +216,7 @@ void think()
 	
 	searching = true;
 	memset(history, 0, sizeof(history));
+    memset(butterfly, 0, sizeof(butterfly));
 	nodeCount = 0;
 	tbHits = 0;
 	countDown = stopInterval;
@@ -581,6 +586,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
                             pos.setKiller(0, ply, moveStack[i].getMove());
                         }
                     }
+                    for (auto j = 0; j < i; ++j)
+                    {
+                        if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
+                            ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                        {
+                            butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
+                        }
+                    }
 					return score;
 				}
 				alpha = score;
@@ -711,6 +724,14 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
                         {
                             pos.setKiller(1, ply, pos.getKiller(0, ply));
                             pos.setKiller(0, ply, moveStack[i].getMove());
+                        }
+                    }
+                    for (auto j = 0; j < i; ++j)
+                    {
+                        if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
+                            ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                        {
+                            butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
                         }
                     }
 					return score;
