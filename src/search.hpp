@@ -16,6 +16,16 @@ const array<int, 1 + futilityDepth> futilityMargin = {
 	50, 125, 125, 300, 300, 
 };
 
+const int razoringDepth = 3;
+const array<int, 1 + razoringDepth> razoringMargin = {
+    0, 300, 300, 300
+};
+
+const int staticNullMoveDepth = 3;
+const array<int, 1 + staticNullMoveDepth> staticNullMoveMargin = {
+    0, 260, 445, 900
+};
+
 extern int syzygyProbeLimit;
 
 const int fullDepthMoves = 4;

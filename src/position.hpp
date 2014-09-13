@@ -68,7 +68,7 @@ class Position
 
 		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }
 		inline void setKiller(int killerNumber, int ply, int newKiller) { killer[killerNumber][ply] = newKiller; }
-
+        inline void resetKillers() { memset(killer, 0, sizeof(killer)); }
 		inline bool getIsInCheck(int ply) { return isInCheck[ply]; }
 		inline void setIsInCheck(int ply, bool inCheck) { isInCheck[ply] = inCheck; }
 

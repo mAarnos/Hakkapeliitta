@@ -11,7 +11,7 @@
 
 int main()
 {
-	cout << "Hakkapeliitta 210714, (C) 2013-2014 Mikko Aarnos" << endl;
+	cout << "Hakkapeliitta 130914, (C) 2013-2014 Mikko Aarnos" << endl;
 
 	// Initialize the engine.
 	initInput();

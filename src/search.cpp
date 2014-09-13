@@ -217,6 +217,7 @@ void think()
 	searching = true;
 	memset(history, 0, sizeof(history));
     memset(butterfly, 0, sizeof(butterfly));
+    root.resetKillers();
 	nodeCount = 0;
 	tbHits = 0;
 	countDown = stopInterval;
@@ -425,28 +426,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	}
 
 	// Get the static evaluation of the position.
-	if (!check)
-		staticEval = eval(pos);
+    staticEval = (check ? 0 : eval(pos));
 
 	// Null move pruning, both static and dynamic.
 	if (!pvNode && allowNullMove && !check && pos.calculateGamePhase() != 256)
 	{
 		// Here's static.
-		if (depth <= 3)
-		{
-			if (depth <= 1 && staticEval - 260 >= beta)
-			{
-				return staticEval - 260;
-			}
-			else if (depth <= 2 && staticEval - 445 >= beta)
-			{
-				return staticEval - 445;
-			}
-			else if (staticEval - 900 >= beta)
-			{
-                return staticEval - 900;
-			}
-		}
+        if (depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
+            return staticEval - staticNullMoveMargin[depth];
 
 		// And here's dynamic.
 		pos.makeNullMove();
@@ -473,7 +460,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 	}
 
-    if (!pvNode && !check && depth <= 3 && staticEval + 300 <= alpha)
+    if (!pvNode && !check && depth <= razoringDepth && staticEval + razoringMargin[depth] <= alpha)
     {
         score = qsearch(pos, alpha, beta);
         if (score <= alpha)

@@ -83,7 +83,7 @@ void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64
 	assert(best >= 0 && best <= 65535);
 
 	// We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
-	if (isMateScore(score))
+	if (isMateScore(static_cast<int>(score)))
 	{
 		if (score > 0)
 		{

@@ -305,7 +305,7 @@ int pawnStructureEval(Position & pos, int phase)
     for (int c = White; c <= Black; ++c)
     {
         auto scoreOpForColor = 0, scoreEdForColor = 0;
-        auto ownPawns = pos.getBitboard(c, Pawn);
+        auto ownPawns = pos.getBitboard(!!c, Pawn);
         auto tempPawns = ownPawns;
         auto opponentPawns = pos.getBitboard(!c, Pawn);
 
