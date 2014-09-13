@@ -377,6 +377,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	bool pvNode = ((alpha + 1) != beta), futileNode = false, check = pos.getIsInCheck(ply);
 	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
+    auto oneReply = false;
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
 	if (countDown-- <= 0)
@@ -499,8 +500,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	if (check)
 	{
 		generatedMoves = generateEvasions(pos, moveStack);
-		if (generatedMoves == 1)
-			depth++;
+        if (generatedMoves == 1)
+            oneReply = true;
 	}
 	else
 	{
@@ -519,12 +520,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		int newDepth = depth - 1;
 		bool givesCheck = pos.inCheck();
 		pos.setIsInCheck(ply + 1, givesCheck);
-		if (givesCheck)
-		{
-			newDepth++;
-		}
+        auto extension = (givesCheck || oneReply) ? 1 : 0;
+        newDepth += extension;
 
-		if (futileNode && moveStack[i].getScore() < killerMove4 && !givesCheck)
+		if (futileNode && moveStack[i].getScore() < killerMove4 && !extension)
 		{
 			pos.unmakeMove(moveStack[i]);
 			prunedMoves++;
@@ -538,7 +537,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		else
 		{
 			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-                && !check && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
+                && !check && !extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 			{
                 // Progressively reduce later moves more and more.
                 auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
