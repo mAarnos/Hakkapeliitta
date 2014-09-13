@@ -11,11 +11,11 @@ array<int, Squares> pieceSquareTableEnding[12];
 map<uint64_t, int> knownEndgames;
 
 const std::array<int, 8> passedBonusOpening = {
-    0, -4, -4, -4, -4, -4, -4, 0
+    0, 0, 5, 10, 20, 25, 50, 0
 };
 
 const std::array<int, 8> passedBonusEnding = {
-    0, 51, 51, 51, 51, 51, 51, 0
+    0, 0, 10, 15, 30, 40, 80, 0
 };
 
 const std::array<int, 8> doubledPenaltyOpening = {
@@ -314,7 +314,7 @@ int pawnStructureEval(Position & pos, int phase)
             auto from = bitScanForward(tempPawns);
             tempPawns &= (tempPawns - 1);
             auto pawnFile = File(from);
-            auto pawnRank = Rank(from);
+            auto pawnRank = (c ? 7 - Rank(from) : Rank(from));
 
             auto passedPawn = !(opponentPawns & passed[c][from]);
             auto doubledPawn = (ownPawns & (c ? rays[1][from] : rays[6][from])) != 0;
