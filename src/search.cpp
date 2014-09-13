@@ -569,9 +569,9 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		if (score > bestScore)
 		{
 			bestScore = score;
-			bestMove = moveStack[i].getMove();
 			if (score > alpha)
 			{
+                bestMove = moveStack[i].getMove();
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
@@ -709,9 +709,9 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		if (score > bestScore)
 		{
 			bestScore = score;
-			bestMove = moveStack[i].getMove();
 			if (score > alpha)
 			{
+                bestMove = moveStack[i].getMove();
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
