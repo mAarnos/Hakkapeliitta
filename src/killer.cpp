@@ -1,5 +1,6 @@
 #include "killer.hpp"
 #include <cassert>
+#include <cstring>
 
 KillerTable::KillerTable()
 {

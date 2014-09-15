@@ -77,7 +77,7 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
 
     if (entry < 4)
     {
-        // best = hashEntry->getBestMove(entry);
+        // best = hashEntry.getBestMove(entry);
         auto hashScore = hashEntry.getScore(entry);
         auto hashDepth = hashEntry.getDepth(entry);
         auto flags = hashEntry.getFlags(entry);
@@ -109,8 +109,7 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
                     return false;
                 }
             }
-
-            if (flags == LowerBoundScore)
+            else if (flags == LowerBoundScore)
             {
                 if (hashScore >= beta)
                 {

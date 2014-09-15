@@ -4,6 +4,7 @@
 #include <string>
 #include <cmath>
 #include <omp.h>
+#include <cstring>
 #include "search.hpp"
 #include "stopwatch.hpp"
 #include "eval.hpp"

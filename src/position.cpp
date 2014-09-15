@@ -228,7 +228,7 @@ std::string Position::positionToFen() const
         auto emptySquares = 0;
         for (auto f = 0; f < 8; ++f)
         {
-            auto piece = board[r * 8 + f];
+            int piece = board[r * 8 + f];
             if (piece == Piece::Empty)
             {
                 ++emptySquares;
@@ -243,19 +243,19 @@ std::string Position::positionToFen() const
 
                 switch (piece)
                 {
-                case Piece::BlackPawn: fen += "p"; break;
-                case Piece::BlackRook: fen += "r"; break;
-                case Piece::BlackKnight: fen += "n"; break;
-                case Piece::BlackBishop: fen += "b"; break;
-                case Piece::BlackQueen: fen += "q"; break;
-                case Piece::BlackKing: fen += "k"; break;
-                case Piece::WhitePawn: fen += "P"; break;
-                case Piece::WhiteRook: fen += "R"; break;
-                case Piece::WhiteKnight: fen += "N"; break;
-                case Piece::WhiteBishop: fen += "B"; break;
-                case Piece::WhiteQueen: fen += "Q"; break;
-                case Piece::WhiteKing: fen += "K"; break;
-                default: return "";
+                    case Piece::BlackPawn: fen += "p"; break;
+                    case Piece::BlackRook: fen += "r"; break;
+                    case Piece::BlackKnight: fen += "n"; break;
+                    case Piece::BlackBishop: fen += "b"; break;
+                    case Piece::BlackQueen: fen += "q"; break;
+                    case Piece::BlackKing: fen += "k"; break;
+                    case Piece::WhitePawn: fen += "P"; break;
+                    case Piece::WhiteRook: fen += "R"; break;
+                    case Piece::WhiteKnight: fen += "N"; break;
+                    case Piece::WhiteBishop: fen += "B"; break;
+                    case Piece::WhiteQueen: fen += "Q"; break;
+                    case Piece::WhiteKing: fen += "K"; break;
+                    default: return "";
                 }
             }
         }

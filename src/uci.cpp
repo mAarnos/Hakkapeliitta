@@ -29,8 +29,8 @@ void UCI::mainLoop()
         std::regex expr("(\\w*)\\s?(.*)");
         std::smatch matches;
         std::regex_match(line, matches, expr);
-        // matches[1] -> command name
-        // matches[2] -> parameters
+        // matches[1] == command name
+        // matches[2] == parameters
         Command currentCommand(matches[1], matches[2]);
 
         // Go through the list of commands and call the correct function if the command entered is known.
