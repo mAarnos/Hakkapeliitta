@@ -6,6 +6,27 @@
 #include "killer.hpp"
 #include <vector>
 
+const int maxPly = 1200;
+const int mateScore = 32767;
+const int maxMateScore = 32767 - maxPly;
+const int infinity = mateScore + 1;
+
+inline int matedInPly(int ply)
+{
+    return (-mateScore + ply);
+}
+
+inline int mateInPly(int ply)
+{
+    return (mateScore - ply);
+}
+
+inline bool isMateScore(int score)
+{
+    assert(score < infinity && score > -infinity);
+    return (score <= -maxMateScore || score >= maxMateScore);
+}
+
 class Search
 {
 public:
@@ -13,8 +34,8 @@ public:
     static std::array<Move, 32> pv[32];
     static std::array<int, 32> pvLength;
 private:
-    HistoryTable historyTable;
-    KillerTable killerTable;
+    static HistoryTable historyTable;
+    static KillerTable killerTable;
 
     static const int aspirationWindow;
     static const int nullReduction;
@@ -23,7 +44,5 @@ private:
     static const int lmrFullDepthMoves;
     static const int lmrReductionLimit;
 };
-
-
 
 #endif

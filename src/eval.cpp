@@ -160,35 +160,35 @@ const std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
-const std::array<int, 8> passedBonusOpening = {
+const std::array<int, 8> Evaluation::passedBonusOpening = {
     0, 0, 5, 10, 20, 25, 50, 0
 };
 
-const std::array<int, 8> passedBonusEnding = {
+const std::array<int, 8> Evaluation::passedBonusEnding = {
     0, 0, 10, 15, 30, 40, 80, 0
 };
 
-const std::array<int, 8> doubledPenaltyOpening = {
+const std::array<int, 8> Evaluation::doubledPenaltyOpening = {
     8, 12, 16, 16, 16, 16, 12, 8
 };
 
-const std::array<int, 8> doubledPenaltyEnding = {
+const std::array<int, 8> Evaluation::doubledPenaltyEnding = {
     16, 20, 24, 24, 24, 24, 20, 16
 };
 
-const std::array<int, 8> isolatedPenaltyOpening = {
+const std::array<int, 8> Evaluation::isolatedPenaltyOpening = {
     8, 12, 16, 16, 16, 16, 12, 8
 };
 
-const std::array<int, 8> isolatedPenaltyEnding = {
+const std::array<int, 8> Evaluation::isolatedPenaltyEnding = {
     12, 16, 20, 20, 20, 20, 16, 12
 };
 
-const std::array<int, 8> backwardPenaltyOpening = {
+const std::array<int, 8> Evaluation::backwardPenaltyOpening = {
     6, 10, 12, 12, 12, 12, 10, 6
 };
 
-const std::array<int, 8> backwardPenaltyEnding = {
+const std::array<int, 8> Evaluation::backwardPenaltyEnding = {
     12, 14, 16, 16, 16, 16, 14, 12
 };
 

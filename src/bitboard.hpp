@@ -144,11 +144,11 @@ private:
     static int hardwarePopcnt(Bitboard bb)
     {
 #if (defined _WIN64 || defined __x86_64__)
-#if (defined __clang__ || defined __GNUC__)
+ #if (defined __clang__ || defined __GNUC__)
         return static_cast<int>(__builtin_popcountll(bb));
-#else
+ #else
         return static_cast<int>(_mm_popcnt_u64(bb));
-#endif
+ #endif
 #else
         assert(false);
         return bb != 0; // gets rid of unreferenced formal parameter warning

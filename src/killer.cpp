@@ -19,7 +19,7 @@ void KillerTable::addKiller(const Move & move, int ply)
     assert(ply >= 0 && ply < 1200);
 
     auto candidateKiller = move.getPacket();
-    // Only replace if we won't have two same killers.
+    // Only replace if we won't have two same killers if we replace.
     if (candidateKiller != killers[0][ply]) 
     {
         killers[1][ply] = killers[0][ply];
