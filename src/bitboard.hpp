@@ -85,7 +85,8 @@ public:
         _BitScanForward64(&index, bb);
         return index;
  #else
-	return __builtin_ctzll(bb);
+        __asm__ ("bsfq %0, %0" : "=r" (bb) : "0" (bb));
+        return static_cast<unsigned long>(bb);
  #endif
     }
 
@@ -98,7 +99,8 @@ public:
         _BitScanReverse64(&index, bb);
         return index;
  #else
-        return (63 - __builtin_clzll(bb));
+        __asm__ ("bsrq %0, %0" : "=r" (bb) : "0" (bb));
+        return static_cast<unsigned long>(bb);
  #endif
     }
 #else
@@ -145,7 +147,8 @@ private:
     {
 #if (defined _WIN64 || defined __x86_64__)
  #if (defined __clang__ || defined __GNUC__)
-        return static_cast<int>(__builtin_popcountll(bb));
+        __asm__ ("popcnt %1, %0" : "=r" (bb) : "0" (bb));
+        return static_cast<int>(bb);
  #else
         return static_cast<int>(_mm_popcnt_u64(bb));
  #endif
