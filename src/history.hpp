@@ -16,5 +16,6 @@ public:
     void clear();
 private:
     std::array<int, 64> history[12];
+};
 
 #endif

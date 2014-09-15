@@ -160,36 +160,36 @@ const std::vector<int> Evaluation::mobilityEnding[6] = {
     {}
 };
 
-const std::array<int, 8> Evaluation::passedBonusOpening = {
-    0, -4, -4, -4, -4, -4, -4, 0
+const std::array<int, 8> passedBonusOpening = {
+    0, 0, 5, 10, 20, 25, 50, 0
 };
 
-const std::array<int, 8> Evaluation::passedBonusEnding = {
-    0, 51, 51, 51, 51, 51, 51, 0
+const std::array<int, 8> passedBonusEnding = {
+    0, 0, 10, 15, 30, 40, 80, 0
 };
 
-const std::array<int, 8> Evaluation::doubledPenaltyOpening = {
-    15, 15, 15, 15, 15, 15, 15, 15
+const std::array<int, 8> doubledPenaltyOpening = {
+    8, 12, 16, 16, 16, 16, 12, 8
 };
 
-const std::array<int, 8> Evaluation::doubledPenaltyEnding = {
-    16, 16, 16, 16, 16, 16, 16, 16
+const std::array<int, 8> doubledPenaltyEnding = {
+    16, 20, 24, 24, 24, 24, 20, 16
 };
 
-const std::array<int, 8> Evaluation::isolatedPenaltyOpening = {
-    13, 13, 13, 13, 13, 13, 13, 13
+const std::array<int, 8> isolatedPenaltyOpening = {
+    8, 12, 16, 16, 16, 16, 12, 8
 };
 
-const std::array<int, 8> Evaluation::isolatedPenaltyEnding = {
-    17, 17, 17, 17, 17, 17, 17, 17
+const std::array<int, 8> isolatedPenaltyEnding = {
+    12, 16, 20, 20, 20, 20, 16, 12
 };
 
-const std::array<int, 8> Evaluation::backwardPenaltyOpening = {
-    13, 13, 13, 13, 13, 13, 13, 13
+const std::array<int, 8> backwardPenaltyOpening = {
+    6, 10, 12, 12, 12, 12, 10, 6
 };
 
-const std::array<int, 8> Evaluation::backwardPenaltyEnding = {
-    9, 9, 9, 9, 9, 9, 9, 9
+const std::array<int, 8> backwardPenaltyEnding = {
+    12, 14, 16, 16, 16, 16, 14, 12
 };
 
 const int Evaluation::bishopPairBonusOpening = 32;
@@ -437,7 +437,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
             auto from = Bitboards::lsb(tempPawns);
             tempPawns &= (tempPawns - 1);
             auto pawnFile = file(from);
-            auto pawnRank = rank(from);
+            auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
 
             auto passed = !(opponentPawns & Bitboards::passed[c][from]);
             auto doubled = (ownPawns & (c ? Bitboards::rays[1][from] : Bitboards::rays[6][from])) != 0;
