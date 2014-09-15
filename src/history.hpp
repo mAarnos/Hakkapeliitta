@@ -10,12 +10,13 @@ class HistoryTable
 public:
     HistoryTable();
 
-    void addMove(const Position & pos, const Move & move, int depth);
+    void addCutoff(const Position & pos, const Move & move, int depth);
+    void addNotCutoff(const Position & pos, const Move & move, int depth);
     int getScore(const Position & pos, const Move & move) const;
-
     void clear();
 private:
     std::array<int, 64> history[12];
+    std::array<int, 64> butterfly[12];
 };
 
 #endif
