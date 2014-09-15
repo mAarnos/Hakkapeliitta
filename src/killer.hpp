@@ -12,14 +12,9 @@ public:
 
     void addKiller(const Move & move, int ply);
     int isKiller(const Move & move, int ply);
+    void clear();
 private:
-    class KillerTableEntry
-    {
-    public:
-        std::array<int32_t, 2> killers;
-    };
-
-    std::array<KillerTableEntry, 1200> killers;
+    std::array<int16_t, 1200> killers[2];
 };
 
 #endif

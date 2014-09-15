@@ -3,43 +3,48 @@
 
 KillerTable::KillerTable()
 {
-    for (auto & entry: killers)
+    clear();
+}
+
+void KillerTable::clear()
+{
+    for (auto & entry : killers)
     {
-        entry.killers.fill(0);
+        entry.fill(0);
     }
 }
 
 void KillerTable::addKiller(const Move & move, int ply)
 {
-    assert(ply >= 0 && ply < static_cast<int>(killers.size()));
+    assert(ply >= 0 && ply < 1200);
 
-    int32_t candidateKiller = move.getPacket();
+    auto candidateKiller = move.getPacket();
     // Only replace if we won't have two same killers.
-    if (candidateKiller != killers[ply].killers[0]) 
+    if (candidateKiller != killers[0][ply]) 
     {
-        killers[ply].killers[1] = killers[ply].killers[0];
-        killers[ply].killers[0] = candidateKiller;
+        killers[1][ply] = killers[0][ply];
+        killers[0][ply] = candidateKiller;
     }
 }
 
 int KillerTable::isKiller(const Move & move, int ply)
 {
-    assert(ply >= 0 && ply < static_cast<int>(killers.size()));
+    assert(ply >= 0 && ply < 1200);
 
-    int32_t possibleKiller = move.getPacket();
-    if (possibleKiller == killers[ply].killers[0])
+    auto possibleKiller = move.getPacket();
+    if (possibleKiller == killers[0][ply])
     {
         return 4;
     }
-    else if (possibleKiller == killers[ply].killers[1])
+    else if (possibleKiller == killers[1][ply])
     {
         return 3;
     }
-    else if (ply > 1 && killers[ply - 2].killers[0])
+    else if (ply > 1 && possibleKiller == killers[0][ply - 2])
     {
         return 2;
     }
-    else if (ply > 1 && killers[ply - 2].killers[1])
+    else if (ply > 1 && possibleKiller == killers[1][ply - 2])
     {
         return 1;
     }
