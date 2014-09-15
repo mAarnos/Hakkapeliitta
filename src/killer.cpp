@@ -8,10 +8,7 @@ KillerTable::KillerTable()
 
 void KillerTable::clear()
 {
-    for (auto & entry : killers)
-    {
-        entry.fill(0);
-    }
+    memset(killers, 0, sizeof(killers));
 }
 
 void KillerTable::addKiller(const Move & move, int ply)
@@ -27,7 +24,7 @@ void KillerTable::addKiller(const Move & move, int ply)
     }
 }
 
-int KillerTable::isKiller(const Move & move, int ply)
+int KillerTable::isKiller(const Move & move, int ply) const
 {
     assert(ply >= 0 && ply < 1200);
 

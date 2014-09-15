@@ -11,7 +11,7 @@ public:
     KillerTable();
 
     void addKiller(const Move & move, int ply);
-    int isKiller(const Move & move, int ply);
+    int isKiller(const Move & move, int ply) const;
     void clear();
 private:
     std::array<int16_t, 1200> killers[2];

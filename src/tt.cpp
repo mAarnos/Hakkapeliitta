@@ -1,6 +1,7 @@
 #include "tt.hpp"
 #include <cassert>
 #include <cmath>
+#include "search.hpp"
 
 TranspositionTable::TranspositionTable(size_t sizeInBytes)
 {
@@ -10,39 +11,36 @@ TranspositionTable::TranspositionTable(size_t sizeInBytes)
 void TranspositionTable::save(const Position & pos, int ply, const Move & move, int score, int depth, int flags)
 {
     assert(table.size() > 0);
-    // assert(depth >= 0 && depth <= 255);
-    // assert(score < infinity && score > -infinity);
-    // assert(flags >= 0 && flags <= 255);
+    assert(depth >= 0 && depth <= 255);
+    assert(score < infinity && score > -infinity);
+    assert(flags >= 0 && flags <= 255);
 
     auto best = move.getPacket();
-    auto hashEntry = &table[pos.getHashKey() % table.size()];
+    auto & hashEntry = table[pos.getHashKey() % table.size()];
 
-    // We only store pure mate scores so that we can use them in other parts of the search tree too without incorrect scores.
-    /*
+    // We only store pure mate scores so that we can use them in other parts of the search tree too.
     if (isMateScore(score))
     {
         score += (score > 0 ? ply : -ply);
     }
-    */
 
     auto replace = 0;
     for (auto i = 0; i < 4; i++)
     {
-        if ((hashEntry->getHash(i) ^ hashEntry->getData(i)) == pos.getHashKey())
+        if ((hashEntry.getHash(i) ^ hashEntry.getData(i)) == pos.getHashKey())
         {
             replace = i;
-            // TODO: check the following line
             if (!best)
             {
-                best = hashEntry->getBestMove(replace);
+                best = hashEntry.getBestMove(replace);
             }
             break;
         }
 
         // Here we check if we have found an entry which is worse than the current worse entry.
         // If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-        auto c1 = (hashEntry->getGeneration(replace) > hashEntry->getGeneration(i));
-        auto c2 = (hashEntry->getDepth(replace) > hashEntry->getDepth(i));
+        auto c1 = (hashEntry.getGeneration(replace) > hashEntry.getGeneration(i));
+        auto c2 = (hashEntry.getDepth(replace) > hashEntry.getDepth(i));
 
         if (c1 || c2)
         {
@@ -50,28 +48,28 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
         }
     }
 
-    hashEntry->setData(replace, (static_cast<uint64_t>(best) | 
+    hashEntry.setData(replace, (static_cast<uint64_t>(best) | 
                                  static_cast<uint64_t>(generation) << 16 | 
                                  static_cast<uint64_t>(score & 0xffff) << 32 | 
                                  static_cast<uint64_t>(depth & 0xff) << 48) | 
                                  static_cast<uint64_t>(flags) << 56);
-    hashEntry->setHash(replace, pos.getHashKey() ^ hashEntry->getData(replace));
+    hashEntry.setHash(replace, pos.getHashKey() ^ hashEntry.getData(replace));
 
-    assert(hashEntry->getBestMove(replace) == best);
-    assert(hashEntry->getGeneration(replace) == generation);
-    assert((hashEntry->getScore(replace)) == score);
-    assert(hashEntry->getDepth(replace) == depth);
-    assert(hashEntry->getFlags(replace) == flags);
+    assert(hashEntry.getBestMove(replace) == best);
+    assert(hashEntry.getGeneration(replace) == generation);
+    assert((hashEntry.getScore(replace)) == score);
+    assert(hashEntry.getDepth(replace) == depth);
+    assert(hashEntry.getFlags(replace) == flags);
 }
 
 bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int & score, int depth, int & alpha, int & beta) const
 {
-    auto hashEntry = &table[pos.getHashKey() % table.size()];
+    auto & hashEntry = table[pos.getHashKey() % table.size()];
 
     int entry;
     for (entry = 0; entry < 4; ++entry)
     {
-        if ((hashEntry->getHash(entry) ^ hashEntry->getData(entry)) == pos.getHashKey())
+        if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == pos.getHashKey())
         {
             break;
         }
@@ -80,19 +78,17 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
     if (entry < 4)
     {
         // best = hashEntry->getBestMove(entry);
-        auto hashScore = hashEntry->getScore(entry);
-        auto hashDepth = hashEntry->getDepth(entry);
-        auto flags = hashEntry->getFlags(entry);
+        auto hashScore = hashEntry.getScore(entry);
+        auto hashDepth = hashEntry.getDepth(entry);
+        auto flags = hashEntry.getFlags(entry);
 
         if (hashDepth >= depth)
         {
             // Correct the mate score back.
-            /*
             if (isMateScore(score))
             {
                 score += (score > 0 ? -ply : ply);
             }
-            */
 
             if (flags == ExactScore)
             {

@@ -24,6 +24,8 @@ private:
     class PawnHashTableEntry
     {
     public:
+        PawnHashTableEntry() : hash(0), data(0) {}
+
         void setHash(uint32_t newHash) { hash = newHash; }
         void setData(uint32_t newData) { data = newData; }
 
