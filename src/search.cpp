@@ -470,10 +470,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	// Internal iterative deepening
 	if (pvNode && ttMove == ttMoveNone && depth > 2)
 	{
-		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, 2);
+        // We can safely skip null move in IID since if it would have worked we wouldn't be here.
+		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, 0);
 		if (score <= alpha)
 		{
-			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, 2);
+			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, 0);
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove);
 	}
