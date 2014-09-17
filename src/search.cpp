@@ -373,7 +373,7 @@ int qsearch(Position & pos, int alpha, int beta)
 	return bestScore;
 }
 
-int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool allowNullMove)
+int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int allowNullMove)
 {
 	bool pvNode = ((alpha + 1) != beta), futileNode = false, check = pos.getIsInCheck(ply);
 	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
@@ -444,7 +444,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 		}
 		else
 		{
-			score = -alphabetaPVS(pos, ply, depth - 1 - nullReduction, -beta, -beta + 1, false);
+			score = -alphabetaPVS(pos, ply, depth - 1 - nullReduction, -beta, -beta + 1, allowNullMove - 1);
 		}
 		pos.unmakeNullMove();
 
@@ -470,10 +470,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 	// Internal iterative deepening
 	if (pvNode && ttMove == ttMoveNone && depth > 2)
 	{
-		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, true);
+		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, 2);
 		if (score <= alpha)
 		{
-			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, true);
+			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, 2);
 		}
 		ttProbe(pos, ply, depth, alpha, beta, ttMove);
 	}
@@ -519,7 +519,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 		if (!movesSearched)
 		{
-			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2);
 		}
 		else
 		{
@@ -528,7 +528,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 			{
                 // Progressively reduce later moves more and more.
                 auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
-				score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2);
 			}
 			else
 			{
@@ -537,10 +537,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, bool a
 
 			if (score > alpha)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, 2);
 				if (score > alpha && score < beta)
 				{
-					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2);
 				}
 			}
 		}
@@ -659,7 +659,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 		if (!movesSearched)
 		{
-			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2);
 		}
 		else
 		{
@@ -668,7 +668,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
             {
                 // Progressively reduce later moves more and more.
                 auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
-                score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, true);
+                score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2);
             }
 			else
 			{
@@ -677,10 +677,10 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 
 			if (score > alpha)
 			{
-				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, true);
+				score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, 2);
 				if (score > alpha && score < beta)
 				{
-					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, true);
+					score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2);
 				}
 			}
 		}
