@@ -528,7 +528,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
                 && !check && !extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 			{
                 // Progressively reduce later moves more and more.
-                auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
+                auto reduction = static_cast<int>(std::max(1.0, std::round(std::log(movesSearched - fullDepthMoves + 1))));
 				score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2);
 			}
 			else
@@ -668,7 +668,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
                 && !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
             {
                 // Progressively reduce later moves more and more.
-                auto reduction = static_cast<int>(std::max(1.0, std::sqrt(movesSearched - fullDepthMoves)));
+                auto reduction = static_cast<int>(std::max(1.0, std::round(std::log(movesSearched - fullDepthMoves + 1))));
                 score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2);
             }
 			else
