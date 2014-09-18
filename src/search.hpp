@@ -31,6 +31,8 @@ class Search
 {
 public:
     static int qSearch(Position & pos, int ply, int alpha, int beta);
+
+    // Delete these, only used for tuning.
     static std::array<Move, 32> pv[32];
     static std::array<int, 32> pvLength;
 private:
