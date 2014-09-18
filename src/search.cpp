@@ -17,6 +17,9 @@ array<int, Squares> history[12];
 array<int, Squares> butterfly[12];
 vector<Move> pv;
 
+int lastRootScore;
+int bestRootScore;
+
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
 
 uint64_t perft(Position & pos, int depth)
@@ -231,7 +234,7 @@ void think()
 
 	for (searchDepth = 1;;)
 	{
-		int score = searchRoot(root, 0, searchDepth, alpha, beta);
+		int score = lastRootScore = searchRoot(root, 0, searchDepth, alpha, beta);
 		reconstructPV(root, pv);
 
 		uint64_t searchTime = t.getms();
@@ -608,9 +611,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 {
-	int score, generatedMoves, newDepth, bestScore = -mateScore, movesSearched = 0;
+	int score, generatedMoves, newDepth, movesSearched = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone; 
 	bool givesCheck, inCheck = pos.inCheck();
+    bestRootScore = -mateScore;
 
 	// Probe the transposition table to get the PV-Move, if any.
 	ttProbe(pos, ply, depth, alpha, beta, ttMove);
@@ -693,9 +697,9 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			return 0;
 		}
 
-		if (score > bestScore)
+        if (score > bestRootScore)
 		{
-			bestScore = score;
+            bestRootScore = score;
 			if (score > alpha)
 			{
                 bestMove = moveStack[i].getMove();
@@ -745,7 +749,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 		}
 	}
 
-	ttSave(pos, ply, depth, bestScore, ttExact, bestMove);
+    ttSave(pos, ply, depth, bestRootScore, ttExact, bestMove);
 
-	return bestScore;
+    return bestRootScore;
 }

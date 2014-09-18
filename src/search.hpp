@@ -31,4 +31,7 @@ extern int syzygyProbeLimit;
 const int fullDepthMoves = 4;
 const int reductionLimit = 3;
 
+extern int lastRootScore;
+extern int bestRootScore;
+
 #endif

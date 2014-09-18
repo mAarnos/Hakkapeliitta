@@ -1,5 +1,7 @@
 #include "time.hpp"
 #include "position.hpp"
+#include "search.hpp"
+#include "eval.hpp"
 
 Timer t;
 
@@ -49,15 +51,35 @@ uint64_t Timer::getms()
 void checkTimeAndInput()
 {
 	countDown = stopInterval;
-	if (t.getms() > targetTime)
-	{
-		searching = false;
-	}
-	if (inputAvailable())
-	{
-		uciProcessInput();
-	}
-	
+    auto time = t.getms();
+
+    if (time > maxTime) // hard cutoff for search time
+    {
+        searching = false;
+    }
+    else if (time > targetTime)
+    {
+        if (bestRootScore == -mateScore) // no score for root
+        {
+            searching = false;
+        }
+        else if (bestRootScore < lastRootScore) // score dropping
+        {
+            if (time > 5 * targetTime) // extend search time up to 5x
+            {
+                searching = false;
+            }
+        }
+    }
+    else
+    {
+        // add easy move here
+    }
+
+    if (inputAvailable())
+    {
+        uciProcessInput();
+    }
 }
 
 void allocateSearchTime(string s)
@@ -79,6 +101,7 @@ void allocateSearchTime(string s)
 	if (pos != string::npos)
 	{
 		targetTime = INT_MAX;
+        maxTime = INT_MAX;
 		return;
 	}
 
@@ -117,8 +140,9 @@ void allocateSearchTime(string s)
 		movestogo = 25;
 	}
 
-	targetTime = (time[root.getSideToMove()] / movestogo) + increment[root.getSideToMove()];
+	targetTime = time[root.getSideToMove()] / movestogo + increment[root.getSideToMove()];
 	targetTime -= lagBuffer;
+    maxTime = time[root.getSideToMove()] / 2 + increment[root.getSideToMove()];
 
 	if (targetTime < 0)
 	{
