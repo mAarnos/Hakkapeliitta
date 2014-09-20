@@ -27,8 +27,7 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
 
         if (freeSquares & Bitboards::pawnSingleMoves[side][from])
         {
@@ -55,8 +54,7 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
         auto tempCapture = Bitboards::pawnAttacks[side][from] & enemyPieces;
         while (tempCapture)
         {
-            to = Bitboards::lsb(tempCapture);
-            tempCapture &= (tempCapture - 1);
+            to = Bitboards::popLsb(tempCapture);
 
             if (to >= Square::A8 || to <= Square::H1)
             {
@@ -83,14 +81,12 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     tempPiece = pos.getBitboard(side, Piece::Knight);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::knightAttacks[from] & targetBB;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -98,14 +94,12 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     tempPiece = pos.getBitboard(side, Piece::Bishop);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & targetBB;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -113,14 +107,12 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     tempPiece = pos.getBitboard(side, Piece::Rook);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::rookAttacks(from, occupiedSquares) & targetBB;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -128,14 +120,12 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
     tempPiece = pos.getBitboard(side, Piece::Queen);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::queenAttacks(from, occupiedSquares) & targetBB;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -145,8 +135,7 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
 
     while (tempMove)
     {
-        to = Bitboards::lsb(tempMove);
-        tempMove &= (tempMove - 1);
+        to = Bitboards::popLsb(tempMove);
         moves.push_back(Move(from, to, Piece::Empty, 0));
     }
 
@@ -189,14 +178,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
 
         tempMove = Bitboards::pawnAttacks[side][from] & enemyPieces;
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
 
             if (to >= Square::A8 || to <= Square::H1)
             {
@@ -220,14 +207,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     tempPiece = pos.getBitboard(side, Piece::Knight);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::knightAttacks[from] & enemyPieces;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -235,14 +220,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     tempPiece = pos.getBitboard(side, Piece::Bishop);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & enemyPieces;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -250,14 +233,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     tempPiece = pos.getBitboard(side, Piece::Rook);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::rookAttacks(from, occupiedSquares) & enemyPieces;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -265,14 +246,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     tempPiece = pos.getBitboard(side, Piece::Queen);
     while (tempPiece)
     {
-        from = Bitboards::lsb(tempPiece);
-        tempPiece &= (tempPiece - 1);
+        from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::queenAttacks(from, occupiedSquares) & enemyPieces;
 
         while (tempMove)
         {
-            to = Bitboards::lsb(tempMove);
-            tempMove &= (tempMove - 1);
+            to = Bitboards::popLsb(tempMove);
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
@@ -281,8 +260,7 @@ void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> 
     tempMove = Bitboards::kingAttacks[from] & enemyPieces;
     while (tempMove)
     {
-        to = Bitboards::lsb(tempMove);
-        tempMove &= (tempMove - 1);
+        to = Bitboards::popLsb(tempMove);
         moves.push_back(Move(from, to, Piece::Empty, 0));
     }
 }

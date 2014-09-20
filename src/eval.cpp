@@ -353,8 +353,7 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
         auto tempPiece = pos.getBitboard(c, Piece::Knight);
         while (tempPiece)
         {
-            auto from = Bitboards::lsb(tempPiece);
-            tempPiece &= (tempPiece - 1);
+            auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
@@ -367,8 +366,7 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
         tempPiece = pos.getBitboard(c, Piece::Bishop);
         while (tempPiece)
         {
-            auto from = Bitboards::lsb(tempPiece);
-            tempPiece &= (tempPiece - 1);
+            auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
@@ -381,8 +379,7 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
         tempPiece = pos.getBitboard(c, Piece::Rook);
         while (tempPiece)
         {
-            auto from = Bitboards::lsb(tempPiece);
-            tempPiece &= (tempPiece - 1);
+            auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
@@ -395,8 +392,7 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
         tempPiece = pos.getBitboard(c, Piece::Queen);
         while (tempPiece)
         {
-            auto from = Bitboards::lsb(tempPiece);
-            tempPiece &= (tempPiece - 1);
+            auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
@@ -434,8 +430,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
 
         while (tempPawns)
         {
-            auto from = Bitboards::lsb(tempPawns);
-            tempPawns &= (tempPawns - 1);
+            auto from = Bitboards::popLsb(tempPawns);
             auto pawnFile = file(from);
             auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
 

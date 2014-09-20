@@ -400,8 +400,7 @@ void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Mag
         squares.clear();
         while (bb)
         {
-            squares.push_back(Bitboards::lsb(bb));
-            bb &= (bb - 1);
+            squares.push_back(Bitboards::popLsb(bb));
         }
 
         // Loop through all possible occupations within the mask and calculate the corresponding attack sets.

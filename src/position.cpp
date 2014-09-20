@@ -456,7 +456,8 @@ bool Position::makeMove(const Move & m, History & history)
 template bool Position::makeMove<false>(const Move & m, History & history);
 template bool Position::makeMove<true>(const Move & m, History & history);
 
-template <bool side> void Position::unmakeMove(const Move & m, History & history)
+template <bool side> 
+void Position::unmakeMove(const Move & m, History & history)
 {
     auto from = m.getFrom();
     auto to = m.getTo();
@@ -529,7 +530,8 @@ template <bool side> void Position::unmakeMove(const Move & m, History & history
 template void Position::unmakeMove<false>(const Move & m, History & history);
 template void Position::unmakeMove<true>(const Move & m, History & history);
 
-template <bool side> bool Position::isAttacked(Square sq) const
+template <bool side> 
+bool Position::isAttacked(Square sq) const
 {
     if (Bitboards::knightAttacks[sq] & bitboards[Piece::Knight + 6 * side]
         || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
