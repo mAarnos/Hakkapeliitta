@@ -329,7 +329,8 @@ bool Position::isAttacked(Square sq, Color side) const
     return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
 }
 
-template <bool side> bool Position::makeMove(const Move & m, History & history)
+template <bool side> 
+bool Position::makeMove(const Move & m, History & history)
 {
     auto from = m.getFrom();
     auto to = m.getTo();
@@ -389,7 +390,8 @@ template <bool side> bool Position::makeMove(const Move & m, History & history)
 
         if ((to ^ from) == 16) // Double pawn move
         {
-            enPassant = from ^ 24;
+            if (Bitboards::pawnAttacks[side][from ^ 24] & getBitboard(!side, Piece::Pawn))
+                enPassant = from ^ 24;
             hashKey ^= Zobrist::enPassantHash[enPassant];
         }
         else if (promotion == Piece::Pawn) // En passant

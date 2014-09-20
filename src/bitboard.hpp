@@ -126,6 +126,13 @@ public:
     }
 #endif
 
+    static int popLsb(Bitboard & bb)
+    {
+        auto ret = lsb(bb);
+        bb &= (bb - 1);
+        return ret;
+    }
+
     static bool isHardwarePopcntSupported() { return hardwarePopcntSupported; }
 private:
     class Magic
