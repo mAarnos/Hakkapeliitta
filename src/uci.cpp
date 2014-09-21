@@ -139,7 +139,7 @@ int uciProcessInput()
 int uciSendInformation(string s)
 {
 	// Send the name of the engine and the name of it's author.
-	cout << "id name Hakkapeliitta 130914 5" << endl;
+	cout << "id name Hakkapeliitta 130914 6" << endl;
 	cout << "id author Mikko Aarnos" << endl;
 
 	// Send all possible options the engine has that can be modified.
