@@ -13,6 +13,7 @@ public:
     int32_t getPromotion() const { return promotion; }
     int32_t getScore() const { return score; }
     int16_t getPacket() const { return static_cast<int16_t>(from & (to << 6) & (promotion << 12)); }
+    void setScore(int32_t newScore) { score = newScore; }
 private:
     int32_t from;
     int32_t to;

@@ -45,6 +45,9 @@ private:
     static const std::array<int, 1 + 4> futilityMargins;
     static const int lmrFullDepthMoves;
     static const int lmrReductionLimit;
+
+    static void orderCaptures(const Position & pos, std::vector<Move> & moveStack);
+    static void selectMove(std::vector<Move> & moveStack, size_t currentMove);
 };
 
 #endif

@@ -15,6 +15,34 @@ const int Search::lmrReductionLimit = 3;
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
 
+void Search::orderCaptures(const Position & pos, std::vector<Move> & moveStack)
+{
+    for (auto & move : moveStack)
+    {
+        move.setScore(pos.SEE(move));
+    }
+}
+
+void Search::selectMove(std::vector<Move> & moveStack, size_t currentMove)
+{
+    auto bestMove = currentMove;
+    auto bestScore = moveStack[currentMove].getScore();
+
+    for (auto i = currentMove + 1; i < moveStack.size(); ++i)
+    {
+        if (moveStack[i].getScore() > bestScore)
+        {
+            bestScore = moveStack[i].getScore();
+            bestMove = i;
+        }
+    }
+
+    if (bestMove > currentMove)
+    {
+        std::swap(moveStack[currentMove], moveStack[bestMove]);
+    }
+}
+
 int Search::qSearch(Position & pos, int ply, int alpha, int beta)
 {
     pvLength[ply] = ply;
@@ -39,13 +67,16 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
     std::vector<Move> moveStack;
     History history;
     MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
-    // Give moves a score here.
-    for (auto & move : moveStack)
+    orderCaptures(pos, moveStack);
+    for (auto i = 0; i < moveStack.size(); ++i)
     {
+        selectMove(moveStack, i);
+        const auto & move = moveStack[i];
+
         // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
         if (move.getScore() < 0 || (delta + move.getScore() < alpha))
         {
-            return bestScore;
+            break;
         }
 
         if (!pos.makeMove(move, history))
