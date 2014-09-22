@@ -329,6 +329,126 @@ bool Position::isAttacked(Square sq, Color side) const
     return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
 }
 
+int Position::SEE(const Move & m) const
+{
+    // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
+    static const std::array<int, 13> pieceValues = {
+        100, 300, 300, 500, 900, 32767, 100, 300, 300, 500, 900, 32767, 0
+    };
+    static std::array<int, 32> materialGains;
+    auto occupied = getOccupiedSquares();
+    auto from = m.getFrom();
+    auto to = m.getTo();
+    auto promotion = m.getPromotion();
+    auto toAtPromoRank = (to <= 7 || to >= 56); 
+    auto stm = sideToMove;
+    int lastAttackerValue, next;
+
+    if (promotion == Piece::King)
+    {
+        return 0;
+    }
+    else if (promotion == Piece::Pawn)
+    {
+        materialGains[0] = pieceValues[Piece::Pawn];
+        lastAttackerValue = pieceValues[Piece::Pawn];
+        occupied ^= Bitboards::bit[enPassant];
+    }
+    else
+    {
+        materialGains[0] = pieceValues[board[to]];
+        lastAttackerValue = pieceValues[board[from]];
+        if (promotion != Piece::Empty)
+        {
+            materialGains[0] += pieceValues[promotion] - pieceValues[Piece::Pawn];
+            lastAttackerValue += pieceValues[promotion] - pieceValues[Piece::Pawn];
+        }
+    }
+
+    occupied ^= Bitboards::bit[from];
+    auto attackers = (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteRook] 
+                                                            | bitboards[Piece::BlackRook]))
+                 | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteBishop]
+                                                            | bitboards[Piece::BlackBishop]))
+                 | (Bitboards::knightAttacks[to] & (bitboards[Piece::WhiteKnight] | bitboards[Piece::BlackKnight]))
+                 | (Bitboards::kingAttacks[to] & (bitboards[Piece::WhiteKing] | bitboards[Piece::BlackKing]))
+                 | (Bitboards::pawnAttacks[Color::Black][to] & (bitboards[Piece::WhitePawn]))
+                 | (Bitboards::pawnAttacks[Color::White][to] & (bitboards[Piece::BlackPawn]));
+    attackers &= occupied;
+    stm = !stm;
+    auto numberOfCaptures = 1;
+
+    while (attackers & bitboards[12 + stm])
+    {
+        if (!toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Knight + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Knight + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Bishop + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Bishop + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Rook + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Rook + stm * 6] & attackers);
+        }
+        else if (toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Queen + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Queen + stm * 6] & attackers);
+        }
+        else
+        {
+            next = Bitboards::lsb(bitboards[Piece::King + stm * 6]);
+        }
+
+        // Update the materialgains array.
+        materialGains[numberOfCaptures] = -materialGains[numberOfCaptures - 1] + lastAttackerValue;
+        // Remember the value of the capturing piece because it is going to be captured next.
+        lastAttackerValue = pieceValues[board[next]];
+        // If we are going to do a promotion we need to correct the values a bit.
+        if (toAtPromoRank && lastAttackerValue == pieceValues[Piece::Pawn])
+        {
+            materialGains[numberOfCaptures] += pieceValues[Piece::Queen] - pieceValues[Piece::Pawn];
+            lastAttackerValue += pieceValues[Piece::Queen] - pieceValues[Piece::Pawn];
+        }
+
+        occupied ^= Bitboards::bit[next];
+        attackers |= (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteRook] 
+                                                            | bitboards[Piece::BlackRook]))
+                  | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                             | bitboards[Piece::BlackQueen] 
+                                                             | bitboards[Piece::WhiteBishop] 
+                                                             | bitboards[Piece::BlackBishop]));
+        attackers &= occupied;
+
+        stm = !stm;
+        if ((next % 6) == Piece::King && (attackers & bitboards[12 + stm]))
+            break;
+        numberOfCaptures++;
+    }
+
+    while (--numberOfCaptures)
+    {
+        materialGains[numberOfCaptures - 1] = std::min(-materialGains[numberOfCaptures], materialGains[numberOfCaptures - 1]);
+    }
+
+    return materialGains[0];
+}
+
 template <bool side> 
 bool Position::makeMove(const Move & m, History & history)
 {

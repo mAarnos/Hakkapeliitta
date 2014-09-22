@@ -51,6 +51,8 @@ public:
     bool isAttacked(Square sq, Color side) const;
 
     int calculateGamePhase() const { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
+
+    int SEE(const Move & m) const;
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.
