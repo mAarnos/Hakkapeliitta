@@ -127,26 +127,27 @@ void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64
 	assert(hashEntry->getFlags(replace) == flags);
 }
 
-void pttSave(const Position & pos, int score)
+void pttSave(const Position & pos, int scoreOp, int scoreEd)
 {
-	assert(score < infinity && score > -infinity);
+    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
+    hashEntry->setData((scoreOp & 0xffff) | (scoreEd << 16));
+    hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
 
-	hashEntry->setData(score);
-	hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
-
-	assert((int)hashEntry->getData() == score);
+    assert(static_cast<int16_t>(hashEntry->getData()) == scoreOp);
+    assert(static_cast<int16_t>(hashEntry->getData() >> 16) == scoreEd);
 }
 
-int pttProbe(const Position & pos)
+bool pttProbe(const Position & pos, int & scoreOp, int & scoreEd)
 {
-	pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
+    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
 
-	if ((hashEntry->getHash() ^ hashEntry->getData()) == (uint32_t)pos.getPawnHash())
-	{
-		return hashEntry->getData();
-	}
+    if ((hashEntry->getHash() ^ hashEntry->getData()) == (uint32_t)pos.getPawnHash())
+    {
+        scoreOp = static_cast<int16_t>(hashEntry->getData());
+        scoreEd = static_cast<int16_t>(hashEntry->getData() >> 16);
+        return true;
+    }
 
-	return probeFailed;
+    return false;
 }

@@ -99,7 +99,7 @@ extern HashTable<pttEntry> ptt;
 void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64_t flags, uint16_t best);
 int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best);
 
-void pttSave(const Position & pos, int score);
-int pttProbe(const Position & pos);
+void pttSave(const Position & pos, int scoreOp, int scoreEd);
+bool pttProbe(const Position & pos, int & scoreOp, int & scoreEd);
 
 #endif

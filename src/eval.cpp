@@ -297,9 +297,9 @@ int pawnStructureEval(Position & pos, int phase)
     auto scoreOp = 0, scoreEd = 0;
     int score;
 
-    if ((score = pttProbe(pos)) != probeFailed)
+    if (pttProbe(pos, scoreOp, scoreEd))
     {
-        return score;
+        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
     }
 
     for (int c = White; c <= Black; ++c)
@@ -358,7 +358,7 @@ int pawnStructureEval(Position & pos, int phase)
     }
 
     score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
-    pttSave(pos, score);
+    pttSave(pos, scoreOp, scoreEd);
 
     return score;
 }
