@@ -68,7 +68,8 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
     History history;
     MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
     orderCaptures(pos, moveStack);
-    for (auto i = 0; i < moveStack.size(); ++i)
+
+    for (size_t i = 0; i < moveStack.size(); ++i)
     {
         selectMove(moveStack, i);
         const auto & move = moveStack[i];
