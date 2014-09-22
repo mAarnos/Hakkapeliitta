@@ -126,9 +126,7 @@ class Position
 		void unmakeCastling(int from, int to);
 
 		void writeHistory(int & captured);
-		void readHistory(int & captured);
-
-		uint64_t revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int target, int from);
+        void readHistory(int & captured);
 };
 
 extern Position root;

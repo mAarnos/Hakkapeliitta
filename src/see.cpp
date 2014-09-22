@@ -51,41 +51,6 @@ uint64_t Position::attacksTo(int to, bool side)
 	return attackers;
 }
 
-uint64_t Position::revealNextAttacker(uint64_t attackers, uint64_t nonremoved, int to, int from)
-{
-	int direction = heading[to][from];
-	if (direction == -1)
-	{
-		return attackers;
-	}
-
-	// we update the attackers bitmap to include any attackers which have been revealed by moving the previous attacker
-	uint64_t targetbitmap;
-	uint64_t occupied = bitboards[14] & nonremoved;
-
-	if (direction == SW || direction == SE || direction == NW || direction == NE)
-	{
-		targetbitmap = rays[direction][to] & ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteBishop] | bitboards[BlackBishop]) & nonremoved);
-		if (targetbitmap)
-		{
-			targetbitmap = bishopAttacks(to, occupied);
-			targetbitmap &= ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteBishop] | bitboards[BlackBishop]) & nonremoved);
-			return (attackers | targetbitmap);
-		}
-	}
-	else
-	{
-		targetbitmap = rays[direction][to] & ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteRook] | bitboards[BlackRook]) & nonremoved);
-		if (targetbitmap)
-		{
-			targetbitmap = rookAttacks(to, occupied);
-			targetbitmap &= ((bitboards[WhiteQueen] | bitboards[BlackQueen] | bitboards[WhiteRook] | bitboards[BlackRook]) & nonremoved);
-			return (attackers | targetbitmap);
-		}
-	}
-	return attackers;
-}
-
 int Position::SEE(Move m)
 {
     // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
