@@ -15,30 +15,25 @@ void PawnHashTable::clear()
     table.resize(tableSize);
 }
 
-// Pawn hash table is broken, should save scoreOp and scoreEd but for some reason this is -5 elo.
-// Retest in 2015.
-void PawnHashTable::save(const Position & pos, int score)
+void PawnHashTable::save(const Position & pos, int scoreOp, int scoreEd)
 {
-    // assert(score < infinity && score > -infinity);
-    assert(table.size() > 0);
-
     auto & hashEntry = table[pos.getPawnHashKey() % table.size()];
 
-    hashEntry.setData(score);
+    hashEntry.setData((scoreOp & 0xffff) | (scoreEd << 16));
     hashEntry.setHash(static_cast<uint32_t>(pos.getPawnHashKey()) ^ hashEntry.getData());
 
-    assert(static_cast<int>(hashEntry.getData()) == score);
+    assert(static_cast<int16_t>(hashEntry->getData()) == scoreOp);
+    assert(static_cast<int16_t>(hashEntry->getData() >> 16) == scoreEd);
 }
 
-bool PawnHashTable::probe(const Position & pos, int & score) const
+bool PawnHashTable::probe(const Position & pos, int & scoreOp, int & scoreEd) const
 {
-    assert(table.size() > 0);
-
     auto & hashEntry = table[pos.getPawnHashKey() % table.size()];
 
     if ((hashEntry.getHash() ^ hashEntry.getData()) == static_cast<uint32_t>(pos.getPawnHashKey()))
     {
-        score = hashEntry.getData();
+        scoreOp = static_cast<int16_t>(hashEntry.getData());
+        scoreEd = static_cast<int16_t>(hashEntry.getData() >> 16);
         return true;
     }
 

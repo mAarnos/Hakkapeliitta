@@ -416,9 +416,9 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
     auto scoreOp = 0, scoreEd = 0;
     int score;
 
-    if (pawnHashTable.probe(pos, score))
+    if (pawnHashTable.probe(pos, scoreOp, scoreEd))
     {
-        return score;
+        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
     } 
 
     for (Color c = Color::White; c <= Color::Black; ++c)
@@ -475,7 +475,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
     }
 
     score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
-    pawnHashTable.save(pos, score);
+    pawnHashTable.save(pos, scoreOp, scoreEd);
 
     return score;
 }
