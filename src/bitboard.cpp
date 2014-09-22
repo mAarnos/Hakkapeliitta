@@ -392,7 +392,7 @@ void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Mag
                 continue;
             for (auto d = 2; !((sq88 + d * dir[i][1]) & 0x88); ++d)
             {
-                bb |= Bitboards::bit[sq + (d - 1) * dir[i][0]];
+                bb |= bit[sq + (d - 1) * dir[i][0]];
             }
         }
         magic[sq].mask = bb;
@@ -410,14 +410,14 @@ void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Mag
             for (auto j = 0u; j < squares.size(); ++j)
             {
                 if (k & (1 << j))
-                    bb |= Bitboards::bit[squares[j]];
+                    bb |= bit[squares[j]];
             }
             auto bb2 = 0ull;
             for (auto j = 0; j < 4; ++j)
             {
                 for (auto d = 1; !((sq88 + d * dir[j][1]) & 0x88); ++d)
                 {
-                    bb2 |= Bitboards::bit[sq + d * dir[j][0]];
+                    bb2 |= bit[sq + d * dir[j][0]];
                     if (bb & 1ull << (sq + d * dir[j][0]))
                         break;
                 }
