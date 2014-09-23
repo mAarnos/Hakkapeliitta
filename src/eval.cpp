@@ -414,7 +414,6 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
 int Evaluation::pawnStructureEval(const Position & pos, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
-    int score;
 
     if (pawnHashTable.probe(pos, scoreOp, scoreEd))
     {
@@ -474,9 +473,8 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
         scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-    score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
     pawnHashTable.save(pos, scoreOp, scoreEd);
 
-    return score;
+    return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
 
