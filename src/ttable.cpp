@@ -6,7 +6,7 @@ HashTable<pttEntry> ptt;
 
 int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, uint16_t & best)
 {
-	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
+    ttEntry * hashEntry = &tt.getEntry(pos.getHash() & (tt.getSize() - 1));
 
 	int entry;
 	for (entry = 0; entry < 4; entry++)
@@ -95,7 +95,7 @@ void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64
 		}
 	}
 	
-	ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
+	ttEntry * hashEntry = &tt.getEntry(pos.getHash() & (tt.getSize() - 1));
 	int replace = 0;
 	for (int i = 0; i < 4; i++)
 	{
@@ -129,7 +129,7 @@ void ttSave(const Position & pos, int ply, uint64_t depth, int64_t score, uint64
 
 void pttSave(const Position & pos, int scoreOp, int scoreEd)
 {
-    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
+    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() & (ptt.getSize() - 1));
 
     hashEntry->setData((scoreOp & 0xffff) | (scoreEd << 16));
     hashEntry->setHash((uint32_t)pos.getPawnHash() ^ hashEntry->getData());
@@ -140,7 +140,7 @@ void pttSave(const Position & pos, int scoreOp, int scoreEd)
 
 bool pttProbe(const Position & pos, int & scoreOp, int & scoreEd)
 {
-    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() % ptt.getSize());
+    pttEntry * hashEntry = &ptt.getEntry(pos.getPawnHash() & (ptt.getSize() - 1));
 
     if ((hashEntry->getHash() ^ hashEntry->getData()) == (uint32_t)pos.getPawnHash())
     {

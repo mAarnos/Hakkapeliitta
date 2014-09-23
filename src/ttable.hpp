@@ -72,7 +72,7 @@ class HashTable
 				return;
 			}
 
-			tableSize = (size / sizeof(t)) - 1;
+			tableSize = (size / sizeof(t));
 			table.resize(tableSize);
 		}
 
