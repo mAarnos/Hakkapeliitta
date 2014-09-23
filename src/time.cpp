@@ -84,68 +84,58 @@ void checkTimeAndInput()
 
 void allocateSearchTime(string s)
 {
-	array<int, Colours> time;
-	array<int, Colours> increment;
-	int movestogo;
-	size_t pos;
+    array<int, Colours> timeLimits = { 0, 0 };
+    array<int, Colours> incrementAmount = { 0, 0 };
+    int movestogo = 25;
+    size_t pos;
 
-	pos = s.find("movetime");
-	if (pos != string::npos)
-	{
-		targetTime = stoi(s.substr(pos + 9));
-		targetTime -= lagBuffer;
-		return;
-	}
+    pos = s.find("movetime");
+    if (pos != string::npos)
+    {
+        maxTime = stoi(s.substr(pos + 9));
+        return;
+    }
 
-	pos = s.find("infinite");
-	if (pos != string::npos)
-	{
-		targetTime = INT_MAX;
+    pos = s.find("infinite");
+    if (pos != string::npos)
+    {
+        targetTime = INT_MAX;
         maxTime = INT_MAX;
-		return;
-	}
+        return;
+    }
 
-	pos = s.find("wtime");
-	if (pos != string::npos)
-	{
-		time[White] = stoi(s.substr(pos + 6));
-	}
+    pos = s.find("wtime");
+    if (pos != string::npos)
+    {
+        timeLimits[White] = stoi(s.substr(pos + 6));
+    }
 
-	pos = s.find("btime");
-	if (pos != string::npos)
-	{
-		time[Black] = stoi(s.substr(pos + 6));
-	}
+    pos = s.find("btime");
+    if (pos != string::npos)
+    {
+        timeLimits[Black] = stoi(s.substr(pos + 6));
+    }
 
-	pos = s.find("winc");
-	if (pos != string::npos)
-	{
-		increment[White] = stoi(s.substr(pos + 5));
-	}
+    pos = s.find("winc");
+    if (pos != string::npos)
+    {
+        incrementAmount[White] = stoi(s.substr(pos + 5));
+    }
 
-	pos = s.find("binc");
-	if (pos != string::npos)
-	{
-		increment[Black] = stoi(s.substr(pos + 5));
-	}
+    pos = s.find("binc");
+    if (pos != string::npos)
+    {
+        incrementAmount[Black] = stoi(s.substr(pos + 5));
+    }
 
-	pos = s.find("movestogo");
-	if (pos != string::npos)
-	{
-		movestogo = stoi(s.substr(pos + 10));
-		movestogo += 2;
-	}
-	else
-	{
-		movestogo = 25;
-	}
+    pos = s.find("movestogo");
+    if (pos != string::npos)
+    {
+        movestogo = stoi(s.substr(pos + 10)) + 2;
+    }
 
-	targetTime = time[root.getSideToMove()] / movestogo + increment[root.getSideToMove()];
-	targetTime -= lagBuffer;
-    maxTime = time[root.getSideToMove()] / 2 + increment[root.getSideToMove()];
-
-	if (targetTime < 0)
-	{
-		targetTime = 0;
-	}
+    auto time = timeLimits[root.getSideToMove()];
+    auto increment = incrementAmount[root.getSideToMove()];
+    targetTime = std::min(std::max(1, time / movestogo + increment - lagBuffer), time - lagBuffer);
+    maxTime = std::min(std::max(1, time / 2 + increment), time - lagBuffer);
 }
