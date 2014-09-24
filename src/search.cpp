@@ -514,11 +514,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
         auto extension = (givesCheck || oneReply) ? 1 : 0;
         newDepth += extension;
 
-		if (futileNode && moveStack[i].getScore() < killerMove4 && !extension)
+        if (!extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 		{
-			pos.unmakeMove(moveStack[i]);
-			prunedMoves++;
-			continue;
+            if (futileNode || (depth <= lmpDepth && movesSearched >= lmpMoveCount[depth]))
+            {
+                pos.unmakeMove(moveStack[i]);
+                prunedMoves++;
+                continue;
+            }
 		}
 
 		if (!movesSearched)

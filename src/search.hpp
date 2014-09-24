@@ -26,6 +26,11 @@ const array<int, 1 + staticNullMoveDepth> staticNullMoveMargin = {
     0, 260, 445, 900
 };
 
+const int lmpDepth = 4;
+const array<int, 1 + lmpDepth> lmpMoveCount = {
+    0, 4, 8, 16, 32
+};
+
 extern int syzygyProbeLimit;
 
 const int fullDepthMoves = 4;
