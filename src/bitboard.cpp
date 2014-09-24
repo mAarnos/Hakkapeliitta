@@ -378,24 +378,32 @@ void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Mag
 {
     std::vector<int> squares;
 
+    auto rookMask = [](int sq) {
+        auto result = 0ull;
+        auto rk = sq / 8, fl = sq % 8;
+        for (auto r = rk + 1; r <= 6; r++) result |= (bit[fl + r * 8]);
+        for (auto r = rk - 1; r >= 1; r--) result |= (bit[fl + r * 8]);
+        for (auto f = fl + 1; f <= 6; f++) result |= (bit[f + rk * 8]);
+        for (auto f = fl - 1; f >= 1; f--) result |= (bit[f + rk * 8]);
+        return result;
+    };
+
+    auto bishopMask = [](int sq) {
+        auto result = 0ull;
+        auto rk = sq / 8, fl = sq % 8;
+        for (auto r = rk + 1, f = fl + 1; r <= 6 && f <= 6; r++, f++) result |= (bit[f + r * 8]);
+        for (auto r = rk + 1, f = fl - 1; r <= 6 && f >= 1; r++, f--) result |= (bit[f + r * 8]);
+        for (auto r = rk - 1, f = fl + 1; r >= 1 && f <= 6; r--, f++) result |= (bit[f + r * 8]);
+        for (auto r = rk - 1, f = fl - 1; r >= 1 && f >= 1; r--, f--) result |= (bit[f + r * 8]);
+        return result;
+    };
+
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
         magic[sq].magic = magicInit[sq].magic;
         magic[sq].data = &lookupTable[magicInit[sq].index];
-
-        // Calculate the mask.
+        auto bb = magic[sq].mask = ((shift == 64 - 12) ? rookMask(sq) : bishopMask(sq));
         auto sq88 = sq + (sq & ~7);
-        uint64_t bb = 0;
-        for (auto i = 0; i < 4; ++i)
-        {
-            if ((sq88 + dir[i][1]) & 0x88)
-                continue;
-            for (auto d = 2; !((sq88 + d * dir[i][1]) & 0x88); ++d)
-            {
-                bb |= bit[sq + (d - 1) * dir[i][0]];
-            }
-        }
-        magic[sq].mask = bb;
 
         squares.clear();
         while (bb)
