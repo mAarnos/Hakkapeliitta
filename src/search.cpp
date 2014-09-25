@@ -463,10 +463,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		}
 	}
 
-    if (!pvNode && !check && depth <= razoringDepth && staticEval + razoringMargin[depth] <= alpha)
+    if (!pvNode && !check && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
     {
-        score = qsearch(pos, alpha, beta);
-        if (score <= alpha)
+        auto razoringAlpha = alpha - razoringMargin[depth];
+        score = qsearch(pos, razoringAlpha, razoringAlpha + 1);
+        if (score <= razoringAlpha)
             return score;
     }
 
