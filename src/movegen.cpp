@@ -587,3 +587,125 @@ int generateEvasions(Position & pos, Move * mlist)
 
 	return generatedMoves;
 }
+
+int generateQuietChecks(Position & pos, Move * mlist)
+{
+    int from, to;
+    auto side = pos.getSideToMove();
+    auto occupied = pos.getOccupiedSquares();
+    auto freeSquares = pos.getFreeSquares();
+    auto generatedMoves = 0;
+    uint64_t pinned = 0, tempMove;
+    Move m;
+    m.clear();
+    m.setPromotion(Empty);
+
+    // Calculate the squares which give check.
+    auto opponentKingSquare = bitScanForward(pos.getBitboard(!side, King));
+    auto bishopCheckSquares = freeSquares & bishopAttacks(opponentKingSquare, occupied);
+    auto rookCheckSquares = freeSquares & rookAttacks(opponentKingSquare, occupied);
+    auto queenCheckSquares = bishopCheckSquares | rookCheckSquares;
+
+    auto tempPiece = pos.getBitboard(side, Pawn);
+    while (tempPiece)
+    {
+        from = bitScanForward(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        m.setFrom(from);
+        auto singleMove = freeSquares & pawnSingleMoves[side][from];
+        if (singleMove)
+        {
+            if (singleMove & pawnAttacks[!side][opponentKingSquare])
+            {
+                to = from + 8 - side * 16;
+                m.setTo(to);
+                mlist[generatedMoves++] = m;
+            }
+            else
+            {
+                if (freeSquares & pawnDoubleMoves[side][from] & pawnAttacks[!side][opponentKingSquare])
+                {
+                    to = from + 16 - side * 32;
+                    m.setTo(to);
+                    mlist[generatedMoves++] = m;
+                }
+            }
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Knight);
+    while (tempPiece)
+    {
+        from = bitScanForward(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        m.setFrom(from);
+
+        tempMove = knightAttacks[from] & knightAttacks[opponentKingSquare] & freeSquares;
+
+        while (tempMove)
+        {
+            to = bitScanForward(tempMove);
+            tempMove &= (tempMove - 1);
+            m.setTo(to);
+            mlist[generatedMoves++] = m;
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Bishop);
+    while (tempPiece)
+    {
+        from = bitScanForward(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        m.setFrom(from);
+
+        tempMove = bishopAttacks(from, occupied) & bishopCheckSquares;
+
+        while (tempMove)
+        {
+            to = bitScanForward(tempMove);
+            tempMove &= (tempMove - 1);
+            m.setTo(to);
+            mlist[generatedMoves++] = m;
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Rook);
+    while (tempPiece)
+    {
+        from = bitScanForward(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        m.setFrom(from);
+
+        tempMove = rookAttacks(from, occupied) & rookCheckSquares;
+
+        while (tempMove)
+        {
+            to = bitScanForward(tempMove);
+            tempMove &= (tempMove - 1);
+            m.setTo(to);
+            mlist[generatedMoves++] = m;
+        }
+    }
+
+    tempPiece = pos.getBitboard(side, Queen);
+    while (tempPiece)
+    {
+        from = bitScanForward(tempPiece);
+        tempPiece &= (tempPiece - 1);
+        m.setFrom(from);
+
+        tempMove = queenAttacks(from, occupied) & queenCheckSquares;
+        while (tempMove)
+        {
+            to = bitScanForward(tempMove);
+            tempMove &= (tempMove - 1);
+            m.setTo(to);
+            mlist[generatedMoves++] = m;
+        }
+    }
+
+    // Kings cannot give check unless it is a discovered check.
+    // Discovered checks go here, someday.
+
+    return generatedMoves;
+}
