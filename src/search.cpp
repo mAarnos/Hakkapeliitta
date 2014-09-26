@@ -604,7 +604,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		}
 		else
 		{
-			return alpha;
+			return staticEval;
 		}
 	}
 
