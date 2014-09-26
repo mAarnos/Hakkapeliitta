@@ -18,7 +18,7 @@ void Benchmark::runPerft()
     // pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
     sw.start();
-    auto perftResult = perft(pos, 7);
+    auto perftResult = perft(pos, 8);
     sw.stop();
 
     std::cout << perftResult << std::endl;
