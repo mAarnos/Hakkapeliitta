@@ -324,14 +324,14 @@ int Evaluation::evaluate(const Position & pos)
     // Bishop pair bonus.
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
-        if (Bitboards::popcnt<hardwarePopcnt>(pos.getBitboard(c, Piece::Bishop)) == 2)
+        if (pos.getPieceCount(c, Piece::Bishop) == 2)
         {
-            auto bishopPairBonus = ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+            auto bishopPairBonus = interpolateScore(bishopPairBonusOpening, bishopPairBonusEnding, phase);
             score += (c ? -bishopPairBonus : bishopPairBonus);
         }
     }
 
-    score += ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    score += interpolateScore(scoreOp, scoreEd, phase);
     score += (pos.getSideToMove() ? -sideToMoveBonus : sideToMoveBonus);
 
     return (pos.getSideToMove() ? -score : score);
@@ -407,7 +407,7 @@ int Evaluation::mobilityEval(const Position & pos, int & kingSafetyScore, int ph
         scoreEd += (c ? -scoreEdForColor : scoreEdForColor);
     }
 
-    return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    return interpolateScore(scoreOp, scoreEd, phase);
 }
 
 
@@ -417,7 +417,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
 
     if (pawnHashTable.probe(pos, scoreOp, scoreEd))
     {
-        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+        return interpolateScore(scoreOp, scoreEd, phase);
     } 
 
     for (Color c = Color::White; c <= Color::Black; ++c)
@@ -475,6 +475,6 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
 
     pawnHashTable.save(pos, scoreOp, scoreEd);
 
-    return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    return interpolateScore(scoreOp, scoreEd, phase);
 }
 

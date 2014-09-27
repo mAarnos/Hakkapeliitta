@@ -56,6 +56,11 @@ private:
     static int mobilityEval(const Position & pos, int & kingSafetyScore, int phase);
 
     static int pawnStructureEval(const Position & pos, int phase);
+
+    static int interpolateScore(int scoreOp, int scoreEd, int phase) 
+    {
+        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    }
 };
 
 #endif

@@ -48,6 +48,8 @@ public:
     bool makeMove(const Move & move, History & history);
     void unmakeMove(const Move & move, History & history);
 
+    int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
+
     bool isAttacked(Square sq, Color side) const;
 
     int calculateGamePhase() const { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
