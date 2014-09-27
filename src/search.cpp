@@ -325,10 +325,6 @@ int qsearch(Position & pos, int alpha, int beta)
 		}
 		alpha = score;
 	}
-	else if (score + 1000 < alpha) // If we are doing extremely badly, so badly that even capturing a hanging queen can't help us just return alpha.
-	{
-		return alpha;
-	}
 	bestScore = score;
 	delta = score + futilityMargin[0];
 
