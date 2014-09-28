@@ -157,3 +157,13 @@ void TranspositionTable::clear()
     table.resize(tableSize);
     generation = 0;
 }
+
+void TranspositionTable::prefetch(HashKey hk)
+{
+    auto address = reinterpret_cast<char *>(&table[hk & (table.size() - 1)]);
+#if defined (_MSC_VER) || defined(__INTEL_COMPILER)
+    _mm_prefetch(address, _MM_HINT_T0);
+#else
+    __builtin_prefetch(address);
+#endif
+}

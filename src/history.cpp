@@ -28,3 +28,15 @@ int HistoryTable::getScore(const Position & pos, const Move & move) const
             butterfly[pos.getBoard(move.getFrom())][move.getTo()]);
 }
 
+void HistoryTable::age()
+{
+    for (auto i = 0; i < 12; ++i)
+    {
+        for (auto j = 0; j < 64; ++j)
+        {
+            history[i][j] /= 2;
+            butterfly[i][j] /= 2;
+        }
+    }
+}
+
