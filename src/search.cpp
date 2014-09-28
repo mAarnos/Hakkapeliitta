@@ -218,8 +218,21 @@ void think()
 	tt.startNewSearch();
 	
 	searching = true;
-	memset(history, 0, sizeof(history));
-    memset(butterfly, 0, sizeof(butterfly));
+    for (auto & row : history)
+    {
+        for (auto & column : row)
+        {
+            column /= 2;
+        }
+    }
+    for (auto & row : butterfly)
+    {
+        for (auto & column : row)
+        {
+            column /= 2;
+        }
+    }
+
     root.resetKillers();
 	nodeCount = 0;
 	tbHits = 0;

@@ -39,4 +39,7 @@ const int reductionLimit = 3;
 extern int lastRootScore;
 extern int bestRootScore;
 
+extern array<int, Squares> history[12];
+extern array<int, Squares> butterfly[12];
+
 #endif

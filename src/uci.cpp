@@ -139,7 +139,7 @@ int uciProcessInput()
 int uciSendInformation(string s)
 {
 	// Send the name of the engine and the name of it's author.
-	cout << "id name Hakkapeliitta 130914 15" << endl;
+	cout << "id name Hakkapeliitta 130914 16" << endl;
 	cout << "id author Mikko Aarnos" << endl;
 
 	// Send all possible options the engine has that can be modified.
@@ -204,6 +204,8 @@ int uciSetOption(string s)
 	{
 		tt.clear();
 		ptt.clear();
+        memset(history, 0, sizeof(history));
+        memset(butterfly, 0, sizeof(butterfly));
 	}
 	else if (option == "SyzygyProbeLimit")
 	{
@@ -234,6 +236,8 @@ int uciNewGame(string s)
 {
 	tt.clear();
 	ptt.clear();
+    memset(history, 0, sizeof(history));
+    memset(butterfly, 0, sizeof(butterfly));
 	return uciOk;
 }
 
