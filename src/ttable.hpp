@@ -102,4 +102,14 @@ int ttProbe(const Position & pos, int ply, int depth, int & alpha, int & beta, u
 void pttSave(const Position & pos, int scoreOp, int scoreEd);
 bool pttProbe(const Position & pos, int & scoreOp, int & scoreEd);
 
+inline void prefetch(uint64_t hk)
+{
+    auto address = reinterpret_cast<char *>(&tt.getEntry(hk & (tt.getSize() - 1)));
+#if defined (_MSC_VER) || defined(__INTEL_COMPILER)
+    _mm_prefetch(address, _MM_HINT_T0);
+#else
+    __builtin_prefetch(address);
+#endif
+}
+
 #endif

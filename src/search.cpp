@@ -379,6 +379,8 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
     auto oneReply = false;
 
+    prefetch(pos.getHash());
+
 	// Check if we have overstepped the time limit or if the user has given a new order.
 	if (countDown-- <= 0)
 	{
