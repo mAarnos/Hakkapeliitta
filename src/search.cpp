@@ -325,64 +325,77 @@ void think()
 	}
 }
 
-int qsearch(Position & pos, int alpha, int beta)
+int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 {
-	int score, bestScore, delta;
+    int score, bestScore, delta;
+    int generatedMoves;
+    Move moveStack[64];
 
-	score = eval(pos);
-	if (score > alpha)
-	{
-		if (score >= beta)
-		{
-			return score;
-		}
-		alpha = score;
-	}
-	bestScore = score;
-	delta = score + futilityMargin[0];
+    if (inCheck)
+    {
+        bestScore = -mateScore + ply;
+        generatedMoves = generateEvasions(pos, moveStack);
+        orderMoves(pos, moveStack, generatedMoves, ttMoveNone, ply);
+    }
+    else
+    {
+        bestScore = eval(pos);
+        if (bestScore > alpha)
+        {
+            if (bestScore >= beta)
+            {
+                return bestScore;
+            }
+            alpha = bestScore;
+        }
+        delta = bestScore + futilityMargin[0];
+        generatedMoves = generateCaptures(pos, moveStack);
+        orderCaptures(pos, moveStack, generatedMoves);
+    }
 
-	Move moveStack[64];
-	int generatedMoves = generateCaptures(pos, moveStack);
-	orderCaptures(pos, moveStack, generatedMoves);
-	for (int i = 0; i < generatedMoves; i++)
-	{
-		selectMove(moveStack, generatedMoves, i);
-		// We only try good captures, so if we have reached the bad captures we can stop.
-		if (moveStack[i].getScore() < 0)
-		{
-			break;
-		}
-		// Delta pruning. Check if the score is below the delta-pruning safety margin.
-		// we can return alpha straight away as all captures following a failure are equal or worse to it - that is they will fail as well
-		if (delta + moveStack[i].getScore() < alpha)
-		{
-			return bestScore;
-		}
+    for (int i = 0; i < generatedMoves; i++)
+    {
+        selectMove(moveStack, generatedMoves, i);
+        if (!inCheck) // If we are in check try all moves.
+        {
+            // We only try good captures, so if we have reached the bad captures we can stop.
+            if (moveStack[i].getScore() < 0)
+            {
+                break;
+            }
+            // Delta pruning. Check if the score is below the delta-pruning safety margin.
+            // we can return alpha straight away as all captures following a failure are equal or worse to it - that is they will fail as well
+            if (delta + moveStack[i].getScore() < alpha)
+            {
+                break;
+            }
+        }
 
-		if (!(pos.makeMove(moveStack[i])))
-		{
-			continue;
-		}
+        if (!(pos.makeMove(moveStack[i])))
+        {
+            continue;
+        }
 
-		nodeCount++;
-		score = -qsearch(pos, -beta, -alpha);
-		pos.unmakeMove(moveStack[i]);
+        nodeCount++;
+        auto givesCheck = pos.inCheck();
+        score = -qsearch(pos, ply + 1, -beta, -alpha, givesCheck);
+        pos.unmakeMove(moveStack[i]);
 
-		if (score > bestScore)
-		{
-			bestScore = score;
-			if (score > alpha)
-			{
-				if (score >= beta)
-				{
-					return score;
-				}
-				alpha = score;
-			}
-		}
-	}
+        if (score > bestScore)
+        {
+            if (score > alpha)
+            {
+                if (score >= beta)
+                {
+                    return score;
+                }
+                alpha = score;
+            }
+            bestScore = score;
+        }
+    }
 
-	return bestScore;
+    return bestScore;
 }
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int allowNullMove)
@@ -415,7 +428,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	// If we have gone as far as we wanted to go drop into quiescence search.
 	if (depth <= 0)
 	{
-		return qsearch(pos, alpha, beta);
+		return qsearch(pos, ply, alpha, beta, check);
 	}
 
 	// Probe the transposition table.
@@ -454,7 +467,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		nodeCount++;
 		if (depth <= 4)
 		{
-			score = -qsearch(pos, -beta, -beta + 1);
+			score = -qsearch(pos, ply, -beta, -beta + 1, false);
 		}
 		else
 		{
@@ -477,7 +490,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
     if (!pvNode && !check && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
     {
         auto razoringAlpha = alpha - razoringMargin[depth];
-        score = qsearch(pos, razoringAlpha, razoringAlpha + 1);
+        score = qsearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
         if (score <= razoringAlpha)
             return score;
     }
