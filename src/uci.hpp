@@ -27,7 +27,7 @@ private:
         std::string arguments;
     };
 
-    typedef void(*FunctionPointer)(const Command & c);
+    using FunctionPointer = void(*)(const Command & c);
 
     void addCommand(std::string name, FunctionPointer fp);
     std::map<std::string, FunctionPointer> commands;

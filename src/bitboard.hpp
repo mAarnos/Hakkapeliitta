@@ -6,7 +6,7 @@
 #include <array>
 #include "square.hpp"
 
-typedef uint64_t Bitboard;
+using Bitboard = uint64_t;
 
 class Bitboards
 {

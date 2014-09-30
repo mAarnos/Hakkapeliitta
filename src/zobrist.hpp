@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <array>
 
-typedef uint64_t HashKey;
+using HashKey = uint64_t;
 
 class Zobrist
 {
