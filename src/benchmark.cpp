@@ -35,12 +35,13 @@ uint64_t Benchmark::perft(Position & pos, int depth)
     MoveGen::generatePseudoLegalMoves(pos, moves);
     for (auto i = 0; i < moves.size(); ++i)
     {
-        if (!(pos.makeMove(moves.at(i), history)))
+        const auto & move = moves[i];
+        if (!(pos.makeMove(move, history)))
         {
             continue;
         }
         depth == 1 ? ++nodes : nodes += perft(pos, depth - 1);
-        pos.unmakeMove(moves.at(i), history);
+        pos.unmakeMove(move, history);
     }
 
     return nodes;

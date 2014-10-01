@@ -15,31 +15,31 @@ const int Search::lmrReductionLimit = 3;
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
 
-void Search::orderCaptures(const Position & pos, std::vector<Move> & moveStack)
+void Search::orderCaptures(const Position & pos, MoveList & moveList)
 {
-    for (auto & move : moveStack)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        move.setScore(pos.SEE(move));
+        moveList[i].setScore(pos.SEE(moveList[i]));
     }
 }
 
-void Search::selectMove(std::vector<Move> & moveStack, size_t currentMove)
+void Search::selectMove(MoveList & moveList, int currentMove)
 {
     auto bestMove = currentMove;
-    auto bestScore = moveStack[currentMove].getScore();
+    auto bestScore = moveList[currentMove].getScore();
 
-    for (auto i = currentMove + 1; i < moveStack.size(); ++i)
+    for (auto i = currentMove + 1; i < moveList.size(); ++i)
     {
-        if (moveStack[i].getScore() > bestScore)
+        if (moveList[i].getScore() > bestScore)
         {
-            bestScore = moveStack[i].getScore();
+            bestScore = moveList[i].getScore();
             bestMove = i;
         }
     }
 
     if (bestMove > currentMove)
     {
-        std::swap(moveStack[currentMove], moveStack[bestMove]);
+        std::swap(moveList[currentMove], moveList[bestMove]);
     }
 }
 
@@ -72,7 +72,7 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
     for (auto i = 0; i < moveStack.size(); ++i)
     {
         // selectMove(moveStack, i);
-        const auto & move = moveStack.at(i);
+        const auto & move = moveStack[i];
 
         // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
         if (move.getScore() < 0 || (delta + move.getScore() < alpha))

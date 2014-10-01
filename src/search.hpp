@@ -1,10 +1,11 @@
 #ifndef SEARCH_HPP_
 #define SEARCH_HPP_
 
+#include <vector>
+#include "movelist.hpp"
 #include "position.hpp"
 #include "history.hpp"
 #include "killer.hpp"
-#include <vector>
 
 const int maxPly = 1200;
 const int mateScore = 32767;
@@ -46,8 +47,8 @@ private:
     static const int lmrFullDepthMoves;
     static const int lmrReductionLimit;
 
-    static void orderCaptures(const Position & pos, std::vector<Move> & moveStack);
-    static void selectMove(std::vector<Move> & moveStack, size_t currentMove);
+    static void orderCaptures(const Position & pos, MoveList & moveList);
+    static void selectMove(MoveList & moveList, int currentMove);
 };
 
 #endif
