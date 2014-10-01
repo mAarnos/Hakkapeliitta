@@ -18,7 +18,7 @@ public:
         moveList[numberOfMoves++] = std::forward<T>(move); 
     }
 
-    const Move & at(size_t index) const { assert(index < numberOfMoves); return moveList[index]; }
+    Move & at(size_t index) { return moveList[index]; }
     void clear() { numberOfMoves = 0; };
     int size() const { return numberOfMoves; }
     bool empty() const { return numberOfMoves == 0; }
