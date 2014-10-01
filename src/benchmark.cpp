@@ -18,7 +18,7 @@ void Benchmark::runPerft()
     // pos.initializeBoardFromFEN("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10");
 
     sw.start();
-    auto perftResult = perft(pos, 5);
+    auto perftResult = perft(pos, 7);
     sw.stop();
 
     std::cout << perftResult << std::endl;
@@ -28,19 +28,19 @@ void Benchmark::runPerft()
 
 uint64_t Benchmark::perft(Position & pos, int depth)
 {
-    std::vector<Move> moves;
+    MoveList moves;
     History history;
     auto nodes = 0ull;
 
     MoveGen::generatePseudoLegalMoves(pos, moves);
-    for (auto & move : moves)
+    for (auto i = 0; i < moves.size(); ++i)
     {
-        if (!(pos.makeMove(move, history)))
+        if (!(pos.makeMove(moves.at(i), history)))
         {
             continue;
         }
         depth == 1 ? ++nodes : nodes += perft(pos, depth - 1);
-        pos.unmakeMove(move, history);
+        pos.unmakeMove(moves.at(i), history);
     }
 
     return nodes;

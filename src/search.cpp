@@ -64,15 +64,15 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
     auto bestScore = score;
     auto delta = score + futilityMargins[0];
 
-    std::vector<Move> moveStack;
+    MoveList moveStack;
     History history;
     MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
-    orderCaptures(pos, moveStack);
+    // orderCaptures(pos, moveStack);
 
-    for (size_t i = 0; i < moveStack.size(); ++i)
+    for (auto i = 0; i < moveStack.size(); ++i)
     {
-        selectMove(moveStack, i);
-        const auto & move = moveStack[i];
+        // selectMove(moveStack, i);
+        const auto & move = moveStack.at(i);
 
         // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
         if (move.getScore() < 0 || (delta + move.getScore() < alpha))

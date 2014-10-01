@@ -6,7 +6,8 @@
 class Move
 {
 public:
-    Move(int32_t from = 0, int32_t to = 0, int32_t promotion = 0, int32_t score = 0);
+    Move();
+    Move(int32_t from, int32_t to, int32_t promotion, int32_t score);
 
     int32_t getFrom() const { return from; }
     int32_t getTo() const { return to; }

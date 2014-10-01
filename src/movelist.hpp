@@ -10,14 +10,21 @@ class MoveList
 public:
     MoveList() : numberOfMoves(0) {};
 
-    void push_back(const Move & move) { moveList[numberOfMoves++] = move; }
-    Move & at(size_t index) { assert(index < numberOfMoves); return moveList[index]; }
+    // Perfect forwarder for pushing both lvalues and rvalues with the same efficiency.
+    // Why? Because I could.
+    template<class T, class = std::enable_if_t<std::is_same<T, Move>::value>>
+    void push_back(T && move) 
+    {  
+        moveList[numberOfMoves++] = std::forward<T>(move); 
+    }
+
+    const Move & at(size_t index) const { assert(index < numberOfMoves); return moveList[index]; }
     void clear() { numberOfMoves = 0; };
-    size_t size() const { return numberOfMoves; }
+    int size() const { return numberOfMoves; }
     bool empty() const { return numberOfMoves == 0; }
 private:
     std::array<Move, 218> moveList;
-    size_t numberOfMoves;
+    int numberOfMoves;
 };
 
 #endif

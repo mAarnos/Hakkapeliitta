@@ -1,21 +1,20 @@
 #include "movegen.hpp"
 #include <iostream>
 
-void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
+void MoveGen::generatePseudoLegalMoves(Position & pos, MoveList & moves)
 {
     pos.getSideToMove() ? generatePseudoLegalMoves<true>(pos, moves) : generatePseudoLegalMoves<false>(pos, moves);
 }
 
-void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> & moves)
+void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, MoveList & moves)
 {
     pos.getSideToMove() ? generatePseudoLegalCaptureMoves<true>(pos, moves) : generatePseudoLegalCaptureMoves<false>(pos, moves);
 }
 
 template <bool side> 
-void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves)
+void MoveGen::generatePseudoLegalMoves(Position & pos, MoveList & moves)
 {
     assert(moves.empty());
-    moves.reserve(128);
 
     int from, to;
     Bitboard tempMove;
@@ -165,10 +164,9 @@ void MoveGen::generatePseudoLegalMoves(Position & pos, std::vector<Move> & moves
 }
 
 template <bool side>
-void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, std::vector<Move> & moves)
+void MoveGen::generatePseudoLegalCaptureMoves(Position & pos, MoveList & moves)
 {
     assert(moves.empty());
-    moves.reserve(64);
 
     int from, to;
     Bitboard tempMove;
