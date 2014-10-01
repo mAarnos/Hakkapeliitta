@@ -69,8 +69,6 @@ class Position
 		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }
 		inline void setKiller(int killerNumber, int ply, int newKiller) { killer[killerNumber][ply] = newKiller; }
         inline void resetKillers() { memset(killer, 0, sizeof(killer)); }
-		inline bool getIsInCheck(int ply) { return isInCheck[ply]; }
-		inline void setIsInCheck(int ply, bool inCheck) { isInCheck[ply] = inCheck; }
 
 		bool repetitionDraw();
 
@@ -103,8 +101,6 @@ class Position
 		int phase;
 		int scoreOp, scoreEd;
 		uint64_t hash, pawnHash, matHash; 
-
-		array<bool, maxGameLength> isInCheck;
 
 		// Killer moves. Since these are highly position specific we have to make them thread specific.
 		array<int, maxGameLength> killer[2];
