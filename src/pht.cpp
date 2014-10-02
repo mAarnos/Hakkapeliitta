@@ -22,8 +22,8 @@ void PawnHashTable::save(const Position & pos, int scoreOp, int scoreEd)
     hashEntry.setData((scoreOp & 0xffff) | (scoreEd << 16));
     hashEntry.setHash(static_cast<uint32_t>(pos.getPawnHashKey()) ^ hashEntry.getData());
 
-    assert(static_cast<int16_t>(hashEntry->getData()) == scoreOp);
-    assert(static_cast<int16_t>(hashEntry->getData() >> 16) == scoreEd);
+    assert(static_cast<int16_t>(hashEntry.getData()) == scoreOp);
+    assert(static_cast<int16_t>(hashEntry.getData() >> 16) == scoreEd);
 }
 
 bool PawnHashTable::probe(const Position & pos, int & scoreOp, int & scoreEd) const

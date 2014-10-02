@@ -2,6 +2,7 @@
 #define MOVELIST_HPP_
 
 #include <array>
+#include <type_traits>
 #include <cassert>
 #include "move.hpp"
 
@@ -12,7 +13,7 @@ public:
 
     // Perfect forwarder for pushing both lvalues and rvalues with the same efficiency.
     // Why? Because I could.
-    template<class T, class = std::enable_if_t<std::is_same<T, Move>::value>>
+    template<class T, class = std::enable_if<std::is_same<T, Move>::value>>
     void push_back(T && move) 
     {  
         moveList[numberOfMoves++] = std::forward<T>(move); 
