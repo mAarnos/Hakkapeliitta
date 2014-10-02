@@ -31,7 +31,7 @@ inline bool isMateScore(int score)
 class Search
 {
 public:
-    static int qSearch(Position & pos, int ply, int alpha, int beta);
+    static int qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
 
     // Delete these, only used for tuning.
     static std::array<Move, 32> pv[32];

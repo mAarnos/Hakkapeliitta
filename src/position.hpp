@@ -50,6 +50,7 @@ public:
 
     int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
 
+    bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
     bool isAttacked(Square sq, Color side) const;
 
     int calculateGamePhase() const { return (phase * 256 + (totalPhase / 2)) / totalPhase; }

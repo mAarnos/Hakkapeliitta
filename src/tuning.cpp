@@ -149,7 +149,7 @@ scalingConstant(1.00)
         Search::pvLength.fill(0);
 
         auto stm = positions[i].getSideToMove();
-        auto v = Search::qSearch(positions[i], 0, -100000, 100000);
+        auto v = Search::qSearch(positions[i], 0, -100000, 100000, positions[i].inCheck());
 
         for (auto j = 0; j < Search::pvLength[0]; ++j)
         {

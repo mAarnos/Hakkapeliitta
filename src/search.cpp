@@ -43,41 +43,49 @@ void Search::selectMove(MoveList & moveList, int currentMove)
     }
 }
 
-int Search::qSearch(Position & pos, int ply, int alpha, int beta)
+int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 {
-    pvLength[ply] = ply;
-
-    auto score = Evaluation::evaluate(pos);
-    if (score > alpha)
-    {
-        if (score >= beta)
-        {
-            return score;
-        }
-        alpha = score;
-    }
-    else if (score + 1000 < alpha)
-    {
-        // If we are doing so badly that even capturing a queen for free won't help just return alpha.
-        return alpha;
-    }
-    auto bestScore = score;
-    auto delta = score + futilityMargins[0];
-
+    int bestScore, delta;
     MoveList moveStack;
     History history;
-    MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
-    // orderCaptures(pos, moveStack);
+
+    // delete this
+    pvLength[ply] = ply;
+
+    if (inCheck)
+    {
+        bestScore = matedInPly(ply);
+        // generateEvasions
+        // orderMoves
+    }
+    else
+    {
+        bestScore = Evaluation::evaluate(pos);
+        if (bestScore > alpha)
+        {
+            if (bestScore >= beta)
+            {
+                return bestScore;
+            }
+            alpha = bestScore;
+        }
+        delta = bestScore + futilityMargins[0];
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
+        orderCaptures(pos, moveStack);
+    }
 
     for (auto i = 0; i < moveStack.size(); ++i)
     {
-        // selectMove(moveStack, i);
+        selectMove(moveStack, i);
         const auto & move = moveStack[i];
 
-        // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
-        if (move.getScore() < 0 || (delta + move.getScore() < alpha))
+        if (!inCheck) // don't do any pruning if in check
         {
-            break;
+            // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
+            if (move.getScore() < 0 || (delta + move.getScore() < alpha))
+            {
+                break;
+            }
         }
 
         if (!pos.makeMove(move, history))
@@ -85,12 +93,11 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
             continue;
         }
 
-        score = -qSearch(pos, ply + 1, -beta, -alpha);
+        auto score = -qSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
         pos.unmakeMove(move, history);
 
         if (score > bestScore)
         {
-            bestScore = score;
             if (score > alpha)
             {
                 if (score >= beta)
@@ -98,6 +105,8 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
                     return score;
                 }
                 alpha = score;
+
+                // delete this
                 pv[ply][ply] = move;
                 for (auto i = ply + 1; i < pvLength[ply + 1]; ++i)
                 {
@@ -105,6 +114,7 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta)
                 }
                 pvLength[ply] = pvLength[ply + 1];
             }
+            bestScore = score;
         }
     }
 
