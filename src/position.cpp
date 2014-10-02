@@ -725,3 +725,26 @@ HashKey Position::calculateMaterialHash() const
 
     return m;
 }
+
+void Position::makeNullMove(History & history)
+{
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHash;
+    history.ep = enPassant;
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHash[enPassant];
+        enPassant = Square::NoSquare;
+    }
+}
+
+void Position::unmakeNullMove(History & history)
+{
+    enPassant = history.ep;
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHash[enPassant];
+    }
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHash;
+}

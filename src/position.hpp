@@ -47,6 +47,8 @@ public:
 
     bool makeMove(const Move & move, History & history);
     void unmakeMove(const Move & move, History & history);
+    void makeNullMove(History & history);
+    void unmakeNullMove(History & history);
 
     int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
 
