@@ -314,13 +314,18 @@ void think()
 
 		// Adjust alpha and beta based on the last score.
 		// Don't adjust if depth is low - it's a waste of time.
-		if (searchDepth >= 4)
+		if (searchDepth >= 4 && !isMateScore(score))
 		{
 			alpha = score - aspirationWindow;
 			beta = score + aspirationWindow;
-            delta = aspirationWindow;
 		}
+        else
+        {
+            alpha = -infinity;
+            beta = infinity;
+        }
 
+        delta = aspirationWindow;
 		searchDepth++;
 	}
 }
