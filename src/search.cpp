@@ -20,7 +20,17 @@ vector<Move> pv;
 int lastRootScore;
 int bestRootScore;
 
+std::array<int, 256> reductions;
+
 int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
+
+void initSearch()
+{
+    for (auto i = 0; i < 256; ++i)
+    {
+        reductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+    }
+}
 
 uint64_t perft(Position & pos, int depth)
 {
@@ -563,7 +573,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
                 && !inCheck && !extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 			{
                 // Progressively reduce later moves more and more.
-                auto reduction = static_cast<int>(std::max(1.0, std::round(std::log(movesSearched - fullDepthMoves + 1))));
+                auto reduction = reductions[movesSearched - fullDepthMoves];
                 score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2, givesCheck);
 			}
 			else
@@ -703,7 +713,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
                 && !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
             {
                 // Progressively reduce later moves more and more.
-                auto reduction = static_cast<int>(std::max(1.0, std::round(std::log(movesSearched - fullDepthMoves + 1))));
+                auto reduction = reductions[movesSearched - fullDepthMoves];
                 score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2, givesCheck);
             }
 			else

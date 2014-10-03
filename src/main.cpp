@@ -20,6 +20,7 @@ int main()
 	initializeHash();
 	initializeEval();
 	root.initializeBoardFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    initSearch();
 	tt.setSize(1 * 1024 * 1024);
 	ptt.setSize(4 * 1024 * 1024);
 

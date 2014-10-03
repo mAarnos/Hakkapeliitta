@@ -42,4 +42,6 @@ extern int bestRootScore;
 extern array<int, Squares> history[12];
 extern array<int, Squares> butterfly[12];
 
+void initSearch();
+
 #endif
