@@ -398,7 +398,7 @@ int generateEvasions(Position & pos, Move * mlist)
 
 	// If we are checked by more than two pieces only the king can move. Therefore we can return.
 	uint64_t checkers = pos.attacksTo(from, !side);
-	if (popcnt(checkers) > 1)
+	if (checkers & (checkers - 1))
 	{
 		return generatedMoves;
 	}
@@ -410,7 +410,7 @@ int generateEvasions(Position & pos, Move * mlist)
 		int pinner = bitScanForward(b);
 		b &= (b - 1);
 		uint64_t potentialPinned = (between[from][pinner] & occupied);
-		if (popcnt(potentialPinned) == 1)
+        if (potentialPinned && !(potentialPinned & (potentialPinned - 1)))
 		{
 			pinned |= potentialPinned & pos.getPieces(side);
 		}
@@ -421,7 +421,7 @@ int generateEvasions(Position & pos, Move * mlist)
 		int pinner = bitScanForward(b);
 		b &= (b - 1);
 		uint64_t potentialPinned = (between[from][pinner] & occupied);
-		if (popcnt(potentialPinned) == 1)
+        if (potentialPinned && !(potentialPinned & (potentialPinned - 1)))
 		{
 			pinned |= potentialPinned & pos.getPieces(side);
 		}
