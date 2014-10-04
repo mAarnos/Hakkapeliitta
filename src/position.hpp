@@ -64,6 +64,7 @@ class Position
 		inline int getScoreOp() { return scoreOp; }
 		inline int getScoreEd() { return scoreEd; }
 
+        inline int getRawPhase() const { return phase; }
 		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
 
 		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }

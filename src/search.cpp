@@ -470,14 +470,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	// Get the static evaluation of the position.
     staticEval = (inCheck ? 0 : eval(pos));
 
-	// Null move pruning, both static and dynamic.
-	if (!pvNode && allowNullMove && !inCheck && pos.calculateGamePhase() != 256)
-	{
-		// Here's static.
-        if (depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
-            return staticEval - staticNullMoveMargin[depth];
+    // Reverse futility pruning.
+    if (!pvNode && allowNullMove && !inCheck && pos.getRawPhase() != totalPhase 
+        && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
+        return staticEval - staticNullMoveMargin[depth];
 
-		// And here's dynamic.
+	// Double null move pruning.
+    if (!pvNode && allowNullMove && !inCheck && pos.getRawPhase() != totalPhase)
+	{
 		pos.makeNullMove();
 		nodeCount++;
 		if (depth <= 4)
@@ -502,6 +502,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		}
 	}
 
+    // Razoring.
     if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
     {
         auto razoringAlpha = alpha - razoringMargin[depth];
@@ -510,7 +511,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
             return score;
     }
 
-	// Internal iterative deepening
+	// Internal iterative deepening.
 	if (pvNode && ttMove == ttMoveNone && depth > 2)
 	{
         // We can safely skip null move in IID since if it would have worked we wouldn't be here.

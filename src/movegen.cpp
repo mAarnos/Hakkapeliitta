@@ -595,7 +595,7 @@ int generateQuietChecks(Position & pos, Move * mlist)
     auto occupied = pos.getOccupiedSquares();
     auto freeSquares = pos.getFreeSquares();
     auto generatedMoves = 0;
-    uint64_t pinned = 0, tempMove;
+    uint64_t tempMove;
     Move m;
     m.clear();
     m.setPromotion(Empty);
