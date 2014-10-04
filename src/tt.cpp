@@ -25,7 +25,7 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
     }
 
     auto replace = 0;
-    for (auto i = 0; i < 4; i++)
+    for (auto i = 0; i < 4; ++i)
     {
         if ((hashEntry.getHash(i) ^ hashEntry.getData(i)) == pos.getHashKey())
         {
@@ -49,10 +49,10 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
     }
 
     hashEntry.setData(replace, (static_cast<uint64_t>(best) | 
-                                 static_cast<uint64_t>(generation) << 16 | 
-                                 static_cast<uint64_t>(score & 0xffff) << 32 | 
-                                 static_cast<uint64_t>(depth & 0xff) << 48) | 
-                                 static_cast<uint64_t>(flags) << 56);
+                                static_cast<uint64_t>(generation) << 16 | 
+                                static_cast<uint64_t>(score & 0xffff) << 32 | 
+                                static_cast<uint64_t>(depth & 0xff) << 48) | 
+                                static_cast<uint64_t>(flags) << 56);
     hashEntry.setHash(replace, pos.getHashKey() ^ hashEntry.getData(replace));
 
     assert(hashEntry.getBestMove(replace) == best);
@@ -64,7 +64,7 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
 
 bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int & score, int depth, int & alpha, int & beta) const
 {
-    auto & hashEntry = table[pos.getHashKey() & (table.size() - 1)];
+    const auto & hashEntry = table[pos.getHashKey() & (table.size() - 1)];
 
     int entry;
     for (entry = 0; entry < 4; ++entry)

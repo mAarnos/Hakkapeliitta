@@ -28,7 +28,7 @@ void PawnHashTable::save(const Position & pos, int scoreOp, int scoreEd)
 
 bool PawnHashTable::probe(const Position & pos, int & scoreOp, int & scoreEd) const
 {
-    auto & hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
+    const auto & hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
 
     if ((hashEntry.getHash() ^ hashEntry.getData()) == static_cast<uint32_t>(pos.getPawnHashKey()))
     {
