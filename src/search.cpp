@@ -556,7 +556,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 
         if (!extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 		{
-            if (futileNode || (!pvNode && depth <= lmpDepth && movesSearched >= lmpMoveCount[depth]))
+            if (futileNode || (!pvNode && !inCheck && depth <= lmpDepth && movesSearched >= lmpMoveCount[depth]))
             {
                 pos.unmakeMove(moveStack[i]);
                 prunedMoves++;
