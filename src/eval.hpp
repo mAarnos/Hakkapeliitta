@@ -173,13 +173,6 @@ const int bishopPairBonusEnding = 32;
 const int rookOnOpenFileBonus = 10;
 const int rookOnSemiOpenFileBonus = 5;
 
-const int pawnShelterAdvancedPawnPenalty = 11;
-const int pawnShelterMissingPawnPenalty = 38;
-const int pawnShelterMissingOpponentPawnPenalty = -2;
-const int pawnStormClosePenalty = 22;
-const int pawnStormFarPenalty = 6;
-const int kingInCenterOpenFilePenalty = 23;
-
 extern int drawScore;
 inline int contempt(bool side)
 {

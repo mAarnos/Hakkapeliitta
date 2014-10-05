@@ -119,7 +119,7 @@ void initializeEval()
 	}
 }
 
-int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
+int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore)
 {
 	int scoreOp = 0;
 	int scoreEd = 0;
@@ -206,7 +206,7 @@ int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
         attackUnits += attackWeight[Queen] * popcnt(tempMove & opponentKingZone);
 	}
 
-    kingSafetyScore = kingSafetyTable[attackUnits];
+    kingSafetyScore[White] = attackUnits;
 
 	// Black
     opponentKingZone = kingZone[White][bitScanForward(pos.getBitboard(White, King))];
@@ -287,7 +287,7 @@ int mobilityEval(Position & pos, int phase, int & kingSafetyScore)
         attackUnits += attackWeight[Queen] * popcnt(tempMove & opponentKingZone);
 	}
 
-    kingSafetyScore -= kingSafetyTable[attackUnits];
+    kingSafetyScore[Black] = attackUnits;
 
 	return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
 }
@@ -363,177 +363,57 @@ int pawnStructureEval(Position & pos, int phase)
     return score;
 }
 
-
-int kingSafetyEval(Position & pos, int phase, int score)
+int evaluatePawnShelter(Position & pos, bool side)
 {
-	int zone1, zone2;
+    static const std::array<int, 8> pawnStormPenalty = { 0, 0, 0, 1, 2, 3, 0, 0 };
+    static const auto openFilePenalty = 6;
+    static const auto halfOpenFilePenalty = 4;
+    auto penalty = 0;
+    auto ownPawns = pos.getBitboard(side, Pawn);
+    auto enemyPawns = pos.getBitboard(!side, Pawn);
+    auto kingFile = File(bitScanForward(pos.getBitboard(side, King)));
+    // If the king is at the edge assume that it is a bit closer to the center so that the pawn shelter is evaluated properly.
+    kingFile = std::max(1, std::min(kingFile, 6));
 
-	// White
-	if (pos.getBitboard(White, King) & kingSide)
-	{
-		// Penalize pawns which have moved more than one square.
-		zone1 = popcnt(0x00E0E0E0E0000000 & pos.getBitboard(White, Pawn));
-		score -= pawnShelterAdvancedPawnPenalty * zone1;
-		// A moved f-pawn isn't that severe, compensate.
-		if (pos.getBitboard(White, Pawn) & rays[N][21])
-		{
-			score += (pawnShelterAdvancedPawnPenalty / 2);
-		}
+    for (auto file = kingFile - 1; file <= kingFile + 1; ++file)
+    {
+        if (!(files[file] & (ownPawns | enemyPawns))) // Open file.
+        {
+            penalty += openFilePenalty;
+        }
+        else
+        {
+            if (!(files[file] & ownPawns)) // Half-open file (our)
+            {
+                penalty += halfOpenFilePenalty;
+            }
+            else // Own advanded pawns.
+            {
+                penalty += (side ? (7 - Rank(bitScanReverse(files[file] & ownPawns))) - 1 
+                         : Rank(bitScanForward(files[file] & ownPawns)) - 1);
+            }
 
-		// Penalize missing pawns from our pawn shelter.
-		// Penalize missing opponent pawns as they allow the opponent to use his semi-open/open files to attack us.
-		for (int i = 5; i < 8; i++)
-		{
-			if (!(files[i] & pos.getBitboard(White, Pawn)))
-			{
-				score -= pawnShelterMissingPawnPenalty;
-				if (i == 5)
-				{
-					score += (pawnShelterMissingPawnPenalty / 2);
-				}
-			}
-			if (!(files[i] & pos.getBitboard(Black, Pawn)))
-			{
-				score -= pawnShelterMissingOpponentPawnPenalty;
-			}
-		}
+            if (files[file] & enemyPawns) // Enemy pawn storm.
+            {
+                penalty += pawnStormPenalty[(side ? Rank(bitScanReverse(files[file] & enemyPawns))
+                         : 7 - Rank(bitScanForward(files[file] & enemyPawns)))];
+            }
+        }
+    }
 
-		// Pawn storm evaluation.
-		// Penalize pawns on the 6th rank(from black's point of view).
-		zone1 = popcnt(0x0000000000E00000 & pos.getBitboard(Black, Pawn));
-		score -= pawnStormClosePenalty * zone1;
+    return penalty;
+}
 
-		// Penalize pawns on the 5th rank(from black's point of view).
-		zone2 = popcnt(0x00000000E0000000 & pos.getBitboard(Black, Pawn));
-		score -= pawnStormFarPenalty * zone2;
-	}
-	else if (pos.getBitboard(White, King) & queenSide)
-	{
-		zone1 = popcnt(0x0007070707000000 & pos.getBitboard(White, Pawn));
-		score -= pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(White, Pawn) & rays[N][18])
-		{
-			score += (pawnShelterAdvancedPawnPenalty / 2);
-		}
-
-		for (int i = 0; i < 3; i++)
-		{
-			if (!(files[i] & pos.getBitboard(White, Pawn)))
-			{
-				score -= pawnShelterMissingPawnPenalty;
-				if (i == 2)
-				{
-					score += (pawnShelterMissingPawnPenalty / 2);
-				}
-			}
-			if (!(files[i] & pos.getBitboard(Black, Pawn)))
-			{
-				score -= pawnShelterMissingOpponentPawnPenalty;
-			}
-		}
-
-		zone1 = popcnt(0x0000000000070000 & pos.getBitboard(Black, Pawn));
-		score -= pawnStormClosePenalty * zone1;
-
-		zone2 = popcnt(0x0000000007000000 & pos.getBitboard(Black, Pawn));
-		score -= pawnStormFarPenalty * zone2;
-	}
-	else 
-	{
-		// Penalize open files near the king.
-		int kingFile = File(bitScanForward(pos.getBitboard(White, King)));
-		for (int i = -1; i <= 1; i++)
-		{
-			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))
-			{
-				score -= kingInCenterOpenFilePenalty;
-			}
-		}
-	}
-
-	// Black
-	if (pos.getBitboard(Black, King) & kingSide)
-	{
-		zone1 = popcnt(0x000000E0E0E0E000 & pos.getBitboard(Black, Pawn));
-		score += pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(Black, Pawn) & rays[S][45])
-		{
-			score -= (pawnShelterAdvancedPawnPenalty / 2);
-		}
-
-		for (int i = 5; i < 8; i++)
-		{
-			if (!(files[i] & pos.getBitboard(Black, Pawn)))
-			{
-				score += pawnShelterMissingPawnPenalty;
-				if (i == 5)
-				{
-					score -= (pawnShelterMissingPawnPenalty / 2);
-				}
-			}
-			if (!(files[i] & pos.getBitboard(White, Pawn)))
-			{
-				score += pawnShelterMissingOpponentPawnPenalty;
-			}
-		}
-
-		zone1 = popcnt(0x0000E00000000000 & pos.getBitboard(White, Pawn));
-		score += pawnStormClosePenalty * zone1;
-
-		zone2 = popcnt(0x000000E000000000 & pos.getBitboard(White, Pawn));
-		score += pawnStormFarPenalty * zone2;
-	}
-	else if (pos.getBitboard(Black, King) & queenSide)
-	{
-		zone1 = popcnt(0x0000000707070700 & pos.getBitboard(Black, Pawn));
-		score += pawnShelterAdvancedPawnPenalty * zone1;
-		if (pos.getBitboard(Black, Pawn) & rays[S][42])
-		{
-			score -= (pawnShelterAdvancedPawnPenalty / 2);
-		}
-
-		for (int i = 0; i < 3; i++)
-		{
-			if (!(files[i] & pos.getBitboard(Black, Pawn)))
-			{
-				score += pawnShelterMissingPawnPenalty;
-				if (i == 2)
-				{
-					score -= (pawnShelterMissingPawnPenalty / 2);
-				}
-			}
-			if (!(files[i] & pos.getBitboard(White, Pawn)))
-			{
-				score += pawnShelterMissingOpponentPawnPenalty;
-			}
-		}
-
-		zone1 = popcnt(0x0000070000000000 & pos.getBitboard(White, Pawn));
-		score += pawnStormClosePenalty * zone1;
-
-		zone2 = popcnt(0x0000000700000000 & pos.getBitboard(White, Pawn));
-		score += pawnStormFarPenalty * zone2;
-	}
-	else
-	{
-		int kingFile = File(bitScanForward(pos.getBitboard(Black, King)));
-		for (int i = -1; i <= 1; i++)
-		{
-			if (!(files[kingFile + i] & pos.getBitboard(White, Pawn) & pos.getBitboard(Black, Pawn)))
-			{
-				score += kingInCenterOpenFilePenalty;
-			}
-		}
-	}
-
+int kingSafetyEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore)
+{
+    kingSafetyScore[Black] += evaluatePawnShelter(pos, White);
+    kingSafetyScore[White] += evaluatePawnShelter(pos, Black);
+    auto score = kingSafetyTable[kingSafetyScore[White]] - kingSafetyTable[kingSafetyScore[Black]];
 	return ((score * (256 - phase)) / 256);
 }
 
 int eval(Position & pos)
 {
-	int score, kingTropismScore = 0;
-	int phase = pos.calculateGamePhase();
-
 	// Checks if we are in a known endgame.
 	// If we are we can straight away return the score for the endgame.
 	// At the moment only detects draws, if wins will be included this must be made to return things in negamax fashion.
@@ -542,8 +422,9 @@ int eval(Position & pos)
 		return knownEndgames[pos.getMaterialHash()];
 	}
 
+    auto phase = pos.calculateGamePhase();
 	// Material + Piece-Square Tables
-	score = ((pos.getScoreOp() * (256 - phase)) + (pos.getScoreEd() * phase)) / 256;
+	auto score = ((pos.getScoreOp() * (256 - phase)) + (pos.getScoreEd() * phase)) / 256;
 
 	if (popcnt(pos.getBitboard(White, Bishop)) == 2)
 	{
@@ -554,14 +435,15 @@ int eval(Position & pos)
 		score -= ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
 	}
 
+    std::array<int, 2> kingSafetyScore;
 	// Mobility
-	score += mobilityEval(pos, phase, kingTropismScore);
+    score += mobilityEval(pos, phase, kingSafetyScore);
 
 	// Pawn structure
 	score += pawnStructureEval(pos, phase);
 
 	// King safety
-	score += kingSafetyEval(pos, phase, kingTropismScore);
+    score += kingSafetyEval(pos, phase, kingSafetyScore);
 
     score += (pos.getSideToMove() ? -5 : 5);
 
