@@ -53,9 +53,13 @@ private:
     static int evaluate(const Position & pos);
 
     template <bool hardwarePopcnt> 
-    static int mobilityEval(const Position & pos, int & kingSafetyScore, int phase);
+    static int mobilityEval(const Position & pos, std::array<int, 2> & kingSafetyScore, int phase);
 
     static int pawnStructureEval(const Position & pos, int phase);
+    static int kingSafetyEval(const Position & pos, int phase, std::array<int, 2> & kingSafetyScore);
+
+    template <bool side>
+    static int evaluatePawnShelter(const Position & pos);
 
     static int interpolateScore(int scoreOp, int scoreEd, int phase) 
     {
