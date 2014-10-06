@@ -306,20 +306,11 @@ int Evaluation::evaluate(const Position & pos)
     }
 
     auto phase = pos.calculateGamePhase();
-    auto scoreOp = 0, scoreEd = 0;
     auto kingSafetyScore = 0;
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
     score += pawnStructureEval(pos, phase);
-
-    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
-    {
-        if (pos.getBoard(sq) != Piece::Empty)
-        {
-            scoreOp += pieceSquareTableOpening[pos.getBoard(sq)][sq];
-            scoreEd += pieceSquareTableEnding[pos.getBoard(sq)][sq];
-        }
-    }
+    score += interpolateScore(pos.getPstMaterialScoreOpening(), pos.getPstMaterialScoreEnding(), phase);
 
     // Bishop pair bonus.
     for (Color c = Color::White; c <= Color::Black; ++c)
