@@ -387,12 +387,6 @@ int evaluatePawnShelter(Position & pos, bool side)
             {
                 penalty += halfOpenFilePenalty;
             }
-            else // Own advanded pawns.
-            {
-                penalty += (side ? (7 - Rank(bitScanReverse(files[file] & ownPawns))) - 1 
-                         : Rank(bitScanForward(files[file] & ownPawns)) - 1);
-            }
-
             if (files[file] & enemyPawns) // Enemy pawn storm.
             {
                 penalty += pawnStormPenalty[(side ? Rank(bitScanReverse(files[file] & enemyPawns))
