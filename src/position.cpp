@@ -7,6 +7,7 @@
 #include "zobrist.hpp"
 #include "color.hpp"
 #include "square.hpp"
+#include "eval.hpp"
 
 const std::array<int, 64> Position::castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,
@@ -39,7 +40,8 @@ Position::Position()
     enPassant = Square::NoSquare;
     phase = 0;
     fiftyMoveDistance = 0;
-    hply = 0;
+    ply = 0;
+    pstMaterialScoreOp = pstMaterialScoreEd = 0;
     pieceCount.fill(0);
 }
 
@@ -173,29 +175,32 @@ void Position::initializePositionFromFen(const std::string & fen)
 		fiftyMoveDistance = stoi(strList[4]);
 	}
 
-	hply = 0;
+	ply = 0;
 	if (strList.size() >= 6)
 	{
-		hply = 2 * stoi(strList[5]) - 1;
+		ply = 2 * stoi(strList[5]) - 1;
 		// Avoid possible underflow.
-		if (hply < 0)
+		if (ply < 0)
 		{
-			hply = 0; 
+			ply = 0; 
 		}
 		if (sideToMove == Color::Black)
 		{
-			hply++;
+			ply++;
 		}
 	}
 
     // Populate the bitboards.
 	bitboards.fill(0);
     pieceCount.fill(0);
+    pstMaterialScoreOp = pstMaterialScoreEd = 0;
 	for (Square sq = Square::A1; sq <= Square::H8; ++sq) 
 	{
 		if (board[sq] != Piece::Empty)
 		{
 			bitboards[board[sq]] |= Bitboards::bit[sq];
+            pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[board[sq]][sq];
+            pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[board[sq]][sq];
             ++pieceCount[board[sq]];
 		}
 	}
@@ -308,7 +313,7 @@ std::string Position::positionToFen() const
     fen += " ";
     fen += std::to_string(fiftyMoveDistance);
     fen += " ";
-    fen += std::to_string((hply + 1) / 2);
+    fen += std::to_string((ply + 1) / 2);
 
     return fen;
 }
@@ -467,6 +472,11 @@ bool Position::makeMove(const Move & m, History & history)
     history.fifty = fiftyMoveDistance;
     history.castle = castlingRights;
 
+    pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[piece][to] 
+                        - Evaluation::pieceSquareTableOpening[piece][from];
+    pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[piece][to]
+                        - Evaluation::pieceSquareTableEnding[piece][from];
+
     if (enPassant != Square::NoSquare)
     {
         hashKey ^= Zobrist::enPassantHash[enPassant];
@@ -485,7 +495,8 @@ bool Position::makeMove(const Move & m, History & history)
         bitboards[captured] ^= Bitboards::bit[to];
         bitboards[12 + !side] ^= Bitboards::bit[to];
         fiftyMoveDistance = 0;
-
+        pstMaterialScoreOp -= Evaluation::pieceSquareTableOpening[captured][to];
+        pstMaterialScoreEd -= Evaluation::pieceSquareTableEnding[captured][to];
         hashKey ^= Zobrist::pieceHash[captured][to];
         materialHashKey ^= Zobrist::materialHash[captured][--pieceCount[captured]];
 
@@ -511,8 +522,10 @@ bool Position::makeMove(const Move & m, History & history)
         if ((to ^ from) == 16) // Double pawn move
         {
             if (Bitboards::pawnAttacks[side][from ^ 24] & getBitboard(!side, Piece::Pawn))
+            {
                 enPassant = from ^ 24;
-            hashKey ^= Zobrist::enPassantHash[enPassant];
+                hashKey ^= Zobrist::enPassantHash[enPassant];
+            }
         }
         else if (promotion == Piece::Pawn) // En passant
         {
@@ -524,6 +537,8 @@ bool Position::makeMove(const Move & m, History & history)
             hashKey ^= Zobrist::pieceHash[Piece::Pawn + !side * 6][enPassantSquare];
             pawnHashKey ^= Zobrist::pieceHash[Piece::Pawn + !side * 6][enPassantSquare];
             materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][--pieceCount[Piece::Pawn + !side * 6]];
+            pstMaterialScoreOp -= Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][enPassantSquare];
+            pstMaterialScoreEd -= Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][enPassantSquare];
         }
         else if (promotion != Piece::Empty) // Promotion
         {
@@ -536,6 +551,10 @@ bool Position::makeMove(const Move & m, History & history)
             hashKey ^= Zobrist::pieceHash[board[to]][to] ^ Zobrist::pieceHash[promotion + side * 6][to];
             pawnHashKey ^= Zobrist::pieceHash[board[to]][to];
             materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][--pieceCount[Piece::Pawn + side * 6]];
+            pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[promotion + side * 6][to]
+                                - Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][to];
+            pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[promotion + side * 6][to]
+                                - Evaluation::pieceSquareTableEnding[Piece::Pawn + side * 6][to];
         }
     }
     else if (promotion == Piece::King)
@@ -549,7 +568,12 @@ bool Position::makeMove(const Move & m, History & history)
         bitboards[14] ^= fromToBBCastling;
         board[toRook] = board[fromRook];
         board[fromRook] = Piece::Empty;
-        hashKey ^= (Zobrist::pieceHash[Piece::Rook + side * 6][fromRook] ^ Zobrist::pieceHash[Piece::Rook + side * 6][toRook]);
+        hashKey ^= Zobrist::pieceHash[Piece::Rook + side * 6][fromRook] 
+                 ^ Zobrist::pieceHash[Piece::Rook + side * 6][toRook];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][toRook]
+                            - Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][fromRook];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][toRook]
+                            - Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][fromRook];
     }
 
     sideToMove = sideToMove.oppositeColor();
@@ -603,6 +627,8 @@ void Position::unmakeMove(const Move & m, History & history)
         bitboards[14] |= Bitboards::bit[enPassantSquare];
         board[enPassantSquare] = Piece::Pawn + side * 6;
         materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][pieceCount[Piece::Pawn + side * 6]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][enPassantSquare];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Pawn + side * 6][enPassantSquare];
     }
     else if (promotion == Piece::King)
     {
@@ -615,6 +641,10 @@ void Position::unmakeMove(const Move & m, History & history)
         bitboards[14] ^= fromToBBCastling;
         board[fromRook] = board[toRook];
         board[toRook] = Piece::Empty;
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Rook + !side * 6][fromRook]
+                            - Evaluation::pieceSquareTableOpening[Piece::Rook + !side * 6][toRook];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Rook + !side * 6][fromRook]
+                            - Evaluation::pieceSquareTableEnding[Piece::Rook + !side * 6][toRook];
     }
     else if (promotion != Piece::Empty)
     {
@@ -625,6 +655,10 @@ void Position::unmakeMove(const Move & m, History & history)
         phase += piecePhase[promotion];
         materialHashKey ^= Zobrist::materialHash[promotion + !side * 6][--pieceCount[promotion + !side * 6]];
         materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][pieceCount[piece]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][to]
+            - Evaluation::pieceSquareTableOpening[promotion + !side * 6][to];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][to]
+            - Evaluation::pieceSquareTableEnding[promotion + !side * 6][to];
     }
 
     bitboards[piece] ^= fromToBB;
@@ -633,6 +667,11 @@ void Position::unmakeMove(const Move & m, History & history)
     board[from] = piece;
     board[to] = captured;
 
+    pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[piece][from]
+        - Evaluation::pieceSquareTableOpening[piece][to];
+    pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[piece][from]
+        - Evaluation::pieceSquareTableEnding[piece][to];
+
     if (captured != Piece::Empty)
     {
         bitboards[captured] |= Bitboards::bit[to];
@@ -640,6 +679,8 @@ void Position::unmakeMove(const Move & m, History & history)
         bitboards[14] |= Bitboards::bit[from];
         phase -= piecePhase[captured % 6];
         materialHashKey ^= Zobrist::materialHash[captured][pieceCount[captured]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[captured][to];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[captured][to];
     }
     else
     {

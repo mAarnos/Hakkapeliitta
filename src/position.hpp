@@ -74,8 +74,9 @@ private:
     int castlingRights;
     Square enPassant;
 	int fiftyMoveDistance;
-	int hply;
+    int ply;
     int phase;
+    int pstMaterialScoreOp, pstMaterialScoreEd;
     std::array<int, 12> pieceCount;
 
 	// These functions can be used to calculate different hash keys for the current position.
