@@ -262,16 +262,13 @@ void think()
 
 		uint64_t searchTime = t.getms();
 
-		// If more than 70% of our has been used or we have been ordered to stop searching return the best move.
-		// Also stop searching if there is only one root move or if we have searched too far.
-		if (searching == false || t.getms() > (stopFraction * targetTime) || searchDepth >= 64)
+		if (searching == false || searchDepth >= 64)
 		{
 			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << endl << "bestmove ";
 			displayPV(pv, 1);
 			return;
 		}
 
-		// if our score is outside the aspiration window do a research with no windows
 		if (score <= alpha)
 		{
 			alpha -= delta;

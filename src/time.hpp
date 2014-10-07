@@ -30,7 +30,6 @@ extern int countDown;
 
 const int stopInterval = 10000;
 const int lagBuffer = 50;
-const double stopFraction = 0.7;
 
 void allocateSearchTime(string s);
 void checkTimeAndInput();
