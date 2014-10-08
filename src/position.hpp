@@ -46,9 +46,9 @@ public:
     HashKey getMaterialHashKey() const { return materialHashKey; }
 
     bool makeMove(const Move & move, History & history);
-    void unmakeMove(const Move & move, History & history);
+    void unmakeMove(const Move & move, const History & history);
     void makeNullMove(History & history);
-    void unmakeNullMove(History & history);
+    void unmakeNullMove(const History & history);
 
     int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
 
@@ -92,7 +92,7 @@ private:
     HashKey calculateMaterialHash() const;
 
     template <bool side> bool makeMove(const Move & move, History & history);
-    template <bool side> void unmakeMove(const Move & move, History & history);
+    template <bool side> void unmakeMove(const Move & move, const History & history);
     template <bool side> bool isAttacked(Square sq) const;
 
     static const std::array<int, 64> castlingMask;

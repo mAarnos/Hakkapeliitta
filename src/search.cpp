@@ -20,7 +20,7 @@ const std::array<int, 1 + 4> Search::lmpMargins = {
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
 
-void Search::initializeSearch()
+void Search::initialize()
 {
     for (auto i = 0; i < 256; ++i)
     {

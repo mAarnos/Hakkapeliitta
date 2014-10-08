@@ -324,7 +324,7 @@ bool Position::makeMove(const Move & m, History & history)
     return (sideToMove ? makeMove<true>(m, history) : makeMove<false>(m, history));
 }
 
-void Position::unmakeMove(const Move & m, History & history)
+void Position::unmakeMove(const Move & m, const History & history)
 {
     sideToMove ? unmakeMove<true>(m, history) : unmakeMove<false>(m, history);
 }
@@ -601,7 +601,7 @@ template bool Position::makeMove<false>(const Move & m, History & history);
 template bool Position::makeMove<true>(const Move & m, History & history);
 
 template <bool side> 
-void Position::unmakeMove(const Move & m, History & history)
+void Position::unmakeMove(const Move & m, const History & history)
 {
     auto from = m.getFrom();
     auto to = m.getTo();
@@ -688,8 +688,8 @@ void Position::unmakeMove(const Move & m, History & history)
     }
 }
 
-template void Position::unmakeMove<false>(const Move & m, History & history);
-template void Position::unmakeMove<true>(const Move & m, History & history);
+template void Position::unmakeMove<false>(const Move & m, const History & history);
+template void Position::unmakeMove<true>(const Move & m, const History & history);
 
 template <bool side> 
 bool Position::isAttacked(Square sq) const
@@ -779,7 +779,7 @@ void Position::makeNullMove(History & history)
     }
 }
 
-void Position::unmakeNullMove(History & history)
+void Position::unmakeNullMove(const History & history)
 {
     enPassant = history.ep;
     if (enPassant != Square::NoSquare)
