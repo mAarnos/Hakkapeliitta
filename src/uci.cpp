@@ -85,11 +85,12 @@ void UCI::sendInformation(const Command &)
     std::cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
-    std::cout << "option name Hash type spin default 1 min 1 max 65536" << std::endl;
+    std::cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
+    std::cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     std::cout << "option name Clear Hash type button" << std::endl;
-    std::cout << "option name Drawscore type spin default 0 min -75 max 75" << std::endl;
+    std::cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
+    std::cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
     std::cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
-    std::cout << "option name SyzygyPath type string default c:\\wdl\\" << std::endl;
 
     // Send a response telling the listener that we are ready in UCI-mode.
     std::cout << "uciok" << std::endl;

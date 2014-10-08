@@ -11,7 +11,6 @@ TranspositionTable::TranspositionTable()
 
 void TranspositionTable::save(const Position & pos, int ply, const Move & move, int score, int depth, int flags)
 {
-    assert(table.size() > 0);
     assert(depth >= 0 && depth <= 255);
     assert(score < infinity && score > -infinity);
     assert(flags >= 0 && flags <= 255);

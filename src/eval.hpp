@@ -15,6 +15,8 @@ public:
 
     static int evaluate(const Position & pos);
 
+    static std::array<int, 2> contempt;
+
     static std::array<int, 64> pieceSquareTableOpening[12];
     static std::array<int, 64> pieceSquareTableEnding[12];
 
