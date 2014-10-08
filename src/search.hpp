@@ -31,6 +31,8 @@ inline bool isMateScore(int score)
 class Search
 {
 public:
+    static void initialize();
+
     static int qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
 
     // Delete these, only used for tuning.
@@ -46,6 +48,9 @@ private:
     static const std::array<int, 1 + 4> futilityMargins;
     static const int lmrFullDepthMoves;
     static const int lmrReductionLimit;
+    static std::array<int, 256> lmrReductions;
+    static const int lmpDepth;
+    static const std::array<int, 1 + 4> lmpMargins;
 
     static void orderCaptures(const Position & pos, MoveList & moveList);
     static void selectMove(MoveList & moveList, int currentMove);

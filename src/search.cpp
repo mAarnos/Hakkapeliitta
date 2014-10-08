@@ -11,9 +11,22 @@ const std::array<int, 1 + 4> Search::futilityMargins = {
 };
 const int Search::lmrFullDepthMoves = 4;
 const int Search::lmrReductionLimit = 3;
+std::array<int, 256> Search::lmrReductions;
+const int Search::lmpDepth = 4;
+const std::array<int, 1 + 4> Search::lmpMargins = {
+    0, 4, 8, 16, 32
+};
 
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
+
+void Search::initializeSearch()
+{
+    for (auto i = 0; i < 256; ++i)
+    {
+        lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+    }
+}
 
 void Search::orderCaptures(const Position & pos, MoveList & moveList)
 {
