@@ -15,7 +15,7 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
     assert(score < infinity && score > -infinity);
     assert(flags >= 0 && flags <= 255);
 
-    auto best = move.getPacket();
+    auto best = move.getMove();
     auto & hashEntry = table[pos.getHashKey() & (table.size() - 1)];
 
     // We only store pure mate scores so that we can use them in other parts of the search tree too.
@@ -77,7 +77,7 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
 
     if (entry < 4)
     {
-        // best = hashEntry.getBestMove(entry);
+        move.setMove(hashEntry.getBestMove(entry));
         auto hashScore = hashEntry.getScore(entry);
         auto hashDepth = hashEntry.getDepth(entry);
         auto flags = hashEntry.getFlags(entry);

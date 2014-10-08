@@ -308,11 +308,11 @@ int Evaluation::evaluate(const Position & pos)
 
     std::array<int, 2> kingSafetyScore;
     auto phase = pos.calculateGamePhase();
-    // The phase can be negative in some weird cases, guard against that.
-    phase = clamp(phase, 0, 256);
+    phase = clamp(phase, 0, 256); // The phase can be negative in some weird cases, guard against that.
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
     score += pawnStructureEval(pos, phase);
+    score += kingSafetyEval(pos, phase, kingSafetyScore);
     score += interpolateScore(pos.getPstMaterialScoreOpening(), pos.getPstMaterialScoreEnding(), phase);
 
     // Bishop pair bonus.

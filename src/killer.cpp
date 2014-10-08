@@ -16,7 +16,7 @@ void KillerTable::addKiller(const Move & move, int ply)
 {
     assert(ply >= 0 && ply < 1200);
 
-    auto candidateKiller = move.getPacket();
+    auto candidateKiller = move.getMove();
     // Only replace if we won't have two same killers if we replace.
     if (candidateKiller != killers[0][ply]) 
     {
@@ -29,7 +29,7 @@ int KillerTable::isKiller(const Move & move, int ply) const
 {
     assert(ply >= 0 && ply < 1200);
 
-    auto possibleKiller = move.getPacket();
+    auto possibleKiller = move.getMove();
     if (possibleKiller == killers[0][ply])
     {
         return 4;

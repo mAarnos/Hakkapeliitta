@@ -6,20 +6,26 @@
 class Move
 {
 public:
-    Move();
-    Move(int32_t from, int32_t to, int32_t promotion, int32_t score);
+    Move()
+    {
+    }
 
-    int32_t getFrom() const { return from; }
-    int32_t getTo() const { return to; }
-    int32_t getPromotion() const { return promotion; }
-    int32_t getScore() const { return score; }
-    int16_t getPacket() const { return static_cast<int16_t>(from & (to << 6) & (promotion << 12)); }
-    void setScore(int32_t newScore) { score = newScore; }
+    Move(int from, int to, int promotion, int score):
+        score(static_cast<int16_t>(score))
+    {
+        move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
+    }
+
+    uint16_t getFrom() const { return (move & 0x3f); }
+    uint16_t getTo() const { return ((move >> 6) & 0x3f); }
+    uint16_t getPromotion() const { return (move >> 12); }
+    uint16_t getMove() const { return move; }
+    int16_t getScore() const { return score; }
+    void setMove(uint16_t newMove) { move = newMove; }
+    void setScore(int newScore) { score = static_cast<int16_t>(newScore); }
 private:
-    int32_t from;
-    int32_t to;
-    int32_t promotion;
-    int32_t score;
+    uint16_t move;
+    int16_t score;
 };
 
 #endif
