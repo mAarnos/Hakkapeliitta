@@ -3,6 +3,9 @@
 #include "movegen.hpp"
 #include <iostream>
 
+HistoryTable Search::historyTable;
+KillerTable Search::killerTable;
+
 const int Search::aspirationWindow = 50;
 const int Search::nullReduction = 3;
 const int Search::futilityDepth = 4;
@@ -59,7 +62,7 @@ void Search::selectMove(MoveList & moveList, int currentMove)
 int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 {
     int bestScore, delta;
-    MoveList moveStack;
+    MoveList moveList;
     History history;
 
     // delete this
@@ -83,14 +86,14 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
             alpha = bestScore;
         }
         delta = bestScore + futilityMargins[0];
-        MoveGen::generatePseudoLegalCaptureMoves(pos, moveStack);
-        orderCaptures(pos, moveStack);
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
+        orderCaptures(pos, moveList);
     }
 
-    for (auto i = 0; i < moveStack.size(); ++i)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        selectMove(moveStack, i);
-        const auto & move = moveStack[i];
+        selectMove(moveList, i);
+        const auto & move = moveList[i];
 
         if (!inCheck) // don't do any pruning if in check
         {
