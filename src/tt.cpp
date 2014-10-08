@@ -1,11 +1,12 @@
 #include "tt.hpp"
 #include <cassert>
 #include <cmath>
+#include "clamp.hpp"
 #include "search.hpp"
 
-TranspositionTable::TranspositionTable(size_t sizeInBytes)
+TranspositionTable::TranspositionTable()
 {
-    setSize(sizeInBytes);
+    setSize(32); 
 }
 
 void TranspositionTable::save(const Position & pos, int ply, const Move & move, int score, int depth, int flags)
@@ -128,25 +129,22 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
     return false;
 }
 
-void TranspositionTable::setSize(size_t sizeInBytes)
+void TranspositionTable::setSize(int sizeInMegaBytes)
 {
     // Clear the tt completely to avoid any funny business.
     table.clear();
     generation = 0;
 
     // If size is not a power of two make it the biggest power of two smaller than size.
-    if (sizeInBytes & (sizeInBytes - 1))
+    if (sizeInMegaBytes & (sizeInMegaBytes - 1))
     {
-        sizeInBytes = static_cast<size_t>(pow(2, floor(log2(sizeInBytes))));
+        sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
     }
 
-    // Do not allow tt sizes of less than 1MB.
-    if (sizeInBytes < 1024 * 1024)
-    {
-        sizeInBytes = 1024 * 1024;
-    }
+    // Enforce minimum and maximum sizes.
+    sizeInMegaBytes = clamp(sizeInMegaBytes, 1, 65536);
 
-    auto tableSize = (sizeInBytes / sizeof(TranspositionTableEntry));
+    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(TranspositionTableEntry));
     table.resize(tableSize);
 }
 

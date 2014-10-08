@@ -2,7 +2,6 @@
 #define PHT_HPP_
 
 #include <cstdint>
-#include <array>
 #include <vector>
 #include "position.hpp"
 
@@ -11,6 +10,7 @@ class PawnHashTable
 public:
     PawnHashTable();
 
+    void setSize(int sizeInMegaBytes);
     void clear();
     void save(const Position & pos, int scoreOp, int scoreEd);
     bool probe(const Position & pos, int & scoreOp, int & scoreEd) const;

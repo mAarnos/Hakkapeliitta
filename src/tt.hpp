@@ -10,13 +10,13 @@
 class TranspositionTable
 {
 public:
-    TranspositionTable(size_t sizeInBytes);
+    TranspositionTable();
 
     void save(const Position & pos, int ply, const Move & move, int score, int depth, int flags);
     bool probe(const Position & pos, int ply, Move & move, int & score, int depth, int & alpha, int & beta) const;
     void prefetch(HashKey hk);
 
-    void setSize(size_t sizeInBytes);
+    void setSize(int sizeInMegaBytes);
     void clear();
     void startNewSearch() { ++generation; }
 private:

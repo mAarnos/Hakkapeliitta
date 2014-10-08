@@ -1,12 +1,31 @@
 #include "pht.hpp"
 #include <cassert>
+#include <cmath>
+#include "clamp.hpp"
 
 PawnHashTable::PawnHashTable()
 {
-    auto sizeInBytes = 1024 * 1024 * 4; // 4MB
-    auto sizeInEntries = sizeInBytes / sizeof(PawnHashTableEntry);
-    table.resize(sizeInEntries); 
+    setSize(4); 
 }
+
+void PawnHashTable::setSize(int sizeInMegaBytes)
+{
+    // Clear the tt completely to avoid any funny business.
+    table.clear();
+
+    // If size is not a power of two make it the biggest power of two smaller than size.
+    if (sizeInMegaBytes & (sizeInMegaBytes - 1))
+    {
+        sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
+    }
+
+    // Enforce minimum and maximum sizes.
+    sizeInMegaBytes = clamp(sizeInMegaBytes, 1, 8192);
+
+    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(PawnHashTableEntry));
+    table.resize(tableSize);
+}
+
 
 void PawnHashTable::clear()
 {
