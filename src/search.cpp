@@ -444,7 +444,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	}
 
 	// Probe the transposition table.
-	if ((score = ttProbe(pos, ply, depth, alpha, beta, ttMove)) != probeFailed)
+	if ((score = ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove)) != probeFailed)
 	{
 		return score;
 	}
@@ -517,7 +517,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		{
 			score = alphabetaPVS(pos, ply, depth - 2, -infinity, beta, 0, inCheck);
 		}
-		ttProbe(pos, ply, depth, alpha, beta, ttMove);
+		ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove);
 	}
 
 	if (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin[depth] <= alpha)
@@ -654,10 +654,11 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 	int score, generatedMoves, newDepth, movesSearched = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone; 
 	bool givesCheck, inCheck = pos.inCheck();
+    int allowNullMove; // not used for anything
     bestRootScore = -mateScore;
 
 	// Probe the transposition table to get the PV-Move, if any.
-	ttProbe(pos, ply, depth, alpha, beta, ttMove);
+	ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove);
 
 	Move moveStack[256];
 	generatedMoves = generateMoves(pos, moveStack);
