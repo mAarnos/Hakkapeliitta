@@ -520,7 +520,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 		ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove);
 	}
 
-	if (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin[depth] <= alpha)
+	if (!inCheck && depth <= futilityDepth && staticEval + futilityMargin[depth] <= alpha)
 	{
 		futileNode = true;
 	}
