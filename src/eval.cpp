@@ -6,8 +6,6 @@
 
 PawnHashTable Evaluation::pawnHashTable;
 
-std::array<int, 2> Evaluation::contempt;
-
 std::array<int, 64> Evaluation::pieceSquareTableOpening[12];
 std::array<int, 64> Evaluation::pieceSquareTableEnding[12];
 
@@ -278,7 +276,6 @@ void Evaluation::initializeKnownEndgames()
 void Evaluation::initialize()
 { 
     initializeKnownEndgames();
-    contempt.fill(0);
 
     for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
     {

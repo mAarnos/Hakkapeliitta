@@ -278,7 +278,13 @@ void generateEvasions(const Position & pos, MoveList & moves)
     // And here we put the king back in. 
     pos.replaceBitboard(occupied, 14);
 
-    auto checkers = pos.attacksTo(from, !side);
+    auto checkers = (Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
+                                                          | pos.getBitboard(!side, Piece::Rook)))
+                  | (Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
+                                                            | pos.getBitboard(!side, Piece::Bishop)))
+                  | (Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight))
+                  | (Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King))
+                  | (Bitboards::pawnAttacks[side][to] & pos.getBitboard(!side, Piece::Pawn));
     // If we are checked by more than two pieces only the king can move and we are done.
     if (checkers & (checkers - 1))
     {
@@ -286,7 +292,7 @@ void generateEvasions(const Position & pos, MoveList & moves)
     }
     auto checkerLocation = Bitboards::lsb(checkers);
 
-    // find the pinned pieces
+    // Find all our pinned pieces.
     auto potentialPinners = (Bitboards::bishopAttacks(from, 0) 
                           & (pos.getBitboard(!side, Piece::Bishop) | pos.getBitboard(!side, Piece::Queen)));
     potentialPinners |=  (Bitboards::rookAttacks(from, 0) 

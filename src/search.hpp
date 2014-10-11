@@ -35,6 +35,8 @@ public:
 
     static int qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
 
+    static std::array<int, 2> contempt;
+
     // Delete these, only used for tuning.
     static std::array<Move, 32> pv[32];
     static std::array<int, 32> pvLength;

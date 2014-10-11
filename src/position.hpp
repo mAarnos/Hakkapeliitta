@@ -62,8 +62,6 @@ public:
     int getPstMaterialScoreEnding() const { return pstMaterialScoreEd; }
 
     int SEE(const Move & m) const;
-
-    bool fiftyMoveDraw() const { return fiftyMoveDistance >= 100; }
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.

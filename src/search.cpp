@@ -6,6 +6,8 @@
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 
+std::array<int, 2> Search::contempt;
+
 const int Search::aspirationWindow = 50;
 const int Search::nullReduction = 3;
 const int Search::futilityDepth = 4;
@@ -25,6 +27,7 @@ std::array<int, 32> Search::pvLength;
 
 void Search::initialize()
 {
+    contempt.fill(0);
     for (auto i = 0; i < 256; ++i)
     {
         lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
