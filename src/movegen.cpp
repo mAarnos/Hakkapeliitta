@@ -290,13 +290,13 @@ void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
     // And now put it back.
     occupied ^= Bitboards::bit[from];
 
-    auto checkers = (Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
+    auto checkers = (Bitboards::rookAttacks(from, occupied) & (pos.getBitboard(!side, Piece::Queen)
                                                            | pos.getBitboard(!side, Piece::Rook)))
-                  | (Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
+                  | (Bitboards::bishopAttacks(from, occupied) & (pos.getBitboard(!side, Piece::Queen)
                                                              | pos.getBitboard(!side, Piece::Bishop)))
-                  | (Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight))
-                  | (Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King))
-                  | (Bitboards::pawnAttacks[side][to] & pos.getBitboard(!side, Piece::Pawn));
+                  | (Bitboards::knightAttacks[from] & pos.getBitboard(!side, Piece::Knight))
+                  | (Bitboards::kingAttacks[from] & pos.getBitboard(!side, Piece::King))
+                  | (Bitboards::pawnAttacks[side][from] & pos.getBitboard(!side, Piece::Pawn));
     // If we are checked by more than two pieces only the king can move and we are done.
     if (checkers & (checkers - 1))
     {
@@ -345,7 +345,7 @@ void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
         {
             if (Bitboards::pawnAttacks[side][from] & Bitboards::bit[enPassant])
             {
-                if (checkerLocation == (enPassant - 8 + side * 16))
+                if (static_cast<int>(checkerLocation) == (enPassant - 8 + side * 16))
                 {
                     moves.push_back(Move(from, pos.getEnPassantSquare(), Piece::Pawn, 0));
                 }
