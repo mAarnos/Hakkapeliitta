@@ -656,9 +656,9 @@ void Position::unmakeMove(const Move & m, const History & history)
         materialHashKey ^= Zobrist::materialHash[promotion + !side * 6][--pieceCount[promotion + !side * 6]];
         materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][pieceCount[piece]++];
         pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][to]
-            - Evaluation::pieceSquareTableOpening[promotion + !side * 6][to];
+                            - Evaluation::pieceSquareTableOpening[promotion + !side * 6][to];
         pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][to]
-            - Evaluation::pieceSquareTableEnding[promotion + !side * 6][to];
+                            - Evaluation::pieceSquareTableEnding[promotion + !side * 6][to];
     }
 
     bitboards[piece] ^= fromToBB;
@@ -668,9 +668,9 @@ void Position::unmakeMove(const Move & m, const History & history)
     board[to] = captured;
 
     pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[piece][from]
-        - Evaluation::pieceSquareTableOpening[piece][to];
+                        - Evaluation::pieceSquareTableOpening[piece][to];
     pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[piece][from]
-        - Evaluation::pieceSquareTableEnding[piece][to];
+                        - Evaluation::pieceSquareTableEnding[piece][to];
 
     if (captured != Piece::Empty)
     {
@@ -695,10 +695,10 @@ template <bool side>
 bool Position::isAttacked(Square sq) const
 {
     if (Bitboards::knightAttacks[sq] & bitboards[Piece::Knight + 6 * side]
-        || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
-        || Bitboards::kingAttacks[sq] & bitboards[Piece::King + 6 * side]
-        || Bitboards::bishopAttacks(sq, bitboards[14]) & (bitboards[Piece::Bishop + 6 * side] | bitboards[Piece::Queen + 6 * side])
-        || Bitboards::rookAttacks(sq, bitboards[14]) & (bitboards[Piece::Rook + 6 * side] | bitboards[Piece::Queen + 6 * side]))
+     || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
+     || Bitboards::kingAttacks[sq] & bitboards[Piece::King + 6 * side]
+     || Bitboards::bishopAttacks(sq, bitboards[14]) & (bitboards[Piece::Bishop + 6 * side] | bitboards[Piece::Queen + 6 * side])
+     || Bitboards::rookAttacks(sq, bitboards[14]) & (bitboards[Piece::Rook + 6 * side] | bitboards[Piece::Queen + 6 * side]))
     {
         return true;
     }

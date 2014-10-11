@@ -13,6 +13,12 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & m
                         : generatePseudoLegalCaptureMoves<false>(pos, moves);
 }
 
+void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
+{
+    pos.getSideToMove() ? generateLegalEvasions<true>(pos, moves)
+                        : generateLegalEvasions<false>(pos, moves);
+}
+
 template <bool side> 
 void MoveGen::generatePseudoLegalMoves(const Position & pos, MoveList & moves)
 {
@@ -255,33 +261,39 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & m
     }
 }
 
-void generateEvasions(const Position & pos, MoveList & moves)
+template <bool side>
+void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
 {
     int to;
-    auto side = pos.getSideToMove();
     auto pinned = 0;
     auto occupied = pos.getOccupiedSquares();
     auto targetBitboard = ~pos.getPieces(side);
 
     auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
     auto tempMove = Bitboards::kingAttacks[from] & targetBitboard;
-    // Now we take the king out from the board and see which squares are attacked.
-    pos.replaceBitboard(occupied ^ bit[from], 14);
+    // Remove our king from occupied so we can find out if squares "behind" our king are attacked.
+    occupied ^= Bitboards::bit[from];
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
-        if (!pos.isAttacked(to, !side))
+        if (!(Bitboards::pawnAttacks[side][to] & pos.getBitboard(!side, Piece::Pawn)
+           && Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight)
+           && Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King)
+           && Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
+                                                      | pos.getBitboard(!side, Piece::Bishop))
+           && Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
+                                                    | pos.getBitboard(!side, Piece::Rook))))
         {
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
-    // And here we put the king back in. 
-    pos.replaceBitboard(occupied, 14);
+    // And now put it back.
+    occupied ^= Bitboards::bit[from];
 
     auto checkers = (Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
-                                                          | pos.getBitboard(!side, Piece::Rook)))
+                                                           | pos.getBitboard(!side, Piece::Rook)))
                   | (Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
-                                                            | pos.getBitboard(!side, Piece::Bishop)))
+                                                             | pos.getBitboard(!side, Piece::Bishop)))
                   | (Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight))
                   | (Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King))
                   | (Bitboards::pawnAttacks[side][to] & pos.getBitboard(!side, Piece::Pawn));
