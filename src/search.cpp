@@ -2,6 +2,7 @@
 #include "eval.hpp"
 #include "movegen.hpp"
 #include <iostream>
+#include <cmath>
 
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;

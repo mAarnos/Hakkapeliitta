@@ -188,6 +188,10 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & m
             if (to >= Square::A8 || to <= Square::H1)
             {
                 moves.push_back(Move(from, to, Piece::Queen, 0));
+                // Generating underpromotions is useless.
+                // moves.push_back(Move(from, to, Piece::Rook, 0));
+                // moves.push_back(Move(from, to, Piece::Bishop, 0));
+                // moves.push_back(Move(from, to, Piece::Knight, 0));
             }
             else
             {

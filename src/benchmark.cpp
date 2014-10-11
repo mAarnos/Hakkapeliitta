@@ -19,7 +19,7 @@ void Benchmark::runPerft()
     // pos.initializePositionFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1"); // d6: 8509434052, d7: 390020558283
 
     sw.start();
-    auto perftResult = perft(pos, 8);
+    auto perftResult = perft(pos, 7);
     sw.stop();
 
     std::cout << perftResult << std::endl;
@@ -31,10 +31,10 @@ uint64_t Benchmark::perft(Position & pos, int depth)
 {
     MoveList moves;
     History history;
-    auto nodes = 0ull;
+    auto nodes = 0ull; 
 
     pos.inCheck() ? MoveGen::generateLegalEvasions(pos, moves)
-                  : MoveGen::generatePseudoLegalMoves(pos, moves);
+                  : MoveGen::generatePseudoLegalMoves(pos, moves); 
     for (auto i = 0; i < moves.size(); ++i)
     {
         const auto & move = moves[i];
