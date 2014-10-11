@@ -214,29 +214,29 @@ const std::array<int, 100> Evaluation::kingSafetyTable = {
     500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 
-std::unordered_map<HashKey, int> Evaluation::knownEndgames;
+std::unordered_map<HashKey, int> Evaluation::drawnEndgames;
 
-void Evaluation::initializeKnownEndgames()
+void Evaluation::initializeDrawnEndgames()
 {
-    knownEndgames.clear();
+    drawnEndgames.clear();
 
     // King vs king: draw
     auto matHash = Zobrist::materialHash[Piece::WhiteKing][0] ^ Zobrist::materialHash[Piece::BlackKing][0];
-    knownEndgames[matHash] = 0;
+    drawnEndgames[matHash] = 0;
 
     // King and a minor piece vs king: draw
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
         {
-            knownEndgames[matHash ^ Zobrist::materialHash[j + i * 6][0]] = 0;
+            drawnEndgames[matHash ^ Zobrist::materialHash[j + i * 6][0]] = 0;
         }
     }
 
     // King and two knights vs king: draw
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
-        knownEndgames[matHash ^ Zobrist::materialHash[Piece::Knight + i * 6][0] ^ 
+        drawnEndgames[matHash ^ Zobrist::materialHash[Piece::Knight + i * 6][0] ^
                       Zobrist::materialHash[Piece::Knight + i * 6][1]] = 0;
     }
 
@@ -245,7 +245,7 @@ void Evaluation::initializeKnownEndgames()
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
         {
-            knownEndgames[matHash ^ Zobrist::materialHash[Color::White + i][0] ^ 
+            drawnEndgames[matHash ^ Zobrist::materialHash[Color::White + i][0] ^
                           Zobrist::materialHash[Color::Black * 6 + j][0]] = 0;
         }
     }
@@ -253,7 +253,7 @@ void Evaluation::initializeKnownEndgames()
     // King and two bishops vs king and a bishop: draw
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
-        knownEndgames[matHash ^ Zobrist::materialHash[Piece::Bishop + i * 6][0] ^ 
+        drawnEndgames[matHash ^ Zobrist::materialHash[Piece::Bishop + i * 6][0] ^
                       Zobrist::materialHash[Piece::Bishop + i * 6][1] ^ 
                       Zobrist::materialHash[Piece::Bishop + !i * 6][0]] = 0;
     }
@@ -265,7 +265,7 @@ void Evaluation::initializeKnownEndgames()
         {
             for (Piece k = Piece::Knight; k <= Piece::Bishop; ++k)
             {
-                knownEndgames[matHash ^ Zobrist::materialHash[Piece::Knight + i * 6][0] ^ 
+                drawnEndgames[matHash ^ Zobrist::materialHash[Piece::Knight + i * 6][0] ^
                               Zobrist::materialHash[j + i * 6][j == Piece::Knight] ^ 
                               Zobrist::materialHash[k + !i * 6][0]] = 0;
             }
@@ -275,7 +275,7 @@ void Evaluation::initializeKnownEndgames()
 
 void Evaluation::initialize()
 { 
-    initializeKnownEndgames();
+    initializeDrawnEndgames();
 
     for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
     {
@@ -301,9 +301,9 @@ int Evaluation::evaluate(const Position & pos)
     // Checks if we are in a known endgame.
     // If we are we can straight away return the score for the endgame.
     // At the moment only detects draws, if wins will be included this must be made to return things in negamax fashion.
-    if (knownEndgames.count(pos.getMaterialHashKey()))
+    if (drawnEndgames.count(pos.getMaterialHashKey()))
     {
-        return knownEndgames[pos.getMaterialHashKey()];
+        return drawnEndgames[pos.getMaterialHashKey()];
     }
 
     std::array<int, 2> kingSafetyScore;

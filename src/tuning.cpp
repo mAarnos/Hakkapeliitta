@@ -273,9 +273,9 @@ void Tuning::tune()
 
 int Tuning::evaluate(const Position & pos)
 {
-    if (Evaluation::knownEndgames.count(pos.getMaterialHashKey()))
+    if (Evaluation::drawnEndgames.count(pos.getMaterialHashKey()))
     {
-        return Evaluation::knownEndgames[pos.getMaterialHashKey()];
+        return Evaluation::drawnEndgames[pos.getMaterialHashKey()];
     }
 
     auto phase = pos.calculateGamePhase();

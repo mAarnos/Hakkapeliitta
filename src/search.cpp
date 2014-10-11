@@ -74,7 +74,7 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
     if (inCheck)
     {
         bestScore = matedInPly(ply);
-        // generateEvasions
+        MoveGen::generateLegalEvasions(pos, moveList);
         // orderMoves
     }
     else

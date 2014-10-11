@@ -181,10 +181,10 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & m
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::pawnAttacks[side][from] & enemyPieces;
+        tempMove |= Bitboards::pawnSingleMoves[side][from] & ~occupiedSquares & 0xFF000000000000FF;
         while (tempMove)
         {
             to = Bitboards::popLsb(tempMove);
-
             if (to >= Square::A8 || to <= Square::H1)
             {
                 moves.push_back(Move(from, to, Piece::Queen, 0));
