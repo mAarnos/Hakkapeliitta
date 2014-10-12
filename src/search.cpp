@@ -23,6 +23,12 @@ const std::array<int, 1 + 4> Search::lmpMargins = {
     0, 4, 8, 16, 32
 };
 
+const int16_t Search::hashMove = 32767;
+const int16_t Search::captureMove = hashMove - 2000;
+const std::array<int16_t, 1 + 4> Search::killerMove = {
+    0, captureMove - 2000, captureMove - 2001, captureMove - 2002, captureMove - 2003
+};
+
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
 
@@ -32,6 +38,40 @@ void Search::initialize()
     for (auto i = 0; i < 256; ++i)
     {
         lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+    }
+}
+
+void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply)
+{
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        auto & move = moveList[i];
+        if (move.getMove() == ttMove.getMove()) // Move from transposition table
+        {
+            move.setScore(hashMove);
+        }
+        else if (pos.getBoard(move.getTo()) != Piece::Empty 
+             || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+        {
+            auto score = pos.SEE(move);
+            if (score >= 0) // Order good captures and promotions after ttMove
+            {
+                score += captureMove;
+            }
+            move.setScore(score);
+        }
+        else
+        {
+            auto killerScore = killerTable.isKiller(move, ply);
+            if (killerScore > 0)
+            {
+                move.setScore(killerMove[killerScore]);
+            }
+            else
+            {
+                move.setScore(historyTable.getScore(pos, move));
+            }
+        }
     }
 }
 

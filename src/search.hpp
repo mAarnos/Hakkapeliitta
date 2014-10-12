@@ -2,6 +2,7 @@
 #define SEARCH_HPP_
 
 #include <vector>
+#include <cstdint>
 #include "movelist.hpp"
 #include "position.hpp"
 #include "history.hpp"
@@ -54,6 +55,12 @@ private:
     static const int lmpDepth;
     static const std::array<int, 1 + 4> lmpMargins;
 
+    // Move ordering scores.
+    static const int16_t hashMove;
+    static const int16_t captureMove;
+    static const std::array<int16_t, 1 + 4> killerMove;
+
+    static void orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply);
     static void orderCaptures(const Position & pos, MoveList & moveList);
     static void selectMove(MoveList & moveList, int currentMove);
 };
