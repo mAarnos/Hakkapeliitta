@@ -17,10 +17,10 @@ int main()
     UCI uci;
     // ThreadPool pool(1);
 
-    Benchmark::runPerft();
+    // Benchmark::runPerft();
 
-    // Tuning tuning;
-    // tuning.tune();
+    Tuning tuning;
+    tuning.tune();
 
     uci.mainLoop();
 

@@ -395,7 +395,7 @@ int Evaluation::mobilityEval(const Position & pos, std::array<int, 2> & kingSafe
             attackUnits += attackWeight[Piece::Queen] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
         
-        kingSafetyScore[c] += attackUnits;
+        kingSafetyScore[c] = attackUnits;
         scoreOp += (c ? -scoreOpForColor : scoreOpForColor);
         scoreEd += (c ? -scoreEdForColor : scoreEdForColor);
     }

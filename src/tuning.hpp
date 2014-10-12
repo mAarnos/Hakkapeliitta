@@ -21,8 +21,10 @@ private:
     std::vector<Position> positions;
     std::vector<double> results;
 
-    static std::vector<int> evalTerms;
-    static int evaluate(const Position & pos);
+    std::vector<int> evalTerms;
+    int evaluate(const Position & pos) const;
+
+    void prunePositions();
 };
 
 #endif
