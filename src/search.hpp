@@ -9,9 +9,8 @@
 #include "killer.hpp"
 #include "tt.hpp"
 
-const int maxPly = 1200;
-const int mateScore = 32767;
-const int maxMateScore = 32767 - maxPly;
+const int mateScore = 32767; // mate in 0
+const int maxMateScore = 32767 - 1000; // mate in 500
 const int infinity = mateScore + 1;
 
 inline int matedInPly(int ply)
