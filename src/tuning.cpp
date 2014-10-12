@@ -9,6 +9,13 @@
 #include "stopwatch.hpp"
 #include "eval.hpp"
 
+// Uncomment to use cross-entropy instead of least-squares.
+// #define CROSS_ENTROPY
+
+// Uncomment to use geometric mean instead of arithmetric mean.
+// Not yet supported, but should be in the future.
+// #define GEOMETRIC_MEAN
+
 Tuning::Tuning():
 scalingConstant(1.00)
 {
@@ -190,11 +197,18 @@ double Tuning::evalError() const
     for (auto i = 0; i < positions.size(); ++i)
     {
         auto v = Tuning::evaluate(positions[i]);
+#ifdef CROSS_ENTROPY
         sum += (results[i] * std::log(sigmoid(v)) + (1.0 - results[i]) * std::log(1.0 - sigmoid(v)));
-        // sum += pow((results[i] - sigmoid(v)), 2);
+#else
+        sum += pow((results[i] - sigmoid(v)), 2);
+#endif
     }
 
+#ifdef CROSS_ENTROPY
     return -(sum / static_cast<double>(positions.size()));
+#else
+    return (sum / static_cast<double>(positions.size()));
+#endif
 }
 
 void Tuning::calculateScalingConstant()

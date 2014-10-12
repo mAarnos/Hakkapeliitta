@@ -12,7 +12,6 @@ public:
     void tune();
 private:
     void calculateScalingConstant();
-    bool optimizeParameter(int & parameter);
 
     double sigmoid(double x) const;
     double evalError() const;
@@ -20,8 +19,8 @@ private:
     double scalingConstant;
     std::vector<Position> positions;
     std::vector<double> results;
-
     std::vector<int> evalTerms;
+
     int evaluate(const Position & pos) const;
 
     void prunePositions();
