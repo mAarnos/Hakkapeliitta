@@ -186,7 +186,7 @@ void Position::initializePositionFromFen(const std::string & fen)
 		}
 		if (sideToMove == Color::Black)
 		{
-			ply++;
+			++ply;
 		}
 	}
 

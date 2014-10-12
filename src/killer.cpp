@@ -14,7 +14,7 @@ void KillerTable::clear()
 
 void KillerTable::addKiller(const Move & move, int ply)
 {
-    assert(ply >= 0 && ply < 1200);
+    assert(ply >= 0 && ply < 128);
 
     auto candidateKiller = move.getMove();
     // Only replace if we won't have two same killers if we replace.
@@ -27,7 +27,7 @@ void KillerTable::addKiller(const Move & move, int ply)
 
 int KillerTable::isKiller(const Move & move, int ply) const
 {
-    assert(ply >= 0 && ply < 1200);
+    assert(ply >= 0 && ply < 128);
 
     auto possibleKiller = move.getMove();
     if (possibleKiller == killers[0][ply])
