@@ -7,6 +7,7 @@
 #include "position.hpp"
 #include "history.hpp"
 #include "killer.hpp"
+#include "tt.hpp"
 
 const int maxPly = 1200;
 const int mateScore = 32767;
@@ -42,6 +43,7 @@ public:
     static std::array<Move, 32> pv[32];
     static std::array<int, 32> pvLength;
 private:
+    static TranspositionTable transpositionTable;
     static HistoryTable historyTable;
     static KillerTable killerTable;
 

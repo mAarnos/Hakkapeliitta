@@ -19,8 +19,8 @@ int main()
 
     // Benchmark::runPerft();
 
-    Tuning tuning;
-    tuning.tune();
+    //Tuning tuning;
+    // tuning.tune();
 
     uci.mainLoop();
 

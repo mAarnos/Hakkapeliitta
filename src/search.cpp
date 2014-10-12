@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cmath>
 
+TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 

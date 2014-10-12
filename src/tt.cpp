@@ -9,6 +9,43 @@ TranspositionTable::TranspositionTable()
     setSize(32); 
 }
 
+void TranspositionTable::setSize(int sizeInMegaBytes)
+{
+    // Clear the tt completely to avoid any funny business.
+    table.clear();
+    generation = 1;
+
+    // If size is not a power of two make it the biggest power of two smaller than size.
+    if (sizeInMegaBytes & (sizeInMegaBytes - 1))
+    {
+        sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
+    }
+
+    // Enforce minimum and maximum sizes.
+    sizeInMegaBytes = clamp(sizeInMegaBytes, 1, 65536);
+
+    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(TranspositionTableEntry));
+    table.resize(tableSize);
+}
+
+void TranspositionTable::clear()
+{
+    auto tableSize = table.size();
+    table.clear();
+    table.resize(tableSize);
+    generation = 1;
+}
+
+void TranspositionTable::prefetch(HashKey hk)
+{
+    auto address = reinterpret_cast<char *>(&table[hk & (table.size() - 1)]);
+#if defined (_MSC_VER) || defined(__INTEL_COMPILER)
+    _mm_prefetch(address, _MM_HINT_T0);
+#else
+    __builtin_prefetch(address);
+#endif
+}
+
 void TranspositionTable::save(const Position & pos, int ply, const Move & move, int score, int depth, int flags)
 {
     assert(depth >= 0 && depth <= 255);
@@ -128,39 +165,4 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
     return false;
 }
 
-void TranspositionTable::setSize(int sizeInMegaBytes)
-{
-    // Clear the tt completely to avoid any funny business.
-    table.clear();
-    generation = 0;
 
-    // If size is not a power of two make it the biggest power of two smaller than size.
-    if (sizeInMegaBytes & (sizeInMegaBytes - 1))
-    {
-        sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
-    }
-
-    // Enforce minimum and maximum sizes.
-    sizeInMegaBytes = clamp(sizeInMegaBytes, 1, 65536);
-
-    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(TranspositionTableEntry));
-    table.resize(tableSize);
-}
-
-void TranspositionTable::clear()
-{
-    auto tableSize = table.size();
-    table.clear();
-    table.resize(tableSize);
-    generation = 0;
-}
-
-void TranspositionTable::prefetch(HashKey hk)
-{
-    auto address = reinterpret_cast<char *>(&table[hk & (table.size() - 1)]);
-#if defined (_MSC_VER) || defined(__INTEL_COMPILER)
-    _mm_prefetch(address, _MM_HINT_T0);
-#else
-    __builtin_prefetch(address);
-#endif
-}

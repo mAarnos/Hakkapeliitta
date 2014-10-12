@@ -28,9 +28,10 @@ private:
     class TranspositionTableEntry
     {
     public:
+        TranspositionTableEntry() { hash.fill(0); data.fill(0); }
+
         void setHash(int entry, uint64_t newHash) { hash[entry] = newHash; }
         void setData(int entry, uint64_t newData) { data[entry] = newData; }
-
         uint64_t getHash(int entry) const { return hash[entry]; }
         uint64_t getData(int entry) const { return data[entry]; }
         uint16_t getBestMove(int entry) const { return static_cast<uint16_t>(data[entry]); }
