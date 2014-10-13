@@ -41,6 +41,7 @@ private:
     static void stop(const Command &);
     static void quit(const Command & c);
     static void setOption(const Command & c);
+    static void newGame(const Command & c);
 };
 
 

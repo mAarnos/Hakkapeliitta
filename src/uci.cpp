@@ -141,20 +141,22 @@ void UCI::setOption(const Command & c)
             Search::contemptValue = 0;
         }
     }
-    else if (option == "hash")
+    else if (option == "hash" || option == "pawn") // Thanks to our parsing pawn hash is shortened to pawn
     {
-        int size;
+        int sizeInMegabytes;
 
         try
         {
-            size = clamp(stoi(parameter), 1, 65536);
+            sizeInMegabytes = stoi(parameter);
+            sizeInMegabytes = clamp(sizeInMegabytes, 1, option == "hash" ? 65536 : 8192);
         }
         catch (const std::exception&)
         {
-            size = 1;
+            sizeInMegabytes = (option == "hash" ? 32 : 4);
         }
 
-        Search::transpositionTable.setSize(size);
+        option == "hash" ? Search::transpositionTable.setSize(sizeInMegabytes)
+                         : Evaluation::pawnHashTable.setSize(sizeInMegabytes);
     }
     else if (option == "clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
     {
@@ -178,4 +180,12 @@ void UCI::setOption(const Command & c)
     else if (option == "syzygypath")
     {
     }
+}
+
+void UCI::newGame(const Command &)
+{
+    Search::transpositionTable.clear();
+    Search::historyTable.clear();
+    Search::killerTable.clear();
+    Evaluation::pawnHashTable.clear();
 }
