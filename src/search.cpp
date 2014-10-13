@@ -412,7 +412,7 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int allowNullMove, bool inCheck)
 {
-	bool pvNode = ((alpha + 1) != beta), futileNode = false;
+	bool pvNode = ((alpha + 1) != beta), futileNode = false, lmpNode = false;
 	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
     auto oneReply = false;
@@ -524,6 +524,11 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	{
 		futileNode = true;
 	}
+
+    if (!pvNode && !inCheck && depth <= lmpDepth)
+    {
+        lmpNode = true;
+    }
 	
 	Move moveStack[256];
 	if (inCheck)
@@ -553,7 +558,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 
         if (!extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
 		{
-            if (futileNode || (!pvNode && !inCheck && depth <= lmpDepth && movesSearched >= lmpMoveCount[depth]))
+            if (futileNode || (lmpNode && movesSearched >= lmpMoveCount[depth]))
             {
                 pos.unmakeMove(moveStack[i]);
                 prunedMoves++;
