@@ -1,6 +1,9 @@
 #include "uci.hpp"
 #include <iostream>
 #include <regex>
+#include "search.hpp"
+#include "eval.hpp"
+#include "clamp.hpp"
 
 UCI::UCI()
 {
@@ -103,10 +106,76 @@ void UCI::isReady(const Command &)
 
 void UCI::stop(const Command &)
 {
-    // searching = false;
+    Search::searching = false;
+    Search::pondering = false;
+    Search::infinite = false;
 }
 
 void UCI::quit(const Command &)
 {
     exit(0);
+}
+
+void UCI::setOption(const Command & c)
+{
+    std::string option, parameter;
+
+    // The string s for setoption comes in the form "name" option "value" parameter.
+    // We just ignore "name" and "value" and get option and parameter.
+    std::regex expr("\\w*\\s(\\w*)\\s\\w*\\s*(.*)");
+    std::smatch matches;
+    if (std::regex_search(c.getArguments(), matches, expr))
+    {
+        option = matches[1];
+        parameter = matches[2];
+    }
+
+    if (option == "contempt")
+    {
+        try
+        {
+            Search::contemptValue = clamp(stoi(parameter), -75, 75);
+        }
+        catch (const std::exception&)
+        {
+            Search::contemptValue = 0;
+        }
+    }
+    else if (option == "hash")
+    {
+        int size;
+
+        try
+        {
+            size = clamp(stoi(parameter), 1, 65536);
+        }
+        catch (const std::exception&)
+        {
+            size = 1;
+        }
+
+        Search::transpositionTable.setSize(size);
+    }
+    else if (option == "clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
+    {
+        Search::transpositionTable.clear();
+        Search::historyTable.clear();
+        Search::killerTable.clear();
+        Evaluation::pawnHashTable.clear();
+    }
+    else if (option == "syzygyprobelimit")
+    {
+        int syzygyProbeLimit;
+        try
+        {
+            syzygyProbeLimit = clamp(stoi(parameter), 0, 6);
+        }
+        catch (const std::exception&)
+        {
+            syzygyProbeLimit = 0;
+        }
+    }
+    else if (option == "syzygypath")
+    {
+    }
 }

@@ -19,9 +19,8 @@ public:
     static std::array<int, 64> pieceSquareTableEnding[12];
 
     static std::unordered_map<HashKey, int> drawnEndgames;
-private:
     static PawnHashTable pawnHashTable;
-
+private:
     static const std::array<int, 6> pieceValuesOpening;
     static const std::array<int, 6> pieceValuesEnding;
 

@@ -36,16 +36,23 @@ public:
 
     static int qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
 
-    static std::array<int, 2> contempt;
+    // UCI-protocol uses these to communicate things to the search function.
+    static int contemptValue;
+    static bool searching;
+    static bool pondering;
+    static bool infinite;
 
     // Delete these, only used for tuning.
     static std::array<Move, 32> pv[32];
     static std::array<int, 32> pvLength;
-private:
+
     static TranspositionTable transpositionTable;
     static HistoryTable historyTable;
     static KillerTable killerTable;
+private:
+    static std::array<int, 2> contempt;
 
+    // Pruning margins and such.
     static const int aspirationWindow;
     static const int nullReduction;
     static const int futilityDepth;

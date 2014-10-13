@@ -40,6 +40,7 @@ private:
     static void isReady(const Command & c);
     static void stop(const Command &);
     static void quit(const Command & c);
+    static void setOption(const Command & c);
 };
 
 

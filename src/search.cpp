@@ -8,6 +8,10 @@ TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 
+int Search::contemptValue;
+bool Search::searching;
+bool Search::pondering;
+bool Search::infinite;
 std::array<int, 2> Search::contempt;
 
 const int Search::aspirationWindow = 50;

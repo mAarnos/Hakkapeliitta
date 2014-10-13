@@ -4,7 +4,7 @@
 #include <algorithm>
 
 template<class T>
-T clamp(T value, T lowerBound, T upperBound)
+T clamp(T value, T lowerBound, T upperBound) 
 {
     return std::max(lowerBound, std::min(value, upperBound));
 }

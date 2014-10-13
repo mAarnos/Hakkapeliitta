@@ -21,9 +21,6 @@ void TranspositionTable::setSize(int sizeInMegaBytes)
         sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
     }
 
-    // Enforce minimum and maximum sizes.
-    sizeInMegaBytes = clamp(sizeInMegaBytes, 1, 65536);
-
     auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(TranspositionTableEntry));
     table.resize(tableSize);
 }
