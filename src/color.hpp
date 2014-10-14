@@ -4,8 +4,8 @@
 class Color
 {
 public:
-    Color();
-    Color(int newColor);
+    Color() : color(NoColor) {};
+    Color(int newColor) : color(newColor) {};
 
     enum {
         White = 0, Black = 1, NoColor = 2
@@ -20,6 +20,9 @@ private:
 };
 
 // Checks if the color is okay, i.e. black or white. 
-bool isColorOk(Color c);
+inline bool isColorOk(Color c)
+{
+    return (c == Color::Black || c == Color::White);
+}
 
 #endif

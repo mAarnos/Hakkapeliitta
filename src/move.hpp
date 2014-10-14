@@ -6,9 +6,7 @@
 class Move
 {
 public:
-    Move()
-    {
-    }
+    Move() {}
 
     Move(int from, int to, int promotion, int score):
         score(static_cast<int16_t>(score))

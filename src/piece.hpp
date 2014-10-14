@@ -4,8 +4,8 @@
 class Piece
 {
 public:
-    Piece();
-    Piece(int newPiece); 
+    Piece() : piece(NoPiece) {};
+    Piece(int newPiece) : piece(newPiece) {};
 
     enum {
         Pawn = 0, Knight = 1, Bishop = 2, Rook = 3, Queen = 4, King = 5
@@ -24,6 +24,9 @@ private:
 };
 
 // Checks if the piece, i.e. >= WhitePawn and <= BlackKing. Expand to empty?
-bool isPieceOk(Piece p);
+inline bool isPieceOk(Piece p)
+{
+    return ((p >= Piece::WhitePawn) && (p <= Piece::BlackKing));
+}
 
 #endif

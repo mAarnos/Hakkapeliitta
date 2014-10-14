@@ -165,7 +165,7 @@ void UCI::setOption(const Command & c)
         Search::killerTable.clear();
         Evaluation::pawnHashTable.clear();
     }
-    else if (option == "syzygyprobelimit")
+    else if (option == "syzygyprobelimit") // FIX ME!
     {
         int syzygyProbeLimit;
         try
@@ -177,7 +177,7 @@ void UCI::setOption(const Command & c)
             syzygyProbeLimit = 0;
         }
     }
-    else if (option == "syzygypath")
+    else if (option == "syzygypath") // FIX ME!
     {
     }
 }

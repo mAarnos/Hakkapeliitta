@@ -1,11 +1,13 @@
 #ifndef SQUARE_HPP_
 #define SQUARE_HPP_
 
+#include <cassert>
+
 class Square
 {
 public:
-    Square();
-    Square(int newSquare);
+    Square() : square(NoSquare) {};
+    Square(int newSquare) : square(newSquare) {};
 
     enum {
         A1, B1, C1, D1, E1, F1, G1, H1,
@@ -25,11 +27,24 @@ private:
     int square;
 };
 
-// These two are used to convert a square into the rank and file it is on.
-int file(Square sq);
-int rank(Square sq);
-
 // Checks if the square is okay, i.e. >= A1 and <= H8. 
-bool isSquareOk(Square sq);
+inline bool isSquareOk(Square sq)
+{
+    return ((sq >= Square::A1) && (sq <= Square::H8));
+}
+
+// Returns the number of the file the square is on.
+inline int file(Square sq)
+{
+    assert(isSquareOk(sq));
+    return (sq % 8);
+}
+
+// Returns the number of the rank the square is on.
+inline int rank(Square sq)
+{
+    assert(isSquareOk(sq));
+    return (sq / 8);
+}
 
 #endif
