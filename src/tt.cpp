@@ -165,4 +165,37 @@ bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int &
     return false;
 }
 
+std::vector<Move> TranspositionTable::extractPv(Position root) const
+{
+    std::vector<Move> pv;
+    Move m;
+    History history;
+
+    int entry;
+    for (auto ply = 0; ply < 128; ++ply)
+    {
+        const auto & hashEntry = table[root.getHashKey() & (table.size() - 1)];
+        for (entry = 0; entry < 4; ++entry)
+        {
+            if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == root.getHashKey())
+            {
+                break;
+            }
+        }
+
+        if ((entry > 3) // No entry found
+        || (hashEntry.getFlags(entry) != ExactScore && ply >= 2) // Always try to get a move to ponder on.
+        || !hashEntry.getBestMove(entry)) // No move found in the entry.
+        // root.repetitionDraw() && ply >= 2 // Repetition.
+        {
+            break;
+        }
+        m.setMove(hashEntry.getBestMove(entry));
+        pv.push_back(m);
+        root.makeMove(m, history);
+    }
+
+    return pv;
+}
+
 

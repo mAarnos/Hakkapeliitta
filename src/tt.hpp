@@ -19,6 +19,7 @@ public:
     void setSize(int sizeInMegaBytes);
     void clear();
     void startNewSearch() { ++generation; }
+    std::vector<Move> extractPv(Position root) const;
 private:
     // A single entry in the transposition table. In actuality it is a bucket containing four entries and not a single entry.
     // Doing this has some desirable properties when deciding what entries to overwrite.
