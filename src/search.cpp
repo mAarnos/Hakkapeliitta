@@ -47,6 +47,7 @@ std::array<int, 32> Search::pvLength;
 
 void Search::initialize()
 {
+    contemptValue = 0;
     contempt.fill(0);
     for (auto i = 0; i < 256; ++i)
     {
@@ -54,6 +55,13 @@ void Search::initialize()
     }
 }
 
+// Move ordering goes like this:
+// 1. Hash move (which can also be the PV-move)
+// 2. Good captures and promotions
+// 3. Equal captures and promotions
+// 4. Killer moves
+// 5. Quiet moves sorted by the history heuristic
+// 6. Bad captures
 void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply)
 {
     for (auto i = 0; i < moveList.size(); ++i)
@@ -330,7 +338,7 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
                 score = -search(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
             }
 
-            if (score > alpha && score < beta) // Full-window research in case a new pv is found.
+            if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
             {
                 score = -search(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
             }
@@ -367,7 +375,7 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
         {
             return (inCheck ? matedInPly(ply) : contempt[pos.getSideToMove()]);
         }
-        return staticEval; // In this case we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
+        return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
     }
 
     // FIX ME! add best move and flags for the move.

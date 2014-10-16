@@ -14,7 +14,7 @@ public:
     int isKiller(const Move & move, int ply) const;
     void clear();
 private:
-    std::array<int16_t, 128> killers[2];
+    std::array<uint16_t, 128> killers[2];
 };
 
 #endif
