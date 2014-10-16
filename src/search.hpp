@@ -35,7 +35,7 @@ class Search
 public:
     static void initialize();
 
-    static int qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
+    static int quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
 
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;

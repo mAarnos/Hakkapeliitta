@@ -116,7 +116,7 @@ void Search::selectMove(MoveList & moveList, int currentMove)
     }
 }
 
-int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
+int Search::quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 {
     int bestScore, delta;
     MoveList moveList;
@@ -166,7 +166,7 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
             continue;
         }
 
-        auto score = -qSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
+        auto score = -quiescenceSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
         pos.unmakeMove(move, history);
 
         if (score > bestScore)
@@ -244,7 +244,7 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
         // add ++nodeCount here
         if (depth <= 4)
         {
-            score = -qSearch(pos, ply + 1, alpha, beta, false);
+            score = -quiescenceSearch(pos, ply + 1, alpha, beta, false);
         }
         else
         {
@@ -263,13 +263,13 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
     if (!inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
     {
         auto razoringAlpha = alpha - razoringMargins[depth];
-        score = qSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
+        score = quiescenceSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
         if (score <= razoringAlpha)
             return score;
     }
 
     // Internal iterative deepening.
-    // Only done at PV-nodes due to it's cost.
+    // Only done at PV-nodes due to the cost involved.
     if (pvNode && ttMove.empty() && depth > 2)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
@@ -304,16 +304,74 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
         auto givesCheck = pos.inCheck();
         auto extension = (givesCheck || oneReply) ? 1 : 0;
         auto newDepth = depth - 1 + extension;
-        auto nonCricicalMove = move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
 
         // Futility pruning and late move pruning / move count based pruning.
-        if (!extension && (futileNode || lmpNode && movesSearched >= lmpMoveCount[depth]))
+        if (nonCriticalMove && (futileNode || lmpNode && movesSearched >= lmpMoveCount[depth]))
         {
             pos.unmakeMove(move, history);
             ++prunedMoves;
             continue;
         }
+
+        if (!movesSearched)
+        {
+            score = -search(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+        }
+        else
+        {
+            auto reduction = ((!inCheck && movesSearched >= lmrFullDepthMoves && depth >= lmrReductionLimit && nonCriticalMove)
+                           ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+
+            score = -search(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+
+            if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
+            {
+                score = -search(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+            }
+
+            if (score > alpha && score < beta) // Full-window research in case a new pv is found.
+            {
+                score = -search(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+            }
+        }
+        pos.unmakeMove(move, history);
+        ++movesSearched;
+
+        if (score > bestScore)
+        {
+            if (score > alpha)
+            {
+                if (score >= beta)
+                {
+                    transpositionTable.save(pos, ply, move, score, depth, 2);
+                    // FIX ME! only allow for quiet moves
+                    /*
+                    historyTable.addCutoff(pos, move, depth);
+                    for (auto j = 0; j < i; ++j)
+                    {
+                        historyTable.addNotCutoff(pos, moveList[i], depth);
+                    }
+                    */
+                    return score;
+                }
+                alpha = score;
+            }
+            bestScore = score;
+        }
     }
+
+    if (!movesSearched)
+    {
+        if (!prunedMoves)
+        {
+            return (inCheck ? matedInPly(ply) : contempt[pos.getSideToMove()]);
+        }
+        return staticEval; // In this case we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
+    }
+
+    // FIX ME! add best move and flags for the move.
+    // transpositionTable.save(pos, ply, bestMove, bestScore, depth, 0);
 
     return bestScore;
 }
