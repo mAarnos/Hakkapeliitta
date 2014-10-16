@@ -289,7 +289,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 
     kingSafetyScore[Black] = attackUnits;
 
-	return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+	return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
 }
 
 int pawnStructureEval(Position & pos, int phase)
@@ -299,7 +299,7 @@ int pawnStructureEval(Position & pos, int phase)
 
     if (pttProbe(pos, scoreOp, scoreEd))
     {
-        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+        return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
     }
 
     for (int c = White; c <= Black; ++c)
@@ -357,7 +357,7 @@ int pawnStructureEval(Position & pos, int phase)
         scoreEd += (c == Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-    score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    score = ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
     pttSave(pos, scoreOp, scoreEd);
 
     return score;
@@ -403,7 +403,7 @@ int kingSafetyEval(Position & pos, int phase, std::array<int, 2> & kingSafetySco
     kingSafetyScore[Black] += evaluatePawnShelter(pos, White);
     kingSafetyScore[White] += evaluatePawnShelter(pos, Black);
     auto score = kingSafetyTable[kingSafetyScore[White]] - kingSafetyTable[kingSafetyScore[Black]];
-	return ((score * (256 - phase)) / 256);
+	return ((score * (64 - phase)) / 64);
 }
 
 int eval(Position & pos)
@@ -416,17 +416,17 @@ int eval(Position & pos)
 		return knownEndgames[pos.getMaterialHash()];
 	}
 
-    auto phase = pos.calculateGamePhase();
+    auto phase = pos.getPhase();
 	// Material + Piece-Square Tables
-	auto score = ((pos.getScoreOp() * (256 - phase)) + (pos.getScoreEd() * phase)) / 256;
+	auto score = ((pos.getScoreOp() * (64 - phase)) + (pos.getScoreEd() * phase)) / 64;
 
 	if (popcnt(pos.getBitboard(White, Bishop)) == 2)
 	{
-		score += ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+		score += ((bishopPairBonusOpening * (64 - phase)) + (bishopPairBonusEnding * phase)) / 64;
 	}
 	if (popcnt(pos.getBitboard(Black, Bishop)) == 2)
 	{
-		score -= ((bishopPairBonusOpening * (256 - phase)) + (bishopPairBonusEnding * phase)) / 256;
+		score -= ((bishopPairBonusOpening * (64 - phase)) + (bishopPairBonusEnding * phase)) / 64;
 	}
 
     std::array<int, 2> kingSafetyScore;

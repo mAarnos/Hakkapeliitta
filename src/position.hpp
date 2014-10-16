@@ -10,7 +10,7 @@
 const int maxGameLength = 1200;
 
 const array<int, Pieces> piecePhase = {
-	0, 1, 1, 2, 4, 0
+	0, 3, 3, 5, 10, 0
 };
 const int totalPhase = piecePhase[Pawn] * 16 + piecePhase[Knight] * 4 + piecePhase[Bishop] * 4 + piecePhase[Rook] * 4 + piecePhase[Queen] * 2;
 
@@ -64,8 +64,7 @@ class Position
 		inline int getScoreOp() { return scoreOp; }
 		inline int getScoreEd() { return scoreEd; }
 
-        inline int getRawPhase() const { return phase; }
-		inline int calculateGamePhase() { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
+        inline int getPhase() const { return phase; }
 
 		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }
 		inline void setKiller(int killerNumber, int ply, int newKiller) { killer[killerNumber][ply] = newKiller; }
