@@ -230,13 +230,13 @@ void Bitboards::initialize()
     // Single bits
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        bit[sq] = (Bitboard)1 << sq;
+        bit[sq] = 1ull << sq;
     }
 
     // King attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        Bitboard kingSet = bit[sq];
+        auto kingSet = bit[sq];
         kingSet |= (bit[sq] << 1) & 0xFEFEFEFEFEFEFEFE;
         kingSet |= (bit[sq] >> 1) & 0x7F7F7F7F7F7F7F7F;
         kingSet = ((kingSet << 8) | (kingSet >> 8) | (kingSet ^ bit[sq]));
@@ -246,7 +246,7 @@ void Bitboards::initialize()
     // Knight attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        Bitboard knightSet = (bit[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
+        auto knightSet = (bit[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
         knightSet |= (bit[sq] << 10) & 0xFCFCFCFCFCFCFCFC;
         knightSet |= (bit[sq] << 15) & 0x7F7F7F7F7F7F7F7F;
         knightSet |= (bit[sq] << 6) & 0x3F3F3F3F3F3F3F3F;
@@ -309,6 +309,7 @@ void Bitboards::initialize()
     }
 
     // Pawn evaluation bitboards: passed pawn, backward pawns, isolated pawns.
+    // cppCheck(a static code analyzer) gives a false positive here about out of bounds array access.
     for (Square sq = Square::A2; sq <= Square::H7; ++sq)
     {
         auto f = file(sq);
