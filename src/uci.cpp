@@ -3,7 +3,7 @@
 #include <regex>
 #include "search.hpp"
 #include "eval.hpp"
-#include "clamp.hpp"
+#include "utils\clamp.hpp"
 
 UCI::UCI()
 {

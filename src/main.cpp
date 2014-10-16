@@ -1,8 +1,8 @@
 #include <iostream>
 #include "uci.hpp"
 #include "benchmark.hpp"
-#include "tuning.hpp"
-#include "threadpool.hpp"
+#include "tuning\tuning.hpp"
+#include "utils\threadpool.hpp"
 #include "eval.hpp"
 #include "search.hpp"
 

@@ -1,7 +1,7 @@
 #include "tt.hpp"
 #include <cassert>
 #include <cmath>
-#include "clamp.hpp"
+#include "utils\clamp.hpp"
 #include "search.hpp"
 
 TranspositionTable::TranspositionTable()

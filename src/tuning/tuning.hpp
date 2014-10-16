@@ -2,7 +2,7 @@
 #define TUNING_HPP_
 
 #include <vector>
-#include "position.hpp"
+#include "..\position.hpp"
 
 class Tuning
 {

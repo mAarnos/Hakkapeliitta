@@ -3,7 +3,7 @@
 #include <iostream>
 #include "move.hpp"
 #include "movegen.hpp"
-#include "stopwatch.hpp"
+#include "utils\stopwatch.hpp"
 
 void Benchmark::runPerft()
 {

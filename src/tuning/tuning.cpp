@@ -5,9 +5,9 @@
 #include <cmath>
 #include <omp.h>
 #include <cstring>
-#include "search.hpp"
-#include "stopwatch.hpp"
-#include "eval.hpp"
+#include "..\search.hpp"
+#include "..\utils\stopwatch.hpp"
+#include "..\eval.hpp"
 
 // Uncomment to use cross-entropy instead of least-squares.
 // #define CROSS_ENTROPY
