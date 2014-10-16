@@ -306,7 +306,7 @@ int Tuning::evaluate(const Position & pos) const
         return Evaluation::drawnEndgames[pos.getMaterialHashKey()];
     }
 
-    auto phase = pos.calculateGamePhase();
+    auto phase = pos.getGamePhase();
     auto scoreOp = 0, scoreEd = 0;
     
     // Material + piece-square tables.
@@ -332,7 +332,7 @@ int Tuning::evaluate(const Position & pos) const
         }
     }
     
-    auto score = ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+    auto score = ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
     score += (pos.getSideToMove() ? -evalTerms[780] : evalTerms[780]); // Side to move bonus.
 
     return score;

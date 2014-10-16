@@ -240,13 +240,13 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
     // Reverse futility pruning / static null move pruning.
     // Not used when in a pawn endgame - TODO: test
     // Also not used when in a PV-node - TODO: test that too, no reason why it shouldn't work there as well.
-    if (!pvNode && !inCheck && pos.getRawGamePhase() != 24
+    if (!pvNode && !inCheck && pos.getGamePhase() != 64
         && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
     // Double null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
-    if (!pvNode && allowNullMove && !inCheck && pos.getRawGamePhase() != 24)
+    if (!pvNode && allowNullMove && !inCheck && pos.getGamePhase() != 64)
     {
         pos.makeNullMove(history);
         // add ++nodeCount here

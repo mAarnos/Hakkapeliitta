@@ -21,7 +21,7 @@ const std::array<int, 64> Position::castlingMask = {
 };
 
 const std::array<int, 6> Position::piecePhase = {
-    0, 1, 1, 2, 4, 0
+    0, 3, 3, 5, 10, 0
 };
 
 const int Position::totalPhase = piecePhase[Piece::Pawn] * 16 +

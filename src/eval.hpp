@@ -62,7 +62,7 @@ private:
 
     static int interpolateScore(int scoreOp, int scoreEd, int phase) 
     {
-        return ((scoreOp * (256 - phase)) + (scoreEd * phase)) / 256;
+        return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
     }
 };
 

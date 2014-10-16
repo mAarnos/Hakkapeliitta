@@ -307,8 +307,8 @@ int Evaluation::evaluate(const Position & pos)
     }
 
     std::array<int, 2> kingSafetyScore;
-    auto phase = pos.calculateGamePhase();
-    phase = clamp(phase, 0, 256); // The phase can be negative in some weird cases, guard against that.
+    auto phase = pos.getGamePhase();
+    phase = clamp(phase, 0, 64); // The phase can be negative in some weird cases, guard against that.
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
     score += pawnStructureEval(pos, phase);
@@ -512,5 +512,5 @@ int Evaluation::kingSafetyEval(const Position & pos, int phase, std::array<int, 
     kingSafetyScore[Color::Black] += evaluatePawnShelter<false>(pos);
     kingSafetyScore[Color::White] += evaluatePawnShelter<true>(pos);
     auto score = kingSafetyTable[kingSafetyScore[Color::White]] - kingSafetyTable[kingSafetyScore[Color::Black]];
-    return ((score * (256 - phase)) / 256);
+    return ((score * (64 - phase)) / 64);
 }

@@ -55,8 +55,7 @@ public:
     bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
     bool isAttacked(Square sq, Color side) const;
 
-    int calculateGamePhase() const { return (phase * 256 + (totalPhase / 2)) / totalPhase; }
-    int getRawGamePhase() const { return phase; }
+    int getGamePhase() const { return phase; }
 
     int getPstMaterialScoreOpening() const { return pstMaterialScoreOp; }
     int getPstMaterialScoreEnding() const { return pstMaterialScoreEd; }
