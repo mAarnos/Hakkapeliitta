@@ -21,6 +21,7 @@ public:
     int16_t getScore() const { return score; }
     void setMove(uint16_t newMove) { move = newMove; }
     void setScore(int newScore) { score = static_cast<int16_t>(newScore); }
+    bool empty() const { return !move; }
 private:
     uint16_t move;
     int16_t score;

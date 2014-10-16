@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <cassert>
 #include "movelist.hpp"
 #include "position.hpp"
 #include "history.hpp"
@@ -50,24 +51,31 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
+    static int search(Position & pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
+
     static std::array<int, 2> contempt;
 
-    // Pruning margins and such.
+    // Pruning margins and depth limits.
     static const int aspirationWindow;
     static const int nullReduction;
     static const int futilityDepth;
     static const std::array<int, 1 + 4> futilityMargins;
+    static const int reverseFutilityDepth;
+    static const std::array<int, 1 + 3> reverseFutilityMargins;
     static const int lmrFullDepthMoves;
     static const int lmrReductionLimit;
     static std::array<int, 256> lmrReductions;
     static const int lmpDepth;
-    static const std::array<int, 1 + 4> lmpMargins;
+    static const std::array<int, 1 + 4> lmpMoveCount;
+    static const int razoringDepth;
+    static const std::array<int, 1 + 3> razoringMargins;
 
     // Move ordering scores.
-    static const int16_t hashMove;
-    static const int16_t captureMove;
-    static const std::array<int16_t, 1 + 4> killerMove;
+    static const int16_t hashMoveScore;
+    static const int16_t captureMoveScore;
+    static const std::array<int16_t, 1 + 4> killerMoveScore;
 
+    // Functions for move ordering.
     static void orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply);
     static void orderCaptures(const Position & pos, MoveList & moveList);
     static void selectMove(MoveList & moveList, int currentMove);

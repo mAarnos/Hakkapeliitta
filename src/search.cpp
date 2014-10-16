@@ -1,8 +1,8 @@
 #include "search.hpp"
-#include "eval.hpp"
-#include "movegen.hpp"
 #include <iostream>
 #include <cmath>
+#include "eval.hpp"
+#include "movegen.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -20,18 +20,26 @@ const int Search::futilityDepth = 4;
 const std::array<int, 1 + 4> Search::futilityMargins = {
     50, 125, 125, 300, 300
 };
+const int Search::reverseFutilityDepth = 3;
+const std::array<int, 1 + 3> Search::reverseFutilityMargins = {
+    0, 260, 445, 900
+};
 const int Search::lmrFullDepthMoves = 4;
 const int Search::lmrReductionLimit = 3;
 std::array<int, 256> Search::lmrReductions;
 const int Search::lmpDepth = 4;
-const std::array<int, 1 + 4> Search::lmpMargins = {
+const std::array<int, 1 + 4> Search::lmpMoveCount = {
     0, 4, 8, 16, 32
 };
+const int Search::razoringDepth = 3;
+const std::array<int, 1 + 3> Search::razoringMargins = {
+    0, 300, 300, 300
+};
 
-const int16_t Search::hashMove = 32767;
-const int16_t Search::captureMove = hashMove - 2000;
-const std::array<int16_t, 1 + 4> Search::killerMove = {
-    0, captureMove - 2000, captureMove - 2001, captureMove - 2002, captureMove - 2003
+const int16_t Search::hashMoveScore = 32767;
+const int16_t Search::captureMoveScore = 30767; // hashMoveScore - 2000
+const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
+    0, 28767, 28766, 28765, 28764 // not used, captureMoveScore - 2000, captureMoveScore - 2001, etc. 
 };
 
 std::array<Move, 32> Search::pv[32];
@@ -53,7 +61,7 @@ void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & 
         auto & move = moveList[i];
         if (move.getMove() == ttMove.getMove()) // Move from transposition table
         {
-            move.setScore(hashMove);
+            move.setScore(hashMoveScore);
         }
         else if (pos.getBoard(move.getTo()) != Piece::Empty 
              || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
@@ -61,7 +69,7 @@ void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & 
             auto score = pos.SEE(move);
             if (score >= 0) // Order good captures and promotions after ttMove
             {
-                score += captureMove;
+                score += captureMoveScore;
             }
             move.setScore(score);
         }
@@ -70,7 +78,7 @@ void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & 
             auto killerScore = killerTable.isKiller(move, ply);
             if (killerScore > 0)
             {
-                move.setScore(killerMove[killerScore]);
+                move.setScore(killerMoveScore[killerScore]);
             }
             else
             {
@@ -121,7 +129,7 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
     {
         bestScore = matedInPly(ply);
         MoveGen::generateLegalEvasions(pos, moveList);
-        // orderMoves
+        orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
     }
     else
     {
@@ -180,6 +188,130 @@ int Search::qSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
                 pvLength[ply] = pvLength[ply + 1];
             }
             bestScore = score;
+        }
+    }
+
+    return bestScore;
+}
+
+int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
+{
+    assert(alpha < beta);
+
+    auto pvNode = ((alpha + 1) != beta);
+    auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
+    MoveList moveList;
+    Move ttMove;
+    History history;
+    int score;
+    bool futileNode, lmpNode, oneReply;
+
+    transpositionTable.prefetch(pos.getHashKey());
+
+    // Check time and input here
+
+    // Check for repetition draws here
+
+    // Mate distance pruning, safe at all types of nodes.
+    alpha = std::max(matedInPly(ply), alpha);
+    beta = std::min(mateInPly(ply - 1), beta);
+    if (alpha >= beta)
+        return alpha;
+
+    // Transposition table probe.
+    if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
+    {
+        return score;
+    }
+
+    // Probe tablebases here.
+
+    // Get the static evaluation of the position. Not needed in nodes where we are in check.
+    auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos));
+
+    // Reverse futility pruning / static null move pruning.
+    // Not used when in a pawn endgame - TODO: test
+    // Also not used when in a PV-node - TODO: test that too, no reason why it shouldn't work there as well.
+    if (!pvNode && !inCheck && pos.getRawGamePhase() != 24
+        && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
+        return staticEval - reverseFutilityMargins[depth];
+
+    // Double null move pruning.
+    // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
+    if (!pvNode && allowNullMove && !inCheck && pos.getRawGamePhase() != 24)
+    {
+        pos.makeNullMove(history);
+        // add ++nodeCount here
+        if (depth <= 4)
+        {
+            score = -qSearch(pos, ply + 1, alpha, beta, false);
+        }
+        else
+        {
+            score = -search(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false);
+        }
+        pos.unmakeNullMove(history);
+
+        if (score >= beta)
+        {
+            transpositionTable.save(pos, ply, ttMove, score, depth, 2);
+            return score;
+        }
+    }
+
+    // Razoring.
+    if (!inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
+    {
+        auto razoringAlpha = alpha - razoringMargins[depth];
+        score = qSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
+        if (score <= razoringAlpha)
+            return score;
+    }
+
+    // Internal iterative deepening.
+    // Only done at PV-nodes due to it's cost.
+    if (pvNode && ttMove.empty() && depth > 2)
+    {
+        // We can skip nullmove in IID since if it would have worked we wouldn't be here.
+        score = search(pos, depth - 2, ply, alpha, beta, 0, inCheck);
+        if (score <= alpha) // Research in case of a fail low.
+        {
+            score = search(pos, depth - 2, ply, -infinity, beta, 0, inCheck);
+        }
+        transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
+    }
+    
+    // Set flags for certain kinds of nodes.
+    futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+
+    // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
+    orderMoves(pos, moveList, ttMove, ply);
+    // If we have only one move available set a flag.
+    oneReply = (moveList.size() == 1);
+
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        selectMove(moveList, i);
+        const auto & move = moveList[i];
+        if (!pos.makeMove(move, history))
+        {
+            continue;
+        }
+        // add ++nodeCount here
+
+        auto givesCheck = pos.inCheck();
+        auto extension = (givesCheck || oneReply) ? 1 : 0;
+        auto newDepth = depth - 1 + extension;
+        auto nonCricicalMove = move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+
+        // Futility pruning and late move pruning / move count based pruning.
+        if (!extension && (futileNode || lmpNode && movesSearched >= lmpMoveCount[depth]))
+        {
+            pos.unmakeMove(move, history);
+            ++prunedMoves;
+            continue;
         }
     }
 
