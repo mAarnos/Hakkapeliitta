@@ -468,7 +468,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
     staticEval = (inCheck ? 0 : eval(pos));
 
     // Reverse futility pruning.
-    if (!pvNode && !inCheck && pos.getPhase() != totalPhase 
+    if (!inCheck && pos.getPhase() != totalPhase 
         && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
         return staticEval - staticNullMoveMargin[depth];
 
