@@ -202,6 +202,6 @@ const array<int, 100> kingSafetyTable = {
 };
 
 void initializeEval();
-int eval(Position & pos);
+int eval(Position & pos, bool & zugzwangLikely);
 
 #endif

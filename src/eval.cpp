@@ -119,7 +119,7 @@ void initializeEval()
 	}
 }
 
-int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore)
+int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore, bool & zugzwangLikely)
 {
 	int scoreOp = 0;
 	int scoreEd = 0;
@@ -127,6 +127,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 	uint64_t occupied = pos.getOccupiedSquares();
 	uint64_t tempPiece, tempMove;
     auto attackUnits = 0;
+    std::array<uint64_t, 2> attacks = { 0, 0 };
 
 	// White
 	uint64_t targetBitboard = ~pos.getPieces(White);
@@ -139,6 +140,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = knightAttacks[from] & targetBitboard;
+        attacks[White] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Knight][count];
@@ -154,6 +156,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = bishopAttacks(from, occupied) & targetBitboard;
+        attacks[White] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Bishop][count];
@@ -170,6 +173,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = rookAttacks(from, occupied) & targetBitboard;
+        attacks[White] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Rook][count];
@@ -198,6 +202,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = queenAttacks(from, occupied) & targetBitboard;
+        attacks[White] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp += mobilityOpening[Queen][count];
@@ -220,6 +225,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = knightAttacks[from] & targetBitboard;
+        attacks[Black] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Knight][count];
@@ -235,6 +241,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = bishopAttacks(from, occupied) & targetBitboard;
+        attacks[Black] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Bishop][count];
@@ -251,6 +258,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = rookAttacks(from, occupied) & targetBitboard;
+        attacks[Black] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Rook][count];
@@ -279,6 +287,7 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 		tempPiece &= (tempPiece - 1);
 
 		tempMove = queenAttacks(from, occupied) & targetBitboard;
+        attacks[Black] |= tempMove;
 
 		count = popcnt(tempMove);
 		scoreOp -= mobilityOpening[Queen][count];
@@ -288,6 +297,11 @@ int mobilityEval(Position & pos, int phase, std::array<int, 2> & kingSafetyScore
 	}
 
     kingSafetyScore[Black] = attackUnits;
+
+    // Detect likely zugzwangs statically.
+    // Idea shamelessly stolen from Ivanhoe.
+    zugzwangLikely = !attacks[pos.getSideToMove()];
+    // zugzwangLikely = !(attacks[pos.getSideToMove()] & ~attacks[!pos.getSideToMove()]);
 
 	return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
 }
@@ -406,7 +420,7 @@ int kingSafetyEval(Position & pos, int phase, std::array<int, 2> & kingSafetySco
 	return ((score * (64 - phase)) / 64);
 }
 
-int eval(Position & pos)
+int eval(Position & pos, bool & zugzwangLikely)
 {
 	// Checks if we are in a known endgame.
 	// If we are we can straight away return the score for the endgame.
@@ -431,7 +445,7 @@ int eval(Position & pos)
 
     std::array<int, 2> kingSafetyScore;
 	// Mobility
-    score += mobilityEval(pos, phase, kingSafetyScore);
+    score += mobilityEval(pos, phase, kingSafetyScore, zugzwangLikely);
 
 	// Pawn structure
 	score += pawnStructureEval(pos, phase);

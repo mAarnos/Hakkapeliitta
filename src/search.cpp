@@ -342,6 +342,7 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
     int score, bestScore, delta;
     int generatedMoves;
     Move moveStack[64];
+    bool zugzwanglikely;
 
     if (inCheck)
     {
@@ -351,7 +352,7 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
     }
     else
     {
-        bestScore = eval(pos);
+        bestScore = eval(pos, zugzwanglikely);
         if (bestScore > alpha)
         {
             if (bestScore >= beta)
@@ -412,7 +413,7 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
 
 int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int allowNullMove, bool inCheck)
 {
-	bool pvNode = ((alpha + 1) != beta), futileNode = false, lmpNode = false;
+	bool pvNode = ((alpha + 1) != beta), futileNode = false, lmpNode = false, zugzwangLikely;
 	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
 	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
     auto oneReply = false;
@@ -465,15 +466,14 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	}
 
 	// Get the static evaluation of the position.
-    staticEval = (inCheck ? 0 : eval(pos));
+    staticEval = (inCheck ? 0 : eval(pos, zugzwangLikely));
 
     // Reverse futility pruning.
-    if (!inCheck && pos.getPhase() != totalPhase 
-        && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
+    if (!inCheck && !zugzwangLikely && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
         return staticEval - staticNullMoveMargin[depth];
 
 	// Double null move pruning.
-    if (!pvNode && allowNullMove && !inCheck && pos.getPhase() != totalPhase)
+    if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
 	{
 		pos.makeNullMove();
 		nodeCount++;
