@@ -472,6 +472,15 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
     if (!inCheck && !zugzwangLikely && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
         return staticEval - staticNullMoveMargin[depth];
 
+    // Razoring.
+    if (!inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
+    {
+        auto razoringAlpha = alpha - razoringMargin[depth];
+        score = qsearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
+        if (score <= razoringAlpha)
+            return score;
+    }
+
 	// Double null move pruning.
     if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
 	{
@@ -498,15 +507,6 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 			return score;
 		}
 	}
-
-    // Razoring.
-    if (!inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
-    {
-        auto razoringAlpha = alpha - razoringMargin[depth];
-        score = qsearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
-        if (score <= razoringAlpha)
-            return score;
-    }
 
 	// Internal iterative deepening.
 	if (pvNode && ttMove == ttMoveNone && depth > 2)
