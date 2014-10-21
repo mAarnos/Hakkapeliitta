@@ -18,7 +18,7 @@ const array<int, 1 + futilityDepth> futilityMargin = {
 
 const int razoringDepth = 3;
 const array<int, 1 + razoringDepth> razoringMargin = {
-    0, 300, 300, 300
+    0, 125, 300, 300
 };
 
 const int staticNullMoveDepth = 3;
