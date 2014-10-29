@@ -469,7 +469,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
     staticEval = (inCheck ? 0 : eval(pos, zugzwangLikely));
 
     // Reverse futility pruning.
-    if (!inCheck && !zugzwangLikely && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
         return staticEval - staticNullMoveMargin[depth];
 
     // Razoring.
