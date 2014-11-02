@@ -10,7 +10,11 @@ UCI::UCI()
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
     addCommand("stop", &UCI::stop);
-    addCommand("exit", &UCI::quit);
+    addCommand("setoption", &UCI::setOption);
+    addCommand("ucinewgame", &UCI::newGame);
+    addCommand("position", &UCI::position);
+    addCommand("go", &UCI::go);
+    addCommand("quit", &UCI::quit);
 }
 
 void UCI::mainLoop()
@@ -59,7 +63,7 @@ void UCI::addCommand(std::string name, FunctionPointer fp)
     commands[name] = fp;
 }
 
-void UCI::preprocessLine(std::string & line)
+void UCI::preprocessLine(std::string& line)
 {
     // Discard the line if it is empty or whitespace only.
     if (line.find_first_not_of(' ') == std::string::npos)
@@ -81,7 +85,7 @@ void UCI::preprocessLine(std::string & line)
 
 // UCI commands.
 
-void UCI::sendInformation(const Command &)
+void UCI::sendInformation(const Command&)
 {
     // Send the name of the engine and the name of it's author.
     std::cout << "id name Hakkapeliitta 2.0 alpha" << std::endl;
@@ -99,24 +103,24 @@ void UCI::sendInformation(const Command &)
     std::cout << "uciok" << std::endl;
 }
 
-void UCI::isReady(const Command &)
+void UCI::isReady(const Command&)
 {
     std::cout << "readyok" << std::endl;
 }
 
-void UCI::stop(const Command &)
+void UCI::stop(const Command&)
 {
     Search::searching = false;
     Search::pondering = false;
     Search::infinite = false;
 }
 
-void UCI::quit(const Command &)
+void UCI::quit(const Command&)
 {
     exit(0);
 }
 
-void UCI::setOption(const Command & c)
+void UCI::setOption(const Command& c)
 {
     std::string option, parameter;
 
@@ -182,10 +186,20 @@ void UCI::setOption(const Command & c)
     }
 }
 
-void UCI::newGame(const Command &)
+void UCI::newGame(const Command&)
 {
     Search::transpositionTable.clear();
     Search::historyTable.clear();
     Search::killerTable.clear();
     Evaluation::pawnHashTable.clear();
+}
+
+void UCI::go(const Command& c)
+{
+
+}
+
+void UCI::position(const Command& c)
+{
+
 }

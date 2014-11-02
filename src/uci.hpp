@@ -27,21 +27,23 @@ private:
         std::string arguments;
     };
 
-    using FunctionPointer = void(*)(const Command & c);
+    using FunctionPointer = void(*)(const Command& c);
 
     void addCommand(std::string name, FunctionPointer fp);
     std::map<std::string, FunctionPointer> commands;
 
-    static void preprocessLine(std::string & line);
+    static void preprocessLine(std::string& line);
 
     // UCI commands.
 
-    static void sendInformation(const Command & c);
-    static void isReady(const Command & c);
-    static void stop(const Command &);
-    static void quit(const Command & c);
-    static void setOption(const Command & c);
-    static void newGame(const Command & c);
+    static void sendInformation(const Command& c);
+    static void isReady(const Command& c);
+    static void stop(const Command&);
+    static void quit(const Command& c);
+    static void setOption(const Command& c);
+    static void newGame(const Command& c);
+    static void position(const Command& c);
+    static void go(const Command& c);
 };
 
 
