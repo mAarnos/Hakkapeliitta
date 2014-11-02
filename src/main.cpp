@@ -8,11 +8,11 @@
 #include "utils\synchronized_ostream.hpp"
 #include <memory>
 
-synchonized_ostream sos(std::cout);
+synchronized_ostream sync_cout(std::cout);
 
 void call_from_thread(int tid) 
 {
-    sos << "Launched by thread " << tid << std::endl;
+    sync_cout << "Launched by thread " << tid << std::endl;
 }
 
 int main() 
@@ -35,7 +35,7 @@ int main()
         t[i] = std::thread(call_from_thread, i);
     }
 
-    sos << "Launched from the main thread" << std::endl;
+    sync_cout << "Launched from the main thread" << std::endl;
 
     for (int i = 0; i < num_threads; ++i) {
         t[i].join();

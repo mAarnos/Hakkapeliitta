@@ -27,12 +27,14 @@ public:
 private:
     std::mutex& mutex;
     std::ostream& os;
+
+    locked_ostream& operator=(const locked_ostream&) = delete;
 };
 
-class synchonized_ostream
+class synchronized_ostream
 {
 public:
-    synchonized_ostream(std::ostream& oStream) : oStream(oStream) {};
+    synchronized_ostream(std::ostream& oStream) : oStream(oStream) {};
 
     template <typename T>
     locked_ostream operator<<(const T& t)
