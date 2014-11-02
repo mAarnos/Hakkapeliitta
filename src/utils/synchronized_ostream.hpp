@@ -4,6 +4,8 @@
 #include <sstream>
 #include <mutex>
 
+using manip_t = std::ostream& (*)(std::ostream&);
+
 class locked_ostream
 {
 public:
@@ -14,6 +16,12 @@ public:
     locked_ostream& operator<<(const T& t)
     {
         os << t;
+        return *this;
+    }
+
+    locked_ostream& operator<<(manip_t m)
+    {
+        os << m;
         return *this;
     }
 private:
@@ -31,6 +39,13 @@ public:
     {
         mutex.lock();
         oStream << t;
+        return locked_ostream(oStream, mutex);
+    }
+
+    locked_ostream operator<<(manip_t m)
+    {
+        mutex.lock();
+        oStream << m;
         return locked_ostream(oStream, mutex);
     }
 private:

@@ -12,7 +12,7 @@ synchonized_ostream sos(std::cout);
 
 void call_from_thread(int tid) 
 {
-    sos << "Launched by thread " << tid << "\n";
+    sos << "Launched by thread " << tid << std::endl;
 }
 
 int main() 
@@ -29,13 +29,13 @@ int main()
     const int num_threads = 30;
     std::thread t[num_threads];
 
-    //Launch a group of threads
+    // Launch a group of threads
     for (int i = 0; i < num_threads; ++i) 
     {
         t[i] = std::thread(call_from_thread, i);
     }
 
-    sos << "Launched from the main thread\n";
+    sos << "Launched from the main thread" << std::endl;
 
     for (int i = 0; i < num_threads; ++i) {
         t[i].join();
