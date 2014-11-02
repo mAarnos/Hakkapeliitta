@@ -338,9 +338,9 @@ int pawnStructureEval(Position & pos, int phase)
             // 3. There musn't be any own pawns capable of defending the pawn. 
             // TODO: Check that this is correct.
             // TODO: test is the empty condition helping?
-            auto backwardPawn = (pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
-                //  && ((pos.getPiece(from + 8 - 16 * c) == Empty)
-                && !(ownPawns & backward[c][from]);
+            auto backwardPawn = ((pawnAttacks[c][from + 8 - 16 * c] & opponentPawns)
+                && (pos.getPiece(from + 8 - 16 * c) == Empty)
+                && !(ownPawns & backward[c][from]));
 
             if (passedPawn)
             {
