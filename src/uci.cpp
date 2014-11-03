@@ -56,11 +56,6 @@ void UCI::mainLoop()
 
 void UCI::addCommand(std::string name, FunctionPointer fp)
 {
-    if (commands.count(name))
-    {
-        std::cerr << "Error: command with the same name already exists!" << std::endl;
-        return;
-    }
     commands[name] = fp;
 }
 
@@ -195,12 +190,75 @@ void UCI::newGame(const Command&)
     Evaluation::pawnHashTable.clear();
 }
 
+// TODO: finish this
 void UCI::go(const Command& c)
 {
+    auto arguments = c.getArguments();
 
+    if (arguments == "infinite")
+    {
+        Search::infinite = true;
+    }
 }
 
+// TODO: finish this
 void UCI::position(const Command& c)
 {
+    auto arguments = c.getArguments();
+    std::string movesAsAString;
+    std::vector<std::string> moves;
+    Position position;
+    History history;
 
+    auto pos = arguments.find("moves");
+    if (pos != std::string::npos)
+    {
+        movesAsAString = arguments.substr(pos + 6);
+        arguments = arguments.substr(0, pos - 1);
+    }
+
+    if (arguments.find("fen") != std::string::npos)
+    {
+        position.initializePositionFromFen(arguments.substr(4));
+    }
+    else
+    {
+        position.initializePositionFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    }
+
+    std::regex expr("([a-z][0-9][a-z][0-9][a-z]?)");
+    for (std::sregex_iterator it(movesAsAString.begin(), movesAsAString.end(), expr), end; it != end; ++it)
+    {
+        moves.push_back((*it)[0]);
+    }
+
+    for (auto& move : moves)
+    {
+        Piece promotion = Piece::NoPiece;
+        auto from = (move[0] - 'a') + 8 * (move[1] - '1');
+        auto to = (move[2] - 'a') + 8 * (move[3] - '1');
+
+        if (move.size() == 5)
+        {
+            switch (move[4])
+            {
+                case 'q': promotion = Piece::Queen; break;
+                case 'r':promotion = Piece::Rook; break;
+                case 'b': promotion = Piece::Bishop; break;
+                case 'n': promotion = Piece::Knight; break;
+                default:;
+            }
+        }
+        else if ((position.getBoard(from) == Piece::King) && (std::abs(from - to) == 2))
+        {
+            promotion = Piece::King;
+        }
+        else if ((position.getBoard(from) == Piece::Pawn) && (to == position.getEnPassantSquare()))
+        {
+            promotion = Piece::Pawn;
+        }
+
+        Move m(from, to, promotion, 0);
+        position.makeMove(m, history);
+    }
 }
