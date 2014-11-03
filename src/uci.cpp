@@ -6,6 +6,8 @@
 #include "utils\clamp.hpp"
 #include "utils\synchronized_ostream.hpp"
 
+Position UCI::root;
+
 UCI::UCI()
 {
     addCommand("uci", &UCI::sendInformation);
@@ -190,24 +192,68 @@ void UCI::newGame(const Command&)
     Evaluation::pawnHashTable.clear();
 }
 
-// TODO: finish this
 void UCI::go(const Command& c)
 {
-    auto arguments = c.getArguments();
+    auto s = c.getArguments();
+    auto movesToGo = 25;
+    std::array<int, 2> timeLimits = { 0, 0 };
+    std::array<int, 2> incrementAmount = { 0, 0 };
 
-    if (arguments == "infinite")
+    auto pos = s.find("movetime");
+    if (pos != std::string::npos)
+    {
+        Search::targetTime = Search::maxTime = stoi(s.substr(pos + 9));
+    }
+
+    pos = s.find("infinite");
+    if (pos != std::string::npos)
     {
         Search::infinite = true;
+        Search::targetTime = Search::maxTime = 2000000000;
     }
+
+    pos = s.find("wtime");
+    if (pos != std::string::npos)
+    {
+        timeLimits[Color::White] = stoi(s.substr(pos + 6));
+    }
+
+    pos = s.find("btime");
+    if (pos != std::string::npos)
+    {
+        timeLimits[Color::Black] = stoi(s.substr(pos + 6));
+    }
+
+    pos = s.find("winc");
+    if (pos != std::string::npos)
+    {
+        incrementAmount[Color::White] = stoi(s.substr(pos + 5));
+    }
+
+    pos = s.find("binc");
+    if (pos != std::string::npos)
+    {
+        incrementAmount[Color::Black] = stoi(s.substr(pos + 5));
+    }
+
+    pos = s.find("movestogo");
+    if (pos != std::string::npos)
+    {
+        movesToGo = stoi(s.substr(pos + 10)) + 2;
+    }
+
+    const auto lagBuffer = 50;
+    auto time = timeLimits[root.getSideToMove()];
+    auto increment = incrementAmount[root.getSideToMove()];
+    Search::targetTime = std::min(std::max(1, time / movesToGo + increment - lagBuffer), time - lagBuffer);
+    Search::maxTime = std::min(std::max(1, time / 2 + increment), time - lagBuffer);
 }
 
-// TODO: finish this
 void UCI::position(const Command& c)
 {
     auto arguments = c.getArguments();
     std::string movesAsAString;
     std::vector<std::string> moves;
-    Position position;
     History history;
 
     auto pos = arguments.find("moves");
@@ -219,11 +265,11 @@ void UCI::position(const Command& c)
 
     if (arguments.find("fen") != std::string::npos)
     {
-        position.initializePositionFromFen(arguments.substr(4));
+        root.initializePositionFromFen(arguments.substr(4));
     }
     else
     {
-        position.initializePositionFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+        root.initializePositionFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     }
 
     std::regex expr("([a-z][0-9][a-z][0-9][a-z]?)");
@@ -249,16 +295,15 @@ void UCI::position(const Command& c)
                 default:;
             }
         }
-        else if ((position.getBoard(from) == Piece::King) && (std::abs(from - to) == 2))
+        else if ((root.getBoard(from) == Piece::King) && (std::abs(from - to) == 2))
         {
             promotion = Piece::King;
         }
-        else if ((position.getBoard(from) == Piece::Pawn) && (to == position.getEnPassantSquare()))
+        else if ((root.getBoard(from) == Piece::Pawn) && (to == root.getEnPassantSquare()))
         {
             promotion = Piece::Pawn;
         }
 
-        Move m(from, to, promotion, 0);
-        position.makeMove(m, history);
+        root.makeMove(Move(from, to, promotion, 0), history);
     }
 }

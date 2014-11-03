@@ -42,6 +42,8 @@ public:
     static bool searching;
     static bool pondering;
     static bool infinite;
+    static int targetTime;
+    static int maxTime;
 
     // Delete these, only used for tuning.
     static std::array<Move, 32> pv[32];

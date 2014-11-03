@@ -9,10 +9,12 @@ HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 
 int Search::contemptValue;
+std::array<int, 2> Search::contempt;
 bool Search::searching;
 bool Search::pondering;
 bool Search::infinite;
-std::array<int, 2> Search::contempt;
+int Search::targetTime;
+int Search::maxTime;
 
 const int Search::aspirationWindow = 50;
 const int Search::nullReduction = 3;
@@ -49,6 +51,11 @@ void Search::initialize()
 {
     contemptValue = 0;
     contempt.fill(0);
+    searching = false;
+    infinite = false;
+    pondering = false;
+    targetTime = maxTime = 0;
+
     for (auto i = 0; i < 256; ++i)
     {
         lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));

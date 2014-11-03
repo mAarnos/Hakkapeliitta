@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include "position.hpp"
 
 class UCI
 {
@@ -33,6 +34,8 @@ private:
     std::map<std::string, FunctionPointer> commands;
 
     static void preprocessLine(std::string& line);
+
+    static Position root;
 
     // UCI commands.
 
