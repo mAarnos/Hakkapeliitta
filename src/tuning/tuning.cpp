@@ -8,6 +8,7 @@
 #include "..\search.hpp"
 #include "..\utils\stopwatch.hpp"
 #include "..\eval.hpp"
+#include "..\utils\synchronized_ostream.hpp"
 
 // Uncomment to use cross-entropy instead of least-squares.
 // #define CROSS_ENTROPY
@@ -46,7 +47,7 @@ scalingConstant(1.00)
 		results.push_back(0.5);
 	}
 
-    std::cout << "Tuning set is " << positions.size() << " positions" << std::endl;
+    sync_cout << "Tuning set is " << positions.size() << " positions" << std::endl;
 
     evalTerms = {
         88, 235, 263, 402, 892, 0, // 0-5: materialOpening
@@ -176,7 +177,7 @@ void Tuning::prunePositions()
             {
                 continue;
             }
-            std::cout << positions[i].positionToFen() << std::endl;
+            sync_cout << positions[i].positionToFen() << std::endl;
             exit(0);
         }
 
@@ -245,7 +246,7 @@ void Tuning::calculateScalingConstant()
         }
     }
 
-    std::cout << "Scaling constant optimized, result = " << scalingConstant << std::endl;
+    sync_cout << "Scaling constant optimized, result = " << scalingConstant << std::endl;
 }
 
 void Tuning::tune()
@@ -288,13 +289,13 @@ void Tuning::tune()
             }
         }
 
-        std::cout << "Iteration " << ++iterationCount << " finished." << std::endl;
+        sync_cout << "Iteration " << ++iterationCount << " finished." << std::endl;
     }
 
-    std::cout << "Local optimum found." << std::endl;
+    sync_cout << "Local optimum found." << std::endl;
     for (auto i = 332; i <= 395; ++i)
     {
-        std::cout << evalTerms[i] << std::endl;
+        sync_cout << evalTerms[i] << std::endl;
     }
     */
 }

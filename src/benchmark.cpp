@@ -4,6 +4,7 @@
 #include "move.hpp"
 #include "movegen.hpp"
 #include "utils\stopwatch.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 void Benchmark::runPerft()
 {
@@ -22,9 +23,9 @@ void Benchmark::runPerft()
     auto perftResult = perft(pos, 7);
     sw.stop();
 
-    std::cout << perftResult << std::endl;
-    std::cout << "Time in ms = " << sw.elapsed<std::chrono::milliseconds>() << std::endl;
-    std::cout << "NPS = " << perftResult / ((sw.elapsed<std::chrono::milliseconds>() + 1) / 1000.0) << std::endl;
+    sync_cout << perftResult << std::endl;
+    sync_cout << "Time in ms = " << sw.elapsed<std::chrono::milliseconds>() << std::endl;
+    sync_cout << "NPS = " << perftResult / ((sw.elapsed<std::chrono::milliseconds>() + 1) / 1000.0) << std::endl;
 }
 
 uint64_t Benchmark::perft(Position & pos, int depth)

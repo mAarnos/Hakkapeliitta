@@ -55,4 +55,6 @@ private:
     std::mutex mutex;
 };
 
+extern synchronized_ostream sync_cout;
+
 #endif

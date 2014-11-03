@@ -8,6 +8,7 @@
 #include "color.hpp"
 #include "square.hpp"
 #include "eval.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 const std::array<int, 64> Position::castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,
@@ -49,17 +50,17 @@ void Position::displayBoard() const
 {
 	static std::string pieceToMark = "PNBRQKpnbrqk.";
 
-	std::cout << "  +-----------------------+" << std::endl;
+	sync_cout << "  +-----------------------+" << std::endl;
 	for (auto i = 7; i >= 0; --i)
 	{
-		std::cout << i + 1 << " ";
+		sync_cout << i + 1 << " ";
 		for (auto j = 0; j < 8; ++j)
 		{
-			std::cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
+			sync_cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
 		}
-		std::cout << "|" << std::endl << "  +--+--+--+--+--+--+--+--+" << std::endl;
+		sync_cout << "|" << std::endl << "  +--+--+--+--+--+--+--+--+" << std::endl;
 	}
-	std::cout << "   A  B  C  D  E  F  G  H" << std::endl;
+	sync_cout << "   A  B  C  D  E  F  G  H" << std::endl;
 }
 
 void Position::initializePositionFromFen(const std::string & fen)

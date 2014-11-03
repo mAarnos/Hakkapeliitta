@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include "color.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 // TODO: move inside Bitboards?
 std::array<int, 64> heading[64];
@@ -367,11 +368,11 @@ void Bitboards::initialize()
 #endif
     if (hardwarePopcntSupported)
     {
-        std::cout << "Using hardware POPCNT" << std::endl;
+        sync_cout << "Using hardware POPCNT" << std::endl;
     }
     else
     {
-        std::cout << "Using software POPCNT" << std::endl;
+        sync_cout << "Using software POPCNT" << std::endl;
     }
 }
 

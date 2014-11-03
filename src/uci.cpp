@@ -4,6 +4,7 @@
 #include "search.hpp"
 #include "eval.hpp"
 #include "utils\clamp.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 UCI::UCI()
 {
@@ -48,7 +49,7 @@ void UCI::mainLoop()
         }
         else
         {
-            std::cout << "info string unknown command" << std::endl;
+            sync_cout << "info string unknown command" << std::endl;
         }
     }
 }
@@ -88,24 +89,24 @@ void UCI::preprocessLine(std::string& line)
 void UCI::sendInformation(const Command&)
 {
     // Send the name of the engine and the name of it's author.
-    std::cout << "id name Hakkapeliitta 2.0 alpha" << std::endl;
-    std::cout << "id author Mikko Aarnos" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.0 alpha" << std::endl;
+    sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
-    std::cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
-    std::cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
-    std::cout << "option name Clear Hash type button" << std::endl;
-    std::cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
-    std::cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
-    std::cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
+    sync_cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
+    sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
+    sync_cout << "option name Clear Hash type button" << std::endl;
+    sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
+    sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
+    sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
 
     // Send a response telling the listener that we are ready in UCI-mode.
-    std::cout << "uciok" << std::endl;
+    sync_cout << "uciok" << std::endl;
 }
 
 void UCI::isReady(const Command&)
 {
-    std::cout << "readyok" << std::endl;
+    sync_cout << "readyok" << std::endl;
 }
 
 void UCI::stop(const Command&)
