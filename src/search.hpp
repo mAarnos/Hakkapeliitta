@@ -86,6 +86,7 @@ private:
     static void selectMove(MoveList& moveList, int currentMove);
 
     static int nodeCount;
+    static int nodesToTimeCheck;
 };
 
 #endif

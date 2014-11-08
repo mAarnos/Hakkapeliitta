@@ -201,6 +201,7 @@ const std::array<int, 6> Evaluation::attackWeight = {
     0, 2, 2, 3, 5, 0
 };
 
+// On _loan_ from SF.
 const std::array<int, 100> Evaluation::kingSafetyTable = {
     0, 0, 1, 2, 3, 5, 7, 9, 12, 15,
     18, 22, 26, 30, 35, 39, 44, 50, 56, 62,
@@ -473,7 +474,6 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
 template <bool side>
 int Evaluation::evaluatePawnShelter(const Position& pos)
 {
-    static const std::array<int, 8> pawnStormPenalty = { 0, 0, 0, 1, 2, 3, 0, 0 };
     static const auto openFilePenalty = 6;
     static const auto halfOpenFilePenalty = 4;
     auto penalty = 0;
@@ -495,11 +495,6 @@ int Evaluation::evaluatePawnShelter(const Position& pos)
             if (!(Bitboards::files[f] & ownPawns)) // Half-open file (our)
             {
                 penalty += halfOpenFilePenalty;
-            }
-            if (Bitboards::files[f] & enemyPawns) // Enemy pawn storm.
-            {
-                penalty += pawnStormPenalty[(side ? rank(Bitboards::msb(Bitboards::files[f] & enemyPawns))
-                    : 7 - rank(Bitboards::lsb(Bitboards::files[f] & enemyPawns)))];
             }
         }
     }

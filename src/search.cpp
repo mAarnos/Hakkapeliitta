@@ -5,6 +5,7 @@
 #include "eval.hpp"
 #include "movegen.hpp"
 #include "utils\synchronized_ostream.hpp"
+#include "utils\exception.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -47,6 +48,7 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
 };
 
 int Search::nodeCount;
+int Search::nodesToTimeCheck;
 
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
@@ -60,6 +62,7 @@ void Search::initialize()
     pondering = false;
     targetTime = maxTime = 0;
     nodeCount = 0;
+    nodesToTimeCheck = 10000;
 
     for (auto i = 0; i < 256; ++i)
     {
@@ -273,10 +276,26 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     transpositionTable.prefetch(pos.getHashKey());
 
-    // Check time and input here
+    if (--nodesToTimeCheck <= 0)
+    {
+        nodesToTimeCheck = 10000;
+        // FIXME! Check for timeout here.
+        if (!searching)
+        {
+            throw HakkapeliittaException("Search: stop");
+        }
+    }
 
     if (pos.getFiftyMoveDistance() >= 100)
     {
+        if (inCheck) 
+        {
+            MoveGen::generateLegalEvasions(pos, moveList);
+            if (moveList.empty())
+            {
+                return matedInPly(ply); // Can't claim draw on fifty move if mated.
+            }
+        }
         return 0;
     }
 
@@ -304,29 +323,6 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
-    // Double null move pruning.
-    // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
-    if (!pvNode && allowNullMove && !inCheck && pos.getGamePhase() != 64)
-    {
-        pos.makeNullMove(history);
-        ++nodeCount;
-        if (depth <= 4)
-        {
-            score = -quiescenceSearch(pos, ply + 1, alpha, beta, false);
-        }
-        else
-        {
-            score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false);
-        }
-        pos.unmakeNullMove(history);
-
-        if (score >= beta)
-        {
-            transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
-            return score;
-        }
-    }
-
     // Razoring.
     if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
     {
@@ -334,6 +330,22 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         score = quiescenceSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
         if (score <= razoringAlpha)
             return score;
+    }
+
+    // Double null move pruning.
+    // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
+    if (!pvNode && allowNullMove && !inCheck && pos.getGamePhase() != 64)
+    {
+        ++nodeCount;
+        pos.makeNullMove(history);
+        score = (depth - 1 - nullReduction <= 0 ? -quiescenceSearch(pos, ply + 1, alpha, beta, false)
+                                                : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
+        pos.unmakeNullMove(history);
+        if (score >= beta)
+        {
+            transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
+            return score;
+        }
     }
 
     // Internal iterative deepening.
@@ -344,16 +356,16 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
         transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
     }
-    
-    // Set flags for certain kinds of nodes.
-    auto futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
-    auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
-    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
     inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
     orderMoves(pos, moveList, ttMove, ply);
-    auto oneReply = (moveList.size() == 1);
+
+    // Set flags for certain kinds of nodes.
+    auto futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+    auto oneReplyNode = (moveList.size() == 1);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
