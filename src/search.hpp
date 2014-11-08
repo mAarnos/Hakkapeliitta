@@ -83,6 +83,8 @@ private:
     static void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);
     static void orderCaptures(const Position& pos, MoveList& moveList);
     static void selectMove(MoveList& moveList, int currentMove);
+
+    static int nodeCount;
 };
 
 #endif

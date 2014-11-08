@@ -46,6 +46,8 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
     0, 28767, 28766, 28765, 28764 // not used, captureMoveScore - 2000, captureMoveScore - 2001, etc. 
 };
 
+int Search::nodeCount;
+
 std::array<Move, 32> Search::pv[32];
 std::array<int, 32> Search::pvLength;
 
@@ -57,6 +59,7 @@ void Search::initialize()
     infinite = false;
     pondering = false;
     targetTime = maxTime = 0;
+    nodeCount = 0;
 
     for (auto i = 0; i < 256; ++i)
     {
@@ -261,10 +264,9 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto pvNode = ((alpha + 1) != beta);
     auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
     MoveList moveList;
-    Move ttMove;
     History history;
+    Move ttMove;
     int score;
-    bool futileNode, lmpNode, oneReply;
 
     transpositionTable.prefetch(pos.getHashKey());
 
@@ -301,7 +303,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     if (!pvNode && allowNullMove && !inCheck && pos.getGamePhase() != 64)
     {
         pos.makeNullMove(history);
-        // add ++nodeCount here
+        ++nodeCount;
         if (depth <= 4)
         {
             score = -quiescenceSearch(pos, ply + 1, alpha, beta, false);
@@ -320,7 +322,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     }
 
     // Razoring.
-    if (!inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
+    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
     {
         auto razoringAlpha = alpha - razoringMargins[depth];
         score = quiescenceSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
@@ -330,26 +332,22 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Internal iterative deepening.
     // Only done at PV-nodes due to the cost involved.
-    if (pvNode && ttMove.empty() && depth > 2)
+    if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         score = search(pos, depth - 2, ply, alpha, beta, 0, inCheck);
-        if (score <= alpha) // Research in case of a fail low.
-        {
-            score = search(pos, depth - 2, ply, -infinity, beta, 0, inCheck);
-        }
         transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
     }
     
     // Set flags for certain kinds of nodes.
-    futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
-    lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+    auto futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
     inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
     orderMoves(pos, moveList, ttMove, ply);
-    // If we have only one move available set a flag.
-    oneReply = (moveList.size() == 1);
+    auto oneReply = (moveList.size() == 1);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -359,7 +357,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         {
             continue;
         }
-        // add ++nodeCount here
+        ++nodeCount;
 
         auto givesCheck = pos.inCheck();
         auto extension = (givesCheck || oneReply) ? 1 : 0;
@@ -380,7 +378,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
         else
         {
-            auto reduction = ((!inCheck && movesSearched >= lmrFullDepthMoves && depth >= lmrReductionLimit && nonCriticalMove)
+            auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
                            ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
 
             score = -search(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
@@ -405,14 +403,20 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
                 if (score >= beta)
                 {
                     transpositionTable.save(pos, ply, move, score, depth, 2);
-                    // FIX ME! only allow for quiet moves
-                    /*
-                    historyTable.addCutoff(pos, move, depth);
+
+                    if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+                    {
+                        historyTable.addCutoff(pos, move, depth);
+                        killerTable.addKiller(move, ply);
+                    }
                     for (auto j = 0; j < i; ++j)
                     {
-                        historyTable.addNotCutoff(pos, moveList[i], depth);
+                        if (pos.getBoard(moveList[j].getTo()) == Piece::Empty && (moveList[j].getPromotion() == Piece::Empty || moveList[j].getPromotion() == Piece::King))
+                        {
+                            historyTable.addNotCutoff(pos, moveList[j], depth);
+                        }
                     }
-                    */
+
                     return score;
                 }
                 alpha = score;
