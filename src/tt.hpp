@@ -7,6 +7,11 @@
 #include "move.hpp"
 #include "position.hpp"
 
+enum TTFlags
+{
+    ExactScore = 1, UpperBoundScore = 2, LowerBoundScore = 4
+};
+
 class TranspositionTable
 {
 public:
@@ -43,10 +48,6 @@ private:
     private:
         std::array<uint64_t, 4> hash;
         std::array<uint64_t, 4> data;
-    };
-
-    enum {
-        ExactScore, UpperBoundScore, LowerBoundScore
     };
 
     std::vector<TranspositionTableEntry> table;

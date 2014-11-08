@@ -67,9 +67,11 @@ void Search::initialize()
     }
 }
 
-void Search::think()
+void Search::think(Position& pos)
 {
-
+    nodeCount = 0;
+    contempt[pos.getSideToMove()] = -contemptValue;
+    contempt[!pos.getSideToMove()] = contemptValue;
 }
 
 // Displays a list of moves in the format UCI-protocol wants(from, to, possible promotion).
@@ -257,20 +259,26 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     return bestScore;
 }
 
+template <bool pvNode>
 int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
 {
     assert(alpha < beta);
 
-    auto pvNode = ((alpha + 1) != beta);
     auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
     MoveList moveList;
     History history;
-    Move ttMove;
+    Move ttMove, bestMove(0, 0, 0, 0);
+    TTFlags ttFlag = UpperBoundScore;
     int score;
 
     transpositionTable.prefetch(pos.getHashKey());
 
     // Check time and input here
+
+    if (pos.getFiftyMoveDistance() >= 100)
+    {
+        return 0;
+    }
 
     // Check for repetition draws here
 
@@ -292,8 +300,6 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos));
 
     // Reverse futility pruning / static null move pruning.
-    // Not used when in a pawn endgame - TODO: test
-    // Also not used when in a PV-node - TODO: test that too, no reason why it shouldn't work there as well.
     if (!pvNode && !inCheck && pos.getGamePhase() != 64
         && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
@@ -310,13 +316,13 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
         else
         {
-            score = -search(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false);
+            score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false);
         }
         pos.unmakeNullMove(history);
 
         if (score >= beta)
         {
-            transpositionTable.save(pos, ply, ttMove, score, depth, 2);
+            transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
             return score;
         }
     }
@@ -335,7 +341,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
-        score = search(pos, depth - 2, ply, alpha, beta, 0, inCheck);
+        score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
         transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
     }
     
@@ -374,23 +380,23 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
         if (!movesSearched)
         {
-            score = -search(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+            score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
         }
         else
         {
             auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
                            ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
 
-            score = -search(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+            score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
 
             if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
             {
-                score = -search(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+                score = -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
             }
 
             if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
             {
-                score = -search(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+                score = -search<false>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
             }
         }
         pos.unmakeMove(move, history);
@@ -402,7 +408,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos, ply, move, score, depth, 2);
+                    transpositionTable.save(pos, ply, move, score, depth, LowerBoundScore);
 
                     if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
                     {
@@ -419,7 +425,9 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
                     return score;
                 }
+                bestMove = move;
                 alpha = score;
+                ttFlag = ExactScore;
             }
             bestScore = score;
         }
@@ -434,8 +442,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
     }
 
-    // FIX ME! add best move and flags for the move.
-    // transpositionTable.save(pos, ply, bestMove, bestScore, depth, 0);
+    transpositionTable.save(pos, ply, bestMove, bestScore, depth, ttFlag);
 
     return bestScore;
 }

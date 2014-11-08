@@ -35,7 +35,7 @@ class Search
 public:
     static void initialize();
 
-    void think();
+    void think(Position& pos);
 
     static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 
@@ -55,6 +55,7 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
+    template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 
     static std::array<int, 2> contempt;
