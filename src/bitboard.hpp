@@ -16,14 +16,14 @@ public:
     static Bitboard bishopAttacks(Square sq, Bitboard occupied)
     {
         assert(isSquareOk(sq));
-        const Magic & mag = bishopMagic[sq];
+        const auto& mag = bishopMagic[sq];
         return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 9)];
     }
 
     static Bitboard rookAttacks(Square sq, Bitboard occupied)
     {
         assert(isSquareOk(sq));
-        const Magic & mag = rookMagic[sq];
+        const auto& mag = rookMagic[sq];
         return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 12)];
     }
 
@@ -110,7 +110,7 @@ public:
     }
 #endif
 
-    static int popLsb(Bitboard & bb)
+    static int popLsb(Bitboard& bb)
     {
         auto ret = lsb(bb);
         bb &= (bb - 1);
@@ -164,7 +164,7 @@ private:
     static std::array<MagicInit, 64> rookInit;
     static std::array<MagicInit, 64> bishopInit;
 
-    static void initMagics(std::array<MagicInit, 64> & magicInit, std::array<Magic, 64> & magic, std::array<int, 2> dir[], int shift);
+    static void initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift);
 
     static bool hardwarePopcntSupported;
 };

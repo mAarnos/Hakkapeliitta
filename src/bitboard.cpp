@@ -376,7 +376,7 @@ void Bitboards::initialize()
     }
 }
 
-void Bitboards::initMagics(std::array<MagicInit, 64> & magicInit, std::array<Magic, 64> & magic, std::array<int, 2> dir[], int shift)
+void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift)
 {
     std::vector<int> squares;
 

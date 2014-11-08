@@ -290,13 +290,13 @@ void Evaluation::initialize()
     }
 }
 
-int Evaluation::evaluate(const Position & pos)
+int Evaluation::evaluate(const Position& pos)
 {
     return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::evaluate(const Position & pos)
+int Evaluation::evaluate(const Position& pos)
 {
     // Checks if we are in a known endgame.
     // If we are we can straight away return the score for the endgame.
@@ -331,7 +331,7 @@ int Evaluation::evaluate(const Position & pos)
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::mobilityEval(const Position & pos, std::array<int, 2> & kingSafetyScore, int phase)
+int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
     auto occupied = pos.getOccupiedSquares();
@@ -403,7 +403,7 @@ int Evaluation::mobilityEval(const Position & pos, std::array<int, 2> & kingSafe
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int Evaluation::pawnStructureEval(const Position & pos, int phase)
+int Evaluation::pawnStructureEval(const Position& pos, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
@@ -471,7 +471,7 @@ int Evaluation::pawnStructureEval(const Position & pos, int phase)
 }
 
 template <bool side>
-int Evaluation::evaluatePawnShelter(const Position & pos)
+int Evaluation::evaluatePawnShelter(const Position& pos)
 {
     static const std::array<int, 8> pawnStormPenalty = { 0, 0, 0, 1, 2, 3, 0, 0 };
     static const auto openFilePenalty = 6;
@@ -507,7 +507,7 @@ int Evaluation::evaluatePawnShelter(const Position & pos)
     return penalty;
 }
 
-int Evaluation::kingSafetyEval(const Position & pos, int phase, std::array<int, 2> & kingSafetyScore)
+int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore)
 {
     kingSafetyScore[Color::Black] += evaluatePawnShelter<false>(pos);
     kingSafetyScore[Color::White] += evaluatePawnShelter<true>(pos);

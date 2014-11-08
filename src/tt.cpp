@@ -43,7 +43,7 @@ void TranspositionTable::prefetch(HashKey hk)
 #endif
 }
 
-void TranspositionTable::save(const Position & pos, int ply, const Move & move, int score, int depth, int flags)
+void TranspositionTable::save(const Position& pos, int ply, const Move& move, int score, int depth, int flags)
 {
     assert(ply >= 0 && ply < 128);
     assert(depth >= 0 && depth <= 255);
@@ -51,7 +51,7 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
     assert(flags >= 0 && flags <= 255);
 
     auto best = move.getMove();
-    auto & hashEntry = table[pos.getHashKey() & (table.size() - 1)];
+    auto& hashEntry = table[pos.getHashKey() & (table.size() - 1)];
 
     // We only store pure mate scores so that we can use them in other parts of the search tree too.
     if (isMateScore(score))
@@ -97,11 +97,11 @@ void TranspositionTable::save(const Position & pos, int ply, const Move & move, 
     assert(hashEntry.getFlags(replace) == flags);
 }
 
-bool TranspositionTable::probe(const Position & pos, int ply, Move & move, int & score, int depth, int & alpha, int & beta) const
+bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta) const
 {
     assert(ply >= 0 && ply < 128);
 
-    const auto & hashEntry = table[pos.getHashKey() & (table.size() - 1)];
+    const auto& hashEntry = table[pos.getHashKey() & (table.size() - 1)];
 
     int entry;
     for (entry = 0; entry < 4; ++entry)
@@ -174,7 +174,7 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
     int entry;
     for (auto ply = 0; ply < 128; ++ply)
     {
-        const auto & hashEntry = table[root.getHashKey() & (table.size() - 1)];
+        const auto& hashEntry = table[root.getHashKey() & (table.size() - 1)];
         for (entry = 0; entry < 4; ++entry)
         {
             if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == root.getHashKey())

@@ -28,7 +28,7 @@ void Benchmark::runPerft()
     sync_cout << "NPS = " << perftResult / ((sw.elapsed<std::chrono::milliseconds>() + 1) / 1000.0) << std::endl;
 }
 
-uint64_t Benchmark::perft(Position & pos, int depth)
+uint64_t Benchmark::perft(Position& pos, int depth)
 {
     MoveList moves;
     History history;
@@ -38,7 +38,7 @@ uint64_t Benchmark::perft(Position & pos, int depth)
                   : MoveGen::generatePseudoLegalMoves(pos, moves); 
     for (auto i = 0; i < moves.size(); ++i)
     {
-        const auto & move = moves[i];
+        const auto& move = moves[i];
         if (!(pos.makeMove(move, history)))
         {
             continue;

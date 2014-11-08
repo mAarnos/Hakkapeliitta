@@ -1,8 +1,10 @@
 #include "search.hpp"
 #include <iostream>
 #include <cmath>
+#include <sstream>
 #include "eval.hpp"
 #include "movegen.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -62,6 +64,48 @@ void Search::initialize()
     }
 }
 
+void Search::think()
+{
+
+}
+
+// Displays a list of moves in the format UCI-protocol wants(from, to, possible promotion).
+void displayMoves(const std::vector<Move>& moves)
+{
+    static std::array<std::string, 64> squareToNotation = {
+        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+    };
+
+    static std::array<std::string, 64> promotionToNotation = {
+        "p", "n", "b", "r", "q", "k"
+    };
+
+    std::ostringstream ss;
+
+    for (auto& move : moves)
+    {
+        auto from = move.getFrom();
+        auto to = move.getTo();
+        auto promotion = move.getPromotion();
+
+        ss << squareToNotation[from] << squareToNotation[to];
+        if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
+        {
+            ss << promotionToNotation[promotion];
+        }
+        ss << " ";
+    }
+    ss << std::endl;
+    sync_cout << ss.str();
+}
+
 // Move ordering goes like this:
 // 1. Hash move (which can also be the PV-move)
 // 2. Good captures and promotions
@@ -69,11 +113,11 @@ void Search::initialize()
 // 4. Killer moves
 // 5. Quiet moves sorted by the history heuristic
 // 6. Bad captures
-void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply)
+void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply)
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        auto & move = moveList[i];
+        auto& move = moveList[i];
         if (move.getMove() == ttMove.getMove()) // Move from transposition table
         {
             move.setScore(hashMoveScore);
@@ -103,7 +147,7 @@ void Search::orderMoves(const Position & pos, MoveList & moveList, const Move & 
     }
 }
 
-void Search::orderCaptures(const Position & pos, MoveList & moveList)
+void Search::orderCaptures(const Position& pos, MoveList& moveList)
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -111,7 +155,7 @@ void Search::orderCaptures(const Position & pos, MoveList & moveList)
     }
 }
 
-void Search::selectMove(MoveList & moveList, int currentMove)
+void Search::selectMove(MoveList& moveList, int currentMove)
 {
     auto bestMove = currentMove;
     auto bestScore = moveList[currentMove].getScore();
@@ -131,7 +175,7 @@ void Search::selectMove(MoveList & moveList, int currentMove)
     }
 }
 
-int Search::quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
+int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck)
 {
     int bestScore, delta;
     MoveList moveList;
@@ -166,7 +210,7 @@ int Search::quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool 
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
-        const auto & move = moveList[i];
+        const auto& move = moveList[i];
 
         if (!inCheck) // don't do any pruning if in check
         {
@@ -210,7 +254,7 @@ int Search::quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool 
     return bestScore;
 }
 
-int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
+int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
 {
     assert(alpha < beta);
 
@@ -310,7 +354,7 @@ int Search::search(Position & pos, int depth, int ply, int alpha, int beta, int 
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
-        const auto & move = moveList[i];
+        const auto& move = moveList[i];
         if (!pos.makeMove(move, history))
         {
             continue;

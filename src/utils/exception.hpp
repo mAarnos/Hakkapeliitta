@@ -7,7 +7,7 @@
 class HakkapeliittaException : public std::runtime_error
 {
 public:
-    HakkapeliittaException(const std::string & description) : std::runtime_error(description) {}
+    HakkapeliittaException(const std::string& description) : std::runtime_error(description) {}
 };
 
 #endif

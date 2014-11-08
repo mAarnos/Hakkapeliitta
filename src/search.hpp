@@ -35,7 +35,9 @@ class Search
 public:
     static void initialize();
 
-    static int quiescenceSearch(Position & pos, int ply, int alpha, int beta, bool inCheck);
+    void think();
+
+    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;
@@ -53,7 +55,7 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
-    static int search(Position & pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
+    static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 
     static std::array<int, 2> contempt;
 
@@ -78,9 +80,9 @@ private:
     static const std::array<int16_t, 1 + 4> killerMoveScore;
 
     // Functions for move ordering.
-    static void orderMoves(const Position & pos, MoveList & moveList, const Move & ttMove, int ply);
-    static void orderCaptures(const Position & pos, MoveList & moveList);
-    static void selectMove(MoveList & moveList, int currentMove);
+    static void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);
+    static void orderCaptures(const Position& pos, MoveList& moveList);
+    static void selectMove(MoveList& moveList, int currentMove);
 };
 
 #endif

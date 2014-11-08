@@ -31,9 +31,9 @@ void PawnHashTable::clear()
     table.resize(tableSize);
 }
 
-void PawnHashTable::save(const Position & pos, int scoreOp, int scoreEd)
+void PawnHashTable::save(const Position& pos, int scoreOp, int scoreEd)
 {
-    auto & hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
+    auto& hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
 
     hashEntry.setData((scoreOp & 0xffff) | (scoreEd << 16));
     hashEntry.setHash(static_cast<uint32_t>(pos.getPawnHashKey()) ^ hashEntry.getData());
@@ -42,9 +42,9 @@ void PawnHashTable::save(const Position & pos, int scoreOp, int scoreEd)
     assert(static_cast<int16_t>(hashEntry.getData() >> 16) == scoreEd);
 }
 
-bool PawnHashTable::probe(const Position & pos, int & scoreOp, int & scoreEd) const
+bool PawnHashTable::probe(const Position& pos, int& scoreOp, int& scoreEd) const
 {
-    const auto & hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
+    const auto& hashEntry = table[pos.getPawnHashKey() & (table.size() - 1)];
 
     if ((hashEntry.getHash() ^ hashEntry.getData()) == static_cast<uint32_t>(pos.getPawnHashKey()))
     {

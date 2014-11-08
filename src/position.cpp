@@ -63,7 +63,7 @@ void Position::displayBoard() const
 	sync_cout << "   A  B  C  D  E  F  G  H" << std::endl;
 }
 
-void Position::initializePositionFromFen(const std::string & fen)
+void Position::initializePositionFromFen(const std::string& fen)
 {
 	board.fill(Piece::Empty);
 
@@ -320,12 +320,12 @@ std::string Position::positionToFen() const
 }
 
 
-bool Position::makeMove(const Move & m, History & history)
+bool Position::makeMove(const Move& m, History& history)
 {
     return (sideToMove ? makeMove<true>(m, history) : makeMove<false>(m, history));
 }
 
-void Position::unmakeMove(const Move & m, const History & history)
+void Position::unmakeMove(const Move& m, const History& history)
 {
     sideToMove ? unmakeMove<true>(m, history) : unmakeMove<false>(m, history);
 }
@@ -335,7 +335,7 @@ bool Position::isAttacked(Square sq, Color side) const
     return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
 }
 
-int Position::SEE(const Move & m) const
+int Position::SEE(const Move& m) const
 {
     // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
     static const std::array<int, 13> pieceValues = {
@@ -456,7 +456,7 @@ int Position::SEE(const Move & m) const
 }
 
 template <bool side> 
-bool Position::makeMove(const Move & m, History & history)
+bool Position::makeMove(const Move& m, History& history)
 {
     auto from = m.getFrom();
     auto to = m.getTo();
@@ -598,11 +598,11 @@ bool Position::makeMove(const Move & m, History & history)
     return true;
 }
 
-template bool Position::makeMove<false>(const Move & m, History & history);
-template bool Position::makeMove<true>(const Move & m, History & history);
+template bool Position::makeMove<false>(const Move& m, History& history);
+template bool Position::makeMove<true>(const Move& m, History& history);
 
 template <bool side> 
-void Position::unmakeMove(const Move & m, const History & history)
+void Position::unmakeMove(const Move& m, const History& history)
 {
     auto from = m.getFrom();
     auto to = m.getTo();
@@ -689,8 +689,8 @@ void Position::unmakeMove(const Move & m, const History & history)
     }
 }
 
-template void Position::unmakeMove<false>(const Move & m, const History & history);
-template void Position::unmakeMove<true>(const Move & m, const History & history);
+template void Position::unmakeMove<false>(const Move& m, const History& history);
+template void Position::unmakeMove<true>(const Move& m, const History& history);
 
 template <bool side> 
 bool Position::isAttacked(Square sq) const
@@ -768,7 +768,7 @@ HashKey Position::calculateMaterialHash() const
     return m;
 }
 
-void Position::makeNullMove(History & history)
+void Position::makeNullMove(History& history)
 {
     sideToMove = !sideToMove;
     hashKey ^= Zobrist::turnHash;
@@ -780,7 +780,7 @@ void Position::makeNullMove(History & history)
     }
 }
 
-void Position::unmakeNullMove(const History & history)
+void Position::unmakeNullMove(const History& history)
 {
     enPassant = history.ep;
     if (enPassant != Square::NoSquare)

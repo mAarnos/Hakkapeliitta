@@ -12,8 +12,8 @@ public:
 
     void setSize(int sizeInMegaBytes);
     void clear();
-    void save(const Position & pos, int scoreOp, int scoreEd);
-    bool probe(const Position & pos, int & scoreOp, int & scoreEd) const;
+    void save(const Position& pos, int scoreOp, int scoreEd);
+    bool probe(const Position& pos, int& scoreOp, int& scoreEd) const;
 private:
     // A single entry in the pawn hash table. Unlike with the tt, we have no need for buckets here.
     // Notice that the size of the hash is smaller than with TTEntry. 

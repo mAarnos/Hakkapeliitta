@@ -300,7 +300,7 @@ void Tuning::tune()
     */
 }
 
-int Tuning::evaluate(const Position & pos) const
+int Tuning::evaluate(const Position& pos) const
 {
     if (Evaluation::drawnEndgames.count(pos.getMaterialHashKey()))
     {

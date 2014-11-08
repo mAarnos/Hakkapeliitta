@@ -19,8 +19,8 @@ public:
         moveList[numberOfMoves++] = std::forward<T>(move); 
     }
 
-    Move & operator[](int index) { return moveList[index]; }
-    const Move & operator[](int index) const { return moveList[index]; }
+    Move& operator[](int index) { return moveList[index]; }
+    const Move& operator[](int index) const { return moveList[index]; }
     void clear() { numberOfMoves = 0; };
     int size() const { return numberOfMoves; }
     bool empty() const { return numberOfMoves == 0; }

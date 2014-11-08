@@ -21,7 +21,7 @@ private:
     std::vector<double> results;
     std::vector<int> evalTerms;
 
-    int evaluate(const Position & pos) const;
+    int evaluate(const Position& pos) const;
 
     void prunePositions();
 };

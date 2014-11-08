@@ -25,7 +25,7 @@ class Position
 public:
     Position();
 
-	void initializePositionFromFen(const std::string & fen);
+	void initializePositionFromFen(const std::string& fen);
     std::string positionToFen() const;
 	void displayBoard() const;
 
@@ -45,10 +45,10 @@ public:
     HashKey getPawnHashKey() const { return pawnHashKey; }
     HashKey getMaterialHashKey() const { return materialHashKey; }
 
-    bool makeMove(const Move & move, History & history);
-    void unmakeMove(const Move & move, const History & history);
-    void makeNullMove(History & history);
-    void unmakeNullMove(const History & history);
+    bool makeMove(const Move& move, History& history);
+    void unmakeMove(const Move& move, const History& history);
+    void makeNullMove(History& history);
+    void unmakeNullMove(const History& history);
 
     int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
 
@@ -60,7 +60,7 @@ public:
     int getPstMaterialScoreOpening() const { return pstMaterialScoreOp; }
     int getPstMaterialScoreEnding() const { return pstMaterialScoreEd; }
 
-    int SEE(const Move & m) const;
+    int SEE(const Move& m) const;
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.
@@ -88,8 +88,8 @@ private:
     HashKey calculatePawnHash() const;
     HashKey calculateMaterialHash() const;
 
-    template <bool side> bool makeMove(const Move & move, History & history);
-    template <bool side> void unmakeMove(const Move & move, const History & history);
+    template <bool side> bool makeMove(const Move& move, History& history);
+    template <bool side> void unmakeMove(const Move& move, const History& history);
     template <bool side> bool isAttacked(Square sq) const;
 
     static const std::array<int, 64> castlingMask;

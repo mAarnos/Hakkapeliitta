@@ -242,6 +242,7 @@ void UCI::go(const Command& c)
         movesToGo = stoi(s.substr(pos + 10)) + 2;
     }
 
+    // Allocate time for search. Move to another function?
     const auto lagBuffer = 50;
     auto time = timeLimits[root.getSideToMove()];
     auto increment = incrementAmount[root.getSideToMove()];

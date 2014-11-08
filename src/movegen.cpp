@@ -1,26 +1,26 @@
 #include "movegen.hpp"
 #include <iostream>
 
-void MoveGen::generatePseudoLegalMoves(const Position & pos, MoveList & moves)
+void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 {
     pos.getSideToMove() ? generatePseudoLegalMoves<true>(pos, moves) 
                         : generatePseudoLegalMoves<false>(pos, moves);
 }
 
-void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & moves)
+void MoveGen::generatePseudoLegalCaptureMoves(const Position& pos, MoveList& moves)
 {
     pos.getSideToMove() ? generatePseudoLegalCaptureMoves<true>(pos, moves) 
                         : generatePseudoLegalCaptureMoves<false>(pos, moves);
 }
 
-void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
+void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 {
     pos.getSideToMove() ? generateLegalEvasions<true>(pos, moves)
                         : generateLegalEvasions<false>(pos, moves);
 }
 
 template <bool side> 
-void MoveGen::generatePseudoLegalMoves(const Position & pos, MoveList & moves)
+void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 {
     assert(moves.empty());
 
@@ -167,7 +167,7 @@ void MoveGen::generatePseudoLegalMoves(const Position & pos, MoveList & moves)
 }
 
 template <bool side>
-void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & moves)
+void MoveGen::generatePseudoLegalCaptureMoves(const Position& pos, MoveList& moves)
 {
     assert(moves.empty());
 
@@ -266,7 +266,7 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position & pos, MoveList & m
 }
 
 template <bool side>
-void MoveGen::generateLegalEvasions(const Position & pos, MoveList & moves)
+void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 {
     int to;
     auto pinned = 0;

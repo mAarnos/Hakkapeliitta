@@ -10,9 +10,9 @@ class HistoryTable
 public:
     HistoryTable();
 
-    void addCutoff(const Position & pos, const Move & move, int depth);
-    void addNotCutoff(const Position & pos, const Move & move, int depth);
-    int getScore(const Position & pos, const Move & move) const;
+    void addCutoff(const Position& pos, const Move& move, int depth);
+    void addNotCutoff(const Position& pos, const Move& move, int depth);
+    int getScore(const Position& pos, const Move& move) const;
     void clear();
     void age();
 private:

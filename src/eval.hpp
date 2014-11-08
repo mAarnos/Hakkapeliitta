@@ -13,7 +13,7 @@ class Evaluation
 public:
     static void initialize();
 
-    static int evaluate(const Position & pos);
+    static int evaluate(const Position& pos);
 
     static std::array<int, 64> pieceSquareTableOpening[12];
     static std::array<int, 64> pieceSquareTableEnding[12];
@@ -49,16 +49,16 @@ private:
     static void initializeDrawnEndgames();
 
     template <bool hardwarePopcnt> 
-    static int evaluate(const Position & pos);
+    static int evaluate(const Position& pos);
 
     template <bool hardwarePopcnt> 
-    static int mobilityEval(const Position & pos, std::array<int, 2> & kingSafetyScore, int phase);
+    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase);
 
-    static int pawnStructureEval(const Position & pos, int phase);
-    static int kingSafetyEval(const Position & pos, int phase, std::array<int, 2> & kingSafetyScore);
+    static int pawnStructureEval(const Position& pos, int phase);
+    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
 
     template <bool side>
-    static int evaluatePawnShelter(const Position & pos);
+    static int evaluatePawnShelter(const Position& pos);
 
     static int interpolateScore(int scoreOp, int scoreEd, int phase) 
     {

@@ -45,7 +45,7 @@ inline ThreadPool::~ThreadPool()
     terminateFlag = true;
     cv.notify_all();
 
-    for (auto & thread : threads)
+    for (auto& thread : threads)
     {
         thread.join();
     }
