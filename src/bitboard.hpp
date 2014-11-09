@@ -122,7 +122,7 @@ private:
     class Magic
     {
     public:
-        Bitboard * data;
+        Bitboard* data;
         Bitboard mask;
         Bitboard magic;
     };

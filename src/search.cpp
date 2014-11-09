@@ -73,8 +73,36 @@ void Search::initialize()
 void Search::think(Position& pos)
 {
     nodeCount = 0;
+    nodesToTimeCheck = 10000;
     contempt[pos.getSideToMove()] = -contemptValue;
     contempt[!pos.getSideToMove()] = contemptValue;
+
+    historyTable.age();
+    killerTable.clear();
+    
+    auto alpha = -infinity;
+    auto beta = infinity;
+    auto delta = aspirationWindow;
+
+    for (auto depth = 1;;)
+    {
+        auto score = 0;
+
+        // Adjust alpha and beta based on the last score.
+        // Don't adjust if depth is low - it's a waste of time.
+        if (depth >= 4 && !isMateScore(score))
+        {
+            alpha = score - aspirationWindow;
+            beta = score + aspirationWindow;
+        }
+        else
+        {
+            alpha = -infinity;
+            beta = infinity;
+        }
+        delta = aspirationWindow;
+        ++depth;
+    }
 }
 
 // Displays a list of moves in the format UCI-protocol wants(from, to, possible promotion).

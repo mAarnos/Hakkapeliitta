@@ -188,7 +188,8 @@ void MoveGen::generatePseudoLegalCaptureMoves(const Position& pos, MoveList& mov
             if (to >= Square::A8 || to <= Square::H1)
             {
                 moves.push_back(Move(from, to, Piece::Queen, 0));
-                // Generating underpromotions is useless.
+                // Generating underpromotions is useless so we skip them.
+                // These are left here for possible testing in the future.
                 // moves.push_back(Move(from, to, Piece::Rook, 0));
                 // moves.push_back(Move(from, to, Piece::Bishop, 0));
                 // moves.push_back(Move(from, to, Piece::Knight, 0));
@@ -311,7 +312,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     // Find all our pinned pieces.
     auto potentialPinners = (Bitboards::bishopAttacks(from, 0) 
                           & (pos.getBitboard(!side, Piece::Bishop) | pos.getBitboard(!side, Piece::Queen)));
-    potentialPinners |=  (Bitboards::rookAttacks(from, 0) 
+    potentialPinners |= (Bitboards::rookAttacks(from, 0) 
                       & (pos.getBitboard(!side, Piece::Rook) | pos.getBitboard(!side, Piece::Queen)));
     while (potentialPinners)
     {
@@ -387,7 +388,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     }
 
     auto interpose = Bitboards::between[Bitboards::lsb(pos.getBitboard(side, Piece::King))][checkerLocation] 
-                   | (checkers);
+                   | checkers;
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
     while (tempPiece)
     {

@@ -5,9 +5,6 @@
 #include "color.hpp"
 #include "utils\synchronized_ostream.hpp"
 
-// TODO: move inside Bitboards?
-std::array<int, 64> heading[64];
-
 std::array<Bitboard, 64> Bitboards::bit;
 std::array<Bitboard, 64> Bitboards::kingAttacks;
 std::array<Bitboard, 64> Bitboards::knightAttacks;
@@ -217,6 +214,8 @@ void Bitboards::initialize()
     static std::array<int, 2> rookDirections[4] = {
         { -8, -16 }, { -1, -1 }, { 1, 1 }, { 8, 16 }
     };
+
+    std::array<int, 64> heading[64];
 
     // Clear bitboards which would be destroyed by multiple initialization.
     memset(pawnSingleMoves, 0, sizeof(pawnSingleMoves));

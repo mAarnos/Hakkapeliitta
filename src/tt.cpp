@@ -35,7 +35,7 @@ void TranspositionTable::clear()
 
 void TranspositionTable::prefetch(HashKey hk)
 {
-    auto address = reinterpret_cast<char *>(&table[hk & (table.size() - 1)]);
+    auto address = reinterpret_cast<char*>(&table[hk & (table.size() - 1)]);
 #if defined (_MSC_VER) || defined(__INTEL_COMPILER)
     _mm_prefetch(address, _MM_HINT_T0);
 #else
@@ -103,62 +103,58 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
 
     const auto& hashEntry = table[pos.getHashKey() & (table.size() - 1)];
 
-    int entry;
-    for (entry = 0; entry < 4; ++entry)
+    for (auto entry = 0; entry < 4; ++entry)
     {
         if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == pos.getHashKey())
         {
-            break;
-        }
-    }
+            move.setMove(hashEntry.getBestMove(entry));
+            auto hashScore = hashEntry.getScore(entry);
+            auto hashDepth = hashEntry.getDepth(entry);
+            auto flags = hashEntry.getFlags(entry);
 
-    if (entry < 4)
-    {
-        move.setMove(hashEntry.getBestMove(entry));
-        auto hashScore = hashEntry.getScore(entry);
-        auto hashDepth = hashEntry.getDepth(entry);
-        auto flags = hashEntry.getFlags(entry);
-
-        if (hashDepth >= depth)
-        {
-            // Correct the mate score back.
-            if (isMateScore(score))
+            if (hashDepth >= depth)
             {
-                score += (score > 0 ? -ply : ply);
-            }
+                // Correct the mate score back.
+                if (isMateScore(score))
+                {
+                    score += (score > 0 ? -ply : ply);
+                }
 
-            if (flags == ExactScore)
-            {
-                score = hashScore;
-                return true;
-            }
-
-            if (flags == UpperBoundScore)
-            {
-                if (hashScore <= alpha)
+                if (flags == ExactScore)
                 {
                     score = hashScore;
                     return true;
                 }
-                if (hashScore < beta)
+
+                if (flags == UpperBoundScore)
                 {
-                    beta = hashScore;
-                    return false;
+                    if (hashScore <= alpha)
+                    {
+                        score = hashScore;
+                        return true;
+                    }
+                    if (hashScore < beta)
+                    {
+                        beta = hashScore;
+                        return false;
+                    }
+                }
+                else if (flags == LowerBoundScore)
+                {
+                    if (hashScore >= beta)
+                    {
+                        score = hashScore;
+                        return true;
+                    }
+                    if (hashScore > alpha)
+                    {
+                        alpha = hashScore;
+                        return false;
+                    }
                 }
             }
-            else if (flags == LowerBoundScore)
-            {
-                if (hashScore >= beta)
-                {
-                    score = hashScore;
-                    return true;
-                }
-                if (hashScore > alpha)
-                {
-                    alpha = hashScore;
-                    return false;
-                }
-            }
+
+            break; // Get out of the loop.
         }
     }
 
@@ -171,10 +167,11 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
     Move m;
     History history;
 
-    int entry;
     for (auto ply = 0; ply < 128; ++ply)
     {
         const auto& hashEntry = table[root.getHashKey() & (table.size() - 1)];
+
+        int entry;
         for (entry = 0; entry < 4; ++entry)
         {
             if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == root.getHashKey())
