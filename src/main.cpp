@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include "uci.hpp"
 #include "benchmark.hpp"
 #include "tuning\tuning.hpp"
@@ -10,6 +11,7 @@
 int main() 
 {
     sync_cout << "Hakkapeliitta 2.0 alpha, (C) 2013-2014 Mikko Aarnos" << std::endl;
+    sync_cout << "Detected " << std::thread::hardware_concurrency() << " CPUs" << std::endl;
 
     Bitboards::initialize();
     Zobrist::initialize();
