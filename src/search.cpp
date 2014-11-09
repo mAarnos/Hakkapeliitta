@@ -606,25 +606,31 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
-                    // Update the history heuristic when a move which causes a cutoff.
-                    // Don't update if the move is not a quiet move.
-                    if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
-                    {
-                        history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
-                        if (moveStack[i].getMove() != pos.getKiller(0, ply))
+
+                    if (!inCheck)
+                    {                    
+                        // Update the history heuristic when a move which causes a cutoff.
+                        // Don't update if the move is not a quiet move.
+                        if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
                         {
-                            pos.setKiller(1, ply, pos.getKiller(0, ply));
-                            pos.setKiller(0, ply, moveStack[i].getMove());
+                            history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
+                            if (moveStack[i].getMove() != pos.getKiller(0, ply))
+                            {
+                                pos.setKiller(1, ply, pos.getKiller(0, ply));
+                                pos.setKiller(0, ply, moveStack[i].getMove());
+                            }
                         }
-                    }
-                    for (auto j = 0; j < i; ++j)
-                    {
-                        if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
-                            ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                        for (auto j = 0; j < i; ++j)
                         {
-                            butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
+                            if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
+                                ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                            {
+                                butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
+                            }
                         }
+
                     }
+
 					return score;
 				}
 				alpha = score;
@@ -747,25 +753,30 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 				if (score >= beta)
 				{
 					ttSave(pos, ply, depth, score, ttBeta, bestMove);
-                    // Update the history heuristic when a move which improves alpha is found.
-                    // Don't update if the move is not a quiet move.
-                    if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
+
+                    if (!inCheck)
                     {
-                        history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
-                        if (moveStack[i].getMove() != pos.getKiller(0, ply))
+                        // Update the history heuristic when a move which improves alpha is found.
+                        // Don't update if the move is not a quiet move.
+                        if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
                         {
-                            pos.setKiller(1, ply, pos.getKiller(0, ply));
-                            pos.setKiller(0, ply, moveStack[i].getMove());
+                            history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
+                            if (moveStack[i].getMove() != pos.getKiller(0, ply))
+                            {
+                                pos.setKiller(1, ply, pos.getKiller(0, ply));
+                                pos.setKiller(0, ply, moveStack[i].getMove());
+                            }
+                        }
+                        for (auto j = 0; j < i; ++j)
+                        {
+                            if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
+                                ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                            {
+                                butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
+                            }
                         }
                     }
-                    for (auto j = 0; j < i; ++j)
-                    {
-                        if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
-                            ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
-                        {
-                            butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
-                        }
-                    }
+
 					return score;
 				}
 
