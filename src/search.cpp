@@ -478,7 +478,10 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
         auto razoringAlpha = alpha - razoringMargin[depth];
         score = qsearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
         if (score <= razoringAlpha)
+        {
+            ttSave(pos, ply, depth, score, ttAlpha, ttMoveNone);
             return score;
+        }
     }
 
 	// Double null move pruning.
