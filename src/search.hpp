@@ -37,8 +37,6 @@ public:
 
     void think(Position& pos);
 
-    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
-
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;
     static bool searching;
@@ -47,16 +45,14 @@ public:
     static int targetTime;
     static int maxTime;
 
-    // Delete these, only used for tuning.
-    static std::array<Move, 32> pv[32];
-    static std::array<int, 32> pvLength;
-
     static TranspositionTable transpositionTable;
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
+
+    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 
     static std::array<int, 2> contempt;
 

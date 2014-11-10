@@ -2,7 +2,6 @@
 #include <thread>
 #include "uci.hpp"
 #include "benchmark.hpp"
-#include "tuning\tuning.hpp"
 #include "utils\threadpool.hpp"
 #include "eval.hpp"
 #include "search.hpp"
@@ -21,9 +20,6 @@ int main()
     // ThreadPool pool(1);
 
     Benchmark::runPerft();
-
-    // Tuning tuning;
-    // tuning.tune();
 
     uci.mainLoop();
 

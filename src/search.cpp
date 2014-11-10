@@ -50,9 +50,6 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
 int Search::nodeCount;
 int Search::nodesToTimeCheck;
 
-std::array<Move, 32> Search::pv[32];
-std::array<int, 32> Search::pvLength;
-
 void Search::initialize()
 {
     contemptValue = 0;
@@ -76,7 +73,6 @@ void Search::think(Position& pos)
     nodesToTimeCheck = 10000;
     contempt[pos.getSideToMove()] = -contemptValue;
     contempt[!pos.getSideToMove()] = contemptValue;
-
     historyTable.age();
     killerTable.clear();
     
@@ -217,9 +213,6 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     MoveList moveList;
     History history;
 
-    // delete this
-    pvLength[ply] = ply;
-
     if (inCheck)
     {
         bestScore = matedInPly(ply);
@@ -274,14 +267,6 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
                     return score;
                 }
                 alpha = score;
-
-                // delete this
-                pv[ply][ply] = move;
-                for (auto i = ply + 1; i < pvLength[ply + 1]; ++i)
-                {
-                    pv[ply][i] = pv[ply + 1][i];
-                }
-                pvLength[ply] = pvLength[ply + 1];
             }
             bestScore = score;
         }
@@ -420,23 +405,27 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
         if (!movesSearched)
         {
-            score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+            score = (newDepth > 0 ? -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck)
+                                  : -quiescenceSearch(pos, ply + 1, -beta, -alpha, givesCheck));
         }
         else
         {
             auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
                            ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
 
-            score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+            score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck) 
+                                              : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));
 
             if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
             {
-                score = -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+                score = (newDepth > 0 ? -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck)
+                                      : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));
             }
 
             if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
             {
-                score = -search<false>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+                score = (newDepth > 0 ? -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck)
+                                      : -quiescenceSearch(pos, ply + 1, -beta, -alpha, givesCheck));
             }
         }
         pos.unmakeMove(move, history);
