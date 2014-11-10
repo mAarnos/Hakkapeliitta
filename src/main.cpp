@@ -6,6 +6,7 @@
 #include "eval.hpp"
 #include "search.hpp"
 #include "utils\synchronized_ostream.hpp"
+#include "utils\large_pages.hpp"
 
 int main() 
 {
@@ -17,6 +18,7 @@ int main()
     Evaluation::initialize();
     Search::initialize();
     UCI uci;
+    LargePages::initialize();
     // ThreadPool pool(1);
 
     Benchmark::runPerft();
