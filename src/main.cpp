@@ -10,7 +10,7 @@
 int main() 
 {
     sync_cout << "Hakkapeliitta 2.0 alpha, (C) 2013-2014 Mikko Aarnos" << std::endl;
-    sync_cout << "Detected " << std::thread::hardware_concurrency() << " CPUs" << std::endl;
+    sync_cout << "Detected " << std::thread::hardware_concurrency() << " CPU core(s)" << std::endl;
 
     Bitboards::initialize();
     Zobrist::initialize();

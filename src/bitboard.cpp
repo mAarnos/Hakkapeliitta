@@ -367,11 +367,7 @@ void Bitboards::initialize()
 #endif
     if (hardwarePopcntSupported)
     {
-        sync_cout << "Using hardware POPCNT" << std::endl;
-    }
-    else
-    {
-        sync_cout << "Using software POPCNT" << std::endl;
+        sync_cout << "Detected hardware POPCNT" << std::endl;
     }
 }
 

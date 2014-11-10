@@ -319,7 +319,6 @@ std::string Position::positionToFen() const
     return fen;
 }
 
-
 bool Position::makeMove(const Move& m, History& history)
 {
     return (sideToMove ? makeMove<true>(m, history) : makeMove<false>(m, history));
@@ -695,16 +694,11 @@ template void Position::unmakeMove<true>(const Move& m, const History& history);
 template <bool side> 
 bool Position::isAttacked(Square sq) const
 {
-    if (Bitboards::knightAttacks[sq] & bitboards[Piece::Knight + 6 * side]
-     || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
-     || Bitboards::kingAttacks[sq] & bitboards[Piece::King + 6 * side]
-     || Bitboards::bishopAttacks(sq, bitboards[14]) & (bitboards[Piece::Bishop + 6 * side] | bitboards[Piece::Queen + 6 * side])
-     || Bitboards::rookAttacks(sq, bitboards[14]) & (bitboards[Piece::Rook + 6 * side] | bitboards[Piece::Queen + 6 * side]))
-    {
-        return true;
-    }
-
-    return false;
+    return (Bitboards::knightAttacks[sq] & bitboards[Piece::Knight + 6 * side]
+        || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
+        || Bitboards::kingAttacks[sq] & bitboards[Piece::King + 6 * side]
+        || Bitboards::bishopAttacks(sq, bitboards[14]) & (bitboards[Piece::Bishop + 6 * side] | bitboards[Piece::Queen + 6 * side])
+        || Bitboards::rookAttacks(sq, bitboards[14]) & (bitboards[Piece::Rook + 6 * side] | bitboards[Piece::Queen + 6 * side]));
 }
 
 template bool Position::isAttacked<false>(Square sq) const;
