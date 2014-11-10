@@ -15,11 +15,10 @@ int main()
 
     Bitboards::initialize();
     Zobrist::initialize();
+    LargePages::initialize(); // not used currently
     Evaluation::initialize();
     Search::initialize();
     UCI uci;
-    LargePages::initialize();
-    // ThreadPool pool(1);
 
     Benchmark::runPerft();
 

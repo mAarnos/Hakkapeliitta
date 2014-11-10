@@ -1,10 +1,22 @@
 #ifndef LARGE_PAGES_HPP_
 #define LARGE_PAGES_HPP_
 
+// To enable Large Pages in Windows do the following:
+// 1. Run gpedit.msc (or search for "Group Policy").
+// 2. Under "Computer Configuration", "Windows Settings", "Security Settings", "Local Policies" click on "User Rights Assignment".
+// 3. In the right panel double-click the option "Lock Pages in Memory".
+// 4. Click on "Add User or Group" and add either the current account or "Everyone".
+// 5. Restart the computer
+// The program must also be run with administrative rights. 
+// If some other program runs this program then that program must be run with the same rights.
+// The alternative is to disable UAC.
+
 #include <cstdint>
 #ifdef _WIN32
 #include <windows.h>
 #else
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #endif
 
 class LargePages
@@ -23,6 +35,7 @@ public:
 
         if (allowedToUse)
         {
+#ifdef _WIN32
             memory = VirtualAlloc(NULL, size, MEM_LARGE_PAGES | MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             if (memory)
             {
@@ -32,10 +45,26 @@ public:
             {
                 memory = _aligned_malloc(size, alignment);
             }
+#elif
+            auto num = shmget (IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
+            if (num == -1)
+            {
+                memory = memalign(alignment, size);
+            }
+            else
+            {
+                inUse = true;
+                memory = shmat(num, NULL, 0x0);
+            }
+#endif
         }
         else
         {
+#ifdef _WIN32
             memory = _aligned_malloc(size, alignment);
+#elif
+            memory = memalign(alignment, size);
+#endif
         }
 
         return memory;
@@ -49,10 +78,19 @@ public:
         }
         if (!inUse)
         {
+#ifdef _WIN32
             _aligned_free(memory);
+#elif
+            free(((void**)memory)[-1]);
+#endif
             return;
         }
+#ifdef _WIN32
         VirtualFree(memory, 0, MEM_RELEASE);
+#elif
+        shmdt(A);
+        shmctl(num, IPC_RMID, NULL);
+#endif
     }
 
     static void setAllowedToUse(bool allowed)
@@ -67,7 +105,7 @@ private:
     static void changeLargePagePrivileges(BOOL enabled)
     {
 #ifdef _WIN32
-        HANDLE           hToken;
+        HANDLE hToken;
         TOKEN_PRIVILEGES tp;
 
         OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
