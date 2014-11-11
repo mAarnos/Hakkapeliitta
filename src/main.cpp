@@ -20,6 +20,9 @@ int main()
     Search::initialize();
     UCI uci;
 
+    LargePages::setAllowedToUse(true);
+    auto ptr = LargePages::malloc(64 * 1024 * 1024, 64);
+
     Benchmark::runPerft();
 
     uci.mainLoop();
