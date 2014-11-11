@@ -291,13 +291,13 @@ void Evaluation::initialize()
     }
 }
 
-int Evaluation::evaluate(const Position& pos)
+int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
 {
-    return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
+    return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos, zugzwangLikely) : evaluate<false>(pos, zugzwangLikely));
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::evaluate(const Position& pos)
+int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
 {
     // Checks if we are in a known endgame.
     // If we are we can straight away return the score for the endgame.
@@ -311,7 +311,7 @@ int Evaluation::evaluate(const Position& pos)
     auto phase = pos.getGamePhase();
     phase = clamp(phase, 0, 64); // The phase can be negative in some weird cases, guard against that.
 
-    auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
+    auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase, zugzwangLikely);
     score += pawnStructureEval(pos, phase);
     score += kingSafetyEval(pos, phase, kingSafetyScore);
     score += interpolateScore(pos.getPstMaterialScoreOpening(), pos.getPstMaterialScoreEnding(), phase);
@@ -332,10 +332,11 @@ int Evaluation::evaluate(const Position& pos)
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase)
+int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely)
 {
     auto scoreOp = 0, scoreEd = 0;
     auto occupied = pos.getOccupiedSquares();
+    std::array<uint64_t, 2> attacks = { 0, 0 };
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
@@ -349,6 +350,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         {
             auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::knightAttacks[from] & targetBitboard;
+            attacks[c] |= tempMove;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
@@ -362,6 +364,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         {
             auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
+            attacks[c] |= tempMove;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
@@ -375,6 +378,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         {
             auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
+            attacks[c] |= tempMove;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
@@ -388,6 +392,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         {
             auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
+            attacks[c] |= tempMove;
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
@@ -400,6 +405,11 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         scoreOp += (c ? -scoreOpForColor : scoreOpForColor);
         scoreEd += (c ? -scoreEdForColor : scoreEdForColor);
     }
+
+    // Detect likely zugzwangs statically.
+    // Idea shamelessly stolen from Ivanhoe.
+    zugzwangLikely = !attacks[pos.getSideToMove()];
+    // zugzwangLikely = !(attacks[pos.getSideToMove()] & ~attacks[!pos.getSideToMove()]);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }

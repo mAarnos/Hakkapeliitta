@@ -210,8 +210,11 @@ void Search::selectMove(MoveList& moveList, int currentMove)
 int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck)
 {
     int bestScore, delta;
+    bool zugzwangLikely;
     MoveList moveList;
     History history;
+
+    // Maybe add checking for draw here?
 
     if (inCheck)
     {
@@ -222,7 +225,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     }
     else
     {
-        bestScore = Evaluation::evaluate(pos);
+        bestScore = Evaluation::evaluate(pos, zugzwangLikely);
         if (bestScore > alpha)
         {
             if (bestScore >= beta)
@@ -286,6 +289,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     Move ttMove, bestMove(0, 0, 0, 0);
     TTFlags ttFlag = UpperBoundScore;
     int score;
+    bool zugzwangLikely;
 
     transpositionTable.prefetch(pos.getHashKey());
 
@@ -329,11 +333,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     // Probe tablebases here.
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
-    auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos));
+    auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos, zugzwangLikely));
 
     // Reverse futility pruning / static null move pruning.
-    if (!pvNode && !inCheck && pos.getGamePhase() != 64
-        && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
     // Razoring.
@@ -347,10 +350,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Double null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
-    if (!pvNode && allowNullMove && !inCheck && pos.getGamePhase() != 64)
+    if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
     {
-        ++nodeCount;
         pos.makeNullMove(history);
+        ++nodeCount;
         score = (depth - 1 - nullReduction <= 0 ? -quiescenceSearch(pos, ply + 1, alpha, beta, false)
                                                 : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
         pos.unmakeNullMove(history);

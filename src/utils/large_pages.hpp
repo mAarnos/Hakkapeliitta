@@ -28,6 +28,9 @@ public:
     {
         allowedToUse = false;
         inUse = false;
+#ifndef _WIN32
+        num = -1;
+#endif
     }
 
     static void* malloc(uint64_t size, uint64_t alignment)
@@ -49,7 +52,7 @@ public:
                 memory = _aligned_malloc(size, alignment);
             }
 #elif
-            auto num = shmget (IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
+            num = shmget (IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
             if (num == -1)
             {
                 memory = memalign(alignment, size);
