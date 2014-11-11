@@ -460,7 +460,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 			if (v < -1) score = -mateScore + ply + 200;
 			else if (v > 1) score = mateScore - ply - 200;
 			else score = contempt(pos.getSideToMove()) + v;
-			ttSave(pos, ply, depth + 4, score, ttExact, ttMoveNone);
+            // ttSave(pos, ply, depth + 4, score, ttExact, ttMoveNone);
 			return score;
 		}
 	}
