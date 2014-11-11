@@ -5,6 +5,7 @@
 #include "eval.hpp"
 #include "utils\clamp.hpp"
 #include "utils\synchronized_ostream.hpp"
+#include "utils\large_pages.hpp"
 
 Position UCI::root;
 
@@ -96,6 +97,7 @@ void UCI::sendInformation(const Command&)
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
     sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
     sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
+    // sync_cout << "option name LargePages type check default false" << std::endl;
 
     // Send a response telling the listener that we are ready in UCI-mode.
     sync_cout << "uciok" << std::endl;
@@ -181,6 +183,17 @@ void UCI::setOption(const Command& c)
     }
     else if (option == "syzygypath") // FIX ME!
     {
+    }
+    else if (option == "largepages")
+    {
+        if (parameter == "true")
+        {
+            LargePages::setAllowedToUse(true);
+        }
+        else if (parameter == "false")
+        {
+            LargePages::setAllowedToUse(false);
+        }
     }
 }
 
