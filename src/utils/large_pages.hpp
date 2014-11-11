@@ -8,8 +8,7 @@
 // 4. Click on "Add User or Group" and add either the current account or "Everyone".
 // 5. Restart the computer
 // The program must also be run with administrative rights. 
-// If some other program runs this program then that program must be run with the same rights.
-// The alternative is to disable UAC.
+// If some other program runs this program then that program must be run with the same rights. The alternative is to disable UAC.
 
 #include <cstdint>
 #include <iostream>
@@ -42,11 +41,11 @@ public:
             memory = VirtualAlloc(NULL, size, MEM_LARGE_PAGES | MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             if (memory)
             {
-                std::cout << "WindowsLargePages " << (size >> 20) << std::endl;
                 inUse = true;
             }
             else
             {
+                DisplayError(TEXT("VirtualAlloc"), GetLastError());
                 memory = _aligned_malloc(size, alignment);
             }
 #elif
@@ -105,41 +104,35 @@ public:
 private:
     static bool allowedToUse;
     static bool inUse;
+#ifndef _WIN32
+    static int num;
+#endif
 
     static void changeLargePagePrivileges(BOOL enabled)
     {
 #ifdef _WIN32
         HANDLE           hToken;
         TOKEN_PRIVILEGES tp;
-        BOOL             status;
-        DWORD            error;
 
-        // open process token
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
             DisplayError(TEXT("OpenProcessToken"), GetLastError());
 
-        // get the luid
+        // Get the luid.
         if (!LookupPrivilegeValue(NULL, TEXT("SeLockMemoryPrivilege"), &tp.Privileges[0].Luid))
             DisplayError(TEXT("LookupPrivilegeValue"), GetLastError());
 
         tp.PrivilegeCount = 1;
 
-        // enable or disable privilege
-        if (enabled)
-            tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-        else
-            tp.Privileges[0].Attributes = 0;
-
-        // enable or disable privilege
-        status = AdjustTokenPrivileges(hToken, FALSE, &tp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
+        // Enable or disable privilege.
+        tp.Privileges[0].Attributes = (enabled ? SE_PRIVILEGE_ENABLED : 0);
+        auto status = AdjustTokenPrivileges(hToken, FALSE, &tp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
 
         // It is possible for AdjustTokenPrivileges to return TRUE and still not succeed.
         // So always check for the last error value.
-        error = GetLastError();
+        auto error = GetLastError();
         if (!status || (error != ERROR_SUCCESS))
             DisplayError(TEXT("AdjustTokenPrivileges"), GetLastError());
 
-        // close the handle
         if (!CloseHandle(hToken))
             DisplayError(TEXT("CloseHandle"), GetLastError());
 #endif

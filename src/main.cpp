@@ -22,6 +22,8 @@ int main()
 
     LargePages::setAllowedToUse(true);
     auto ptr = LargePages::malloc(64 * 1024 * 1024, 64);
+    LargePages::free(ptr);
+    LargePages::setAllowedToUse(false);
 
     Benchmark::runPerft();
 
