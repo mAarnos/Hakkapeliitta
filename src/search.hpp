@@ -49,6 +49,8 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
+    static int rootSearch(Position& pos, int depth, int alpha, int beta);
+
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 
