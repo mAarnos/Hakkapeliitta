@@ -219,9 +219,9 @@ void Position::initializePositionFromFen(const std::string& fen)
 
     // Calculate the phase of the game.
     phase = totalPhase;
-    for (Piece i = Piece::Knight; i < Piece::King; ++i)
+    for (Piece p = Piece::Knight; p < Piece::King; ++p)
     {
-        phase -= (pieceCount[Color::White + i] + pieceCount[Color::Black * 6 + i]) * piecePhase[i];
+        phase -= (pieceCount[Color::White + p] + pieceCount[Color::Black * 6 + p]) * piecePhase[p];
     }
 }
 

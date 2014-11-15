@@ -49,7 +49,7 @@ public:
             }
             else
             {
-                DisplayError(TEXT("VirtualAlloc"), GetLastError());
+                displayError(TEXT("VirtualAlloc"), GetLastError());
                 memory = _aligned_malloc(size, alignment);
             }
 #elif
@@ -112,6 +112,26 @@ private:
     static int num;
 #endif
 
+	static void displayError(TCHAR* pszAPI, DWORD dwError)
+	{
+		LPVOID lpvMessageBuffer;
+
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
+			FORMAT_MESSAGE_FROM_SYSTEM |
+			FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, dwError,
+			MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+			(LPTSTR)&lpvMessageBuffer, 0, NULL);
+
+		//... now display this string
+		_tprintf(TEXT("ERROR: API        = %s\n"), pszAPI);
+		_tprintf(TEXT("       error code = %d\n"), dwError);
+		_tprintf(TEXT("       message    = %s\n"), lpvMessageBuffer);
+
+		// Free the buffer allocated by the system
+		LocalFree(lpvMessageBuffer);
+	}
+
     static void changeLargePagePrivileges(BOOL enabled)
     {
 #ifdef _WIN32
@@ -119,11 +139,11 @@ private:
         TOKEN_PRIVILEGES tp;
 
         if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
-            DisplayError(TEXT("OpenProcessToken"), GetLastError());
+            displayError(TEXT("OpenProcessToken"), GetLastError());
 
         // Get the luid.
         if (!LookupPrivilegeValue(NULL, TEXT("SeLockMemoryPrivilege"), &tp.Privileges[0].Luid))
-            DisplayError(TEXT("LookupPrivilegeValue"), GetLastError());
+            displayError(TEXT("LookupPrivilegeValue"), GetLastError());
 
         tp.PrivilegeCount = 1;
 
@@ -135,31 +155,11 @@ private:
         // So always check for the last error value.
         auto error = GetLastError();
         if (!status || (error != ERROR_SUCCESS))
-            DisplayError(TEXT("AdjustTokenPrivileges"), GetLastError());
+            displayError(TEXT("AdjustTokenPrivileges"), GetLastError());
 
         if (!CloseHandle(hToken))
-            DisplayError(TEXT("CloseHandle"), GetLastError());
+            displayError(TEXT("CloseHandle"), GetLastError());
 #endif
-    }
-
-    static void DisplayError(TCHAR* pszAPI, DWORD dwError)
-    {
-        LPVOID lpvMessageBuffer;
-
-        FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
-            FORMAT_MESSAGE_FROM_SYSTEM |
-            FORMAT_MESSAGE_IGNORE_INSERTS,
-            NULL, dwError,
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPTSTR)&lpvMessageBuffer, 0, NULL);
-
-        //... now display this string
-        _tprintf(TEXT("ERROR: API        = %s\n"), pszAPI);
-        _tprintf(TEXT("       error code = %d\n"), dwError);
-        _tprintf(TEXT("       message    = %s\n"), lpvMessageBuffer);
-
-        // Free the buffer allocated by the system
-        LocalFree(lpvMessageBuffer);
     }
 };
 

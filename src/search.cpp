@@ -278,6 +278,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     return bestScore;
 }
 
+#pragma warning (disable : 4127) // shuts up warnings about conditional branches always being true/false
 template <bool pvNode>
 int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
 {
@@ -289,8 +290,9 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     Move ttMove, bestMove(0, 0, 0, 0);
     TTFlags ttFlag = UpperBoundScore;
     int score;
-    bool zugzwangLikely;
+    auto zugzwangLikely = false;
 
+	// Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());
 
     if (--nodesToTimeCheck <= 0)

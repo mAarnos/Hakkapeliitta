@@ -215,16 +215,16 @@ void Bitboards::initialize()
         { -8, -16 }, { -1, -1 }, { 1, 1 }, { 8, 16 }
     };
 
+	// Avoid excessive stack usage warnings by moving heading to heap.
     std::vector<int> heading[64];
 	for (auto i = 0; i < 64; ++i)
 	{
-		heading[i].resize(64);
+		heading[i].resize(64, -1);
 	}
 
     // Clear bitboards which would be destroyed by multiple initialization.
     memset(pawnSingleMoves, 0, sizeof(pawnSingleMoves));
     memset(pawnDoubleMoves, 0, sizeof(pawnDoubleMoves));
-    memset(heading, -1, sizeof(heading));
     memset(rays, 0, sizeof(rays));
     memset(passed, 0, sizeof(passed));
     memset(backward, 0, sizeof(backward));
