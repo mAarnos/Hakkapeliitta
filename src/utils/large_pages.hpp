@@ -34,7 +34,7 @@ public:
 #endif
     }
 
-    static void* malloc(uint64_t size, uint64_t alignment)
+    static void* malloc(size_t size, size_t alignment)
     {
         void* memory = nullptr;
         inUse = false;

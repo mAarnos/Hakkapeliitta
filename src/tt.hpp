@@ -21,7 +21,7 @@ public:
     bool probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta) const;
     void prefetch(HashKey hk);
 
-    void setSize(int sizeInMegaBytes);
+	void setSize(size_t sizeInMegaBytes);
     void clear();
     void startNewSearch() { ++generation; }
     std::vector<Move> extractPv(Position root) const;

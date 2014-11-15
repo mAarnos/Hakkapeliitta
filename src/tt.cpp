@@ -9,7 +9,7 @@ TranspositionTable::TranspositionTable()
     setSize(32); 
 }
 
-void TranspositionTable::setSize(int sizeInMegaBytes)
+void TranspositionTable::setSize(size_t sizeInMegaBytes)
 {
     // Clear the tt completely to avoid any funny business.
     table.clear();
@@ -21,7 +21,7 @@ void TranspositionTable::setSize(int sizeInMegaBytes)
         sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
     }
 
-    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(TranspositionTableEntry));
+    auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(TranspositionTableEntry));
     table.resize(tableSize);
 }
 

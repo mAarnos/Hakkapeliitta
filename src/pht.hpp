@@ -10,7 +10,7 @@ class PawnHashTable
 public:
     PawnHashTable();
 
-    void setSize(int sizeInMegaBytes);
+	void setSize(size_t sizeInMegaBytes);
     void clear();
     void save(const Position& pos, int scoreOp, int scoreEd);
     bool probe(const Position& pos, int& scoreOp, int& scoreEd) const;

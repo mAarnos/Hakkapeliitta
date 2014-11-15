@@ -215,7 +215,11 @@ void Bitboards::initialize()
         { -8, -16 }, { -1, -1 }, { 1, 1 }, { 8, 16 }
     };
 
-    std::array<int, 64> heading[64];
+    std::vector<int> heading[64];
+	for (auto i = 0; i < 64; ++i)
+	{
+		heading[i].resize(64);
+	}
 
     // Clear bitboards which would be destroyed by multiple initialization.
     memset(pawnSingleMoves, 0, sizeof(pawnSingleMoves));
@@ -350,7 +354,6 @@ void Bitboards::initialize()
 #if !(defined _WIN64 || defined __x86_64__)
     hardwarePopcntSupported = false;
 #else
-    // Detect support for hardware popcnt.
     int regs[4];
  #if (defined __clang__ || defined __GNUC__)
     regs[0] = 0x00000001;

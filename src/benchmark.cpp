@@ -20,7 +20,7 @@ void Benchmark::runPerft()
     // pos.initializePositionFromFen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1"); // d6: 8509434052, d7: 390020558283
 
     sw.start();
-    auto perftResult = perft(pos, 7);
+    auto perftResult = perft(pos, 6);
     sw.stop();
 
     sync_cout << perftResult << std::endl;

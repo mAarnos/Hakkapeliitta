@@ -8,7 +8,7 @@ PawnHashTable::PawnHashTable()
     setSize(4); 
 }
 
-void PawnHashTable::setSize(int sizeInMegaBytes)
+void PawnHashTable::setSize(size_t sizeInMegaBytes)
 {
     // Clear the tt completely to avoid any funny business.
     table.clear();
@@ -19,7 +19,7 @@ void PawnHashTable::setSize(int sizeInMegaBytes)
         sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
     }
 
-    auto tableSize = ((sizeInMegaBytes * 1024ull * 1024ull) / sizeof(PawnHashTableEntry));
+    auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
     table.resize(tableSize);
 }
 

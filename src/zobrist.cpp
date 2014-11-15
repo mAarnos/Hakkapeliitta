@@ -35,7 +35,7 @@ void Zobrist::initialize()
         Bitboard castlingRight = cr;
         while (castlingRight)
         {
-            auto key = castlingRightsHash[1 << Bitboards::popLsb(castlingRight)];
+            auto key = castlingRightsHash[Bitboards::bit[Bitboards::popLsb(castlingRight)]];
             castlingRightsHash[cr] ^= key ? key : rng();
         }
     }

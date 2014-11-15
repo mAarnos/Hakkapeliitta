@@ -381,7 +381,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
-    auto oneReplyNode = (moveList.size() == 1);
+    auto oneReply = (moveList.size() == 1);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -481,7 +481,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
 int Search::rootSearch(Position& pos, int depth, int alpha, int beta)
 {
-    auto bestScore = matedInPly(0), movesSearched = 0, prunedMoves = 0;
+    auto bestScore = matedInPly(0), movesSearched = 0;
     auto inCheck = pos.inCheck();
     MoveList moveList;
     History history;
