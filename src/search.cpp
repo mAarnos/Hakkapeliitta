@@ -6,6 +6,7 @@
 #include "movegen.hpp"
 #include "utils\synchronized_ostream.hpp"
 #include "utils\exception.hpp"
+#include "utils\stopwatch.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -47,6 +48,7 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
     0, 28767, 28766, 28765, 28764 // not used, captureMoveScore - 2000, captureMoveScore - 2001, etc. 
 };
 
+int Search::tbHits;
 int Search::nodeCount;
 int Search::nodesToTimeCheck;
 
@@ -59,6 +61,7 @@ void Search::initialize()
     pondering = false;
     targetTime = maxTime = 0;
     nodeCount = 0;
+	tbHits = 0;
     nodesToTimeCheck = 10000;
 
     for (auto i = 0; i < 256; ++i)
@@ -69,23 +72,25 @@ void Search::initialize()
 
 void Search::think(Position& pos)
 {
+	auto alpha = -infinity;
+	auto beta = infinity;
+	auto delta = aspirationWindow;
+	auto inCheck = pos.inCheck();
+	MoveList rootMoveList;
+	History history;
+	Move bestMove(0, 0, 0, 0);
+	Stopwatch sw(true);
+
+	tbHits = 0;
     nodeCount = 0;
     nodesToTimeCheck = 10000;
     contempt[pos.getSideToMove()] = -contemptValue;
     contempt[!pos.getSideToMove()] = contemptValue;
     historyTable.age();
     killerTable.clear();
-    
-    auto alpha = -infinity;
-    auto beta = infinity;
-    auto delta = aspirationWindow;
-	auto inCheck = pos.inCheck();
-	MoveList rootMoveList;
-	History history;
-	Move bestMove(0, 0, 0, 0);
 
 	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
-	// Remove all illegal rootmoves.
+	// Remove all illegal moves.
 	auto marker = 0;
 	for (auto i = 0; i < rootMoveList.size(); ++i)
 	{
@@ -175,6 +180,19 @@ void Search::think(Position& pos)
 			}
 		}
 
+		if (score <= alpha)
+		{
+			alpha -= delta;
+			delta *= 2;
+			continue;
+		}
+		if (score >= beta)
+		{
+			beta += delta;
+			delta *= 2;
+			continue;
+		}
+
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
 		// Also reset the window completely if a mate is found.
@@ -193,41 +211,89 @@ void Search::think(Position& pos)
     }
 }
 
-// Displays a list of moves in the format UCI-protocol wants(from, to, possible promotion).
-void displayMoves(const std::vector<Move>& moves)
+// Converts a move to algebraic notation.
+std::string Search::algebraicMove(const Move& move)
 {
-    static std::array<std::string, 64> squareToNotation = {
-        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-    };
+	static std::array<std::string, 64> squareToNotation = {
+		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
+		"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
+		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
+		"a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
+		"a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
+		"a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
+		"a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
+		"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
+	};
 
-    static std::array<std::string, 64> promotionToNotation = {
-        "p", "n", "b", "r", "q", "k"
-    };
+	static std::array<std::string, 64> promotionToNotation = {
+		"p", "n", "b", "r", "q", "k"
+	};
 
-    std::ostringstream ss;
+	std::stringstream ss;
+	auto from = move.getFrom();
+	auto to = move.getTo();
+	auto promotion = move.getPromotion();
 
-    for (auto& move : moves)
-    {
-        auto from = move.getFrom();
-        auto to = move.getTo();
-        auto promotion = move.getPromotion();
+	ss << squareToNotation[from] << squareToNotation[to];
+	if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
+	{
+		ss << promotionToNotation[promotion];
+	}
 
-        ss << squareToNotation[from] << squareToNotation[to];
-        if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
-        {
-            ss << promotionToNotation[promotion];
-        }
-        ss << " ";
-    }
-    ss << std::endl;
-    sync_cout << ss.str();
+	return ss.str();
+}
+
+// Same but for a list of moves.
+std::string Search::algebraicMoves(const std::vector<Move>& moves)
+{
+	std::stringstream ss;
+
+	for (auto& move : moves)
+	{
+		ss << algebraicMove(move) << " ";
+	}
+
+	return ss.str();
+}
+
+void Search::infoCurrMove(const Move& move, int depth, int nr)
+{
+	sync_cout << "info depth " << depth 
+		      << " currmove " << algebraicMove(move) 
+			  << " currmovenumber " << nr + 1 << std::endl;
+}
+
+void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int flags)
+{
+	std::stringstream ss;
+
+	ss << "info depth " << depth;
+	if (isMateScore(score))
+	{
+		score = (score > 0 ? ((mateInPly(score + 1)) >> 1) : ((-score - mateScore) >> 1));
+		ss << " score mate" << score;
+	}
+	else
+	{
+		ss << " score cp " << score;
+	}
+
+	if (flags == LowerBoundScore)
+	{
+		ss << " lowerbound ";
+	}
+	else if (flags == UpperBoundScore)
+	{
+		ss << " upperbound ";
+	}
+
+	ss << " time " << 0 
+	   << " nodes " << nodeCount 
+	   << " nps " << (nodeCount / 0) * 1000 
+	   << " tbhits " << tbHits
+	   << " pv " << algebraicMoves(moves) << std::endl;
+
+	sync_cout << ss.str(); 
 }
 
 // Move ordering goes like this:
@@ -407,7 +473,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
                 return matedInPly(ply); // Can't claim draw on fifty move if mated.
             }
         }
-        return 0;
+        return contempt[pos.getSideToMove()];
     }
 
     // Check for repetition draws here

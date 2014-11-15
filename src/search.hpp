@@ -81,8 +81,14 @@ private:
     static void orderCaptures(const Position& pos, MoveList& moveList);
     static void selectMove(MoveList& moveList, int currentMove);
 
+	static int tbHits;
     static int nodeCount;
     static int nodesToTimeCheck;
+
+	static std::string algebraicMove(const Move& move);
+	static std::string algebraicMoves(const std::vector<Move>& moves);
+	static void infoCurrMove(const Move& move, int depth, int nr);
+	static void infoPv(const std::vector<Move>& moves, int depth, int score, int flags);
 };
 
 #endif
