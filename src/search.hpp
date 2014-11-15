@@ -35,7 +35,7 @@ class Search
 public:
     static void initialize();
 
-    void think(Position& pos);
+    static void think(Position& pos);
 
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;
@@ -49,8 +49,6 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 private:
-    static int rootSearch(Position& pos, int depth, int alpha, int beta);
-
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 

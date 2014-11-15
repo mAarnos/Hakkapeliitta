@@ -79,17 +79,109 @@ void Search::think(Position& pos)
     auto alpha = -infinity;
     auto beta = infinity;
     auto delta = aspirationWindow;
+	auto inCheck = pos.inCheck();
+	MoveList rootMoveList;
+	History history;
+	Move bestMove(0, 0, 0, 0);
+
+	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
+	// Remove all illegal rootmoves.
+	auto marker = 0;
+	for (auto i = 0; i < rootMoveList.size(); ++i)
+	{
+		if (!pos.makeMove(rootMoveList[i], history))
+		{
+			continue;
+		}
+		rootMoveList[marker++] = rootMoveList[i];
+		pos.unmakeMove(rootMoveList[i], history);
+	}
+	orderMoves(pos, rootMoveList, bestMove, 0);
 
     for (auto depth = 1;;)
     {
-        auto score = 0;
+		auto movesSearched = 0;
+		auto bestScore = matedInPly(0), score = matedInPly(0);
+		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+
+		for (auto i = 0; i < rootMoveList.size(); ++i)
+		{
+			selectMove(rootMoveList, i);
+			const auto& move = rootMoveList[i];
+			if (!pos.makeMove(move, history))
+			{
+				continue;
+			}
+			++nodeCount;
+
+			auto givesCheck = pos.inCheck();
+			auto extension = givesCheck ? 1 : 0;
+			auto newDepth = depth - 1 + extension;
+			auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+
+			if (!movesSearched)
+			{
+				score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
+					: -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+			}
+			else
+			{
+				auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
+					? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+
+				score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
+					: -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+
+				if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
+				{
+					score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
+						: -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+				}
+
+				if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
+				{
+					score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
+						: -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+				}
+			}
+			pos.unmakeMove(move, history);
+			++movesSearched;
+
+			if (score > bestScore)
+			{
+				bestScore = score;
+				if (score > alpha)
+				{
+					bestMove = move;
+					alpha = score;
+					if (score >= beta)
+					{
+						if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+						{
+							historyTable.addCutoff(pos, move, depth);
+							killerTable.addKiller(move, 0);
+						}
+						for (auto j = 0; j < i; ++j)
+						{
+							const auto& move2 = rootMoveList[j];
+							if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+							{
+								historyTable.addNotCutoff(pos, move2, depth);
+							}
+						}
+						break; 
+					}
+				}
+			}
+		}
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
-        if (depth >= 4 && !isMateScore(score))
+		// Also reset the window completely if a mate is found.
+        if (depth >= 4 && !isMateScore(bestScore))
         {
-            alpha = score - aspirationWindow;
-            beta = score + aspirationWindow;
+			alpha = bestScore - aspirationWindow;
+			beta = bestScore + aspirationWindow;
         }
         else
         {
@@ -449,13 +541,14 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
                         historyTable.addCutoff(pos, move, depth);
                         killerTable.addKiller(move, ply);
                     }
-                    for (auto j = 0; j < i; ++j)
-                    {
-                        if (pos.getBoard(moveList[j].getTo()) == Piece::Empty && (moveList[j].getPromotion() == Piece::Empty || moveList[j].getPromotion() == Piece::King))
-                        {
-                            historyTable.addNotCutoff(pos, moveList[j], depth);
-                        }
-                    }
+					for (auto j = 0; j < i; ++j)
+					{
+						const auto& move2 = moveList[j];
+						if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+						{
+							historyTable.addNotCutoff(pos, move2, depth);
+						}
+					}
 
                     return score;
                 }
@@ -480,97 +573,3 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     return bestScore;
 }
-
-int Search::rootSearch(Position& pos, int depth, int alpha, int beta)
-{
-    auto bestScore = matedInPly(0), movesSearched = 0;
-    auto inCheck = pos.inCheck();
-    MoveList moveList;
-    History history;
-    Move ttMove, bestMove(0, 0, 0, 0);
-    int score;
-
-    inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
-    orderMoves(pos, moveList, ttMove, 0);
-
-    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
-
-    for (auto i = 0; i < moveList.size(); ++i)
-    {
-        selectMove(moveList, i);
-        const auto& move = moveList[i];
-        if (!pos.makeMove(move, history))
-        {
-            continue;
-        }
-        ++nodeCount;
-
-        auto givesCheck = pos.inCheck();
-        auto extension = givesCheck ? 1 : 0;
-        auto newDepth = depth - 1 + extension;
-        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
-
-        if (!movesSearched)
-        {
-            score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-                : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
-        }
-        else
-        {
-            auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
-                ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
-
-            score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
-                : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
-
-            if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
-            {
-                score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
-                    : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
-            }
-
-            if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
-            {
-                score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-                    : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
-            }
-        }
-        pos.unmakeMove(move, history);
-        ++movesSearched;
-
-        if (score > bestScore)
-        {
-            if (score > alpha)
-            {
-                if (score >= beta)
-                {
-                    transpositionTable.save(pos, 0, move, score, depth, LowerBoundScore);
-
-                    if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
-                    {
-                        historyTable.addCutoff(pos, move, depth);
-                        killerTable.addKiller(move, 0);
-                    }
-                    for (auto j = 0; j < i; ++j)
-                    {
-                        if (pos.getBoard(moveList[j].getTo()) == Piece::Empty && (moveList[j].getPromotion() == Piece::Empty || moveList[j].getPromotion() == Piece::King))
-                        {
-                            historyTable.addNotCutoff(pos, moveList[j], depth);
-                        }
-                    }
-
-                    return score;
-                }
-                bestMove = move;
-                alpha = score;
-                transpositionTable.save(pos, 0, bestMove, score, depth, UpperBoundScore);
-            }
-            bestScore = score;
-        }
-    }
-
-    transpositionTable.save(pos, 0, bestMove, bestScore, depth, ExactScore);
-
-    return bestScore;
-}
-
