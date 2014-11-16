@@ -10,6 +10,11 @@
 // The program must also be run with administrative rights. 
 // If some other program runs this program then that program must be run with the same rights. The alternative is to disable UAC.
 
+// To enable Large Pages in Linux do the following:
+// 1. In terminal type "cat /proc/meminfo" and search for HugePages_Total and Hugepagesize
+// 2. If the value of HugePages_Total * Hugepagesize igreater than or equal to the amount of memory you want to allocate you are done
+// 3. Otherwise do "sudo sh -c "echo xxx > /proc/sys/vm/nr_hugepages"" where xxx is the desired amount of large pages(choose a number so that you get enough).
+
 #include <cstdint>
 #include <iostream>
 #include <cstdio>
@@ -18,6 +23,7 @@
 #include <tchar.h>
 #include <windows.h>
 #else
+#include <cstring>
 #include <cstdlib>
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -54,10 +60,12 @@ public:
                 memory = _aligned_malloc(size, alignment);
             }
 #else
-            num = shmget (IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
+            num = shmget(IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
             if (num == -1)
             {
-                std::cout << "Large page allocation failed" << std::endl;
+                std::cout << "ERROR: API     = shmget" << std::endl;
+                std::cout << "       errno   = " << errno << std::endl;
+                std::cout << "       message = " << strerror(errno) << std::endl;
                 posix_memalign(&memory, alignment, size);
             }
             else

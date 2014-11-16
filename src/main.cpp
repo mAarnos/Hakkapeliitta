@@ -30,7 +30,7 @@ int main()
     Search::initialize();
     UCI uci;
 
-    Benchmark::runPerft();
+    // Benchmark::runPerft();
 
     uci.mainLoop();
 
