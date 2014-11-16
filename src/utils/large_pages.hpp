@@ -61,10 +61,11 @@ public:
                           
             if (memory == MAP_FAILED)
             {
-                std::cout << "ERROR: API     = shmget" << std::endl;
+                std::cout << "ERROR: API     = mmap" << std::endl;
                 std::cout << "       errno   = " << errno << std::endl;
                 std::cout << "       message = " << strerror(errno) << std::endl;
-                posix_memalign(&memory, alignment, size);
+                auto err = posix_memalign(&memory, alignment, size);
+                if (err) return nullptr;                
             }
             else
             {
@@ -77,7 +78,8 @@ public:
 #ifdef _WIN32
             memory = _aligned_malloc(size, alignment);
 #else
-            posix_memalign(&memory, alignment, size);
+            auto err = posix_memalign(&memory, alignment, size);
+            if (err) return nullptr; 
 #endif
         }
 
@@ -93,8 +95,6 @@ public:
         }
 
 		auto count = infoTable.count(memory);
-        auto size = (count > 0 ? infoTable[memory] : 0);
-		infoTable.erase(memory);
 		if (!count) 
         {
 #ifdef _WIN32
@@ -102,13 +102,16 @@ public:
 #else
             std::free(memory);
 #endif
+		    infoTable.erase(memory);
             return;
         }
+
 #ifdef _WIN32
         VirtualFree(memory, 0, MEM_RELEASE);
 #else
-        munmap(memory, size);
+        munmap(memory, infoTable[memory]);
 #endif
+		infoTable.erase(memory);
     }
 
     static void setAllowedToUse(bool allowed)
