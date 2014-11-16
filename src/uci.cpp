@@ -212,6 +212,11 @@ void UCI::go(const Command& c)
     std::array<int, 2> timeLimits = { 0, 0 };
     std::array<int, 2> incrementAmount = { 0, 0 };
 
+	// Initialize search flags.
+	Search::searching = true;
+	Search::pondering = false;
+	Search::infinite = false;
+
     auto pos = s.find("movetime");
     if (pos != std::string::npos)
     {

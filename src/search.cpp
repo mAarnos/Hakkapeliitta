@@ -6,7 +6,6 @@
 #include "movegen.hpp"
 #include "utils\synchronized_ostream.hpp"
 #include "utils\exception.hpp"
-#include "utils\stopwatch.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -51,6 +50,7 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
 int Search::tbHits;
 int Search::nodeCount;
 int Search::nodesToTimeCheck;
+Stopwatch Search::sw;
 
 void Search::initialize()
 {
@@ -79,7 +79,6 @@ void Search::think(Position& pos)
 	MoveList rootMoveList;
 	History history;
 	Move bestMove(0, 0, 0, 0);
-	Stopwatch sw(true);
 
 	tbHits = 0;
     nodeCount = 0;
@@ -88,8 +87,11 @@ void Search::think(Position& pos)
     contempt[!pos.getSideToMove()] = contemptValue;
     historyTable.age();
     killerTable.clear();
+	sw.reset();
+	sw.start();
 
-	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
+	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) 
+		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
 	// Remove all illegal moves.
 	auto marker = 0;
 	for (auto i = 0; i < rootMoveList.size(); ++i)
@@ -101,7 +103,6 @@ void Search::think(Position& pos)
 		rootMoveList[marker++] = rootMoveList[i];
 		pos.unmakeMove(rootMoveList[i], history);
 	}
-	orderMoves(pos, rootMoveList, bestMove, 0);
 
     for (auto depth = 1;;)
     {
@@ -109,93 +110,119 @@ void Search::think(Position& pos)
 		auto bestScore = matedInPly(0), score = matedInPly(0);
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
 
-		for (auto i = 0; i < rootMoveList.size(); ++i)
-		{
-			selectMove(rootMoveList, i);
-			const auto& move = rootMoveList[i];
-			if (!pos.makeMove(move, history))
+		orderMoves(pos, rootMoveList, bestMove, 0);
+		try {
+			for (auto i = 0; i < rootMoveList.size(); ++i)
 			{
-				continue;
-			}
-			++nodeCount;
-
-			auto givesCheck = pos.inCheck();
-			auto extension = givesCheck ? 1 : 0;
-			auto newDepth = depth - 1 + extension;
-			auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
-
-			if (!movesSearched)
-			{
-				score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-					: -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
-			}
-			else
-			{
-				auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
-					? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
-
-				score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
-					: -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
-
-				if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
+				selectMove(rootMoveList, i);
+				const auto& move = rootMoveList[i];
+				if (!pos.makeMove(move, history))
 				{
-					score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
-						: -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+					continue;
 				}
+				++nodeCount;
 
-				if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
+				auto givesCheck = pos.inCheck();
+				auto extension = givesCheck ? 1 : 0;
+				auto newDepth = depth - 1 + extension;
+				auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+
+				if (!movesSearched)
 				{
 					score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-						: -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+						                  : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
 				}
-			}
-			pos.unmakeMove(move, history);
-			++movesSearched;
-
-			if (score > bestScore)
-			{
-				bestScore = score;
-				if (score > alpha)
+				else
 				{
-					bestMove = move;
-					alpha = score;
-					if (score >= beta)
+					auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
+						? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+
+					score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
+						                              : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+
+					if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
 					{
-						if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+						score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
+							                  : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+					}
+
+					if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
+					{
+						score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
+							                  : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+					}
+				}
+				pos.unmakeMove(move, history);
+				++movesSearched;
+
+				if (score > bestScore)
+				{
+					bestScore = score;
+					if (score > alpha)
+					{
+						bestMove = move;
+						alpha = score;
+						if (score >= beta)
 						{
-							historyTable.addCutoff(pos, move, depth);
-							killerTable.addKiller(move, 0);
-						}
-						for (auto j = 0; j < i; ++j)
-						{
-							const auto& move2 = rootMoveList[j];
-							if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+							if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
 							{
-								historyTable.addNotCutoff(pos, move2, depth);
+								historyTable.addCutoff(pos, move, depth);
+								killerTable.addKiller(move, 0);
 							}
+							for (auto j = 0; j < i; ++j)
+							{
+								const auto& move2 = rootMoveList[j];
+								if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+								{
+									historyTable.addNotCutoff(pos, move2, depth);
+								}
+							}
+							break;
 						}
-						break; 
+						transpositionTable.save(pos, 0, bestMove, bestScore, depth, UpperBoundScore);
+						auto pv = transpositionTable.extractPv(pos);
+						infoPv(pv, depth, bestScore, ExactScore);
 					}
 				}
 			}
+			transpositionTable.save(pos, 0, bestMove, bestScore, depth, bestScore >= beta ? LowerBoundScore : ExactScore);
+		}
+		catch (const HakkapeliittaException&)
+		{
 		}
 
-		if (score <= alpha)
+		auto pv = transpositionTable.extractPv(pos);
+		assert(pv.size() >= 1);
+
+		if (!searching)
+		{
+			sync_cout << "info time " << 0 
+				      << " nodes " << nodeCount 
+					  << " nps " << (nodeCount / 0) * 1000 
+					  << " tbhits " << tbHits << std::endl 
+					  << "bestmove " << algebraicMove(pv[0]);
+			break;
+		}
+
+		if (bestScore <= alpha)
 		{
 			alpha -= delta;
 			delta *= 2;
+			infoPv(pv, depth, bestScore, UpperBoundScore);
 			continue;
 		}
-		if (score >= beta)
+		if (bestScore >= beta)
 		{
 			beta += delta;
 			delta *= 2;
+			infoPv(pv, depth, bestScore, LowerBoundScore);
 			continue;
 		}
+		infoPv(pv, depth, bestScore, ExactScore);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
-		// Also reset the window completely if a mate is found.
+		// Also reset the window completely if a mate is found so that we don't miss shorter mates.
         if (depth >= 4 && !isMateScore(bestScore))
         {
 			alpha = bestScore - aspirationWindow;
@@ -209,9 +236,10 @@ void Search::think(Position& pos)
         delta = aspirationWindow;
         ++depth;
     }
+
+	sw.stop();
 }
 
-// Converts a move to algebraic notation.
 std::string Search::algebraicMove(const Move& move)
 {
 	static std::array<std::string, 64> squareToNotation = {
@@ -229,31 +257,30 @@ std::string Search::algebraicMove(const Move& move)
 		"p", "n", "b", "r", "q", "k"
 	};
 
-	std::stringstream ss;
+	std::string s;
 	auto from = move.getFrom();
 	auto to = move.getTo();
 	auto promotion = move.getPromotion();
 
-	ss << squareToNotation[from] << squareToNotation[to];
+	s += squareToNotation[from] + squareToNotation[to];
 	if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
 	{
-		ss << promotionToNotation[promotion];
+		s += promotionToNotation[promotion];
 	}
 
-	return ss.str();
+	return s;
 }
 
-// Same but for a list of moves.
 std::string Search::algebraicMoves(const std::vector<Move>& moves)
 {
-	std::stringstream ss;
+	std::string s;
 
 	for (auto& move : moves)
 	{
-		ss << algebraicMove(move) << " ";
+		s += algebraicMove(move) + " ";
 	}
 
-	return ss.str();
+	return s;
 }
 
 void Search::infoCurrMove(const Move& move, int depth, int nr)
@@ -377,9 +404,9 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     if (inCheck)
     {
         bestScore = matedInPly(ply);
+		delta = -infinity;
         MoveGen::generateLegalEvasions(pos, moveList);
         orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
-        delta = -infinity;
     }
     else
     {

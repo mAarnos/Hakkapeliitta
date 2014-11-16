@@ -9,6 +9,7 @@
 #include "history.hpp"
 #include "killer.hpp"
 #include "tt.hpp"
+#include "utils\stopwatch.hpp"
 
 const int mateScore = 32767; // mate in 0
 const int maxMateScore = 32767 - 1000; // mate in 500
@@ -81,11 +82,16 @@ private:
     static void orderCaptures(const Position& pos, MoveList& moveList);
     static void selectMove(MoveList& moveList, int currentMove);
 
+	// Statistics during search.
 	static int tbHits;
     static int nodeCount;
     static int nodesToTimeCheck;
+	static Stopwatch sw;
 
+	// Functions for printing info during search.
+	// Converts a move to algebraic notation.
 	static std::string algebraicMove(const Move& move);
+	// Same but for a list of moves.
 	static std::string algebraicMoves(const std::vector<Move>& moves);
 	static void infoCurrMove(const Move& move, int depth, int nr);
 	static void infoPv(const std::vector<Move>& moves, int depth, int score, int flags);
