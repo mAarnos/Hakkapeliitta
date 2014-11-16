@@ -120,6 +120,12 @@ void Search::think(Position& pos)
 				{
 					continue;
 				}
+#ifdef 0
+				if (depth >= 10)
+				{
+					infoCurrMove(move, depth, i);
+				}
+#endif
 				++nodeCount;
 
 				auto givesCheck = pos.inCheck();
@@ -196,11 +202,12 @@ void Search::think(Position& pos)
 
 		if (!searching)
 		{
-			sync_cout << "info time " << 0 
+			auto searchTime = sw.elapsed<std::chrono::milliseconds>();
+			sync_cout << "info time " << searchTime
 				      << " nodes " << nodeCount 
-					  << " nps " << (nodeCount / 0) * 1000 
+					  << " nps " << (nodeCount / searchTime + 1) * 1000
 					  << " tbhits " << tbHits << std::endl 
-					  << "bestmove " << algebraicMove(pv[0]);
+					  << " bestmove " << algebraicMove(pv[0]);
 			break;
 		}
 
@@ -314,9 +321,10 @@ void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int fl
 		ss << " upperbound ";
 	}
 
-	ss << " time " << 0 
+	auto searchTime = sw.elapsed<std::chrono::milliseconds>();
+	ss << " time " << searchTime
 	   << " nodes " << nodeCount 
-	   << " nps " << (nodeCount / 0) * 1000 
+	   << " nps " << (nodeCount / searchTime + 1) * 1000
 	   << " tbhits " << tbHits
 	   << " pv " << algebraicMoves(moves) << std::endl;
 
