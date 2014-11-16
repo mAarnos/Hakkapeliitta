@@ -1,7 +1,4 @@
 #include "large_pages.hpp"
 
 bool LargePages::allowedToUse;
-bool LargePages::inUse;
-#ifndef _WIN32
-int LargePages::num;
-#endif
+std::unordered_map<void*, size_t> LargePages::infoTable;

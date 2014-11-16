@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <iostream>
 #include <cstdio>
+#include <unordered_map>
 #ifdef _WIN32
 #define NOMINMAX
 #include <tchar.h>
@@ -25,8 +26,7 @@
 #else
 #include <cstring>
 #include <cstdlib>
-#include <sys/ipc.h>
-#include <sys/shm.h>
+#include <sys/mman.h>
 #endif
 
 class LargePages
@@ -35,16 +35,12 @@ public:
     static void initialize()
     {
         allowedToUse = false;
-        inUse = false;
-#ifndef _WIN32
-        num = -1;
-#endif
     }
 
     static void* malloc(size_t size, size_t alignment)
     {
         void* memory = nullptr;
-        inUse = false;
+		auto usedLargePages = false;
 
         if (allowedToUse)
         {
@@ -52,7 +48,7 @@ public:
             memory = VirtualAlloc(NULL, size, MEM_LARGE_PAGES | MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
             if (memory)
             {
-                inUse = true;
+				usedLargePages = true;
             }
             else
             {
@@ -60,8 +56,10 @@ public:
                 memory = _aligned_malloc(size, alignment);
             }
 #else
-            num = shmget(IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
-            if (num == -1)
+            memory = mmap(NULL, size, PROT_READ | PROT_WRITE, 
+                          MAP_PRIVATE | MAP_ANONYMOUS |MAP_POPULATE | MAP_HUGETLB, -1, 0);
+                          
+            if (memory == MAP_FAILED)
             {
                 std::cout << "ERROR: API     = shmget" << std::endl;
                 std::cout << "       errno   = " << errno << std::endl;
@@ -70,8 +68,7 @@ public:
             }
             else
             {
-                inUse = true;
-                memory = shmat(num, NULL, 0x0);
+				usedLargePages = true;
             }
 #endif
         }
@@ -84,6 +81,7 @@ public:
 #endif
         }
 
+		infoTable[memory] = (usedLargePages ? size : 0);
         return memory;
     }
 
@@ -93,7 +91,11 @@ public:
         {
             return;
         }
-        if (!inUse)
+
+		auto count = infoTable.count(memory);
+        auto size = (count > 0 ? infoTable[memory] : 0);
+		infoTable.erase(memory);
+		if (!count) 
         {
 #ifdef _WIN32
             _aligned_free(memory);
@@ -105,8 +107,7 @@ public:
 #ifdef _WIN32
         VirtualFree(memory, 0, MEM_RELEASE);
 #else
-        shmdt(memory);
-        shmctl(num, IPC_RMID, NULL);
+        munmap(memory, size);
 #endif
     }
 
@@ -117,10 +118,7 @@ public:
     }
 private:
     static bool allowedToUse;
-    static bool inUse;
-#ifndef _WIN32
-    static int num;
-#endif
+	static std::unordered_map<void*, size_t> infoTable;
 
 #ifdef _WIN32
 	static void displayError(TCHAR* pszAPI, DWORD dwError)
