@@ -120,7 +120,7 @@ void Search::think(Position& pos)
 				{
 					continue;
 				}
-#ifdef 0
+#ifdef INFO_CURR_MOVE
 				if (depth >= 10)
 				{
 					infoCurrMove(move, depth, i);
@@ -471,7 +471,9 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     return bestScore;
 }
 
+#ifdef _WIN32
 #pragma warning (disable : 4127) // shuts up warnings about conditional branches always being true/false
+#endif
 template <bool pvNode>
 int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
 {

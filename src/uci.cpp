@@ -194,6 +194,8 @@ void UCI::setOption(const Command& c)
         {
             LargePages::setAllowedToUse(false);
         }
+        auto ptr = LargePages::malloc(8 * 1024 * 1024, 64);
+        LargePages::free(ptr);
     }
 }
 

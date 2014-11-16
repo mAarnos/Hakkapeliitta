@@ -12,12 +12,13 @@
 
 #include <cstdint>
 #include <iostream>
-#include <tchar.h>
-#include <stdio.h>
+#include <cstdio>
 #ifdef _WIN32
 #define NOMINMAX
+#include <tchar.h>
 #include <windows.h>
 #else
+#include <cstdlib>
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #endif
@@ -52,11 +53,12 @@ public:
                 displayError(TEXT("VirtualAlloc"), GetLastError());
                 memory = _aligned_malloc(size, alignment);
             }
-#elif
+#else
             num = shmget (IPC_PRIVATE, size, IPC_CREAT | SHM_R | SHM_W | SHM_HUGETLB);
             if (num == -1)
             {
-                memory = memalign(alignment, size);
+                std::cout << "Large page allocation failed" << std::endl;
+                posix_memalign(&memory, alignment, size);
             }
             else
             {
@@ -69,8 +71,8 @@ public:
         {
 #ifdef _WIN32
             memory = _aligned_malloc(size, alignment);
-#elif
-            memory = memalign(alignment, size);
+#else
+            posix_memalign(&memory, alignment, size);
 #endif
         }
 
@@ -87,15 +89,15 @@ public:
         {
 #ifdef _WIN32
             _aligned_free(memory);
-#elif
-            free(((void**)memory)[-1]);
+#else
+            std::free(memory);
 #endif
             return;
         }
 #ifdef _WIN32
         VirtualFree(memory, 0, MEM_RELEASE);
-#elif
-        shmdt(A);
+#else
+        shmdt(memory);
         shmctl(num, IPC_RMID, NULL);
 #endif
     }
@@ -112,6 +114,7 @@ private:
     static int num;
 #endif
 
+#ifdef _WIN32
 	static void displayError(TCHAR* pszAPI, DWORD dwError)
 	{
 		LPVOID lpvMessageBuffer;
@@ -131,8 +134,9 @@ private:
 		// Free the buffer allocated by the system
 		LocalFree(lpvMessageBuffer);
 	}
+#endif
 
-    static void changeLargePagePrivileges(BOOL enabled)
+    static void changeLargePagePrivileges(bool enabled)
     {
 #ifdef _WIN32
         HANDLE           hToken;
