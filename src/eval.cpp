@@ -354,7 +354,6 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
-
             tempMove &= opponentKingZone;
             attackUnits += attackWeight[Piece::Knight] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
@@ -368,7 +367,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
-
+			tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
             tempMove &= opponentKingZone;
             attackUnits += attackWeight[Piece::Bishop] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
@@ -382,9 +381,21 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
-
+            tempMove = Bitboards::rookAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen) ^ pos.getBitboard(c, Piece::Rook)) & targetBitboard;
             tempMove &= opponentKingZone;
             attackUnits += attackWeight[Piece::Rook] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
+
+            if (!(Bitboards::files[file(from)] & pos.getBitboard(c, Piece::Pawn)))
+            {
+                if (!(Bitboards::files[file(from)] & pos.getBitboard(!c, Piece::Pawn)))
+                {
+                    scoreOpForColor += 10;
+                }
+                else
+                {
+                    scoreOpForColor += 5;
+                }
+            }
         }
 
         tempPiece = pos.getBitboard(c, Piece::Queen);
@@ -396,7 +407,6 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
-
             tempMove &= opponentKingZone;
             attackUnits += attackWeight[Piece::Queen] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
         }
@@ -421,7 +431,7 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
     if (pawnHashTable.probe(pos, scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
-    } 
+    }
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {

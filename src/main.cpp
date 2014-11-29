@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <fstream>
 #include "uci.hpp"
 #include "benchmark.hpp"
 #include "utils\threadpool.hpp"
@@ -9,7 +10,7 @@
 #include "utils\large_pages.hpp"
 
 // Things to test/add/do:
-// 1. TUNE THE EVALUATION! 
+// 1. TUNE THE EVALUATION! IT IS SO LAUGHABLY BAD THAT THIS IS FIRST!
 // 2. TUNE THE SEARCH!
 // 3. Material table
 // 4. SEE pruning at low depths
@@ -30,7 +31,7 @@ int main()
     Search::initialize();
     UCI uci;
 
-    Benchmark::runPerft();
+    // Benchmark::runPerft();
 
     uci.mainLoop();
 
