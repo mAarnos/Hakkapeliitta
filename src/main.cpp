@@ -33,6 +33,23 @@ int main()
 
     // Benchmark::runPerft();
 
+    Position pos;
+    bool zugzwangLikely;
+
+    // pos.initializePositionFromFen("8/8/8/ppk1p3/5n2/PP3B2/2P1p3/2N1Kb2 w - -");
+    // auto score = Search::quiescenceSearch(pos, 0, -infinity, infinity, pos.inCheck());
+
+    std::ifstream positions("C:\\blackWins.txt");
+    std::ofstream results("results.txt");
+    std::string text;
+
+    while (std::getline(positions, text))
+    {
+        pos.initializePositionFromFen(text);
+        auto score = Search::quiescenceSearch(pos, 0, -infinity, infinity, pos.inCheck());
+        results << score << std::endl;
+    }
+
     uci.mainLoop();
 
     return 0;

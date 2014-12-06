@@ -13,6 +13,7 @@ KillerTable Search::killerTable;
 
 int Search::contemptValue;
 std::array<int, 2> Search::contempt;
+std::array<HashKey, 128> Search::repetitionHashes;
 bool Search::searching;
 bool Search::pondering;
 bool Search::infinite;
@@ -68,6 +69,21 @@ void Search::initialize()
     {
         lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
     }
+}
+
+bool Search::repetitionDraw(const Position& pos, int ply)
+{
+    auto temp = std::max(ply - pos.getFiftyMoveDistance(), 0);
+
+    for (auto i = ply - 2; ply >= temp; ply -= 2)
+    {
+        if (repetitionHashes[i] == pos.getHashKey())
+        {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 void Search::think(Position& pos)
@@ -146,7 +162,7 @@ void Search::think(Position& pos)
 					score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
 						                              : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
 
-					if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
+					if (reduction && score > alpha) // Research in case reduced move is above alpha.
 					{
 						score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
 							                  : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
@@ -414,7 +430,8 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
         bestScore = matedInPly(ply);
 		delta = -infinity;
         MoveGen::generateLegalEvasions(pos, moveList);
-        orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
+        orderCaptures(pos, moveList);
+        // orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
     }
     else
     {
@@ -513,7 +530,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return contempt[pos.getSideToMove()];
     }
 
-    // Check for repetition draws here
+    if (repetitionDraw(pos, ply))
+    {
+        return contempt[pos.getSideToMove()];
+    }
 
     // Mate distance pruning, safe at all types of nodes.
     alpha = std::max(matedInPly(ply), alpha);
@@ -616,7 +636,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
             score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck) 
                                               : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));
 
-            if (reduction && score > alpha) // Research in case reduced move is above alpha(which shouldn't have happened).
+            if (reduction && score > alpha) // Research in case reduced move is above alpha.
             {
                 score = (newDepth > 0 ? -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck)
                                       : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));

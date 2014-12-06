@@ -270,7 +270,6 @@ template <bool side>
 void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 {
     int to;
-    auto pinned = 0;
     auto occupied = pos.getOccupiedSquares();
     auto targetBitboard = ~pos.getPieces(side);
 
@@ -282,11 +281,11 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     {
         to = Bitboards::popLsb(tempMove);
         if (!(Bitboards::pawnAttacks[side][to] & pos.getBitboard(!side, Piece::Pawn)
-           && Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight)
-           && Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King)
-           && Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
+           || Bitboards::knightAttacks[to] & pos.getBitboard(!side, Piece::Knight)
+           || Bitboards::kingAttacks[to] & pos.getBitboard(!side, Piece::King)
+           || Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
                                                       | pos.getBitboard(!side, Piece::Bishop))
-           && Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
+           || Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) 
                                                     | pos.getBitboard(!side, Piece::Rook))))
         {
             moves.push_back(Move(from, to, Piece::Empty, 0));
@@ -310,6 +309,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     auto checkerLocation = Bitboards::lsb(checkers);
 
     // Find all our pinned pieces.
+    auto pinned = 0ull;
     auto potentialPinners = (Bitboards::bishopAttacks(from, 0) 
                           & (pos.getBitboard(!side, Piece::Bishop) | pos.getBitboard(!side, Piece::Queen)));
     potentialPinners |= (Bitboards::rookAttacks(from, 0) 

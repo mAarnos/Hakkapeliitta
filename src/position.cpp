@@ -441,7 +441,7 @@ int Position::SEE(const Move& m) const
         attackers &= occupied;
 
         stm = !stm;
-        if ((next % 6) == Piece::King && (attackers & bitboards[12 + stm]))
+        if ((board[next] % 6) == Piece::King && (attackers & bitboards[12 + stm]))
             break;
         numberOfCaptures++;
     }

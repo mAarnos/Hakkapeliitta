@@ -49,12 +49,15 @@ public:
     static TranspositionTable transpositionTable;
     static HistoryTable historyTable;
     static KillerTable killerTable;
+
+    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 private:
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 
-    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 
+
+    static std::array<HashKey, 128> repetitionHashes;
     static std::array<int, 2> contempt;
 
     // Pruning margins and depth limits.
@@ -95,6 +98,8 @@ private:
 	static std::string algebraicMoves(const std::vector<Move>& moves);
 	static void infoCurrMove(const Move& move, int depth, int nr);
 	static void infoPv(const std::vector<Move>& moves, int depth, int score, int flags);
+
+    static bool repetitionDraw(const Position& pos, int ply);
 };
 
 #endif
