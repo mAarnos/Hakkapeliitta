@@ -36,10 +36,10 @@ int main()
     Position pos;
     bool zugzwangLikely;
 
-    // pos.initializePositionFromFen("8/8/8/ppk1p3/5n2/PP3B2/2P1p3/2N1Kb2 w - -");
+    // pos.initializePositionFromFen("2kr1b2/pb3p2/2pqpn2/8/2B1q3/1N5Q/P2B1PPP/2Q2RK1 b - -");
     // auto score = Search::quiescenceSearch(pos, 0, -infinity, infinity, pos.inCheck());
 
-    std::ifstream positions("C:\\blackWins.txt");
+    std::ifstream positions("C:\\draws.txt");
     std::ofstream results("results.txt");
     std::string text;
 

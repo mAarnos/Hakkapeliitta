@@ -337,8 +337,9 @@ bool Position::isAttacked(Square sq, Color side) const
 int Position::SEE(const Move& m) const
 {
     // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
+    // Score for kings is not mateScore due to some annoying wrap-around problems. Doesn't really matter though.
     static const std::array<int, 13> pieceValues = {
-        100, 300, 300, 500, 900, 32767, 100, 300, 300, 500, 900, 32767, 0
+        100, 300, 300, 500, 900, 10000, 100, 300, 300, 500, 900, 10000, 0
     };
     static std::array<int, 32> materialGains;
     auto occupied = getOccupiedSquares();

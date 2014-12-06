@@ -430,8 +430,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
         bestScore = matedInPly(ply);
 		delta = -infinity;
         MoveGen::generateLegalEvasions(pos, moveList);
-        orderCaptures(pos, moveList);
-        // orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
+        orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
     }
     else
     {
