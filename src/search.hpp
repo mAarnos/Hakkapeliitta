@@ -55,8 +55,6 @@ private:
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
 
-
-
     static std::array<HashKey, 128> repetitionHashes;
     static std::array<int, 2> contempt;
 

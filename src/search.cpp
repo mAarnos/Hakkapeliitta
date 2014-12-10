@@ -120,12 +120,14 @@ void Search::think(Position& pos)
 		pos.unmakeMove(rootMoveList[i], history);
 	}
 
+    repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1;;)
     {
 		auto movesSearched = 0;
 		auto bestScore = matedInPly(0), score = matedInPly(0);
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
 
+        // TODO: move ordering needs to be fixed at root!
 		orderMoves(pos, rootMoveList, bestMove, 0);
 		try {
 			for (auto i = 0; i < rootMoveList.size(); ++i)
@@ -136,13 +138,13 @@ void Search::think(Position& pos)
 				{
 					continue;
 				}
+                ++nodeCount;
 #ifdef INFO_CURR_MOVE
 				if (depth >= 10)
 				{
 					infoCurrMove(move, depth, i);
 				}
 #endif
-				++nodeCount;
 
 				auto givesCheck = pos.inCheck();
 				auto extension = givesCheck ? 1 : 0;
@@ -423,7 +425,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     MoveList moveList;
     History history;
 
-    // Maybe add checking for draw here?
+    // Maybe add checking for draw here? 
 
     if (inCheck)
     {
@@ -488,7 +490,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
 }
 
 #ifdef _WIN32
-#pragma warning (disable : 4127) // shuts up warnings about conditional branches always being true/false
+#pragma warning (disable : 4127) // Shuts up warnings about conditional branches always being true/false.
 #endif
 template <bool pvNode>
 int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
@@ -498,10 +500,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
     MoveList moveList;
     History history;
-    Move ttMove, bestMove(0, 0, 0, 0);
+    Move ttMove(0, 0, 0, 0), bestMove(0, 0, 0, 0);
     TTFlags ttFlag = UpperBoundScore;
     int score;
-    auto zugzwangLikely = false;
+    auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
 
 	// Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());
@@ -523,7 +525,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
             MoveGen::generateLegalEvasions(pos, moveList);
             if (moveList.empty())
             {
-                return matedInPly(ply); // Can't claim draw on fifty move if mated.
+                return bestScore; // Can't claim draw on fifty move if mated.
             }
         }
         return contempt[pos.getSideToMove()];
@@ -568,10 +570,11 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
     {
+        repetitionHashes[ply] = pos.getHashKey();
         pos.makeNullMove(history);
         ++nodeCount;
-        score = (depth - 1 - nullReduction <= 0 ? -quiescenceSearch(pos, ply + 1, alpha, beta, false)
-                                                : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
+        score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, alpha, beta, false)
+                                                  : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
         pos.unmakeNullMove(history);
         if (score >= beta)
         {
@@ -599,6 +602,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
     auto oneReply = (moveList.size() == 1);
 
+    repetitionHashes[ply] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);

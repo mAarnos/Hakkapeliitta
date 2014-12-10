@@ -1,6 +1,7 @@
 #include "tt.hpp"
 #include <cassert>
 #include <cmath>
+#include <unordered_set>
 #include "utils\clamp.hpp"
 #include "search.hpp"
 
@@ -164,6 +165,7 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
 std::vector<Move> TranspositionTable::extractPv(Position root) const
 {
     std::vector<Move> pv;
+    std::unordered_set<HashKey> previousHashes;
     Move m;
     History history;
 
@@ -182,13 +184,14 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
 
         if ((entry > 3) // No entry found
         || (hashEntry.getFlags(entry) != ExactScore && ply >= 2) // Always try to get a move to ponder on.
-        || !hashEntry.getBestMove(entry)) // No move found in the entry.
-        // root.repetitionDraw() && ply >= 2 // Repetition.
+        || !hashEntry.getBestMove(entry) // No move found in the entry.
+        || previousHashes.count(root.getHashKey()) > 0 && ply >= 2) // Repetition.
         {
             break;
         }
         m.setMove(hashEntry.getBestMove(entry));
         pv.push_back(m);
+        previousHashes.insert(root.getHashKey());
         root.makeMove(m, history);
     }
 
