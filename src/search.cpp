@@ -53,6 +53,9 @@ int Search::nodeCount;
 int Search::nodesToTimeCheck;
 Stopwatch Search::sw;
 
+int lastRootScore;
+int currentRootScore;
+
 void Search::initialize()
 {
     contemptValue = 0;
@@ -101,6 +104,7 @@ void Search::think(Position& pos)
     nodesToTimeCheck = 10000;
     contempt[pos.getSideToMove()] = -contemptValue;
     contempt[!pos.getSideToMove()] = contemptValue;
+    lastRootScore = -mateScore;
     historyTable.age();
     killerTable.clear();
 	sw.reset();
@@ -124,8 +128,9 @@ void Search::think(Position& pos)
     for (auto depth = 1;;)
     {
 		auto movesSearched = 0;
-		auto bestScore = matedInPly(0), score = matedInPly(0);
+		auto score = matedInPly(0);
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+        currentRootScore = -mateScore;
 
         // TODO: move ordering needs to be fixed at root!
 		orderMoves(pos, rootMoveList, bestMove, 0);
@@ -179,9 +184,9 @@ void Search::think(Position& pos)
 				pos.unmakeMove(move, history);
 				++movesSearched;
 
-				if (score > bestScore)
+                if (score > currentRootScore)
 				{
-					bestScore = score;
+                    currentRootScore = score;
 					if (score > alpha)
 					{
 						bestMove = move;
@@ -203,18 +208,20 @@ void Search::think(Position& pos)
 							}
 							break;
 						}
-						transpositionTable.save(pos, 0, bestMove, bestScore, depth, UpperBoundScore);
+                        transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, UpperBoundScore);
 						auto pv = transpositionTable.extractPv(pos);
-						infoPv(pv, depth, bestScore, ExactScore);
+                        infoPv(pv, depth, currentRootScore, ExactScore);
 					}
 				}
 			}
-			transpositionTable.save(pos, 0, bestMove, bestScore, depth, bestScore >= beta ? LowerBoundScore : ExactScore);
+
+            transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
 		}
 		catch (const HakkapeliittaException&)
 		{
 		}
 
+        lastRootScore = currentRootScore;
 		auto pv = transpositionTable.extractPv(pos);
 		assert(pv.size() >= 1);
 
@@ -229,29 +236,29 @@ void Search::think(Position& pos)
 			break;
 		}
 
-		if (bestScore <= alpha)
+        if (currentRootScore <= alpha)
 		{
 			alpha -= delta;
 			delta *= 2;
-			infoPv(pv, depth, bestScore, UpperBoundScore);
+            infoPv(pv, depth, currentRootScore, UpperBoundScore);
 			continue;
 		}
-		if (bestScore >= beta)
+        if (currentRootScore >= beta)
 		{
 			beta += delta;
 			delta *= 2;
-			infoPv(pv, depth, bestScore, LowerBoundScore);
+            infoPv(pv, depth, currentRootScore, LowerBoundScore);
 			continue;
 		}
-		infoPv(pv, depth, bestScore, ExactScore);
+        infoPv(pv, depth, currentRootScore, ExactScore);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
 		// Also reset the window completely if a mate is found so that we don't miss shorter mates.
-        if (depth >= 4 && !isMateScore(bestScore))
+        if (depth >= 4 && !isMateScore(currentRootScore))
         {
-			alpha = bestScore - aspirationWindow;
-			beta = bestScore + aspirationWindow;
+            alpha = currentRootScore - aspirationWindow;
+            beta = currentRootScore + aspirationWindow;
         }
         else
         {
@@ -511,7 +518,33 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     if (--nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        // FIXME! Check for timeout here.
+        if (!infinite)
+        {
+            auto time = sw.elapsed<std::chrono::milliseconds>();
+            if (time > maxTime) // Hard cutoff for search time, if we don't stop we risk running out of time later.
+            {
+                searching = false;
+            }
+            else if (time > targetTime)
+            {
+                if (currentRootScore == -mateScore) // No score for root -> new iteration -> most likely takes too long to complete -> stop
+                {
+                    searching = false;
+                }
+                else if (currentRootScore < lastRootScore) // Score dropping, extend search time up to 5x.
+                {
+                    if (time > 5 * targetTime) 
+                    {
+                        searching = false;
+                    }
+                }
+            }
+            else
+            {
+                // TODO: Add easy move here.
+            }
+        }
+
         if (!searching)
         {
             throw HakkapeliittaException("Search: stop");
@@ -690,7 +723,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     {
         if (!prunedMoves)
         {
-            return (inCheck ? matedInPly(ply) : contempt[pos.getSideToMove()]);
+            return (inCheck ? bestScore : contempt[pos.getSideToMove()]);
         }
         return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
     }

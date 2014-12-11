@@ -209,66 +209,44 @@ void UCI::newGame(const Command&)
 
 void UCI::go(const Command& c)
 {
+    static const auto lagBuffer = 50;
     auto s = c.getArguments();
     auto movesToGo = 25;
+    auto moveTime = 0;
     std::array<int, 2> timeLimits = { 0, 0 };
     std::array<int, 2> incrementAmount = { 0, 0 };
+    std::istringstream iss(s);
+    std::string token;
+    Search::searching = true;
+    Search::pondering = false;
+    Search::infinite = false;
 
-	// Initialize search flags.
-	Search::searching = true;
-	Search::pondering = false;
-	Search::infinite = false;
-
-    auto pos = s.find("movetime");
-    if (pos != std::string::npos)
+    // Parse the string to get the time limits.
+    while (iss >> token)
     {
-        Search::targetTime = Search::maxTime = stoi(s.substr(pos + 9));
+        if (token == "movetime") iss >> moveTime;
+        else if (token == "infinite") Search::infinite = true;
+        else if (token == "wtime") iss >> timeLimits[Color::White];
+        else if (token == "btime") iss >> timeLimits[Color::Black];
+        else if (token == "winc") iss >> incrementAmount[Color::White];
+        else if (token == "binc") iss >> incrementAmount[Color::Black];
+        else if (token == "movestogo") { iss >> movesToGo; movesToGo += 2; } 
     }
 
-    pos = s.find("infinite");
-    if (pos != std::string::npos)
+    // Allocate the time limits.
+    if (moveTime)
     {
-        Search::infinite = true;
-        Search::targetTime = Search::maxTime = 2000000000;
+        Search::targetTime = Search::maxTime = moveTime;
+    }
+    else
+    {
+        auto time = timeLimits[root.getSideToMove()];
+        auto increment = incrementAmount[root.getSideToMove()];
+        Search::targetTime = std::min(std::max(1, time / movesToGo + increment - lagBuffer), time - lagBuffer);
+        Search::maxTime = std::min(std::max(1, time / 2 + increment), time - lagBuffer);
     }
 
-    pos = s.find("wtime");
-    if (pos != std::string::npos)
-    {
-        timeLimits[Color::White] = stoi(s.substr(pos + 6));
-    }
-
-    pos = s.find("btime");
-    if (pos != std::string::npos)
-    {
-        timeLimits[Color::Black] = stoi(s.substr(pos + 6));
-    }
-
-    pos = s.find("winc");
-    if (pos != std::string::npos)
-    {
-        incrementAmount[Color::White] = stoi(s.substr(pos + 5));
-    }
-
-    pos = s.find("binc");
-    if (pos != std::string::npos)
-    {
-        incrementAmount[Color::Black] = stoi(s.substr(pos + 5));
-    }
-
-    pos = s.find("movestogo");
-    if (pos != std::string::npos)
-    {
-        movesToGo = stoi(s.substr(pos + 10)) + 2;
-    }
-
-    // Allocate time for search. Move to another function?
-    const auto lagBuffer = 50;
-    auto time = timeLimits[root.getSideToMove()];
-    auto increment = incrementAmount[root.getSideToMove()];
-    Search::targetTime = std::min(std::max(1, time / movesToGo + increment - lagBuffer), time - lagBuffer);
-    Search::maxTime = std::min(std::max(1, time / 2 + increment), time - lagBuffer);
-
+    // And finally start searching.
 	Search::think(root);
 }
 
