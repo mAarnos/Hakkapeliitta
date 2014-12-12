@@ -31,10 +31,6 @@ int main()
     Search::initialize();
     UCI uci;
 
-    {
-        ThreadPool t(4);
-    }
-
     // Benchmark::runPerft();
 
     /*

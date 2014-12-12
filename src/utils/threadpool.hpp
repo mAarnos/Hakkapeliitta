@@ -12,11 +12,14 @@
 // A simple thread pool implementation.
 // All functions given as jobs must return nothing(i.e. be void).
 // TODO: make this work with everything -> requires std::future
+// TODO: after VS fixes their fuckup with calling join in destructors remove terminate.
 class ThreadPool
 {
 public:
     ThreadPool(int amountOfThreads);
-    ~ThreadPool();
+
+    // Needs to be called before ThreadPool is destructed.
+    void terminate();
 
     template<class Fn, class... Args>
     void addJob(Fn&& fn, Args&&... args);
@@ -31,8 +34,8 @@ private:
     std::atomic<bool> terminateFlag;
 };
 
-inline ThreadPool::ThreadPool(int amountOfThreads):
-terminateFlag(false)
+inline ThreadPool::ThreadPool(int amountOfThreads) :
+    terminateFlag(false)
 {
     for (auto i = 0; i < amountOfThreads; ++i)
     {
@@ -40,7 +43,7 @@ terminateFlag(false)
     }
 }
 
-inline ThreadPool::~ThreadPool()
+inline void ThreadPool::terminate()
 {
     terminateFlag = true;
     cv.notify_all();
@@ -74,7 +77,6 @@ inline void ThreadPool::loop()
 
         if (terminateFlag)
         {
-            std::cout << "out" << std::endl;
             return;
         }
 

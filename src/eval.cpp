@@ -428,13 +428,10 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
-    // TODO: put this back in after testing that other stuff works.
-    /*
     if (pawnHashTable.probe(pos, scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
-    */
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {

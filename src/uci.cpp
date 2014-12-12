@@ -125,6 +125,8 @@ void UCI::stop(const Command&)
 
 void UCI::quit(const Command&)
 {
+    Search::searching = false; // Send a signal for the search to stop. Without this terminating will finish whenever.
+    tp.terminate();
     exit(0);
 }
 
