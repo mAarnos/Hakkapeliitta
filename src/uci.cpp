@@ -47,7 +47,7 @@ void UCI::mainLoop()
         Command currentCommand(matches[1], matches[2]);
 
         // If we are currently searching only the commands stop and quit are legal.
-        if (Search::searching && currentCommand.getName() != "stop" && currentCommand.getName() != "quit")
+        if (Search::searching && currentCommand.getName() != "stop" && currentCommand.getName() != "quit" && currentCommand.getName() != "isready")
         {
             continue;
         }
@@ -178,8 +178,9 @@ void UCI::setOption(const Command& c)
         Search::historyTable.clear();
         Search::killerTable.clear();
         Evaluation::pawnHashTable.clear();
+        sync_cout << "info string hash cleared" << std::endl;
     }
-    else if (option == "syzygyprobelimit") // FIX ME!
+    else if (option == "syzygyprobelimit") // TODO: implement this
     {
         int syzygyProbeLimit;
         try
@@ -191,7 +192,7 @@ void UCI::setOption(const Command& c)
             syzygyProbeLimit = 0;
         }
     }
-    else if (option == "syzygypath") // FIX ME!
+    else if (option == "syzygypath") // TODO: implement this
     {
     }
     else if (option == "largepages")

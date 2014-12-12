@@ -51,6 +51,7 @@ const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
 int Search::tbHits;
 int Search::nodeCount;
 int Search::nodesToTimeCheck;
+int Search::selDepth;
 Stopwatch Search::sw;
 
 int lastRootScore;
@@ -67,6 +68,8 @@ void Search::initialize()
     nodeCount = 0;
 	tbHits = 0;
     nodesToTimeCheck = 10000;
+    selDepth = 1;
+    lastRootScore = currentRootScore = -mateScore;
 
     for (auto i = 0; i < 256; ++i)
     {
@@ -105,6 +108,7 @@ void Search::think(Position& pos)
     contempt[pos.getSideToMove()] = -contemptValue;
     contempt[!pos.getSideToMove()] = contemptValue;
     lastRootScore = -mateScore;
+    selDepth = 1;
     historyTable.age();
     killerTable.clear();
 	sw.reset();
@@ -215,18 +219,14 @@ void Search::think(Position& pos)
 					}
 				}
 			}
-
-            transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
 		}
 		catch (const HakkapeliittaException&)
 		{
-            // If this is not done when an order to quit or stop comes we save nothing.
-            transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
 		}
 
+        transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
         lastRootScore = currentRootScore;
 		auto pv = transpositionTable.extractPv(pos);
-		assert(pv.size() >= 1);
 
 		if (!searching)
 		{
@@ -329,7 +329,7 @@ void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int fl
 {
 	std::stringstream ss;
 
-	ss << "info depth " << depth;
+	ss << "info depth " << depth << " seldepth " << selDepth;
 	if (isMateScore(score))
 	{
 		score = (score > 0 ? ((mateInPly(score + 1)) >> 1) : ((-score - mateScore) >> 1));
@@ -514,6 +514,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     TTFlags ttFlag = UpperBoundScore;
     int score;
     auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
+
+    // Used for sending seldepth info.
+    if (ply > selDepth)
+    {
+        selDepth = ply;
+    }
 
 	// Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());

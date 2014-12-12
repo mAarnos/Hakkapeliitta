@@ -16,6 +16,7 @@
 class ThreadPool
 {
 public:
+    // Constructs a new threadpool with n threads;
     ThreadPool(int amountOfThreads);
 
     // Needs to be called before ThreadPool is destructed.

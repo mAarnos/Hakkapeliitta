@@ -118,7 +118,7 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
                 // Correct the mate score back.
                 if (isMateScore(hashScore))
                 {
-                    hashScore += (hashScore > 0 ? -ply : ply);
+                    hashScore += static_cast<int16_t>(hashScore > 0 ? -ply : ply);
                 }
 
                 if (flags == ExactScore)
@@ -155,7 +155,7 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
                 }
             }
 
-            break; // Get out of the loop.
+            break; 
         }
     }
 
@@ -195,6 +195,7 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
         root.makeMove(m, history);
     }
 
+    assert(pv.size() >= 1);
     return pv;
 }
 

@@ -87,6 +87,7 @@ private:
 	static int tbHits;
     static int nodeCount;
     static int nodesToTimeCheck;
+    static int selDepth;
 	static Stopwatch sw;
 
 	// Functions for printing info during search.
