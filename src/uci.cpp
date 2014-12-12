@@ -20,6 +20,7 @@ UCI::UCI()
     addCommand("position", &UCI::position);
     addCommand("go", &UCI::go);
     addCommand("quit", &UCI::quit);
+    addCommand("displayboard", &UCI::displayBoard);
     root.initializePositionFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); // Only works if done last in main.cpp
 }
 
@@ -291,7 +292,7 @@ void UCI::position(const Command& c)
 
     for (auto& move : moves)
     {
-        Piece promotion = Piece::NoPiece;
+        Piece promotion = Piece::Empty;
         auto from = (move[0] - 'a') + 8 * (move[1] - '1');
         auto to = (move[2] - 'a') + 8 * (move[3] - '1');
 
@@ -317,4 +318,9 @@ void UCI::position(const Command& c)
 
         root.makeMove(Move(from, to, promotion, 0), history);
     }
+}
+
+void UCI::displayBoard(const Command&)
+{
+    root.displayBoard();
 }

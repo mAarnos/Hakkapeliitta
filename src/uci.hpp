@@ -49,6 +49,7 @@ private:
     static void newGame(const Command& c);
     static void position(const Command& c);
     static void go(const Command& c);
+    static void displayBoard(const Command& c);
 };
 
 
