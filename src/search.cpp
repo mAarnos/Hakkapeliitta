@@ -149,12 +149,10 @@ void Search::think(Position& pos)
 					continue;
 				}
                 ++nodeCount;
-#ifdef INFO_CURR_MOVE
-				if (depth >= 10)
+				if (depth >= 12)
 				{
 					infoCurrMove(move, depth, i);
 				}
-#endif
 
 				auto givesCheck = pos.inCheck();
 				auto extension = givesCheck ? 1 : 0;
@@ -371,6 +369,7 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
     for (auto i = 0; i < moveList.size(); ++i)
     {
         auto& move = moveList[i];
+
         if (move.getMove() == ttMove.getMove()) // Move from transposition table
         {
             move.setScore(hashMoveScore);
@@ -394,6 +393,7 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
             }
             else
             {
+                assert(historyTable.getScore(pos, move) < killerMoveScore[4]);
                 move.setScore(historyTable.getScore(pos, move));
             }
         }

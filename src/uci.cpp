@@ -79,8 +79,6 @@ void UCI::preprocessLine(std::string& line)
         return;
     }
 
-    // Change all characters to lowercase.
-    transform(line.begin(), line.end(), line.begin(), tolower);
     // Remove all extra whitespace.
     line = line.substr(line.find_first_not_of(' '));
     line = line.substr(0, line.find_last_not_of(' ') + 1);
@@ -100,7 +98,7 @@ void UCI::sendInformation(const Command&)
 
     // Send all possible options the engine has that can be modified.
     sync_cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
-    sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
+    sync_cout << "option name PawnHash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
     sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
@@ -133,18 +131,19 @@ void UCI::quit(const Command&)
 void UCI::setOption(const Command& c)
 {
     std::string option, parameter;
+    auto arguments = c.getArguments();
 
     // The string s for setoption comes in the form "name" option "value" parameter.
     // We just ignore "name" and "value" and get option and parameter.
     std::regex expr("\\w*\\s(\\w*)\\s\\w*\\s*(.*)");
     std::smatch matches;
-    if (std::regex_search(c.getArguments(), matches, expr))
+    if (std::regex_search(arguments, matches, expr))
     {
         option = matches[1];
         parameter = matches[2];
     }
 
-    if (option == "contempt")
+    if (option == "Contempt")
     {
         try
         {
@@ -155,24 +154,24 @@ void UCI::setOption(const Command& c)
             Search::contemptValue = 0;
         }
     }
-    else if (option == "hash" || option == "pawn") // Thanks to our parsing pawn hash is shortened to pawn
+    else if (option == "Hash" || option == "PawnHash") // Thanks to our parsing pawn hash is shortened to pawn
     {
         int sizeInMegabytes;
 
         try
         {
             sizeInMegabytes = stoi(parameter);
-            sizeInMegabytes = clamp(sizeInMegabytes, 1, option == "hash" ? 65536 : 8192);
+            sizeInMegabytes = clamp(sizeInMegabytes, 1, option == "Hash" ? 65536 : 8192);
         }
         catch (const std::exception&)
         {
-            sizeInMegabytes = (option == "hash" ? 32 : 4);
+            sizeInMegabytes = (option == "Hash" ? 32 : 4);
         }
 
-        option == "hash" ? Search::transpositionTable.setSize(sizeInMegabytes)
+        option == "Hash" ? Search::transpositionTable.setSize(sizeInMegabytes)
                          : Evaluation::pawnHashTable.setSize(sizeInMegabytes);
     }
-    else if (option == "clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
+    else if (option == "Clear") // Thanks to our parsing clear hash is shortened to clear. Can't be helped.
     {
         Search::transpositionTable.clear();
         Search::historyTable.clear();
@@ -180,7 +179,7 @@ void UCI::setOption(const Command& c)
         Evaluation::pawnHashTable.clear();
         sync_cout << "info string hash cleared" << std::endl;
     }
-    else if (option == "syzygyprobelimit") // TODO: implement this
+    else if (option == "Syzygyprobelimit") // TODO: implement this
     {
         int syzygyProbeLimit;
         try
@@ -192,10 +191,10 @@ void UCI::setOption(const Command& c)
             syzygyProbeLimit = 0;
         }
     }
-    else if (option == "syzygypath") // TODO: implement this
+    else if (option == "Syzygypath") // TODO: implement this
     {
     }
-    else if (option == "largepages")
+    else if (option == "Largepages")
     {
         if (parameter == "true")
         {

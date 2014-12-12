@@ -1,9 +1,7 @@
 #include <iostream>
 #include <thread>
-#include <fstream>
 #include "uci.hpp"
 #include "benchmark.hpp"
-#include "utils\threadpool.hpp"
 #include "eval.hpp"
 #include "search.hpp"
 #include "utils\synchronized_ostream.hpp"
