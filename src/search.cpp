@@ -78,7 +78,7 @@ bool Search::repetitionDraw(const Position& pos, int ply)
 {
     auto temp = std::max(ply - pos.getFiftyMoveDistance(), 0);
 
-    for (auto i = ply - 2; ply >= temp; ply -= 2)
+    for (auto i = ply - 2; i >= temp; i -= 2)
     {
         if (repetitionHashes[i] == pos.getHashKey())
         {
@@ -127,12 +127,13 @@ void Search::think(Position& pos)
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1;;)
     {
+        auto previousAlpha = alpha;
+        auto previousBeta = beta;
 		auto movesSearched = 0;
 		auto score = matedInPly(0);
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
         currentRootScore = -mateScore;
 
-        // TODO: move ordering needs to be fixed at root!
 		orderMoves(pos, rootMoveList, bestMove, 0);
 		try {
 			for (auto i = 0; i < rootMoveList.size(); ++i)
@@ -219,6 +220,8 @@ void Search::think(Position& pos)
 		}
 		catch (const HakkapeliittaException&)
 		{
+            // If this is not done when an order to quit or stop comes we save nothing.
+            transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
 		}
 
         lastRootScore = currentRootScore;
@@ -228,22 +231,22 @@ void Search::think(Position& pos)
 		if (!searching)
 		{
 			auto searchTime = sw.elapsed<std::chrono::milliseconds>();
-			sync_cout << "info time " << searchTime
-				      << " nodes " << nodeCount 
-					  << " nps " << (nodeCount / searchTime + 1) * 1000
-					  << " tbhits " << tbHits << std::endl 
-					  << " bestmove " << algebraicMove(pv[0]);
+            sync_cout << "info time " << searchTime
+                      << " nodes " << nodeCount
+                      << " nps " << (nodeCount / searchTime + 1) * 1000
+                      << " tbhits " << tbHits << std::endl
+                      << "bestmove " << algebraicMove(pv[0]) << std::endl;;
 			break;
 		}
 
-        if (currentRootScore <= alpha)
+        if (currentRootScore <= previousAlpha)
 		{
 			alpha -= delta;
 			delta *= 2;
             infoPv(pv, depth, currentRootScore, UpperBoundScore);
 			continue;
 		}
-        if (currentRootScore >= beta)
+        if (currentRootScore >= previousBeta)
 		{
 			beta += delta;
 			delta *= 2;
@@ -347,11 +350,11 @@ void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int fl
 	}
 
 	auto searchTime = sw.elapsed<std::chrono::milliseconds>();
-	ss << " time " << searchTime
-	   << " nodes " << nodeCount 
-	   << " nps " << (nodeCount / searchTime + 1) * 1000
-	   << " tbhits " << tbHits
-	   << " pv " << algebraicMoves(moves) << std::endl;
+    ss << " time " << searchTime
+       << " nodes " << nodeCount
+       << " nps " << (nodeCount / (searchTime + 1)) * 1000
+       << " tbhits " << tbHits
+       << " pv " << algebraicMoves(moves) << std::endl;
 
 	sync_cout << ss.str(); 
 }
@@ -575,7 +578,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     if (alpha >= beta)
         return alpha;
 
-    // Transposition table probe.
+    // Probe the transposition table. Possibly the logic should be moved here.
     if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
     {
         return score;

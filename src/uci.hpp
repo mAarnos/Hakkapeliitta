@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include "position.hpp"
+#include "utils\threadpool.hpp"
 
 class UCI
 {
@@ -36,6 +37,7 @@ private:
     static void preprocessLine(std::string& line);
 
     static Position root;
+    static ThreadPool tp;
 
     // UCI commands.
 

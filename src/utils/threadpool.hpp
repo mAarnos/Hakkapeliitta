@@ -11,7 +11,7 @@
 
 // A simple thread pool implementation.
 // All functions given as jobs must return nothing(i.e. be void).
-// Return types are simulated by a reference input parameter.
+// TODO: make this work with everything -> requires std::future
 class ThreadPool
 {
 public:
@@ -36,7 +36,7 @@ terminateFlag(false)
 {
     for (auto i = 0; i < amountOfThreads; ++i)
     {
-        threads.push_back(std::thread(&ThreadPool::loop, this));
+        threads.emplace_back(&ThreadPool::loop, this);
     }
 }
 
@@ -68,9 +68,16 @@ inline void ThreadPool::loop()
     {
         std::unique_lock<std::mutex> lock(jobQueueMutex);
         while (!terminateFlag && jobQueue.empty())
+        {
             cv.wait(lock);
+        }
+
         if (terminateFlag)
+        {
+            std::cout << "out" << std::endl;
             return;
+        }
+
         auto job = jobQueue.front();
         jobQueue.pop();
         lock.unlock();

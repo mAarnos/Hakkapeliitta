@@ -8,6 +8,7 @@
 #include "utils\large_pages.hpp"
 
 Position UCI::root;
+ThreadPool UCI::tp(1);
 
 UCI::UCI()
 {
@@ -19,6 +20,7 @@ UCI::UCI()
     addCommand("position", &UCI::position);
     addCommand("go", &UCI::go);
     addCommand("quit", &UCI::quit);
+    root.initializePositionFromFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"); // Only works if done last in main.cpp
 }
 
 void UCI::mainLoop()
@@ -43,6 +45,12 @@ void UCI::mainLoop()
         // matches[1] == command name
         // matches[2] == parameters
         Command currentCommand(matches[1], matches[2]);
+
+        // If we are currently searching only the commands stop and quit are legal.
+        if (Search::searching && currentCommand.getName() != "stop" && currentCommand.getName() != "quit")
+        {
+            continue;
+        }
 
         // Go through the list of commands and call the correct function if the command entered is known.
         // If the command is unknown report that.
@@ -247,7 +255,7 @@ void UCI::go(const Command& c)
     }
 
     // And finally start searching.
-	Search::think(root);
+    tp.addJob(Search::think, root);
 }
 
 void UCI::position(const Command& c)

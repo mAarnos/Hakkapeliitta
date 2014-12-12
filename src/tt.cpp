@@ -116,9 +116,9 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
             if (hashDepth >= depth)
             {
                 // Correct the mate score back.
-                if (isMateScore(score))
+                if (isMateScore(hashScore))
                 {
-                    score += (score > 0 ? -ply : ply);
+                    hashScore += (hashScore > 0 ? -ply : ply);
                 }
 
                 if (flags == ExactScore)
@@ -166,7 +166,7 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
 {
     std::vector<Move> pv;
     std::unordered_set<HashKey> previousHashes;
-    Move m;
+    Move m(0, 0, 0, 0);
     History history;
 
     for (auto ply = 0; ply < 128; ++ply)

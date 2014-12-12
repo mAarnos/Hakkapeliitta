@@ -31,8 +31,13 @@ int main()
     Search::initialize();
     UCI uci;
 
+    {
+        ThreadPool t(4);
+    }
+
     // Benchmark::runPerft();
 
+    /*
     Position pos;
     bool zugzwangLikely;
 
@@ -49,6 +54,7 @@ int main()
         auto score = Search::quiescenceSearch(pos, 0, -infinity, infinity, pos.inCheck());
         results << score << std::endl;
     }
+    */
 
     uci.mainLoop();
 
