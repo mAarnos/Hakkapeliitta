@@ -92,6 +92,22 @@ bool Search::repetitionDraw(const Position& pos, int ply)
     return false;
 }
 
+void removeIllegalMoves(Position& pos, MoveList& moveList)
+{
+    History history;
+    auto marker = 0;
+
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        if (!pos.makeMove(moveList[i], history))
+        {
+            continue;
+        }
+        moveList[marker++] = moveList[i];
+        pos.unmakeMove(moveList[i], history);
+    }
+}
+
 void Search::think(Position& pos)
 {
 	auto alpha = -infinity;
@@ -116,17 +132,7 @@ void Search::think(Position& pos)
 
 	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) 
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
-	// Remove all illegal moves.
-	auto marker = 0;
-	for (auto i = 0; i < rootMoveList.size(); ++i)
-	{
-		if (!pos.makeMove(rootMoveList[i], history))
-		{
-			continue;
-		}
-		rootMoveList[marker++] = rootMoveList[i];
-		pos.unmakeMove(rootMoveList[i], history);
-	}
+    removeIllegalMoves(pos, rootMoveList);
 
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1; depth < 128; )
@@ -243,25 +249,37 @@ void Search::think(Position& pos)
             break;
 		}
 
-        if (currentRootScore <= previousAlpha)
+        // The score is outside the aspiration windows, we need to loosen them up.
+        if (currentRootScore <= previousAlpha || currentRootScore >= previousBeta)
 		{
-			alpha -= delta;
-			delta *= 2;
-            infoPv(pv, depth, currentRootScore, UpperBoundScore);
-			continue;
-		}
-        if (currentRootScore >= previousBeta)
-		{
-			beta += delta;
-			delta *= 2;
-            infoPv(pv, depth, currentRootScore, LowerBoundScore);
+            auto lowerBound = currentRootScore >= previousBeta;
+            if (isMateScore(currentRootScore)) 
+            {
+                // We apparently found a mate, in this case we remove aspiration windows completely to not miss a faster mate.
+                alpha = -infinity;
+                beta = infinity;
+            }
+            else
+            {
+                // Loosen the window we breached a bit. 
+                if (lowerBound)
+                {
+                    beta += delta;
+                }
+                else
+                {
+                    alpha -= delta;
+                }
+                delta *= 2; // Exponential increase to the amount of widening seems best.
+            }
+            infoPv(pv, depth, currentRootScore, lowerBound ? LowerBoundScore : UpperBoundScore);
 			continue;
 		}
         infoPv(pv, depth, currentRootScore, ExactScore);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
-		// Also reset the window completely if a mate is found so that we don't miss shorter mates.
+		// Also don't use aspiration windows when searching for faster mate.
         if (depth >= 4 && !isMateScore(currentRootScore))
         {
             alpha = currentRootScore - aspirationWindow;
@@ -399,7 +417,6 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
             }
             else
             {
-                assert(historyTable.getScore(pos, move) < killerMoveScore[4]);
                 move.setScore(historyTable.getScore(pos, move));
             }
         }

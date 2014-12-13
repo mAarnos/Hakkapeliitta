@@ -197,7 +197,6 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
         root.makeMove(m, history);
     }
 
-    assert(pv.size() >= 1);
     return pv;
 }
 
