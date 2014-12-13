@@ -531,12 +531,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     assert(alpha < beta);
 
     auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
+    auto ttFlag = UpperBoundScore;
+    auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
     MoveList moveList;
     History history;
     Move ttMove(0, 0, 0, 0), bestMove(0, 0, 0, 0);
-    TTFlags ttFlag = UpperBoundScore;
     int score;
-    auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
 
     // Used for sending seldepth info.
     if (ply > selDepth)
@@ -603,7 +603,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Mate distance pruning, safe at all types of nodes.
     alpha = std::max(matedInPly(ply), alpha);
-    beta = std::min(mateInPly(ply - 1), beta);
+    beta = std::min(mateInPly(ply + 1), beta);
     if (alpha >= beta)
         return alpha;
 
