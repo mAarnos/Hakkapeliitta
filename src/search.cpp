@@ -628,7 +628,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         auto razoringAlpha = alpha - razoringMargins[depth];
         score = quiescenceSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
         if (score <= razoringAlpha)
+        {
+            transpositionTable.save(pos, ply, ttMove, score, depth, UpperBoundScore);
             return score;
+        }
     }
 
     // Double null move pruning.
@@ -638,7 +641,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         repetitionHashes[ply] = pos.getHashKey();
         pos.makeNullMove(history);
         ++nodeCount;
-        score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, alpha, beta, false)
+        score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, -beta, -beta + 1, false)
                                                   : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
         pos.unmakeNullMove(history);
         if (score >= beta)
@@ -662,7 +665,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     orderMoves(pos, moveList, ttMove, ply);
 
     // Set flags for certain kinds of nodes.
-    auto futileNode = (!inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
     auto oneReply = (moveList.size() == 1);
