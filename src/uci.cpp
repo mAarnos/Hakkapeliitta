@@ -253,8 +253,8 @@ void UCI::go(const Command& c)
     {
         auto time = timeLimits[root.getSideToMove()];
         auto increment = incrementAmount[root.getSideToMove()];
-        Search::targetTime = std::min(std::max(1, time / movesToGo + increment - lagBuffer), time - lagBuffer);
-        Search::maxTime = std::min(std::max(1, time / 2 + increment), time - lagBuffer);
+        Search::targetTime = clamp(time / movesToGo + increment - lagBuffer, 1, time - lagBuffer);
+        Search::maxTime = clamp(time / 2 + increment, 1, time - lagBuffer);
     }
 
     // And finally start searching.

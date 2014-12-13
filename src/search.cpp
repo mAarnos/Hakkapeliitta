@@ -129,7 +129,7 @@ void Search::think(Position& pos)
 	}
 
     repetitionHashes[0] = pos.getHashKey();
-    for (auto depth = 1;;)
+    for (auto depth = 1; depth < 128; )
     {
         auto previousAlpha = alpha;
         auto previousBeta = beta;
@@ -226,15 +226,21 @@ void Search::think(Position& pos)
         lastRootScore = currentRootScore;
 		auto pv = transpositionTable.extractPv(pos);
 
+        // If we have found a mate, this is not an infinite search, we have sufficient depth and this is not a fail-low or fail-high stop the search.
+        if (!infinite && isMateScore(currentRootScore) && depth > 8 && currentRootScore > previousAlpha && currentRootScore < previousBeta)
+        {
+            searching = false;
+        }
+
 		if (!searching)
-		{
+        { 
 			auto searchTime = sw.elapsed<std::chrono::milliseconds>();
             sync_cout << "info time " << searchTime
                       << " nodes " << nodeCount
-                      << " nps " << (nodeCount / searchTime + 1) * 1000
+                      << " nps " << (nodeCount / (searchTime + 1)) * 1000
                       << " tbhits " << tbHits << std::endl
-                      << "bestmove " << algebraicMove(pv[0]) << std::endl;;
-			break;
+                      << "bestmove " << algebraicMove(pv[0]) << std::endl;
+            break;
 		}
 
         if (currentRootScore <= previousAlpha)
