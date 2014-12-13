@@ -330,8 +330,8 @@ void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int fl
 	ss << "info depth " << depth << " seldepth " << selDepth;
 	if (isMateScore(score))
 	{
-		score = (score > 0 ? ((mateInPly(score + 1)) >> 1) : ((-score - mateScore) >> 1));
-		ss << " score mate" << score;
+		score = (score > 0 ? ((mateScore - score + 1) >> 1) : ((-score - mateScore) >> 1));
+		ss << " score mate " << score;
 	}
 	else
 	{

@@ -106,6 +106,7 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
 
     for (auto entry = 0; entry < 4; ++entry)
     {
+        // TODO: Add avoid nullmove trick here.
         if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == pos.getHashKey())
         {
             move.setMove(hashEntry.getBestMove(entry));

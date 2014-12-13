@@ -307,11 +307,11 @@ void UCI::position(const Command& c)
                 default:;
             }
         }
-        else if ((root.getBoard(from) == Piece::King) && (std::abs(from - to) == 2))
+        else if (((root.getBoard(from) % 6) == Piece::King) && (std::abs(from - to) == 2))
         {
             promotion = Piece::King;
         }
-        else if ((root.getBoard(from) == Piece::Pawn) && (to == root.getEnPassantSquare()))
+        else if (((root.getBoard(from) % 6) == Piece::Pawn) && (to == root.getEnPassantSquare()))
         {
             promotion = Piece::Pawn;
         }
