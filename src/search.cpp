@@ -128,7 +128,7 @@ void Search::think(const Position& root)
     lastRootScore = -mateScore;
     selDepth = 1;
     transpositionTable.startNewSearch();
-    historyTable.clear();
+    historyTable.age();
     killerTable.clear();
 	sw.reset();
 	sw.start();
@@ -137,7 +137,7 @@ void Search::think(const Position& root)
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList);
     // Get the tt move from a possible previous search.
-    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
+    // transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
 
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1; depth < 128; )
@@ -148,7 +148,7 @@ void Search::think(const Position& root)
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
         currentRootScore = -mateScore;
 
-		orderMoves(pos, rootMoveList, bestMove, 0);
+		orderMoves(pos, rootMoveList, Move(0, 0, 0, 0), 0);
 		try {
 			for (auto i = 0; i < rootMoveList.size(); ++i)
 			{
@@ -159,6 +159,7 @@ void Search::think(const Position& root)
 					continue;
 				}
                 ++nodeCount;
+
 				if (depth >= 12)
 				{
 					infoCurrMove(move, depth, i);
@@ -423,7 +424,7 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
             }
             else
             {
-                move.setScore(historyTable.getScore(pos, move));
+                move.setScore(std::min(historyTable.getScore(pos, move), killerMoveScore[4] - 1));
             }
         }
     }
@@ -615,10 +616,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return alpha;
 
     // Probe the transposition table. Possibly the logic should be moved here.
+    /*
     if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
     {
         return score;
     }
+    */
 
     // Probe tablebases here.
 
@@ -660,12 +663,14 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Internal iterative deepening.
     // Only done at PV-nodes due to the cost involved.
+    /*
     if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
         transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
     }
+    */
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
     inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);

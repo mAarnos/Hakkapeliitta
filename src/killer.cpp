@@ -32,19 +32,19 @@ int KillerTable::isKiller(const Move& move, int ply) const
     auto possibleKiller = move.getMove();
     if (possibleKiller == killers[0][ply])
     {
-        return 4;
+        return 1;
     }
     else if (possibleKiller == killers[1][ply])
     {
-        return 3;
+        return 2;
     }
     else if (ply > 1 && possibleKiller == killers[0][ply - 2])
     {
-        return 2;
+        return 3;
     }
     else if (ply > 1 && possibleKiller == killers[1][ply - 2])
     {
-        return 1;
+        return 4;
     }
     else
     {
