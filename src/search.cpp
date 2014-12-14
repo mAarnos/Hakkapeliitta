@@ -108,8 +108,9 @@ void removeIllegalMoves(Position& pos, MoveList& moveList)
     }
 }
 
-void Search::think(Position& pos)
+void Search::think(const Position& root)
 {
+    auto pos = root; // Copy the position just for us.
 	auto alpha = -infinity;
 	auto beta = infinity;
 	auto delta = aspirationWindow;
@@ -226,6 +227,7 @@ void Search::think(Position& pos)
 		}
 		catch (const HakkapeliittaException&)
 		{
+            pos = root; // Exception messes up the position, fix it.
 		}
 
         transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);

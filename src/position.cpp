@@ -549,8 +549,8 @@ bool Position::makeMove(const Move& m, History& history)
             bitboards[Piece::Pawn + side * 6] ^= Bitboards::bit[to];
             bitboards[promotion + side * 6] |= Bitboards::bit[to];
             board[to] = promotion + sideToMove * 6;
-            hashKey ^= Zobrist::pieceHash[board[to]][to] ^ Zobrist::pieceHash[promotion + side * 6][to];
-            pawnHashKey ^= Zobrist::pieceHash[board[to]][to];
+            hashKey ^= Zobrist::pieceHash[Piece::Pawn + side * 6][to] ^ Zobrist::pieceHash[promotion + side * 6][to];
+            pawnHashKey ^= Zobrist::pieceHash[Piece::Pawn + side * 6][to];
             materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][--pieceCount[Piece::Pawn + side * 6]];
             pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[promotion + side * 6][to]
                                 - Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][to];

@@ -36,7 +36,7 @@ class Search
 public:
     static void initialize();
 
-    static void think(Position& pos);
+    static void think(const Position& pos);
 
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;
