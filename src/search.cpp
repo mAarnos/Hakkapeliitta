@@ -39,7 +39,7 @@ const std::array<int, 1 + 4> Search::lmpMoveCount = {
 };
 const int Search::razoringDepth = 3;
 const std::array<int, 1 + 3> Search::razoringMargins = {
-    0, 300, 300, 300
+    0, 125, 300, 300
 };
 
 const int16_t Search::hashMoveScore = 32767;
@@ -126,6 +126,7 @@ void Search::think(const Position& root)
     contempt[!pos.getSideToMove()] = contemptValue;
     lastRootScore = -mateScore;
     selDepth = 1;
+    transpositionTable.startNewSearch();
     historyTable.age();
     killerTable.clear();
 	sw.reset();
