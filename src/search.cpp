@@ -267,11 +267,11 @@ void Search::think(const Position& root)
                 // Loosen the window we breached a bit. 
                 if (lowerBound)
                 {
-                    beta += delta;
+                    beta = previousBeta + delta;
                 }
                 else
                 {
-                    alpha -= delta;
+                    alpha = previousAlpha - delta;
                 }
                 delta *= 2; // Exponential increase to the amount of widening seems best.
             }
