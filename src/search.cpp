@@ -114,6 +114,7 @@ void Search::think(const Position& root)
 	auto alpha = -infinity;
 	auto beta = infinity;
 	auto delta = aspirationWindow;
+    auto score = matedInPly(0);
 	auto inCheck = pos.inCheck();
 	MoveList rootMoveList;
 	History history;
@@ -127,7 +128,7 @@ void Search::think(const Position& root)
     lastRootScore = -mateScore;
     selDepth = 1;
     transpositionTable.startNewSearch();
-    historyTable.age();
+    historyTable.clear();
     killerTable.clear();
 	sw.reset();
 	sw.start();
@@ -135,6 +136,8 @@ void Search::think(const Position& root)
 	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) 
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList);
+    // Get the tt move from a possible previous search.
+    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
 
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1; depth < 128; )
@@ -142,7 +145,6 @@ void Search::think(const Position& root)
         auto previousAlpha = alpha;
         auto previousBeta = beta;
 		auto movesSearched = 0;
-		auto score = matedInPly(0);
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
         currentRootScore = -mateScore;
 
