@@ -503,6 +503,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
         {
             continue;
         }
+        ++nodeCount;
 
         auto score = -quiescenceSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
         pos.unmakeMove(move, history);
