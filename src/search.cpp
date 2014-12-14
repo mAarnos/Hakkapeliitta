@@ -232,11 +232,10 @@ void Search::think(const Position& root)
 		}
 
         transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
-        lastRootScore = currentRootScore;
 		auto pv = transpositionTable.extractPv(pos);
 
-        // If we have found a mate, this is not an infinite search, we have sufficient depth and this is not a fail-low or fail-high stop the search.
-        if (!infinite && isMateScore(currentRootScore) && depth > 8 && currentRootScore > previousAlpha && currentRootScore < previousBeta)
+        // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
+        if (!infinite && isMateScore(currentRootScore) && isMateScore(lastRootScore) && depth > 6)
         {
             searching = false;
         }
@@ -251,6 +250,8 @@ void Search::think(const Position& root)
                       << "bestmove " << algebraicMove(pv[0]) << std::endl;
             break;
 		}
+
+        lastRootScore = currentRootScore;
 
         // The score is outside the aspiration windows, we need to loosen them up.
         if (currentRootScore <= previousAlpha || currentRootScore >= previousBeta)
