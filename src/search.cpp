@@ -207,19 +207,22 @@ void Search::think(const Position& root)
 						alpha = score;
 						if (score >= beta)
 						{
-							if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
-							{
-								historyTable.addCutoff(pos, move, depth);
-								killerTable.addKiller(move, 0);
-							}
-							for (auto j = 0; j < i; ++j)
-							{
-								const auto& move2 = rootMoveList[j];
-								if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
-								{
-									historyTable.addNotCutoff(pos, move2, depth);
-								}
-							}
+                            if (!inCheck)
+                            {
+                                if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+                                {
+                                    historyTable.addCutoff(pos, move, depth);
+                                    killerTable.addKiller(move, 0);
+                                }
+                                for (auto j = 0; j < i; ++j)
+                                {
+                                    const auto& move2 = rootMoveList[j];
+                                    if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+                                    {
+                                        historyTable.addNotCutoff(pos, move2, depth);
+                                    }
+                                }
+                            }
 							break;
 						}
                         transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, UpperBoundScore);
@@ -742,19 +745,22 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
                 {
                     transpositionTable.save(pos, ply, move, score, depth, LowerBoundScore);
 
-                    if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+                    if (!inCheck)
                     {
-                        historyTable.addCutoff(pos, move, depth);
-                        killerTable.addKiller(move, ply);
+                        if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+                        {
+                            historyTable.addCutoff(pos, move, depth);
+                            killerTable.addKiller(move, ply);
+                        }
+                        for (auto j = 0; j < i; ++j)
+                        {
+                            const auto& move2 = moveList[j];
+                            if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+                            {
+                                historyTable.addNotCutoff(pos, move2, depth);
+                            }
+                        }
                     }
-					for (auto j = 0; j < i; ++j)
-					{
-						const auto& move2 = moveList[j];
-						if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
-						{
-							historyTable.addNotCutoff(pos, move2, depth);
-						}
-					}
 
                     return score;
                 }
