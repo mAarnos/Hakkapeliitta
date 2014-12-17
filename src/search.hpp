@@ -74,9 +74,9 @@ private:
     static const std::array<int, 1 + 3> razoringMargins;
 
     // Move ordering scores.
-    static const int16_t hashMoveScore;
-    static const int16_t captureMoveScore;
-    static const std::array<int16_t, 1 + 4> killerMoveScore;
+    static const int32_t hashMoveScore;
+    static const int32_t captureMoveScore;
+    static const std::array<int32_t, 1 + 4> killerMoveScore;
 
     // Functions for move ordering.
     static void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);

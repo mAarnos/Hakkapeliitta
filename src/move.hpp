@@ -9,7 +9,7 @@ public:
     Move() {}
 
     Move(int from, int to, int promotion, int score):
-        score(static_cast<int16_t>(score))
+        score(score)
     {
         move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
     }
@@ -18,13 +18,13 @@ public:
     uint16_t getTo() const { return ((move >> 6) & 0x3f); }
     uint16_t getPromotion() const { return (move >> 12); }
     uint16_t getMove() const { return move; }
-    int16_t getScore() const { return score; }
+    int32_t getScore() const { return score; }
     void setMove(uint16_t newMove) { move = newMove; }
-    void setScore(int newScore) { score = static_cast<int16_t>(newScore); }
+    void setScore(int32_t newScore) { score = newScore; }
     bool empty() const { return !move; }
 private:
+    int32_t score;
     uint16_t move;
-    int16_t score;
 };
 
 #endif

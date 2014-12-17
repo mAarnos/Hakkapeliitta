@@ -42,10 +42,10 @@ const std::array<int, 1 + 3> Search::razoringMargins = {
     0, 125, 300, 300
 };
 
-const int16_t Search::hashMoveScore = 32767;
-const int16_t Search::captureMoveScore = 30767; // hashMoveScore - 2000
-const std::array<int16_t, 1 + 4> Search::killerMoveScore = {
-    0, 28767, 28766, 28765, 28764 // not used, captureMoveScore - 2000, captureMoveScore - 2001, etc. 
+const int32_t Search::hashMoveScore = 2147483647;
+const int32_t Search::captureMoveScore = hashMoveScore >> 1; 
+const std::array<int32_t, 1 + 4> Search::killerMoveScore = {
+    0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5 
 };
 
 int Search::tbHits;
@@ -427,7 +427,7 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
             }
             else
             {
-                move.setScore(std::min(historyTable.getScore(pos, move), killerMoveScore[4] - 1));
+                move.setScore(historyTable.getScore(pos, move));
             }
         }
     }
