@@ -159,6 +159,7 @@ void Search::think(const Position& root)
 					continue;
 				}
                 ++nodeCount;
+                --nodesToTimeCheck;
 
 				if (depth >= 12)
 				{
@@ -512,6 +513,7 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
             continue;
         }
         ++nodeCount;
+        --nodesToTimeCheck;
 
         auto score = -quiescenceSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
         pos.unmakeMove(move, history);
@@ -558,7 +560,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 	// Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());
 
-    if (--nodesToTimeCheck <= 0)
+    if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
         if (!infinite)
@@ -654,6 +656,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         repetitionHashes[ply] = pos.getHashKey();
         pos.makeNullMove(history);
         ++nodeCount;
+        --nodesToTimeCheck;
         score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, -beta, -beta + 1, false)
                                                   : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
         pos.unmakeNullMove(history);
@@ -695,6 +698,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
             continue;
         }
         ++nodeCount;
+        --nodesToTimeCheck;
 
         auto givesCheck = pos.inCheck();
         auto extension = (givesCheck || oneReply) ? 1 : 0;
