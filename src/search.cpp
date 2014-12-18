@@ -388,8 +388,9 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
         {
             continue;
         }
-
         nodeCount++;
+        --countDown;
+
         auto givesCheck = pos.inCheck();
         score = -qsearch(pos, ply + 1, -beta, -alpha, givesCheck);
         pos.unmakeMove(moveStack[i]);
@@ -421,7 +422,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
     prefetch(pos.getHash());
 
 	// Check if we have overstepped the time limit or if the user has given a new order.
-	if (countDown-- <= 0)
+	if (countDown <= 0)
 	{
 		checkTimeAndInput();
 	}
@@ -489,6 +490,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 	{
 		pos.makeNullMove();
 		nodeCount++;
+        --countDown;
 		if (depth <= 4)
 		{
 			score = -qsearch(pos, ply + 1, -beta, -beta + 1, false);
@@ -549,6 +551,7 @@ int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int al
 			continue;
 		}
 		nodeCount++;
+        --countDown;
 
 		int newDepth = depth - 1;
 		bool givesCheck = pos.inCheck();
@@ -704,6 +707,7 @@ int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
 			continue;
 		}
 		nodeCount++;
+        --countDown;
 
 		newDepth = depth - 1;
 		givesCheck = pos.inCheck();
