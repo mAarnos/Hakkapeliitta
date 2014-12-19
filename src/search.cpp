@@ -651,7 +651,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
     }
 
-    // Double null move pruning.
+    // Null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
     {
@@ -660,7 +660,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         ++nodeCount;
         --nodesToTimeCheck;
         score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, -beta, -beta + 1, false)
-                                                  : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 1, false));
+                                                  : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false));
         pos.unmakeNullMove(history);
         if (score >= beta)
         {
