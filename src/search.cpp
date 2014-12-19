@@ -140,7 +140,7 @@ void Search::think(const Position& root)
     // transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
 
     repetitionHashes[0] = pos.getHashKey();
-    for (auto depth = 1; depth < 128; )
+    for (auto depth = 1;;)
     {
         auto previousAlpha = alpha;
         auto previousBeta = beta;
@@ -173,27 +173,23 @@ void Search::think(const Position& root)
 
 				if (!movesSearched)
 				{
-					score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-						                  : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+					score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
 				}
 				else
 				{
 					auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
 						? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
 
-					score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck)
-						                              : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+					score = -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck);
 
 					if (reduction && score > alpha) // Research in case reduced move is above alpha.
 					{
-						score = (newDepth > 0 ? -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck)
-							                  : -quiescenceSearch(pos, 1, -alpha - 1, -alpha, givesCheck));
+						score = -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck);
 					}
 
 					if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
 					{
-						score = (newDepth > 0 ? -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck)
-							                  : -quiescenceSearch(pos, 1, -beta, -alpha, givesCheck));
+						score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
 					}
 				}
 				pos.unmakeMove(move, history);
@@ -243,6 +239,12 @@ void Search::think(const Position& root)
 
         // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
         if (!infinite && isMateScore(currentRootScore) && isMateScore(lastRootScore) && depth > 6)
+        {
+            searching = false;
+        }
+
+        // If we have reached the max depth stop searching. Should not happen during gameplay, only analysis.
+        if (depth >= 127 && currentRootScore > previousAlpha && currentRootScore < previousBeta)
         {
             searching = false;
         }
@@ -622,6 +624,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     if (alpha >= beta)
         return alpha;
 
+    // If the depth is too low drop into quiescense search.
+    if (depth <= 0)
+    {
+        return quiescenceSearch(pos, ply, alpha, beta, inCheck);
+    }
+
     // Probe the transposition table. Possibly the logic should be moved here.
     /*
     if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
@@ -659,8 +667,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         pos.makeNullMove(history);
         ++nodeCount;
         --nodesToTimeCheck;
-        score = ((depth - 1 - nullReduction <= 0) ? -quiescenceSearch(pos, ply + 1, -beta, -beta + 1, false)
-                                                  : -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false));
+        score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false);
         pos.unmakeNullMove(history);
         if (score >= beta)
         {
@@ -717,27 +724,23 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
         if (!movesSearched)
         {
-            score = (newDepth > 0 ? -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck)
-                                  : -quiescenceSearch(pos, ply + 1, -beta, -alpha, givesCheck));
+            score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
         }
         else
         {
             auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
                            ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
 
-            score = (newDepth - reduction > 0 ? -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck) 
-                                              : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));
+            score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
 
             if (reduction && score > alpha) // Research in case reduced move is above alpha.
             {
-                score = (newDepth > 0 ? -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck)
-                                      : -quiescenceSearch(pos, ply + 1, -alpha - 1, -alpha, givesCheck));
+                score = -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
             }
 
             if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
             {
-                score = (newDepth > 0 ? -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck)
-                                      : -quiescenceSearch(pos, ply + 1, -beta, -alpha, givesCheck));
+                score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
             }
         }
         pos.unmakeMove(move, history);
