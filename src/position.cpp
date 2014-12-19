@@ -522,11 +522,8 @@ bool Position::makeMove(const Move& m, History& history)
 
         if ((to ^ from) == 16) // Double pawn move
         {
-            if (Bitboards::pawnAttacks[side][from ^ 24] & getBitboard(!side, Piece::Pawn))
-            {
-                enPassant = from ^ 24;
-                hashKey ^= Zobrist::enPassantHash[enPassant];
-            }
+            enPassant = from ^ 24;
+            hashKey ^= Zobrist::enPassantHash[enPassant];
         }
         else if (promotion == Piece::Pawn) // En passant
         {
