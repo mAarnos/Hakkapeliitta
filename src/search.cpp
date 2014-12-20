@@ -11,6 +11,8 @@ TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 
+std::unordered_set<HashKey> Search::repetitionHashesBeforeRoot;
+
 int Search::contemptValue;
 std::array<int, 2> Search::contempt;
 std::array<HashKey, 128> Search::repetitionHashes;
@@ -79,7 +81,16 @@ void Search::initialize()
 
 bool Search::repetitionDraw(const Position& pos, int ply)
 {
-    auto temp = std::max(ply - pos.getFiftyMoveDistance(), 0);
+    auto temp = ply - pos.getFiftyMoveDistance();
+
+    if (temp < 0) 
+    {
+        if (repetitionHashesBeforeRoot.count(pos.getHashKey()) > 0)
+        {
+            return true;
+        }
+        temp = 0;
+    }
 
     for (auto i = ply - 2; i >= temp; i -= 2)
     {

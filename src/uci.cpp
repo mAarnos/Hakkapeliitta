@@ -94,7 +94,7 @@ void UCI::preprocessLine(std::string& line)
 void UCI::sendInformation(const Command&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.0 alpha 7" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.0 alpha 8" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -267,6 +267,7 @@ void UCI::position(const Command& c)
     std::string movesAsAString;
     std::vector<std::string> moves;
     History history;
+    Search::repetitionHashesBeforeRoot.clear();
 
     auto pos = arguments.find("moves");
     if (pos != std::string::npos)
@@ -316,6 +317,7 @@ void UCI::position(const Command& c)
             promotion = Piece::Pawn;
         }
 
+        Search::repetitionHashesBeforeRoot.insert(root.getHashKey());
         root.makeMove(Move(from, to, promotion, 0), history);
     }
 }

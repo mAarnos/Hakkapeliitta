@@ -4,11 +4,13 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <unordered_set>
 #include "movelist.hpp"
 #include "position.hpp"
 #include "history.hpp"
 #include "killer.hpp"
 #include "tt.hpp"
+#include "zobrist.hpp"
 #include "utils\stopwatch.hpp"
 
 const int mateScore = 32767; // mate in 0
@@ -50,12 +52,14 @@ public:
     static HistoryTable historyTable;
     static KillerTable killerTable;
 
-    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
+    static std::unordered_set<HashKey> repetitionHashesBeforeRoot;
 private:
     template <bool pvNode>
     static int search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck);
+    static int quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck);
 
     static std::array<HashKey, 128> repetitionHashes;
+
     static std::array<int, 2> contempt;
 
     // Pruning margins and depth limits.
