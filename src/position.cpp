@@ -574,7 +574,7 @@ bool Position::makeMove(const Move& m, History& history)
                             - Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][fromRook];
     }
 
-    sideToMove = sideToMove.oppositeColor();
+    sideToMove = !sideToMove;
     hashKey ^= Zobrist::turnHash;
 
     // Update castling rights if needed
@@ -615,7 +615,7 @@ void Position::unmakeMove(const Move& m, const History& history)
     fiftyMoveDistance = history.fifty;
     castlingRights = history.castle;
 
-    sideToMove = sideToMove.oppositeColor();
+    sideToMove = !sideToMove;
 
     if (promotion == Piece::Pawn)
     {
@@ -646,8 +646,7 @@ void Position::unmakeMove(const Move& m, const History& history)
     }
     else if (promotion != Piece::Empty)
     {
-        // Hack, fixes a slight problem with the backup when doing a promotion.
-        piece = Piece::Pawn + !side * 6;
+        piece = Piece::Pawn + !side * 6; // Hack, fixes a slight problem with the backup when doing a promotion.
         bitboards[piece] ^= Bitboards::bit[to];
         bitboards[promotion + !side * 6] ^= Bitboards::bit[to];
         phase += piecePhase[promotion];

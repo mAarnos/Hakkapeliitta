@@ -148,7 +148,7 @@ void Search::think(const Position& root)
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList);
     // Get the tt move from a possible previous search.
-    // transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
+    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
 
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1;;)
@@ -159,7 +159,7 @@ void Search::think(const Position& root)
 		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
         currentRootScore = -mateScore;
 
-		orderMoves(pos, rootMoveList, Move(0, 0, 0, 0), 0);
+		orderMoves(pos, rootMoveList, bestMove, 0);
 		try {
 			for (auto i = 0; i < rootMoveList.size(); ++i)
 			{
@@ -484,8 +484,6 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
     MoveList moveList;
     History history;
 
-    // Maybe add checking for draw here? 
-
     if (inCheck)
     {
         bestScore = matedInPly(ply);
@@ -642,12 +640,10 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     }
 
     // Probe the transposition table. Possibly the logic should be moved here.
-    /*
     if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
     {
         return score;
     }
-    */
 
     // Probe tablebases here.
 
@@ -689,14 +685,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Internal iterative deepening.
     // Only done at PV-nodes due to the cost involved.
-    /*
     if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
         transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
     }
-    */
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
     inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);

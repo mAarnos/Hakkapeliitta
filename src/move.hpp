@@ -8,8 +8,7 @@ class Move
 public:
     Move() {}
 
-    Move(int from, int to, int promotion, int score):
-        score(score)
+    Move(int from, int to, int promotion, int score): score(score)
     {
         move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
     }

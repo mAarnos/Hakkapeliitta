@@ -11,8 +11,6 @@ public:
         White = 0, Black = 1, NoColor = 2
     };
 
-    Color oppositeColor() const { return color ^ 1; }
-
     operator int() const { return color; }
     operator int&() { return color; }
 private:
