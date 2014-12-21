@@ -14,6 +14,7 @@ KillerTable Search::killerTable;
 std::unordered_set<HashKey> Search::repetitionHashesBeforeRoot;
 
 int Search::contemptValue;
+int Search::syzygyProbeLimit;
 std::array<int, 2> Search::contempt;
 std::array<HashKey, 128> Search::repetitionHashes;
 bool Search::searching;
@@ -63,6 +64,7 @@ void Search::initialize()
 {
     contemptValue = 0;
     contempt.fill(0);
+    syzygyProbeLimit = 0;
     searching = false;
     infinite = false;
     pondering = false;

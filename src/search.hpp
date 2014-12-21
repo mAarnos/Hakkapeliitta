@@ -42,6 +42,7 @@ public:
 
     // UCI-protocol uses these to communicate things to the search function.
     static int contemptValue;
+    static int syzygyProbeLimit;
     static bool searching;
     static bool pondering;
     static bool infinite;

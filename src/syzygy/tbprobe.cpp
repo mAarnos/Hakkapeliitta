@@ -16,84 +16,73 @@
 #define DECOMP64
 #endif
 
+#include "..\color.hpp"
+#include "..\piece.hpp"
+#include "..\zobrist.hpp"
+#include "..\position.hpp"
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
-
-#include "tbcore.hpp"
+#include "tbcore-impl.hpp"
 
 int Syzygy::tbLargest = 0;
-
-/*
-
-namespace Zobrist {
-    extern Key psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
-}
 
 // Given a position with 6 or fewer pieces, produce a text string
 // of the form KQPvKRP, where "KQP" represents the white pieces if
 // mirror == 0 and the black pieces if mirror == 1.
-static void prt_str(Position& pos, char *str, int mirror)
+static void prt_str(const Position& pos, char* str, int mirror)
 {
-  Color color;
-  PieceType pt;
-  int i;
-  
-  color = !mirror ? WHITE : BLACK;
-  for (pt = KING; pt >= PAWN; --pt)
-    for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-      *str++ = pchr[6 - pt];
-  *str++ = 'v';
-  color = ~color;
-  for (pt = KING; pt >= PAWN; --pt)
-    for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-      *str++ = pchr[6 - pt];
-  *str++ = 0;
+    Color color = !mirror ? Color::White : Color::Black;
+
+    for (Piece pt = Piece::King; pt >= Piece::Pawn; --pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            *str++ = pchr[5 - pt];
+    *str++ = 'v';
+    color = !color;
+    for (Piece pt = Piece::King; pt >= Piece::Pawn; --pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            *str++ = pchr[5 - pt];
+    *str++ = 0;
 }
 
 // Given a position, produce a 64-bit material signature key.
 // If the engine supports such a key, it should equal the engine's key.
-static uint64 calc_key(Position& pos, int mirror)
+static uint64_t calc_key(const Position& pos, int mirror)
 {
-  Color color;
-  PieceType pt;
-  int i;
-  uint64 key = 0;
+    uint64_t key = 0;
+    Color color = !mirror ? Color::White : Color::Black;
 
-  color = !mirror ? WHITE : BLACK;
-  for (pt = PAWN; pt <= KING; ++pt)
-    for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-      key ^= Zobrist::psq[WHITE][pt][i - 1];
-  color = ~color;
-  for (pt = PAWN; pt <= KING; ++pt)
-    for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-      key ^= Zobrist::psq[BLACK][pt][i - 1];
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            key ^= Zobrist::materialHash[Color::White * 6 + pt][i - 1];
+    color = !color;
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            key ^= Zobrist::materialHash[Color::Black * 6 + pt][i - 1];
 
-  return key;
+    return key;
 }
 
 // Produce a 64-bit material key corresponding to the material combination
 // defined by pcs[16], where pcs[1], ..., pcs[6] is the number of white
 // pawns, ..., kings and pcs[9], ..., pcs[14] is the number of black
 // pawns, ..., kings.
-static uint64 calc_key_from_pcs(int *pcs, int mirror)
+static uint64_t calc_key_from_pcs(int* pcs, int mirror)
 {
-  int color;
-  PieceType pt;
-  int i;
-  uint64 key = 0;
+    uint64_t key = 0;
+    auto color = !mirror ? 1 : 9;
 
-  color = !mirror ? 0 : 8;
-  for (pt = PAWN; pt <= KING; ++pt)
-    for (i = 0; i < pcs[color + pt]; i++)
-      key ^= Zobrist::psq[WHITE][pt][i];
-  color ^= 8;
-  for (pt = PAWN; pt <= KING; ++pt)
-    for (i = 0; i < pcs[color + pt]; i++)
-      key ^= Zobrist::psq[BLACK][pt][i];
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = 0; i < pcs[color + pt]; ++i)
+            key ^= Zobrist::materialHash[Color::White * 6 + pt][i];
+    color ^= 8;
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = 0; i < pcs[color + pt]; ++i)
+            key ^= Zobrist::materialHash[Color::Black * 6 + pt][i];
 
-  return key;
+    return key;
 }
 
+/*
 // probe_wdl_table and probe_dtz_table require similar adaptations.
 static int probe_wdl_table(Position& pos, int *success)
 {

@@ -6,6 +6,7 @@
 #include "utils\clamp.hpp"
 #include "utils\synchronized_ostream.hpp"
 #include "utils\large_pages.hpp"
+#include "syzygy\tbprobe.hpp"
 
 Position UCI::root;
 ThreadPool UCI::tp(1);
@@ -180,22 +181,22 @@ void UCI::setOption(const Command& c)
         Evaluation::pawnHashTable.clear();
         sync_cout << "info string hash cleared" << std::endl;
     }
-    else if (option == "Syzygyprobelimit") // TODO: implement this
+    else if (option == "SyzygyProbeLimit") // TODO: implement this
     {
-        int syzygyProbeLimit;
         try
         {
-            syzygyProbeLimit = clamp(stoi(parameter), 0, 6);
+            Search::syzygyProbeLimit = clamp(stoi(parameter), 0, 6);
         }
         catch (const std::exception&)
         {
-            syzygyProbeLimit = 0;
+            Search::syzygyProbeLimit = 0;
         }
     }
-    else if (option == "Syzygypath") // TODO: implement this
+    else if (option == "SyzygyPath") 
     {
+        Syzygy::initialize(arguments);
     }
-    else if (option == "Largepages")
+    else if (option == "LargePages")
     {
         if (parameter == "true")
         {
@@ -205,8 +206,6 @@ void UCI::setOption(const Command& c)
         {
             LargePages::setAllowedToUse(false);
         }
-        auto ptr = LargePages::malloc(8 * 1024 * 1024, 64);
-        LargePages::free(ptr);
     }
 }
 

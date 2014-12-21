@@ -9,14 +9,14 @@
 #include <functional>
 #include <condition_variable>
 
-// A simple thread pool implementation.
+// A simple thread pool implementation, most likely contains some bugs.
 // All functions given as jobs must return nothing(i.e. be void).
 // TODO: make this work with everything -> requires std::future
 // TODO: after VS fixes their fuckup with calling join in destructors remove terminate.
 class ThreadPool
 {
 public:
-    // Constructs a new threadpool with n threads;
+    // Constructs a new threadpool with the specified amount of threads;
     ThreadPool(int amountOfThreads);
 
     // Needs to be called before ThreadPool is destructed.
@@ -48,7 +48,6 @@ inline void ThreadPool::terminate()
 {
     terminateFlag = true;
     cv.notify_all();
-
     for (auto& thread : threads)
     {
         thread.join();
@@ -64,26 +63,28 @@ void ThreadPool::addJob(Fn&& fn, Args&&... args)
     cv.notify_one();
 }
 
-// Could be replaced with a lambda in the constructor.
-// On the other hand if the threadpool size is dynamic this is better to avoid code duplication.
 inline void ThreadPool::loop()
 {
     for (;;)
     {
-        std::unique_lock<std::mutex> lock(jobQueueMutex);
-        while (!terminateFlag && jobQueue.empty())
+        std::function<void()> job;
+
         {
-            cv.wait(lock);
+            std::unique_lock<std::mutex> lock(jobQueueMutex);
+            while (!terminateFlag && jobQueue.empty())
+            {
+                cv.wait(lock);
+            }
+
+            if (terminateFlag)
+            {
+                return;
+            }
+
+            job = jobQueue.front();
+            jobQueue.pop();
         }
 
-        if (terminateFlag)
-        {
-            return;
-        }
-
-        auto job = jobQueue.front();
-        jobQueue.pop();
-        lock.unlock();
         job();
     }
 }

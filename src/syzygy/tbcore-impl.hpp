@@ -60,12 +60,6 @@ static uint64_t calc_key_from_pcs(int* pcs, int mirror);
 static void free_wdl_entry(struct TBEntry* entry);
 static void free_dtz_entry(struct TBEntry* entry);
 
-// TODO: do something about this.
-static uint64_t calc_key_from_pcs(int* , int)
-{
-    return 0;
-}
-
 static FD open_tb(const char* str, const char* suffix)
 {
     int i;
