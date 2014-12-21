@@ -42,8 +42,8 @@ static std::mutex TB_mutex;
 
 static bool initialized = false;
 static int num_paths = 0;
-static char *path_string = NULL;
-static char **paths = NULL;
+static char* path_string = NULL;
+static char** paths = NULL;
 
 static int TBnum_piece, TBnum_pawn;
 static struct TBEntry_piece TB_piece[TBMAX_PIECE];
@@ -56,32 +56,31 @@ static struct TBHashEntry TB_hash[1 << TBHASHBITS][HSHMAX];
 static struct DTZTableEntry DTZ_table[DTZ_ENTRIES];
 
 static void init_indices();
-static uint64_t calc_key_from_pcs(int *pcs, int mirror);
-static void free_wdl_entry(struct TBEntry *entry);
-static void free_dtz_entry(struct TBEntry *entry);
+static uint64_t calc_key_from_pcs(int* pcs, int mirror);
+static void free_wdl_entry(struct TBEntry* entry);
+static void free_dtz_entry(struct TBEntry* entry);
 
 // TODO: do something about this.
-static uint64_t calc_key_from_pcs(int *, int)
+static uint64_t calc_key_from_pcs(int* , int)
 {
     return 0;
 }
 
-static FD open_tb(const char *str, const char *suffix)
+static FD open_tb(const char* str, const char* suffix)
 {
     int i;
     FD fd;
-    char file[256];
 
     for (i = 0; i < num_paths; i++)
     {
-        strcpy(file, paths[i]);
-        strcat(file, "/");
-        strcat(file, str);
-        strcat(file, suffix);
+        std::string file(paths[i]);
+        file += '/';
+        file += str;
+        file += suffix;
 #ifndef _WIN32
-        fd = open(file, O_RDONLY);
+        fd = open(file.c_str(), O_RDONLY);
 #else
-        fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
+        fd = CreateFile(file.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
                         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
         if (fd != FD_ERR) return fd;
@@ -98,7 +97,7 @@ static void close_tb(FD fd)
 #endif
 }
 
-static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
+static char* map_file(const char* name, const char* suffix, uint64_t* mapping)
 {
     FD fd = open_tb(name, suffix);
     if (fd == FD_ERR)
@@ -107,9 +106,9 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
     struct stat statbuf;
     fstat(fd, &statbuf);
     *mapping = statbuf.st_size;
-    char *data = (char *)mmap(NULL, statbuf.st_size, PROT_READ,
+    char* data = (char*)mmap(NULL, statbuf.st_size, PROT_READ,
                               MAP_SHARED, fd, 0);
-    if (data == (char *)(-1))
+    if (data == (char*)(-1))
     {
         printf("Could not mmap() %s.\n", name);
         exit(1);
@@ -126,7 +125,7 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
         exit(1);
     }
     *mapping = (uint64_t)map;
-    char *data = (char *)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
+    char* data = (char*)MapViewOfFile(map, FILE_MAP_READ, 0, 0, 0);
     if (data == NULL)
     {
         printf("MapViewOfFile() failed, name = %s%s, error = %lu.\n", name, suffix, GetLastError());
@@ -138,13 +137,13 @@ static char *map_file(const char *name, const char *suffix, uint64_t *mapping)
 }
 
 #ifndef _WIN32
-static void unmap_file(char *data, uint64_t size)
+static void unmap_file(char* data, uint64_t size)
 {
     if (!data) return;
     munmap(data, size);
 }
 #else
-static void unmap_file(char *data, uint64_t mapping)
+static void unmap_file(char* data, uint64_t mapping)
 {
     if (!data) return;
     UnmapViewOfFile(data);
@@ -152,7 +151,7 @@ static void unmap_file(char *data, uint64_t mapping)
 }
 #endif
 
-static void add_to_hash(struct TBEntry *ptr, uint64_t key)
+static void add_to_hash(struct TBEntry* ptr, uint64_t key)
 {
     int i, hshidx;
 
@@ -174,14 +173,14 @@ static void add_to_hash(struct TBEntry *ptr, uint64_t key)
 
 static char pchr[] = {'K', 'Q', 'R', 'B', 'N', 'P'};
 
-static void init_tb(char *str)
+static void init_tb(char* str)
 {
     FD fd;
-    struct TBEntry *entry;
+    struct TBEntry* entry;
     int i, j, pcs[16];
     uint64_t key, key2;
     int color;
-    char *s;
+    char* s;
 
     fd = open_tb(str, WDLSUFFIX);
     if (fd == FD_ERR) return;
@@ -227,7 +226,7 @@ static void init_tb(char *str)
             printf("TBMAX_PIECE limit too low!\n");
             exit(1);
         }
-        entry = (struct TBEntry *)&TB_piece[TBnum_piece++];
+        entry = (struct TBEntry*)&TB_piece[TBnum_piece++];
     }
     else
     {
@@ -236,7 +235,7 @@ static void init_tb(char *str)
             printf("TBMAX_PAWN limit too low!\n");
             exit(1);
         }
-        entry = (struct TBEntry *)&TB_pawn[TBnum_pawn++];
+        entry = (struct TBEntry*)&TB_pawn[TBnum_pawn++];
     }
     entry->key = key;
     entry->ready = 0;
@@ -250,7 +249,7 @@ static void init_tb(char *str)
 
     if (entry->has_pawns)
     {
-        struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
+        struct TBEntry_pawn* ptr = (struct TBEntry_pawn*)entry;
         ptr->pawns[0] = static_cast<uint8_t>(pcs[TB_WPAWN]);
         ptr->pawns[1] = static_cast<uint8_t>(pcs[TB_BPAWN]);
         if (pcs[TB_BPAWN] > 0
@@ -262,7 +261,7 @@ static void init_tb(char *str)
     }
     else
     {
-        struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
+        struct TBEntry_piece* ptr = (struct TBEntry_piece*)entry;
         for (i = 0, j = 0; i < 16; i++)
             if (pcs[i] == 1) j++;
         if (j >= 3) ptr->enc_type = 0;
@@ -290,15 +289,15 @@ void Syzygy::initialize(const std::string& path)
     {
         free(path_string);
         free(paths);
-        struct TBEntry *entry;
+        struct TBEntry* entry;
         for (i = 0; i < TBnum_piece; i++)
         {
-            entry = (struct TBEntry *)&TB_piece[i];
+            entry = (struct TBEntry*)&TB_piece[i];
             free_wdl_entry(entry);
         }
         for (i = 0; i < TBnum_pawn; i++)
         {
-            entry = (struct TBEntry *)&TB_pawn[i];
+            entry = (struct TBEntry*)&TB_pawn[i];
             free_wdl_entry(entry);
         }
         for (i = 0; i < DTZ_ENTRIES; i++)
@@ -311,9 +310,9 @@ void Syzygy::initialize(const std::string& path)
         initialized = true;
     }
 
-    const char *p = path.c_str();
+    const char* p = path.c_str();
     if (strlen(p) == 0 || !strcmp(p, "<empty>")) return;
-    path_string = (char *)malloc(strlen(p) + 1);
+    path_string = (char*)malloc(strlen(p) + 1);
     strcpy(path_string, p);
     num_paths = 0;
     for (i = 0;; i++)
@@ -325,7 +324,7 @@ void Syzygy::initialize(const std::string& path)
         if (!path_string[i]) break;
         path_string[i] = 0;
     }
-    paths = (char **)malloc(num_paths * sizeof(char *));
+    paths = (char**)malloc(num_paths * sizeof(char*));
     for (i = j = 0; i < num_paths; i++)
     {
         while (!path_string[j]) j++;
@@ -687,7 +686,7 @@ static void init_indices(void)
     }
 }
 
-static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos, int *factor)
+static uint64_t encode_piece(struct TBEntry_piece* ptr, uint8_t* norm, int* pos, int* factor)
 {
     uint64_t idx;
     int i, j, k, m, l, p;
@@ -772,7 +771,7 @@ static uint64_t encode_piece(struct TBEntry_piece *ptr, uint8_t *norm, int *pos,
 }
 
 // determine file of leftmost pawn and sort pawns
-static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
+static int pawn_file(struct TBEntry_pawn* ptr, int* pos)
 {
     int i;
 
@@ -783,7 +782,7 @@ static int pawn_file(struct TBEntry_pawn *ptr, int *pos)
     return file_to_file[pos[0] & 0x07];
 }
 
-static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, int *factor)
+static uint64_t encode_pawn(struct TBEntry_pawn* ptr, uint8_t* norm, int* pos, int* factor)
 {
     uint64_t idx;
     int i, j, k, m, s, t;
@@ -845,7 +844,7 @@ static uint64_t encode_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, int *pos, i
     return idx;
 }
 
-static uint8_t decompress_pairs(struct PairsData *d, uint64_t index);
+static uint8_t decompress_pairs(struct PairsData* d, uint64_t index);
 
 // place k like pieces on n squares
 static int subfactor(int k, int n)
@@ -863,7 +862,7 @@ static int subfactor(int k, int n)
     return f / l;
 }
 
-static uint64_t calc_factors_piece(int *factor, int num, int order, uint8_t *norm, uint8_t enc_type)
+static uint64_t calc_factors_piece(int* factor, int num, int order, uint8_t* norm, uint8_t enc_type)
 {
     int i, k, n;
     uint64_t f;
@@ -891,7 +890,7 @@ static uint64_t calc_factors_piece(int *factor, int num, int order, uint8_t *nor
     return f;
 }
 
-static uint64_t calc_factors_pawn(int *factor, int num, int order, int order2, uint8_t *norm, int file)
+static uint64_t calc_factors_pawn(int* factor, int num, int order, int order2, uint8_t* norm, int file)
 {
     int i, k, n;
     uint64_t f;
@@ -925,7 +924,7 @@ static uint64_t calc_factors_pawn(int *factor, int num, int order, int order2, u
     return f;
 }
 
-static void set_norm_piece(struct TBEntry_piece *ptr, uint8_t *norm, uint8_t *pieces)
+static void set_norm_piece(struct TBEntry_piece* ptr, uint8_t* norm, uint8_t* pieces)
 {
     int i, j;
 
@@ -950,7 +949,7 @@ static void set_norm_piece(struct TBEntry_piece *ptr, uint8_t *norm, uint8_t *pi
             norm[i]++;
 }
 
-static void set_norm_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, uint8_t *pieces)
+static void set_norm_pawn(struct TBEntry_pawn* ptr, uint8_t* norm, uint8_t* pieces)
 {
     int i, j;
 
@@ -965,7 +964,7 @@ static void set_norm_pawn(struct TBEntry_pawn *ptr, uint8_t *norm, uint8_t *piec
             norm[i]++;
 }
 
-static void setup_pieces_piece(struct TBEntry_piece *ptr, unsigned char *data, uint64_t *tb_size)
+static void setup_pieces_piece(struct TBEntry_piece* ptr, unsigned char* data, uint64_t* tb_size)
 {
     int i;
     int order;
@@ -983,7 +982,7 @@ static void setup_pieces_piece(struct TBEntry_piece *ptr, unsigned char *data, u
     tb_size[1] = calc_factors_piece(ptr->factor[1], ptr->num, order, ptr->norm[1], ptr->enc_type);
 }
 
-static void setup_pieces_piece_dtz(struct DTZEntry_piece *ptr, unsigned char *data, uint64_t *tb_size)
+static void setup_pieces_piece_dtz(struct DTZEntry_piece* ptr, unsigned char* data, uint64_t* tb_size)
 {
     int i;
     int order;
@@ -991,11 +990,11 @@ static void setup_pieces_piece_dtz(struct DTZEntry_piece *ptr, unsigned char *da
     for (i = 0; i < ptr->num; i++)
         ptr->pieces[i] = data[i + 1] & 0x0f;
     order = data[0] & 0x0f;
-    set_norm_piece((struct TBEntry_piece *)ptr, ptr->norm, ptr->pieces);
+    set_norm_piece((struct TBEntry_piece*)ptr, ptr->norm, ptr->pieces);
     tb_size[0] = calc_factors_piece(ptr->factor, ptr->num, order, ptr->norm, ptr->enc_type);
 }
 
-static void setup_pieces_pawn(struct TBEntry_pawn *ptr, unsigned char *data, uint64_t *tb_size, int f)
+static void setup_pieces_pawn(struct TBEntry_pawn* ptr, unsigned char* data, uint64_t* tb_size, int f)
 {
     int i, j;
     int order, order2;
@@ -1016,7 +1015,7 @@ static void setup_pieces_pawn(struct TBEntry_pawn *ptr, unsigned char *data, uin
     tb_size[1] = calc_factors_pawn(ptr->file[f].factor[1], ptr->num, order, order2, ptr->file[f].norm[1], f);
 }
 
-static void setup_pieces_pawn_dtz(struct DTZEntry_pawn *ptr, unsigned char *data, uint64_t *tb_size, int f)
+static void setup_pieces_pawn_dtz(struct DTZEntry_pawn* ptr, unsigned char* data, uint64_t* tb_size, int f)
 {
     int i, j;
     int order, order2;
@@ -1026,15 +1025,15 @@ static void setup_pieces_pawn_dtz(struct DTZEntry_pawn *ptr, unsigned char *data
     order2 = ptr->pawns[1] ? (data[1] & 0x0f) : 0x0f;
     for (i = 0; i < ptr->num; i++)
         ptr->file[f].pieces[i] = data[i + j] & 0x0f;
-    set_norm_pawn((struct TBEntry_pawn *)ptr, ptr->file[f].norm, ptr->file[f].pieces);
+    set_norm_pawn((struct TBEntry_pawn*)ptr, ptr->file[f].norm, ptr->file[f].pieces);
     tb_size[0] = calc_factors_pawn(ptr->file[f].factor, ptr->num, order, order2, ptr->file[f].norm, f);
 }
 
-static void calc_symlen(struct PairsData *d, int s, char *tmp)
+static void calc_symlen(struct PairsData* d, int s, char* tmp)
 {
     int s1, s2;
 
-    int w = *(int *)(d->sympat + 3 * s);
+    int w = *(int*)(d->sympat + 3 * s);
     s2 = (w >> 12) & 0x0fff;
     if (s2 == 0x0fff)
         d->symlen[s] = 0;
@@ -1048,15 +1047,15 @@ static void calc_symlen(struct PairsData *d, int s, char *tmp)
     tmp[s] = 1;
 }
 
-static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint64_t *size, unsigned char **next, uint8_t *flags, int wdl)
+static struct PairsData* setup_pairs(unsigned char* data, uint64_t tb_size, uint64_t* size, unsigned char** next, uint8_t* flags, int wdl)
 {
-    struct PairsData *d;
+    struct PairsData* d;
     int i;
 
     *flags = data[0];
     if (data[0] & 0x80)
     {
-        d = (struct PairsData *)malloc(sizeof(struct PairsData));
+        d = (struct PairsData*)malloc(sizeof(struct PairsData));
         d->idxbits = 0;
         if (wdl)
             d->min_len = data[1];
@@ -1069,17 +1068,17 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
 
     int blocksize = data[1];
     int idxbits = data[2];
-    int real_num_blocks = *(uint32_t *)(&data[4]);
-    int num_blocks = real_num_blocks + *(uint8_t *)(&data[3]);
+    int real_num_blocks = *(uint32_t*)(&data[4]);
+    int num_blocks = real_num_blocks + *(uint8_t*)(&data[3]);
     int max_len = data[8];
     int min_len = data[9];
     int h = max_len - min_len + 1;
-    int num_syms = *(uint16_t *)(&data[10 + 2 * h]);
-    d = (struct PairsData *)malloc(sizeof(struct PairsData) + (h - 1) * sizeof(base_t) + num_syms);
+    int num_syms = *(uint16_t*)(&data[10 + 2 * h]);
+    d = (struct PairsData*)malloc(sizeof(struct PairsData) + (h - 1) * sizeof(base_t) + num_syms);
     d->blocksize = blocksize;
     d->idxbits = idxbits;
-    d->offset = (uint16_t *)(&data[10]);
-    d->symlen = ((uint8_t *)d) + sizeof(struct PairsData) + (h - 1) * sizeof(base_t);
+    d->offset = (uint16_t*)(&data[10]);
+    d->symlen = ((uint8_t*)d) + sizeof(struct PairsData) + (h - 1) * sizeof(base_t);
     d->sympat = &data[12 + 2 * h];
     d->min_len = min_len;
     *next = &data[12 + 2 * h + 3 * num_syms + (num_syms & 1)];
@@ -1113,9 +1112,9 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
     return d;
 }
 
-static int init_table_wdl(struct TBEntry *entry, char *str)
+static int init_table_wdl(struct TBEntry* entry, char* str)
 {
-    uint8_t *next;
+    uint8_t* next;
     int f, s;
     uint64_t tb_size[8];
     uint64_t size[8 * 3];
@@ -1130,8 +1129,8 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
         return 0;
     }
 
-    uint8_t *data = (uint8_t *)entry->data;
-    if (((uint32_t *)data)[0] != WDL_MAGIC)
+    uint8_t* data = (uint8_t*)entry->data;
+    if (((uint32_t*)data)[0] != WDL_MAGIC)
     {
         printf("Corrupted table.\n");
         unmap_file(entry->data, entry->mapping);
@@ -1146,7 +1145,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
 
     if (!entry->has_pawns)
     {
-        struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
+        struct TBEntry_piece* ptr = (struct TBEntry_piece*)entry;
         setup_pieces_piece(ptr, data, &tb_size[0]);
         data += ptr->num + 1;
         data += ((uintptr_t)data) & 0x01;
@@ -1161,38 +1160,38 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
         else
             ptr->precomp[1] = NULL;
 
-        ptr->precomp[0]->indextable = (char *)data;
+        ptr->precomp[0]->indextable = (char*)data;
         data += size[0];
         if (split)
         {
-            ptr->precomp[1]->indextable = (char *)data;
+            ptr->precomp[1]->indextable = (char*)data;
             data += size[3];
         }
 
-        ptr->precomp[0]->sizetable = (uint16_t *)data;
+        ptr->precomp[0]->sizetable = (uint16_t*)data;
         data += size[1];
         if (split)
         {
-            ptr->precomp[1]->sizetable = (uint16_t *)data;
+            ptr->precomp[1]->sizetable = (uint16_t*)data;
             data += size[4];
         }
 
-        data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+        data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
         ptr->precomp[0]->data = data;
         data += size[2];
         if (split)
         {
-            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->precomp[1]->data = data;
         }
     }
     else
     {
-        struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
+        struct TBEntry_pawn* ptr = (struct TBEntry_pawn*)entry;
         s = 1 + (ptr->pawns[1] > 0);
         for (f = 0; f < 4; f++)
         {
-            setup_pieces_pawn((struct TBEntry_pawn *)ptr, data, &tb_size[2 * f], f);
+            setup_pieces_pawn((struct TBEntry_pawn*)ptr, data, &tb_size[2 * f], f);
             data += ptr->num + s;
         }
         data += ((uintptr_t)data) & 0x01;
@@ -1212,34 +1211,34 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
 
         for (f = 0; f < files; f++)
         {
-            ptr->file[f].precomp[0]->indextable = (char *)data;
+            ptr->file[f].precomp[0]->indextable = (char*)data;
             data += size[6 * f];
             if (split)
             {
-                ptr->file[f].precomp[1]->indextable = (char *)data;
+                ptr->file[f].precomp[1]->indextable = (char*)data;
                 data += size[6 * f + 3];
             }
         }
 
         for (f = 0; f < files; f++)
         {
-            ptr->file[f].precomp[0]->sizetable = (uint16_t *)data;
+            ptr->file[f].precomp[0]->sizetable = (uint16_t*)data;
             data += size[6 * f + 1];
             if (split)
             {
-                ptr->file[f].precomp[1]->sizetable = (uint16_t *)data;
+                ptr->file[f].precomp[1]->sizetable = (uint16_t*)data;
                 data += size[6 * f + 4];
             }
         }
 
         for (f = 0; f < files; f++)
         {
-            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp[0]->data = data;
             data += size[6 * f + 2];
             if (split)
             {
-                data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+                data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
                 ptr->file[f].precomp[1]->data = data;
                 data += size[6 * f + 5];
             }
@@ -1249,10 +1248,10 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
     return 1;
 }
 
-static int init_table_dtz(struct TBEntry *entry)
+static int init_table_dtz(struct TBEntry* entry)
 {
-    uint8_t *data = (uint8_t *)entry->data;
-    uint8_t *next;
+    uint8_t* data = (uint8_t*)entry->data;
+    uint8_t* next;
     int f, s;
     uint64_t tb_size[4];
     uint64_t size[4 * 3];
@@ -1260,7 +1259,7 @@ static int init_table_dtz(struct TBEntry *entry)
     if (!data)
         return 0;
 
-    if (((uint32_t *)data)[0] != DTZ_MAGIC)
+    if (((uint32_t*)data)[0] != DTZ_MAGIC)
     {
         printf("Corrupted table.\n");
         return 0;
@@ -1272,7 +1271,7 @@ static int init_table_dtz(struct TBEntry *entry)
 
     if (!entry->has_pawns)
     {
-        struct DTZEntry_piece *ptr = (struct DTZEntry_piece *)entry;
+        struct DTZEntry_piece* ptr = (struct DTZEntry_piece*)entry;
         setup_pieces_piece_dtz(ptr, data, &tb_size[0]);
         data += ptr->num + 1;
         data += ((uintptr_t)data) & 0x01;
@@ -1292,19 +1291,19 @@ static int init_table_dtz(struct TBEntry *entry)
             data += ((uintptr_t)data) & 0x01;
         }
 
-        ptr->precomp->indextable = (char *)data;
+        ptr->precomp->indextable = (char*)data;
         data += size[0];
 
-        ptr->precomp->sizetable = (uint16_t *)data;
+        ptr->precomp->sizetable = (uint16_t*)data;
         data += size[1];
 
-        data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+        data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
         ptr->precomp->data = data;
         data += size[2];
     }
     else
     {
-        struct DTZEntry_pawn *ptr = (struct DTZEntry_pawn *)entry;
+        struct DTZEntry_pawn* ptr = (struct DTZEntry_pawn*)entry;
         s = 1 + (ptr->pawns[1] > 0);
         for (f = 0; f < 4; f++)
         {
@@ -1336,19 +1335,19 @@ static int init_table_dtz(struct TBEntry *entry)
 
         for (f = 0; f < files; f++)
         {
-            ptr->file[f].precomp->indextable = (char *)data;
+            ptr->file[f].precomp->indextable = (char*)data;
             data += size[3 * f];
         }
 
         for (f = 0; f < files; f++)
         {
-            ptr->file[f].precomp->sizetable = (uint16_t *)data;
+            ptr->file[f].precomp->sizetable = (uint16_t*)data;
             data += size[3 * f + 1];
         }
 
         for (f = 0; f < files; f++)
         {
-            data = (uint8_t *)((((uintptr_t)data) + 0x3f) & ~0x3f);
+            data = (uint8_t*)((((uintptr_t)data) + 0x3f) & ~0x3f);
             ptr->file[f].precomp->data = data;
             data += size[3 * f + 2];
         }
@@ -1373,15 +1372,15 @@ inline uint64_t bswap64(uint64_t x)
     return ((uint64_t)th << 32) | tl;
 }
 
-static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
+static uint8_t decompress_pairs(struct PairsData* d, uint64_t idx)
 {
     if (!d->idxbits)
         return static_cast<uint8_t>(d->min_len);
 
     uint32_t mainidx = static_cast<uint32_t>(idx >> d->idxbits);
     int litidx = (idx & ((1ll << d->idxbits) - 1)) - (1ll << (d->idxbits - 1));
-    uint32_t block = *(uint32_t *)(d->indextable + 6 * mainidx);
-    litidx += *(uint16_t *)(d->indextable + 6 * mainidx + 4);
+    uint32_t block = *(uint32_t*)(d->indextable + 6 * mainidx);
+    litidx += *(uint16_t*)(d->indextable + 6 * mainidx + 4);
     if (litidx < 0)
     {
         do
@@ -1396,16 +1395,16 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
             litidx -= d->sizetable[block++] + 1;
     }
 
-    uint32_t *ptr = (uint32_t *)(d->data + (block << d->blocksize));
+    uint32_t* ptr = (uint32_t*)(d->data + (block << d->blocksize));
 
     int m = d->min_len;
-    uint16_t *offset = d->offset;
-    base_t *base = d->base - m;
-    uint8_t *symlen = d->symlen;
+    uint16_t* offset = d->offset;
+    base_t* base = d->base - m;
+    uint8_t* symlen = d->symlen;
     int sym, bitcnt;
 
 #ifdef DECOMP64
-    uint64_t code = bswap64(*((uint64_t *)ptr));
+    uint64_t code = bswap64(*((uint64_t*)ptr));
     ptr += 2;
     bitcnt = 0; // number of "empty bits" in code
     for (;;)
@@ -1451,10 +1450,10 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     }
 #endif
 
-    uint8_t *sympat = d->sympat;
+    uint8_t* sympat = d->sympat;
     while (symlen[sym] != 0)
     {
-        int w = *(int *)(sympat + 3 * sym);
+        int w = *(int*)(sympat + 3 * sym);
         int s1 = w & 0x0fff;
         if (litidx < (int)symlen[s1] + 1)
             sym = s1;
@@ -1468,11 +1467,11 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
     return *(sympat + 3 * sym);
 }
 
-void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
+void load_dtz_table(char* str, uint64_t key1, uint64_t key2)
 {
     int i;
-    struct TBEntry *ptr, *ptr3;
-    struct TBHashEntry *ptr2;
+    struct TBEntry* ptr,* ptr3;
+    struct TBHashEntry* ptr2;
 
     DTZ_table[0].key1 = key1;
     DTZ_table[0].key2 = key2;
@@ -1485,7 +1484,7 @@ void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
     if (i == HSHMAX) return;
     ptr = ptr2[i].ptr;
 
-    ptr3 = (struct TBEntry *)malloc(ptr->has_pawns
+    ptr3 = (struct TBEntry*)malloc(ptr->has_pawns
                                     ? sizeof(struct DTZEntry_pawn)
                                     : sizeof(struct DTZEntry_piece));
 
@@ -1496,14 +1495,14 @@ void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
     ptr3->has_pawns = ptr->has_pawns;
     if (ptr3->has_pawns)
     {
-        struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr3;
-        entry->pawns[0] = ((struct TBEntry_pawn *)ptr)->pawns[0];
-        entry->pawns[1] = ((struct TBEntry_pawn *)ptr)->pawns[1];
+        struct DTZEntry_pawn* entry = (struct DTZEntry_pawn*)ptr3;
+        entry->pawns[0] = ((struct TBEntry_pawn*)ptr)->pawns[0];
+        entry->pawns[1] = ((struct TBEntry_pawn*)ptr)->pawns[1];
     }
     else
     {
-        struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr3;
-        entry->enc_type = ((struct TBEntry_piece *)ptr)->enc_type;
+        struct DTZEntry_piece* entry = (struct DTZEntry_piece*)ptr3;
+        entry->enc_type = ((struct TBEntry_piece*)ptr)->enc_type;
     }
     if (!init_table_dtz(ptr3))
         free(ptr3);
@@ -1511,19 +1510,19 @@ void load_dtz_table(char *str, uint64_t key1, uint64_t key2)
         DTZ_table[0].entry = ptr3;
 }
 
-static void free_wdl_entry(struct TBEntry *entry)
+static void free_wdl_entry(struct TBEntry* entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns)
     {
-        struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
+        struct TBEntry_piece* ptr = (struct TBEntry_piece*)entry;
         free(ptr->precomp[0]);
         if (ptr->precomp[1])
             free(ptr->precomp[1]);
     }
     else
     {
-        struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
+        struct TBEntry_pawn* ptr = (struct TBEntry_pawn*)entry;
         int f;
         for (f = 0; f < 4; f++)
         {
@@ -1534,17 +1533,17 @@ static void free_wdl_entry(struct TBEntry *entry)
     }
 }
 
-static void free_dtz_entry(struct TBEntry *entry)
+static void free_dtz_entry(struct TBEntry* entry)
 {
     unmap_file(entry->data, entry->mapping);
     if (!entry->has_pawns)
     {
-        struct DTZEntry_piece *ptr = (struct DTZEntry_piece *)entry;
+        struct DTZEntry_piece* ptr = (struct DTZEntry_piece*)entry;
         free(ptr->precomp);
     }
     else
     {
-        struct DTZEntry_pawn *ptr = (struct DTZEntry_pawn *)entry;
+        struct DTZEntry_pawn* ptr = (struct DTZEntry_pawn*)entry;
         int f;
         for (f = 0; f < 4; f++)
             free(ptr->file[f].precomp);
