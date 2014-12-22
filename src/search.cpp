@@ -119,6 +119,8 @@ void removeIllegalMoves(Position& pos, MoveList& moveList)
         moveList[marker++] = moveList[i];
         pos.unmakeMove(moveList[i], history);
     }
+
+    moveList.resize(marker);
 }
 
 void Search::think(const Position& root)

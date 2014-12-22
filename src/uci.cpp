@@ -194,7 +194,7 @@ void UCI::setOption(const Command& c)
     }
     else if (option == "SyzygyPath") 
     {
-        Syzygy::initialize(arguments);
+        Syzygy::initialize(parameter);
     }
     else if (option == "LargePages")
     {

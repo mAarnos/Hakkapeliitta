@@ -346,16 +346,17 @@ static int probe_dtz_table(Position& pos, int wdl, int& success)
 
 
 // Add underpromotion captures to list of captures.
-static void add_underprom_caps(MoveList& stack)
+static void add_underprom_caps(const Position& pos, MoveList& stack)
 {
     for (auto i = 0; i < stack.size(); ++i)
     {
         const auto& move = stack[i];
-        if (move.getPromotion() != Piece::Queen)
+        if (move.getPromotion() == Piece::Queen && pos.getBoard(move.getTo()) != Piece::Empty)
         {
             stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Rook, 0));
             stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Bishop, 0));
             stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Knight, 0));
+            break;
         }
     }
 }
@@ -372,7 +373,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int& success)
     {
         MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
         // Since underpromotion captures are not included, we need to add them.
-        add_underprom_caps(moveList);
+        add_underprom_caps(pos, moveList);
     }
     else
     {
