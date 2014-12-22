@@ -20,6 +20,7 @@
 #include "..\piece.hpp"
 #include "..\zobrist.hpp"
 #include "..\position.hpp"
+#include "..\movelist.hpp"
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
 #include "tbcore-impl.hpp"
@@ -82,23 +83,22 @@ static uint64_t calc_key_from_pcs(int* pcs, int mirror)
     return key;
 }
 
-/*
 // probe_wdl_table and probe_dtz_table require similar adaptations.
 static int probe_wdl_table(Position& pos, int *success)
 {
   struct TBEntry *ptr;
   struct TBHashEntry *ptr2;
-  uint64 idx;
-  uint64 key;
+  uint64_t idx;
+  uint64_t key;
   int i;
-  ubyte res;
+  uint8_t res;
   int p[TBPIECES];
 
   // Obtain the position's material signature key.
-  key = pos.material_key();
+  key = pos.getMaterialHashKey();
 
   // Test for KvK.
-  if (key == (Zobrist::psq[WHITE][KING][0] ^ Zobrist::psq[BLACK][KING][0]))
+  if (key == (Zobrist::materialHash[Piece::WhiteKing][0] ^ Zobrist::materialHash[Piece::BlackKing][0]))
     return 0;
 
   ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
@@ -111,21 +111,22 @@ static int probe_wdl_table(Position& pos, int *success)
 
   ptr = ptr2[i].ptr;
   if (!ptr->ready) {
-    LOCK(TB_mutex);
+      TB_mutex.lock();
     if (!ptr->ready) {
       char str[16];
       prt_str(pos, str, ptr->key != key);
       if (!init_table_wdl(ptr, str)) {
 	ptr2[i].key = 0ULL;
 	*success = 0;
-	UNLOCK(TB_mutex);
+    TB_mutex.unlock();
 	return 0;
       }
       // Memory barrier to ensure ptr->ready = 1 is not reordered.
-      __asm__ __volatile__ ("" ::: "memory");
+      // TODO: do something about this
+      // __asm__ __volatile__ ("" ::: "memory");
       ptr->ready = 1;
     }
-    UNLOCK(TB_mutex);
+    TB_mutex.unlock();
   }
 
   int bside, mirror, cmirror;
@@ -133,14 +134,14 @@ static int probe_wdl_table(Position& pos, int *success)
     if (key != ptr->key) {
       cmirror = 8;
       mirror = 0x38;
-      bside = (pos.side_to_move() == WHITE);
+      bside = (pos.getSideToMove() == Color::White);
     } else {
       cmirror = mirror = 0;
-      bside = !(pos.side_to_move() == WHITE);
+      bside = !(pos.getSideToMove() == Color::White);
     }
   } else {
-    cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-    mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+    cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+    mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
     bside = 0;
   }
 
@@ -149,12 +150,11 @@ static int probe_wdl_table(Position& pos, int *success)
   // Pieces of the same type are guaranteed to be consecutive.
   if (!ptr->has_pawns) {
     struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
-    ubyte *pc = entry->pieces[bside];
+    uint8_t *pc = entry->pieces[bside];
     for (i = 0; i < entry->num;) {
-      Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-				      (PieceType)(pc[i] & 0x07));
+        Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
       do {
-	p[i++] = pop_lsb(&bb);
+	p[i++] = Bitboards::popLsb(bb);
       } while (bb);
     }
     idx = encode_piece(entry, entry->norm[bside], p, entry->factor[bside]);
@@ -162,18 +162,17 @@ static int probe_wdl_table(Position& pos, int *success)
   } else {
     struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
     int k = entry->file[0].pieces[0][0] ^ cmirror;
-    Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+    Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
     i = 0;
     do {
-      p[i++] = pop_lsb(&bb) ^ mirror;
+      p[i++] = Bitboards::popLsb(bb) ^ mirror;
     } while (bb);
     int f = pawn_file(entry, p);
-    ubyte *pc = entry->file[f].pieces[bside];
+    uint8_t *pc = entry->file[f].pieces[bside];
     for (; i < entry->num;) {
-      bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-				    (PieceType)(pc[i] & 0x07));
+        bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
       do {
-	p[i++] = pop_lsb(&bb) ^ mirror;
+	p[i++] = Bitboards::popLsb(bb) ^ mirror;
       } while (bb);
     }
     idx = encode_pawn(entry, entry->file[f].norm[bside], p, entry->file[f].factor[bside]);
@@ -186,12 +185,12 @@ static int probe_wdl_table(Position& pos, int *success)
 static int probe_dtz_table(Position& pos, int wdl, int *success)
 {
   struct TBEntry *ptr;
-  uint64 idx;
+  uint64_t idx;
   int i, res;
   int p[TBPIECES];
 
   // Obtain the position's material signature key.
-  uint64 key = pos.material_key();
+  uint64_t key = pos.getMaterialHashKey();
 
   if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key) {
     for (i = 1; i < DTZ_ENTRIES; i++)
@@ -232,14 +231,14 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     if (key != ptr->key) {
       cmirror = 8;
       mirror = 0x38;
-      bside = (pos.side_to_move() == WHITE);
+      bside = (pos.getSideToMove() == Color::White);
     } else {
       cmirror = mirror = 0;
-      bside = !(pos.side_to_move() == WHITE);
+      bside = !(pos.getSideToMove() == Color::White);
     }
   } else {
-    cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-    mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+    cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+    mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
     bside = 0;
   }
 
@@ -249,12 +248,11 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
       *success = -1;
       return 0;
     }
-    ubyte *pc = entry->pieces;
+    uint8_t *pc = entry->pieces;
     for (i = 0; i < entry->num;) {
-      Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-				    (PieceType)(pc[i] & 0x07));
+        Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
       do {
-	p[i++] = pop_lsb(&bb);
+	p[i++] = Bitboards::popLsb(bb);
       } while (bb);
     }
     idx = encode_piece((struct TBEntry_piece *)entry, entry->norm, p, entry->factor);
@@ -268,22 +266,21 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
   } else {
     struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
     int k = entry->file[0].pieces[0] ^ cmirror;
-    Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+    Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
     i = 0;
     do {
-      p[i++] = pop_lsb(&bb) ^ mirror;
+      p[i++] = Bitboards::popLsb(bb) ^ mirror;
     } while (bb);
     int f = pawn_file((struct TBEntry_pawn *)entry, p);
     if ((entry->flags[f] & 1) != bside) {
       *success = -1;
       return 0;
     }
-    ubyte *pc = entry->file[f].pieces;
+    uint8_t *pc = entry->file[f].pieces;
     for (; i < entry->num;) {
-      bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-			    (PieceType)(pc[i] & 0x07));
+        bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
       do {
-	p[i++] = pop_lsb(&bb) ^ mirror;
+	p[i++] = Bitboards::popLsb(bb) ^ mirror;
       } while (bb);
     }
     idx = encode_pawn((struct TBEntry_pawn *)entry, entry->file[f].norm, p, entry->file[f].factor);
@@ -299,23 +296,23 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
   return res;
 }
 
+
 // Add underpromotion captures to list of captures.
-static ExtMove *add_underprom_caps(Position& pos, ExtMove *stack, ExtMove *end)
+static void add_underprom_caps(Position& pos, MoveList& stack)
 {
-  ExtMove *moves, *extra = end;
-
-  for (moves = stack; moves < end; moves++) {
-    Move move = moves->move;
-    if (type_of(move) == PROMOTION && !pos.empty(to_sq(move))) {
-      (*extra++).move = (Move)(move - (1 << 12));
-      (*extra++).move = (Move)(move - (2 << 12));
-      (*extra++).move = (Move)(move - (3 << 12));
+    for (auto i = 0; i < stack.size(); ++i) 
+    {
+        const auto& move = stack[i];
+        if (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King)
+        {
+            stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Rook, 0));
+            stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Bishop, 0));
+            stack.push_back(Move(move.getFrom(), move.getTo(), Piece::Knight, 0));
+        }
     }
-  }
-
-  return extra;
 }
 
+/*
 static int probe_ab(Position& pos, int alpha, int beta, int *success)
 {
   int v;
