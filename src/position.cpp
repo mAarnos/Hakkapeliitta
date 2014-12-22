@@ -41,6 +41,7 @@ Position::Position()
     enPassant = Square::NoSquare;
     phase = 0;
     fiftyMoveDistance = 0;
+    totalPieceCount = 0;
     ply = 0;
     pstMaterialScoreOp = pstMaterialScoreEd = 0;
     pieceCount.fill(0);
@@ -211,6 +212,7 @@ void Position::initializePositionFromFen(const std::string& fen)
     bitboards[13] = bitboards[Piece::BlackKing] | bitboards[Piece::BlackQueen] | bitboards[Piece::BlackRook] 
                   | bitboards[Piece::BlackBishop] | bitboards[Piece::BlackKnight] | bitboards[Piece::BlackPawn];
 	bitboards[14] = bitboards[12] | bitboards[13];
+    totalPieceCount = Bitboards::popcnt<false>(bitboards[14]);
 
     // Calculate all the different hash keys for the position.
 	hashKey = calculateHash();
@@ -465,6 +467,7 @@ bool Position::makeMove(const Move& m, History& history)
     auto captured = board[to];
     auto fromToBB = Bitboards::bit[from] | Bitboards::bit[to];
 
+    ++ply;
     // Save all information needed to take back a move.
     history.hash = hashKey;
     history.pHash = pawnHashKey;
@@ -493,6 +496,7 @@ bool Position::makeMove(const Move& m, History& history)
 
     if (captured != Piece::Empty)
     {
+        --totalPieceCount;
         bitboards[captured] ^= Bitboards::bit[to];
         bitboards[12 + !side] ^= Bitboards::bit[to];
         fiftyMoveDistance = 0;
@@ -528,6 +532,7 @@ bool Position::makeMove(const Move& m, History& history)
         else if (promotion == Piece::Pawn) // En passant
         {
             auto enPassantSquare = to ^ 8;
+            --totalPieceCount;
             bitboards[Piece::Pawn + !side * 6] ^= Bitboards::bit[enPassantSquare];
             bitboards[12 + !side] ^= Bitboards::bit[enPassantSquare];
             bitboards[14] ^= Bitboards::bit[enPassantSquare];
@@ -607,6 +612,7 @@ void Position::unmakeMove(const Move& m, const History& history)
     auto piece = board[to];
     auto fromToBB = Bitboards::bit[from] | Bitboards::bit[to];
 
+    --ply;
     // Back up irreversible information from history.
     hashKey = history.hash;
     pawnHashKey = history.pHash;
@@ -620,6 +626,7 @@ void Position::unmakeMove(const Move& m, const History& history)
     if (promotion == Piece::Pawn)
     {
         auto enPassantSquare = to ^ 8;
+        ++totalPieceCount;
         bitboards[Piece::Pawn + side * 6] |= Bitboards::bit[enPassantSquare];
         bitboards[12 + side] |= Bitboards::bit[enPassantSquare];
         bitboards[14] |= Bitboards::bit[enPassantSquare];
@@ -671,6 +678,7 @@ void Position::unmakeMove(const Move& m, const History& history)
 
     if (captured != Piece::Empty)
     {
+        ++totalPieceCount;
         bitboards[captured] |= Bitboards::bit[to];
         bitboards[12 + side] |= Bitboards::bit[to];
         bitboards[14] |= Bitboards::bit[from];

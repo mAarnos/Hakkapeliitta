@@ -156,7 +156,7 @@ void Search::think(const Position& root)
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList);
 
-    if (Bitboards::popcnt<false>(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+    if (pos.getTotalPieceCount() <= syzygyProbeLimit)
     {
         tbHits = rootMoveList.size();
 
@@ -681,7 +681,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return score;
     }
 
-    if (probeTb && Bitboards::popcnt<false>(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+    if (probeTb && pos.getTotalPieceCount() <= syzygyProbeLimit)
     {
         int success;
         score = Syzygy::probeWdl(pos, success);

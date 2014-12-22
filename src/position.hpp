@@ -51,6 +51,7 @@ public:
     void unmakeNullMove(const History& history);
 
     int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
+    int getTotalPieceCount() const { return totalPieceCount; }
 
     bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
     bool isAttacked(Square sq, Color side) const;
@@ -77,8 +78,9 @@ private:
     int castlingRights;
     Square enPassant;
 	int fiftyMoveDistance;
-    int ply;
+    int totalPieceCount;
     int phase;
+    int ply;
     int pstMaterialScoreOp, pstMaterialScoreEd;
     std::array<int, 12> pieceCount;
 
