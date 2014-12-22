@@ -729,7 +729,7 @@ bool Syzygy::rootProbe(Position& pos, MoveList& rootMoveList, int& tbScore)
     for (auto i = 0; i < rootMoveList.size(); ++i)
     {
         auto& move = rootMoveList[i];
-        pos.makeMove(move, history);
+        pos.makeMove(move, history); // Can't fail due to the rootMoveList only containing legal moves.
         int v = 0;
         if (pos.inCheck() && dtz > 0)
         {
@@ -832,44 +832,41 @@ bool Syzygy::rootProbe(Position& pos, MoveList& rootMoveList, int& tbScore)
     return true;
 }
 
-/*
-
-bool Tablebases::root_probe_wdl(Position& pos, Value& TBScore)
+bool Syzygy::rootProbeWdl(Position& pos, MoveList& rootMoveList, int& tbScore)
 {
     int success;
 
-    int wdl = Tablebases::probe_wdl(pos, &success);
+    int wdl = Syzygy::probeWdl(pos, success);
     if (!success) return false;
-    TBScore = wdl_to_Value[wdl + 2];
+    tbScore = wdl_to_Value[wdl + 2];
 
-    StateInfo st;
-    CheckInfo ci(pos);
+    History history;
 
     int best = -2;
 
     // Probe each move.
-    for (size_t i = 0; i < Search::RootMoves.size(); i++)
+    for (auto i = 0; i < rootMoveList.size(); ++i)
     {
-        Move move = Search::RootMoves[i].pv[0];
-        pos.do_move(move, st, ci, pos.gives_check(move, ci));
-        int v = -Tablebases::probe_wdl(pos, &success);
-        pos.undo_move(move);
+        auto& move = rootMoveList[i];
+        pos.makeMove(move, history); // Can't fail due to the rootMoveList only containing legal moves.
+        int v = -Syzygy::probeWdl(pos, success);
+        pos.unmakeMove(move, history);
         if (!success) return false;
-        Search::RootMoves[i].score = (Value)v;
+        move.setScore(v);
         if (v > best)
             best = v;
     }
 
-    size_t j = 0;
-    for (size_t i = 0; i < Search::RootMoves.size(); i++)
+    auto j = 0;
+    for (auto i = 0; i < rootMoveList.size(); ++i)
     {
-        if (Search::RootMoves[i].score == best)
-            Search::RootMoves[j++] = Search::RootMoves[i];
+        if (rootMoveList[i].getScore() == best)
+            rootMoveList[j++] = rootMoveList[i];
     }
-    Search::RootMoves.resize(j, Search::RootMove(MOVE_NONE));
+    rootMoveList.resize(j);
 
     return true;
 }
-*/
+
 
 

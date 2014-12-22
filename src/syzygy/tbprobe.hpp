@@ -61,7 +61,7 @@ public:
     //
     // A return value false indicates that not all probes were successful and that
     // no moves were filtered out.
-    static bool rootProbeWdl(Position& pos, int& tbScore);
+    static bool rootProbeWdl(Position& pos, MoveList& rootMoveList, int& tbScore);
 
     static int tbLargest;
 };
