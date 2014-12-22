@@ -22,6 +22,7 @@
 #include "..\position.hpp"
 #include "..\movelist.hpp"
 #include "..\movegen.hpp"
+#include "..\search.hpp"
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
 #include "tbcore-impl.hpp"
@@ -87,221 +88,267 @@ static uint64_t calc_key_from_pcs(int* pcs, int mirror)
 // probe_wdl_table and probe_dtz_table require similar adaptations.
 static int probe_wdl_table(Position& pos, int& success)
 {
-  struct TBEntry *ptr;
-  struct TBHashEntry *ptr2;
-  uint64_t idx;
-  uint64_t key;
-  int i;
-  uint8_t res;
-  int p[TBPIECES];
+    struct TBEntry *ptr;
+    struct TBHashEntry *ptr2;
+    uint64_t idx;
+    uint64_t key;
+    int i;
+    uint8_t res;
+    int p[TBPIECES];
 
-  // Obtain the position's material signature key.
-  key = pos.getMaterialHashKey();
+    // Obtain the position's material signature key.
+    key = pos.getMaterialHashKey();
 
-  // Test for KvK.
-  if (key == (Zobrist::materialHash[Piece::WhiteKing][0] ^ Zobrist::materialHash[Piece::BlackKing][0]))
-    return 0;
+    // Test for KvK.
+    if (key == (Zobrist::materialHash[Piece::WhiteKing][0] ^ Zobrist::materialHash[Piece::BlackKing][0]))
+        return 0;
 
-  ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
-  for (i = 0; i < HSHMAX; i++)
-    if (ptr2[i].key == key) break;
-  if (i == HSHMAX) {
-    success = 0;
-    return 0;
-  }
-
-  ptr = ptr2[i].ptr;
-  if (!ptr->ready) {
-      TB_mutex.lock();
-    if (!ptr->ready) {
-      char str[16];
-      prt_str(pos, str, ptr->key != key);
-      if (!init_table_wdl(ptr, str)) {
-	ptr2[i].key = 0ULL;
-	success = 0;
-    TB_mutex.unlock();
-	return 0;
-      }
-      // Memory barrier to ensure ptr->ready = 1 is not reordered.
-      // TODO: do something about this
-      // __asm__ __volatile__ ("" ::: "memory");
-      ptr->ready = 1;
+    ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
+    for (i = 0; i < HSHMAX; i++)
+        if (ptr2[i].key == key) break;
+    if (i == HSHMAX)
+    {
+        success = 0;
+        return 0;
     }
-    TB_mutex.unlock();
-  }
 
-  int bside, mirror, cmirror;
-  if (!ptr->symmetric) {
-    if (key != ptr->key) {
-      cmirror = 8;
-      mirror = 0x38;
-      bside = (pos.getSideToMove() == Color::White);
-    } else {
-      cmirror = mirror = 0;
-      bside = !(pos.getSideToMove() == Color::White);
+    ptr = ptr2[i].ptr;
+    if (!ptr->ready)
+    {
+        TB_mutex.lock();
+        if (!ptr->ready)
+        {
+            char str[16];
+            prt_str(pos, str, ptr->key != key);
+            if (!init_table_wdl(ptr, str))
+            {
+                ptr2[i].key = 0ULL;
+                success = 0;
+                TB_mutex.unlock();
+                return 0;
+            }
+            // Memory barrier to ensure ptr->ready = 1 is not reordered.
+            // TODO: do something about this
+            // __asm__ __volatile__ ("" ::: "memory");
+            ptr->ready = 1;
+        }
+        TB_mutex.unlock();
     }
-  } else {
-    cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
-    mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
-    bside = 0;
-  }
 
-  // p[i] is to contain the square 0-63 (A1-H8) for a piece of type
-  // pc[i] ^ cmirror, where 1 = white pawn, ..., 14 = black king.
-  // Pieces of the same type are guaranteed to be consecutive.
-  if (!ptr->has_pawns) {
-    struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
-    uint8_t *pc = entry->pieces[bside];
-    for (i = 0; i < entry->num;) {
-        Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
-      do {
-	p[i++] = Bitboards::popLsb(bb);
-      } while (bb);
+    int bside, mirror, cmirror;
+    if (!ptr->symmetric)
+    {
+        if (key != ptr->key)
+        {
+            cmirror = 8;
+            mirror = 0x38;
+            bside = (pos.getSideToMove() == Color::White);
+        }
+        else
+        {
+            cmirror = mirror = 0;
+            bside = !(pos.getSideToMove() == Color::White);
+        }
     }
-    idx = encode_piece(entry, entry->norm[bside], p, entry->factor[bside]);
-    res = decompress_pairs(entry->precomp[bside], idx);
-  } else {
-    struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
-    int k = entry->file[0].pieces[0][0] ^ cmirror;
-    Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
-    i = 0;
-    do {
-      p[i++] = Bitboards::popLsb(bb) ^ mirror;
-    } while (bb);
-    int f = pawn_file(entry, p);
-    uint8_t *pc = entry->file[f].pieces[bside];
-    for (; i < entry->num;) {
-        bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
-      do {
-	p[i++] = Bitboards::popLsb(bb) ^ mirror;
-      } while (bb);
+    else
+    {
+        cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+        mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
+        bside = 0;
     }
-    idx = encode_pawn(entry, entry->file[f].norm[bside], p, entry->file[f].factor[bside]);
-    res = decompress_pairs(entry->file[f].precomp[bside], idx);
-  }
 
-  return ((int)res) - 2;
+    // p[i] is to contain the square 0-63 (A1-H8) for a piece of type
+    // pc[i] ^ cmirror, where 1 = white pawn, ..., 14 = black king.
+    // Pieces of the same type are guaranteed to be consecutive.
+    if (!ptr->has_pawns)
+    {
+        struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
+        uint8_t *pc = entry->pieces[bside];
+        for (i = 0; i < entry->num;)
+        {
+            Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
+            do
+            {
+                p[i++] = Bitboards::popLsb(bb);
+            }
+            while (bb);
+        }
+        idx = encode_piece(entry, entry->norm[bside], p, entry->factor[bside]);
+        res = decompress_pairs(entry->precomp[bside], idx);
+    }
+    else
+    {
+        struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
+        int k = entry->file[0].pieces[0][0] ^ cmirror;
+        Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
+        i = 0;
+        do
+        {
+            p[i++] = Bitboards::popLsb(bb) ^ mirror;
+        }
+        while (bb);
+        int f = pawn_file(entry, p);
+        uint8_t *pc = entry->file[f].pieces[bside];
+        for (; i < entry->num;)
+        {
+            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
+            do
+            {
+                p[i++] = Bitboards::popLsb(bb) ^ mirror;
+            }
+            while (bb);
+        }
+        idx = encode_pawn(entry, entry->file[f].norm[bside], p, entry->file[f].factor[bside]);
+        res = decompress_pairs(entry->file[f].precomp[bside], idx);
+    }
+
+    return ((int)res) - 2;
 }
 
 static int probe_dtz_table(Position& pos, int wdl, int& success)
 {
-  struct TBEntry *ptr;
-  uint64_t idx;
-  int i, res;
-  int p[TBPIECES];
+    struct TBEntry *ptr;
+    uint64_t idx;
+    int i, res;
+    int p[TBPIECES];
 
-  // Obtain the position's material signature key.
-  uint64_t key = pos.getMaterialHashKey();
+    // Obtain the position's material signature key.
+    uint64_t key = pos.getMaterialHashKey();
 
-  if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key) {
-    for (i = 1; i < DTZ_ENTRIES; i++)
-      if (DTZ_table[i].key1 == key) break;
-    if (i < DTZ_ENTRIES) {
-      struct DTZTableEntry table_entry = DTZ_table[i];
-      for (; i > 0; i--)
-	DTZ_table[i] = DTZ_table[i - 1];
-      DTZ_table[0] = table_entry;
-    } else {
-      struct TBHashEntry *ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
-      for (i = 0; i < HSHMAX; i++)
-	if (ptr2[i].key == key) break;
-      if (i == HSHMAX) {
-	success = 0;
-	return 0;
-      }
-      ptr = ptr2[i].ptr;
-      char str[16];
-      int mirror = (ptr->key != key);
-      prt_str(pos, str, mirror);
-      if (DTZ_table[DTZ_ENTRIES - 1].entry)
-	free_dtz_entry(DTZ_table[DTZ_ENTRIES-1].entry);
-      for (i = DTZ_ENTRIES - 1; i > 0; i--)
-	DTZ_table[i] = DTZ_table[i - 1];
-      load_dtz_table(str, calc_key(pos, mirror), calc_key(pos, !mirror));
+    if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key)
+    {
+        for (i = 1; i < DTZ_ENTRIES; i++)
+            if (DTZ_table[i].key1 == key) break;
+        if (i < DTZ_ENTRIES)
+        {
+            struct DTZTableEntry table_entry = DTZ_table[i];
+            for (; i > 0; i--)
+                DTZ_table[i] = DTZ_table[i - 1];
+            DTZ_table[0] = table_entry;
+        }
+        else
+        {
+            struct TBHashEntry *ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
+            for (i = 0; i < HSHMAX; i++)
+                if (ptr2[i].key == key) break;
+            if (i == HSHMAX)
+            {
+                success = 0;
+                return 0;
+            }
+            ptr = ptr2[i].ptr;
+            char str[16];
+            int mirror = (ptr->key != key);
+            prt_str(pos, str, mirror);
+            if (DTZ_table[DTZ_ENTRIES - 1].entry)
+                free_dtz_entry(DTZ_table[DTZ_ENTRIES-1].entry);
+            for (i = DTZ_ENTRIES - 1; i > 0; i--)
+                DTZ_table[i] = DTZ_table[i - 1];
+            load_dtz_table(str, calc_key(pos, mirror), calc_key(pos, !mirror));
+        }
     }
-  }
 
-  ptr = DTZ_table[0].entry;
-  if (!ptr) {
-    success = 0;
-    return 0;
-  }
-
-  int bside, mirror, cmirror;
-  if (!ptr->symmetric) {
-    if (key != ptr->key) {
-      cmirror = 8;
-      mirror = 0x38;
-      bside = (pos.getSideToMove() == Color::White);
-    } else {
-      cmirror = mirror = 0;
-      bside = !(pos.getSideToMove() == Color::White);
+    ptr = DTZ_table[0].entry;
+    if (!ptr)
+    {
+        success = 0;
+        return 0;
     }
-  } else {
-    cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
-    mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
-    bside = 0;
-  }
 
-  if (!ptr->has_pawns) {
-    struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr;
-    if ((entry->flags & 1) != bside && !entry->symmetric) {
-      success = -1;
-      return 0;
+    int bside, mirror, cmirror;
+    if (!ptr->symmetric)
+    {
+        if (key != ptr->key)
+        {
+            cmirror = 8;
+            mirror = 0x38;
+            bside = (pos.getSideToMove() == Color::White);
+        }
+        else
+        {
+            cmirror = mirror = 0;
+            bside = !(pos.getSideToMove() == Color::White);
+        }
     }
-    uint8_t *pc = entry->pieces;
-    for (i = 0; i < entry->num;) {
-        Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
-      do {
-	p[i++] = Bitboards::popLsb(bb);
-      } while (bb);
+    else
+    {
+        cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+        mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
+        bside = 0;
     }
-    idx = encode_piece((struct TBEntry_piece *)entry, entry->norm, p, entry->factor);
-    res = decompress_pairs(entry->precomp, idx);
 
-    if (entry->flags & 2)
-      res = entry->map[entry->map_idx[wdl_to_map[wdl + 2]] + res];
+    if (!ptr->has_pawns)
+    {
+        struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr;
+        if ((entry->flags & 1) != bside && !entry->symmetric)
+        {
+            success = -1;
+            return 0;
+        }
+        uint8_t *pc = entry->pieces;
+        for (i = 0; i < entry->num;)
+        {
+            Bitboard bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
+            do
+            {
+                p[i++] = Bitboards::popLsb(bb);
+            }
+            while (bb);
+        }
+        idx = encode_piece((struct TBEntry_piece *)entry, entry->norm, p, entry->factor);
+        res = decompress_pairs(entry->precomp, idx);
 
-    if (!(entry->flags & pa_flags[wdl + 2]) || (wdl & 1))
-      res *= 2;
-  } else {
-    struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
-    int k = entry->file[0].pieces[0] ^ cmirror;
-    Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
-    i = 0;
-    do {
-      p[i++] = Bitboards::popLsb(bb) ^ mirror;
-    } while (bb);
-    int f = pawn_file((struct TBEntry_pawn *)entry, p);
-    if ((entry->flags[f] & 1) != bside) {
-      success = -1;
-      return 0;
+        if (entry->flags & 2)
+            res = entry->map[entry->map_idx[wdl_to_map[wdl + 2]] + res];
+
+        if (!(entry->flags & pa_flags[wdl + 2]) || (wdl & 1))
+            res *= 2;
     }
-    uint8_t *pc = entry->file[f].pieces;
-    for (; i < entry->num;) {
-        bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
-      do {
-	p[i++] = Bitboards::popLsb(bb) ^ mirror;
-      } while (bb);
+    else
+    {
+        struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
+        int k = entry->file[0].pieces[0] ^ cmirror;
+        Bitboard bb = pos.getBitboard(!!(k >> 3), (k & 0x07) - 1);
+        i = 0;
+        do
+        {
+            p[i++] = Bitboards::popLsb(bb) ^ mirror;
+        }
+        while (bb);
+        int f = pawn_file((struct TBEntry_pawn *)entry, p);
+        if ((entry->flags[f] & 1) != bside)
+        {
+            success = -1;
+            return 0;
+        }
+        uint8_t *pc = entry->file[f].pieces;
+        for (; i < entry->num;)
+        {
+            bb = pos.getBitboard(!!((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
+            do
+            {
+                p[i++] = Bitboards::popLsb(bb) ^ mirror;
+            }
+            while (bb);
+        }
+        idx = encode_pawn((struct TBEntry_pawn *)entry, entry->file[f].norm, p, entry->file[f].factor);
+        res = decompress_pairs(entry->file[f].precomp, idx);
+
+        if (entry->flags[f] & 2)
+            res = entry->map[entry->map_idx[f][wdl_to_map[wdl + 2]] + res];
+
+        if (!(entry->flags[f] & pa_flags[wdl + 2]) || (wdl & 1))
+            res *= 2;
     }
-    idx = encode_pawn((struct TBEntry_pawn *)entry, entry->file[f].norm, p, entry->file[f].factor);
-    res = decompress_pairs(entry->file[f].precomp, idx);
 
-    if (entry->flags[f] & 2)
-      res = entry->map[entry->map_idx[f][wdl_to_map[wdl + 2]] + res];
-
-    if (!(entry->flags[f] & pa_flags[wdl + 2]) || (wdl & 1))
-      res *= 2;
-  }
-
-  return res;
+    return res;
 }
 
 
 // Add underpromotion captures to list of captures.
 static void add_underprom_caps(MoveList& stack)
 {
-    for (auto i = 0; i < stack.size(); ++i) 
+    for (auto i = 0; i < stack.size(); ++i)
     {
         const auto& move = stack[i];
         if (move.getPromotion() != Piece::Queen)
@@ -315,52 +362,58 @@ static void add_underprom_caps(MoveList& stack)
 
 static int probe_ab(Position& pos, int alpha, int beta, int& success)
 {
-  int v;
-  MoveList moveList;
-  History history;
+    int v;
+    MoveList moveList;
+    History history;
 
-  // Generate (at least) all legal non-ep captures including (under)promotions.
-  // It is OK to generate more, as long as they are filtered out below.
-  if (!pos.inCheck()) {
-      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-    // Since underpromotion captures are not included, we need to add them.
-      add_underprom_caps(moveList);
-  }
-  else
-  {
-      MoveGen::generateLegalEvasions(pos, moveList);
-  }
-
-  for (auto i = 0; i < moveList.size(); ++i)
-  {
-      const auto& move = moveList[i];
-      if (pos.getBoard(move.getTo()) == Piece::Empty || move.getPromotion() == Piece::Pawn)
-          continue;
-    if (!pos.makeMove(move, history))
+    // Generate (at least) all legal non-ep captures including (under)promotions.
+    // It is OK to generate more, as long as they are filtered out below.
+    if (!pos.inCheck())
     {
-        continue;
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
+        // Since underpromotion captures are not included, we need to add them.
+        add_underprom_caps(moveList);
     }
-    v = -probe_ab(pos, -beta, -alpha, success);
-    pos.unmakeMove(move, history);
-    if (success == 0) return 0;
-    if (v > alpha) {
-      if (v >= beta) {
-        success = 2;
-	return v;
-      }
-      alpha = v;
+    else
+    {
+        MoveGen::generateLegalEvasions(pos, moveList);
     }
-  }
 
-  v = probe_wdl_table(pos, success);
-  if (success == 0) return 0;
-  if (alpha >= v) {
-    success = 1 + (alpha > 0);
-    return alpha;
-  } else {
-    success = 1;
-    return v;
-  }
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        const auto& move = moveList[i];
+        if (pos.getBoard(move.getTo()) == Piece::Empty || move.getPromotion() == Piece::Pawn)
+            continue;
+        if (!pos.makeMove(move, history))
+        {
+            continue;
+        }
+        v = -probe_ab(pos, -beta, -alpha, success);
+        pos.unmakeMove(move, history);
+        if (success == 0) return 0;
+        if (v > alpha)
+        {
+            if (v >= beta)
+            {
+                success = 2;
+                return v;
+            }
+            alpha = v;
+        }
+    }
+
+    v = probe_wdl_table(pos, success);
+    if (success == 0) return 0;
+    if (alpha >= v)
+    {
+        success = 1 + (alpha > 0);
+        return alpha;
+    }
+    else
+    {
+        success = 1;
+        return v;
+    }
 }
 
 // Probe the WDL table for a particular position.
@@ -374,170 +427,194 @@ static int probe_ab(Position& pos, int alpha, int beta, int& success)
 
 int Syzygy::probeWdl(Position& pos, int& success)
 {
-  int v;
+    int v;
 
-  success = 1;
-  v = probe_ab(pos, -2, 2, success);
+    success = 1;
+    v = probe_ab(pos, -2, 2, success);
 
-  // If en passant is not possible, we are done.
-  if (pos.getEnPassantSquare() == Square::NoSquare)
-    return v;
-  if (!success) return 0;
+    // If en passant is not possible, we are done.
+    if (pos.getEnPassantSquare() == Square::NoSquare)
+        return v;
+    if (!success) return 0;
 
-  // Now handle en passant.
-  int v1 = -3;
-  // Generate (at least) all legal en passant captures.
-  MoveList moveList;
-  History history;
+    // Now handle en passant.
+    int v1 = -3;
+    // Generate (at least) all legal en passant captures.
+    MoveList moveList;
+    History history;
 
-  if (!pos.inCheck())
-      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-  else
-      MoveGen::generateLegalEvasions(pos, moveList);
+    if (!pos.inCheck())
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
+    else
+        MoveGen::generateLegalEvasions(pos, moveList);
 
-  for (auto i = 0; i < moveList.size(); ++i) {
-      const auto& move = moveList[i];
-      if (move.getPromotion() != Piece::Pawn)
-          continue;
-      if (!pos.makeMove(move, history)) {
-          continue;
-      }
-    int v0 = -probe_ab(pos, -2, 2, success);
-    pos.unmakeMove(move, history);
-    if (success == 0) return 0;
-    if (v0 > v1) v1 = v0;
-  }
-  if (v1 > -3) {
-    if (v1 >= v) v = v1;
-    else if (v == 0) 
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        int i;
-      // Check whether there is at least one legal non-ep move.
-        for (i = 0; i < moveList.size(); ++i) {
-            const auto& move = moveList[i];
-            if (move.getPromotion() == Piece::Pawn) continue;
-            if (pos.makeMove(move, history)) {
-                pos.unmakeMove(move, history);
-                break;
-            }
-      }
-      if (i == moveList.size() && !pos.inCheck()) {
-          moveList.clear();
-          MoveGen::generatePseudoLegalMoves(pos, moveList);
-          for (i = 0; i < moveList.size(); ++i) {
-              const auto& move = moveList[i];
-              if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
-              {
-                  continue;
-              }
-              if (pos.makeMove(move, history)) {
-                  pos.unmakeMove(move, history);
-                  break;
-              }
-          }
-      }
-      // If not, then we are forced to play the losing ep capture.
-      if (i == moveList.size())
-	      v = v1;
+        const auto& move = moveList[i];
+        if (move.getPromotion() != Piece::Pawn)
+            continue;
+        if (!pos.makeMove(move, history))
+        {
+            continue;
+        }
+        int v0 = -probe_ab(pos, -2, 2, success);
+        pos.unmakeMove(move, history);
+        if (success == 0) return 0;
+        if (v0 > v1) v1 = v0;
     }
-  }
+    if (v1 > -3)
+    {
+        if (v1 >= v) v = v1;
+        else if (v == 0)
+        {
+            int i;
+            // Check whether there is at least one legal non-ep move.
+            for (i = 0; i < moveList.size(); ++i)
+            {
+                const auto& move = moveList[i];
+                if (move.getPromotion() == Piece::Pawn) continue;
+                if (pos.makeMove(move, history))
+                {
+                    pos.unmakeMove(move, history);
+                    break;
+                }
+            }
+            if (i == moveList.size() && !pos.inCheck())
+            {
+                moveList.clear();
+                MoveGen::generatePseudoLegalMoves(pos, moveList);
+                for (i = 0; i < moveList.size(); ++i)
+                {
+                    const auto& move = moveList[i];
+                    if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+                    {
+                        continue;
+                    }
+                    if (pos.makeMove(move, history))
+                    {
+                        pos.unmakeMove(move, history);
+                        break;
+                    }
+                }
+            }
+            // If not, then we are forced to play the losing ep capture.
+            if (i == moveList.size())
+                v = v1;
+        }
+    }
 
-  return v;
+    return v;
 }
 
 // This routine treats a position with en passant captures as one without.
 static int probe_dtz_no_ep(Position& pos, int& success)
 {
-  int wdl, dtz;
+    int wdl, dtz;
 
-  wdl = probe_ab(pos, -2, 2, success);
-  if (success == 0) return 0;
+    wdl = probe_ab(pos, -2, 2, success);
+    if (success == 0) return 0;
 
-  if (wdl == 0) return 0;
+    if (wdl == 0) return 0;
 
-  if (success == 2)
-    return wdl == 2 ? 1 : 101;
+    if (success == 2)
+        return wdl == 2 ? 1 : 101;
 
-  MoveList moveList;
-  History history;
+    MoveList moveList;
+    History history;
 
-  if (wdl > 0) {
-    // Generate at least all legal non-capturing pawn moves
-    // including non-capturing promotions.
-      if (!pos.inCheck())
-          MoveGen::generatePseudoLegalMoves(pos, moveList);
-      else
-          MoveGen::generateLegalEvasions(pos, moveList);
+    if (wdl > 0)
+    {
+        // Generate at least all legal non-capturing pawn moves
+        // including non-capturing promotions.
+        if (!pos.inCheck())
+            MoveGen::generatePseudoLegalMoves(pos, moveList);
+        else
+            MoveGen::generateLegalEvasions(pos, moveList);
 
-      for (auto i = 0; i < moveList.size(); ++i) {
-          const auto& move = moveList[i];
-          if ((pos.getBoard(move.getFrom()) % 6) != Piece::Pawn || pos.getBoard(move.getTo()) != Piece::Empty)
-              continue;
-      if (!pos.makeMove(move, history)) {
-          continue;
-      }
-      int v = -probe_ab(pos, -2, -wdl + 1, success);
-      pos.unmakeMove(move, history);
-      if (success == 0) return 0;
-      if (v == wdl)
-	return v == 2 ? 1 : 101;
+        for (auto i = 0; i < moveList.size(); ++i)
+        {
+            const auto& move = moveList[i];
+            if ((pos.getBoard(move.getFrom()) % 6) != Piece::Pawn || pos.getBoard(move.getTo()) != Piece::Empty)
+                continue;
+            if (!pos.makeMove(move, history))
+            {
+                continue;
+            }
+            int v = -probe_ab(pos, -2, -wdl + 1, success);
+            pos.unmakeMove(move, history);
+            if (success == 0) return 0;
+            if (v == wdl)
+                return v == 2 ? 1 : 101;
+        }
     }
-  }
 
-  dtz = 1 + probe_dtz_table(pos, wdl, success);
-  if (success >= 0) {
-    if (wdl & 1) dtz += 100;
-    return wdl >= 0 ? dtz : -dtz;
-  }
-
-  if (wdl > 0) {
-    int best = 0xffff;
-    for (auto i = 0; i < moveList.size(); ++i) {
-        const auto& move = moveList[i];
-      if (pos.getBoard(move.getTo()) != Piece::Empty || (pos.getBoard(move.getFrom()) % 6) == Piece::Pawn)
-          continue;
-      if (!pos.makeMove(move, history)) {
-          continue;
-      }
-      int v = -Syzygy::probeDtz(pos, success);
-      pos.unmakeMove(move, history);
-      if (success == 0) return 0;
-      if (v > 0 && v + 1 < best)
-	best = v + 1;
+    dtz = 1 + probe_dtz_table(pos, wdl, success);
+    if (success >= 0)
+    {
+        if (wdl & 1) dtz += 100;
+        return wdl >= 0 ? dtz : -dtz;
     }
-    return best;
-  } else {
-    int best = -1;
-    if (!pos.inCheck())
-        MoveGen::generatePseudoLegalMoves(pos, moveList);
+
+    if (wdl > 0)
+    {
+        int best = 0xffff;
+        for (auto i = 0; i < moveList.size(); ++i)
+        {
+            const auto& move = moveList[i];
+            if (pos.getBoard(move.getTo()) != Piece::Empty || (pos.getBoard(move.getFrom()) % 6) == Piece::Pawn)
+                continue;
+            if (!pos.makeMove(move, history))
+            {
+                continue;
+            }
+            int v = -Syzygy::probeDtz(pos, success);
+            pos.unmakeMove(move, history);
+            if (success == 0) return 0;
+            if (v > 0 && v + 1 < best)
+                best = v + 1;
+        }
+        return best;
+    }
     else
-        MoveGen::generateLegalEvasions(pos, moveList);
-    for (auto i = 0; i < moveList.size(); ++i) {
-      int v;
-      const auto& move = moveList[i];
-      if (!pos.makeMove(move, history)) {
-          continue;
-      }
-      if (pos.getFiftyMoveDistance() == 0) {
-	if (wdl == -2) v = -1;
-	else {
-	  v = probe_ab(pos, 1, 2, success);
-	  v = (v == 2) ? 0 : -101;
-	}
-      } else {
-	v = -Syzygy::probeDtz(pos, success) - 1;
-      }
-      pos.unmakeMove(move, history);
-      if (success == 0) return 0;
-      if (v < best)
-	best = v;
+    {
+        int best = -1;
+        if (!pos.inCheck())
+            MoveGen::generatePseudoLegalMoves(pos, moveList);
+        else
+            MoveGen::generateLegalEvasions(pos, moveList);
+        for (auto i = 0; i < moveList.size(); ++i)
+        {
+            int v;
+            const auto& move = moveList[i];
+            if (!pos.makeMove(move, history))
+            {
+                continue;
+            }
+            if (pos.getFiftyMoveDistance() == 0)
+            {
+                if (wdl == -2) v = -1;
+                else
+                {
+                    v = probe_ab(pos, 1, 2, success);
+                    v = (v == 2) ? 0 : -101;
+                }
+            }
+            else
+            {
+                v = -Syzygy::probeDtz(pos, success) - 1;
+            }
+            pos.unmakeMove(move, history);
+            if (success == 0) return 0;
+            if (v < best)
+                best = v;
+        }
+        return best;
     }
-    return best;
-  }
 }
 
-static int wdl_to_dtz[] = {
-  -1, -101, 0, 101, 1
+static int wdl_to_dtz[] =
+{
+    -1, -101, 0, 101, 1
 };
 
 
@@ -569,92 +646,112 @@ static int wdl_to_dtz[] = {
 //
 int Syzygy::probeDtz(Position& pos, int& success)
 {
-  success = 1;
-  int v = probe_dtz_no_ep(pos, success);
+    success = 1;
+    int v = probe_dtz_no_ep(pos, success);
 
-  if (pos.getEnPassantSquare() == Square::NoSquare)
-    return v;
-  if (success == 0) return 0;
-
-  // Now handle en passant.
-  int v1 = -3;
-
-  MoveList moveList;
-  History history;
-
-  if (!pos.inCheck())
-      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-  else
-      MoveGen::generateLegalEvasions(pos, moveList);
-
-  for (auto i = 0; i < moveList.size(); ++i) {
-      const auto& move = moveList[i];
-      if (move.getPromotion() != Piece::Pawn)
-          continue;
-      if (!pos.makeMove(move, history)) {
-          continue;
-      }
-    int v0 = -probe_ab(pos, -2, 2, success);
-    pos.unmakeMove(move, history);
+    if (pos.getEnPassantSquare() == Square::NoSquare)
+        return v;
     if (success == 0) return 0;
-    if (v0 > v1) v1 = v0;
-  }
-  if (v1 > -3) {
-    v1 = wdl_to_dtz[v1 + 2];
-    if (v < -100) {
-      if (v1 >= 0)
-	v = v1;
-    } else if (v < 0) {
-      if (v1 >= 0 || v1 < 100)
-	v = v1;
-    } else if (v > 100) {
-      if (v1 > 0)
-	v = v1;
-    } else if (v > 0) {
-      if (v1 == 1)
-	v = v1;
-    } else if (v1 >= 0) {
-      v = v1;
-    } else {
-        int i;
-        for (i = 0; i < moveList.size(); ++i) {
-            const auto& move = moveList[i];
-            if (move.getPromotion() == Piece::Pawn) continue;
-            if (pos.makeMove(move, history)) {
-                pos.unmakeMove(move, history);
-                break;
-            }
-      }
-      if (i == moveList.size() && !pos.inCheck()) {
-          moveList.clear();
-          MoveGen::generatePseudoLegalMoves(pos, moveList);
-          for (i = 0; i < moveList.size(); ++i) {
-              const auto& move = moveList[i];
-              if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King)) 
-                  continue;
-              if (pos.makeMove(move, history)) {
-                  pos.unmakeMove(move, history);
-                  break;
-              }
-	        }
-      }
-      if (i == moveList.size())
-	      v = v1;
-    }
-  }
 
-  return v;
+    // Now handle en passant.
+    int v1 = -3;
+
+    MoveList moveList;
+    History history;
+
+    if (!pos.inCheck())
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
+    else
+        MoveGen::generateLegalEvasions(pos, moveList);
+
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        const auto& move = moveList[i];
+        if (move.getPromotion() != Piece::Pawn)
+            continue;
+        if (!pos.makeMove(move, history))
+        {
+            continue;
+        }
+        int v0 = -probe_ab(pos, -2, 2, success);
+        pos.unmakeMove(move, history);
+        if (success == 0) return 0;
+        if (v0 > v1) v1 = v0;
+    }
+    if (v1 > -3)
+    {
+        v1 = wdl_to_dtz[v1 + 2];
+        if (v < -100)
+        {
+            if (v1 >= 0)
+                v = v1;
+        }
+        else if (v < 0)
+        {
+            if (v1 >= 0 || v1 < 100)
+                v = v1;
+        }
+        else if (v > 100)
+        {
+            if (v1 > 0)
+                v = v1;
+        }
+        else if (v > 0)
+        {
+            if (v1 == 1)
+                v = v1;
+        }
+        else if (v1 >= 0)
+        {
+            v = v1;
+        }
+        else
+        {
+            int i;
+            for (i = 0; i < moveList.size(); ++i)
+            {
+                const auto& move = moveList[i];
+                if (move.getPromotion() == Piece::Pawn) continue;
+                if (pos.makeMove(move, history))
+                {
+                    pos.unmakeMove(move, history);
+                    break;
+                }
+            }
+            if (i == moveList.size() && !pos.inCheck())
+            {
+                moveList.clear();
+                MoveGen::generatePseudoLegalMoves(pos, moveList);
+                for (i = 0; i < moveList.size(); ++i)
+                {
+                    const auto& move = moveList[i];
+                    if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+                        continue;
+                    if (pos.makeMove(move, history))
+                    {
+                        pos.unmakeMove(move, history);
+                        break;
+                    }
+                }
+            }
+            if (i == moveList.size())
+                v = v1;
+        }
+    }
+
+    return v;
 }
 
-/*
-static Value wdl_to_Value[5] = {
-  -VALUE_MATE + MAX_PLY + 1,
-  VALUE_DRAW - 2,
-  VALUE_DRAW,
-  VALUE_DRAW + 2,
-  VALUE_MATE - MAX_PLY - 1
+static int wdl_to_Value[5] =
+{
+    -mateScore + 200 + 1,
+    -2,
+    0,
+    2,
+    mateScore - 200 - 1
 };
 
+/*
 // Use the DTZ tables to filter out moves that don't preserve the win or draw.
 // If the position is lost, but DTZ is fairly high, only keep moves that
 // maximise DTZ.
@@ -663,104 +760,120 @@ static Value wdl_to_Value[5] = {
 // no moves were filtered out.
 bool Tablebases::root_probe(Position& pos, Value& TBScore)
 {
-  int success;
+    int success;
 
-  int dtz = probe_dtz(pos, &success);
-  if (!success) return false;
-
-  StateInfo st;
-  CheckInfo ci(pos);
-
-  // Probe each move.
-  for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-    Move move = Search::RootMoves[i].pv[0];
-    pos.do_move(move, st, ci, pos.gives_check(move, ci));
-    int v = 0;
-    if (pos.checkers() && dtz > 0) {
-      ExtMove s[192];
-      if (generate<LEGAL>(pos, s) == s)
-	v = 1;
-    }
-    if (!v) {
-      if (st.rule50 != 0) {
-	v = -Tablebases::probe_dtz(pos, &success);
-	if (v > 0) v++;
-	else if (v < 0) v--;
-      } else {
-	v = -Tablebases::probe_wdl(pos, &success);
-	v = wdl_to_dtz[v + 2];
-      }
-    }
-    pos.undo_move(move);
+    int dtz = probe_dtz(pos, &success);
     if (!success) return false;
-    Search::RootMoves[i].score = (Value)v;
-  }
 
-  // Obtain 50-move counter for the root position.
-  // In Stockfish there seems to be no clean way, so we do it like this:
-  int cnt50 = st.previous->rule50;
+    StateInfo st;
+    CheckInfo ci(pos);
 
-  // Use 50-move counter to determine whether the root position is
-  // won, lost or drawn.
-  int wdl = 0;
-  if (dtz > 0)
-    wdl = (dtz + cnt50 <= 100) ? 2 : 1;
-  else if (dtz < 0)
-    wdl = (-dtz + cnt50 <= 100) ? -2 : -1;
+    // Probe each move.
+    for (size_t i = 0; i < Search::RootMoves.size(); i++)
+    {
+        Move move = Search::RootMoves[i].pv[0];
+        pos.do_move(move, st, ci, pos.gives_check(move, ci));
+        int v = 0;
+        if (pos.checkers() && dtz > 0)
+        {
+            ExtMove s[192];
+            if (generate<LEGAL>(pos, s) == s)
+                v = 1;
+        }
+        if (!v)
+        {
+            if (st.rule50 != 0)
+            {
+                v = -Tablebases::probe_dtz(pos, &success);
+                if (v > 0) v++;
+                else if (v < 0) v--;
+            }
+            else
+            {
+                v = -Tablebases::probe_wdl(pos, &success);
+                v = wdl_to_dtz[v + 2];
+            }
+        }
+        pos.undo_move(move);
+        if (!success) return false;
+        Search::RootMoves[i].score = (Value)v;
+    }
 
-  // Determine the score to report to the user.
-  TBScore = wdl_to_Value[wdl + 2];
-  // If the position is winning or losing, but too few moves left, adjust the
-  // score to show how close it is to winning or losing.
-  // NOTE: int(PawnValueEg) is used as scaling factor in score_to_uci().
-  if (wdl == 1 && dtz <= 100)
-    TBScore = (Value)(((200 - dtz - cnt50) * int(PawnValueEg)) / 200);
-  else if (wdl == -1 && dtz >= -100)
-    TBScore = -(Value)(((200 + dtz - cnt50) * int(PawnValueEg)) / 200);
+    // Obtain 50-move counter for the root position.
+    // In Stockfish there seems to be no clean way, so we do it like this:
+    int cnt50 = st.previous->rule50;
 
-  // Now be a bit smart about filtering out moves.
-  size_t j = 0;
-  if (dtz > 0) { // winning (or 50-move rule draw)
-    int best = 0xffff;
-    for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-      int v = Search::RootMoves[i].score;
-      if (v > 0 && v < best)
-	best = v;
-    }
-    int max = best;
-    // If the current phase has not seen repetitions, then try all moves
-    // that stay safely within the 50-move budget, if there are any.
-    if (!has_repeated(st.previous) && best + cnt50 <= 99)
-      max = 99 - cnt50;
-    for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-      int v = Search::RootMoves[i].score;
-      if (v > 0 && v <= max)
-	Search::RootMoves[j++] = Search::RootMoves[i];
-    }
-  } else if (dtz < 0) { // losing (or 50-move rule draw)
-    int best = 0;
-    for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-      int v = Search::RootMoves[i].score;
-      if (v < best)
-	best = v;
-    }
-    // Try all moves, unless we approach or have a 50-move rule draw.
-    if (-best * 2 + cnt50 < 100)
-      return true;
-    for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-      if (Search::RootMoves[i].score == best)
-	Search::RootMoves[j++] = Search::RootMoves[i];
-    }
-  } else { // drawing
-    // Try all moves that preserve the draw.
-    for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-      if (Search::RootMoves[i].score == 0)
-	Search::RootMoves[j++] = Search::RootMoves[i];
-    }
-  }
-  Search::RootMoves.resize(j, Search::RootMove(MOVE_NONE));
+    // Use 50-move counter to determine whether the root position is
+    // won, lost or drawn.
+    int wdl = 0;
+    if (dtz > 0)
+        wdl = (dtz + cnt50 <= 100) ? 2 : 1;
+    else if (dtz < 0)
+        wdl = (-dtz + cnt50 <= 100) ? -2 : -1;
 
-  return true;
+    // Determine the score to report to the user.
+    TBScore = wdl_to_Value[wdl + 2];
+    // If the position is winning or losing, but too few moves left, adjust the
+    // score to show how close it is to winning or losing.
+    // NOTE: int(PawnValueEg) is used as scaling factor in score_to_uci().
+    if (wdl == 1 && dtz <= 100)
+        TBScore = (Value)(((200 - dtz - cnt50) * int(PawnValueEg)) / 200);
+    else if (wdl == -1 && dtz >= -100)
+        TBScore = -(Value)(((200 + dtz - cnt50) * int(PawnValueEg)) / 200);
+
+    // Now be a bit smart about filtering out moves.
+    size_t j = 0;
+    if (dtz > 0)   // winning (or 50-move rule draw)
+    {
+        int best = 0xffff;
+        for (size_t i = 0; i < Search::RootMoves.size(); i++)
+        {
+            int v = Search::RootMoves[i].score;
+            if (v > 0 && v < best)
+                best = v;
+        }
+        int max = best;
+        // If the current phase has not seen repetitions, then try all moves
+        // that stay safely within the 50-move budget, if there are any.
+        if (!has_repeated(st.previous) && best + cnt50 <= 99)
+            max = 99 - cnt50;
+        for (size_t i = 0; i < Search::RootMoves.size(); i++)
+        {
+            int v = Search::RootMoves[i].score;
+            if (v > 0 && v <= max)
+                Search::RootMoves[j++] = Search::RootMoves[i];
+        }
+    }
+    else if (dtz < 0)     // losing (or 50-move rule draw)
+    {
+        int best = 0;
+        for (size_t i = 0; i < Search::RootMoves.size(); i++)
+        {
+            int v = Search::RootMoves[i].score;
+            if (v < best)
+                best = v;
+        }
+        // Try all moves, unless we approach or have a 50-move rule draw.
+        if (-best * 2 + cnt50 < 100)
+            return true;
+        for (size_t i = 0; i < Search::RootMoves.size(); i++)
+        {
+            if (Search::RootMoves[i].score == best)
+                Search::RootMoves[j++] = Search::RootMoves[i];
+        }
+    }
+    else     // drawing
+    {
+        // Try all moves that preserve the draw.
+        for (size_t i = 0; i < Search::RootMoves.size(); i++)
+        {
+            if (Search::RootMoves[i].score == 0)
+                Search::RootMoves[j++] = Search::RootMoves[i];
+        }
+    }
+    Search::RootMoves.resize(j, Search::RootMove(MOVE_NONE));
+
+    return true;
 }
 
 // Use the WDL tables to filter out moves that don't preserve the win or draw.
@@ -770,38 +883,40 @@ bool Tablebases::root_probe(Position& pos, Value& TBScore)
 // no moves were filtered out.
 bool Tablebases::root_probe_wdl(Position& pos, Value& TBScore)
 {
-  int success;
+    int success;
 
-  int wdl = Tablebases::probe_wdl(pos, &success);
-  if (!success) return false;
-  TBScore = wdl_to_Value[wdl + 2];
-
-  StateInfo st;
-  CheckInfo ci(pos);
-
-  int best = -2;
-
-  // Probe each move.
-  for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-    Move move = Search::RootMoves[i].pv[0];
-    pos.do_move(move, st, ci, pos.gives_check(move, ci));
-    int v = -Tablebases::probe_wdl(pos, &success);
-    pos.undo_move(move);
+    int wdl = Tablebases::probe_wdl(pos, &success);
     if (!success) return false;
-    Search::RootMoves[i].score = (Value)v;
-    if (v > best)
-      best = v;
-  }
+    TBScore = wdl_to_Value[wdl + 2];
 
-  size_t j = 0;
-  for (size_t i = 0; i < Search::RootMoves.size(); i++) {
-    if (Search::RootMoves[i].score == best)
-      Search::RootMoves[j++] = Search::RootMoves[i];
-  }
-  Search::RootMoves.resize(j, Search::RootMove(MOVE_NONE));
+    StateInfo st;
+    CheckInfo ci(pos);
 
-  return true;
+    int best = -2;
+
+    // Probe each move.
+    for (size_t i = 0; i < Search::RootMoves.size(); i++)
+    {
+        Move move = Search::RootMoves[i].pv[0];
+        pos.do_move(move, st, ci, pos.gives_check(move, ci));
+        int v = -Tablebases::probe_wdl(pos, &success);
+        pos.undo_move(move);
+        if (!success) return false;
+        Search::RootMoves[i].score = (Value)v;
+        if (v > best)
+            best = v;
+    }
+
+    size_t j = 0;
+    for (size_t i = 0; i < Search::RootMoves.size(); i++)
+    {
+        if (Search::RootMoves[i].score == best)
+            Search::RootMoves[j++] = Search::RootMoves[i];
+    }
+    Search::RootMoves.resize(j, Search::RootMove(MOVE_NONE));
+
+    return true;
 }
-
 */
+
 
