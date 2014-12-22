@@ -61,6 +61,7 @@ private:
 
     static std::array<HashKey, 128> repetitionHashes;
 
+    static bool probeTb;
     static std::array<int, 2> contempt;
 
     // Pruning margins and depth limits.

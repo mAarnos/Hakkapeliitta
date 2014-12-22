@@ -6,6 +6,7 @@
 #include "movegen.hpp"
 #include "utils\synchronized_ostream.hpp"
 #include "utils\exception.hpp"
+#include "syzygy\tbprobe.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
@@ -51,6 +52,7 @@ const std::array<int32_t, 1 + 4> Search::killerMoveScore = {
     0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5 
 };
 
+bool Search::probeTb;
 int Search::tbHits;
 int Search::nodeCount;
 int Search::nodesToTimeCheck;
@@ -71,6 +73,7 @@ void Search::initialize()
     targetTime = maxTime = 0;
     nodeCount = 0;
 	tbHits = 0;
+    probeTb = true;
     nodesToTimeCheck = 10000;
     selDepth = 1;
     lastRootScore = currentRootScore = -mateScore;
@@ -136,6 +139,7 @@ void Search::think(const Position& root)
 	Move bestMove(0, 0, 0, 0);
 
 	tbHits = 0;
+    probeTb = true;
     nodeCount = 0;
     nodesToTimeCheck = 10000;
     contempt[pos.getSideToMove()] = -contemptValue;
@@ -151,6 +155,34 @@ void Search::think(const Position& root)
 	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) 
 		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList);
+
+    if (Bitboards::popcnt<false>(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+    {
+        tbHits = rootMoveList.size();
+
+        // If the current root position is in the tablebases then RootMoves
+        // contains only moves that preserve the draw or win.
+        auto rootInTb = Syzygy::rootProbe(pos, rootMoveList, score);
+
+        if (rootInTb)
+        {
+            probeTb = false;
+        }
+        else // If DTZ tables are missing, use WDL tables as a fallback
+        {
+            // Filter out moves that do not preserve a draw or win.
+            rootInTb = Syzygy::rootProbeWdl(pos, rootMoveList, score);
+            if (rootInTb)
+            { 
+                probeTb = false;
+            }
+            else
+            {
+                tbHits = 0;
+            }
+        }
+    }
+
     // Get the tt move from a possible previous search.
     transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
 
@@ -649,7 +681,19 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return score;
     }
 
-    // Probe tablebases here.
+    if (probeTb && Bitboards::popcnt<false>(pos.getOccupiedSquares()) <= syzygyProbeLimit)
+    {
+        int success;
+        score = Syzygy::probeWdl(pos, success);
+        if (success)
+        {
+            ++tbHits;
+            if (score < -1) score = matedInPly(ply + 200);
+            else if (score > 1) score = mateInPly(ply + 200);
+            else score += contempt[pos.getSideToMove()];
+            return score;
+        }
+    }
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
     auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos, zugzwangLikely));
