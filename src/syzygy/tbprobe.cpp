@@ -21,6 +21,7 @@
 #include "..\zobrist.hpp"
 #include "..\position.hpp"
 #include "..\movelist.hpp"
+#include "..\movegen.hpp"
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
 #include "tbcore-impl.hpp"
@@ -84,7 +85,7 @@ static uint64_t calc_key_from_pcs(int* pcs, int mirror)
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
-static int probe_wdl_table(Position& pos, int *success)
+static int probe_wdl_table(Position& pos, int& success)
 {
   struct TBEntry *ptr;
   struct TBHashEntry *ptr2;
@@ -105,7 +106,7 @@ static int probe_wdl_table(Position& pos, int *success)
   for (i = 0; i < HSHMAX; i++)
     if (ptr2[i].key == key) break;
   if (i == HSHMAX) {
-    *success = 0;
+    success = 0;
     return 0;
   }
 
@@ -117,7 +118,7 @@ static int probe_wdl_table(Position& pos, int *success)
       prt_str(pos, str, ptr->key != key);
       if (!init_table_wdl(ptr, str)) {
 	ptr2[i].key = 0ULL;
-	*success = 0;
+	success = 0;
     TB_mutex.unlock();
 	return 0;
       }
@@ -182,7 +183,7 @@ static int probe_wdl_table(Position& pos, int *success)
   return ((int)res) - 2;
 }
 
-static int probe_dtz_table(Position& pos, int wdl, int *success)
+static int probe_dtz_table(Position& pos, int wdl, int& success)
 {
   struct TBEntry *ptr;
   uint64_t idx;
@@ -205,7 +206,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
       for (i = 0; i < HSHMAX; i++)
 	if (ptr2[i].key == key) break;
       if (i == HSHMAX) {
-	*success = 0;
+	success = 0;
 	return 0;
       }
       ptr = ptr2[i].ptr;
@@ -222,7 +223,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
 
   ptr = DTZ_table[0].entry;
   if (!ptr) {
-    *success = 0;
+    success = 0;
     return 0;
   }
 
@@ -245,7 +246,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
   if (!ptr->has_pawns) {
     struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr;
     if ((entry->flags & 1) != bside && !entry->symmetric) {
-      *success = -1;
+      success = -1;
       return 0;
     }
     uint8_t *pc = entry->pieces;
@@ -273,7 +274,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     } while (bb);
     int f = pawn_file((struct TBEntry_pawn *)entry, p);
     if ((entry->flags[f] & 1) != bside) {
-      *success = -1;
+      success = -1;
       return 0;
     }
     uint8_t *pc = entry->file[f].pieces;
@@ -312,37 +313,39 @@ static void add_underprom_caps(Position& pos, MoveList& stack)
     }
 }
 
-/*
-static int probe_ab(Position& pos, int alpha, int beta, int *success)
+static int probe_ab(Position& pos, int alpha, int beta, int& success)
 {
   int v;
-  ExtMove stack[64];
-  ExtMove *moves, *end;
-  StateInfo st;
+  MoveList moveList;
+  History history;
 
   // Generate (at least) all legal non-ep captures including (under)promotions.
   // It is OK to generate more, as long as they are filtered out below.
-  if (!pos.checkers()) {
-    end = generate<CAPTURES>(pos, stack);
+  if (!pos.inCheck()) {
+      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
     // Since underpromotion captures are not included, we need to add them.
-    end = add_underprom_caps(pos, stack, end);
-  } else
-    end = generate<EVASIONS>(pos, stack);
+      add_underprom_caps(pos, moveList);
+  }
+  else
+  {
+      MoveGen::generateLegalEvasions(pos, moveList);
+  }
 
-  CheckInfo ci(pos);
-
-  for (moves = stack; moves < end; moves++) {
-    Move capture = moves->move;
-    if (!pos.capture(capture) || type_of(capture) == ENPASSANT
-			|| !pos.legal(capture, ci.pinned))
-      continue;
-    pos.do_move(capture, st, ci, pos.gives_check(capture, ci));
+  for (auto i = 0; i < moveList.size(); ++i)
+  {
+      const auto& move = moveList[i];
+      if (pos.getBoard(move.getTo()) == Piece::Empty || move.getPromotion() == Piece::Pawn)
+          continue;
+    if (!pos.makeMove(move, history))
+    {
+        continue;
+    }
     v = -probe_ab(pos, -beta, -alpha, success);
-    pos.undo_move(capture);
-    if (*success == 0) return 0;
+    pos.unmakeMove(move, history);
+    if (success == 0) return 0;
     if (v > alpha) {
       if (v >= beta) {
-        *success = 2;
+        success = 2;
 	return v;
       }
       alpha = v;
@@ -350,12 +353,12 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
   }
 
   v = probe_wdl_table(pos, success);
-  if (*success == 0) return 0;
+  if (success == 0) return 0;
   if (alpha >= v) {
-    *success = 1 + (alpha > 0);
+    success = 1 + (alpha > 0);
     return alpha;
   } else {
-    *success = 1;
+    success = 1;
     return v;
   }
 }
@@ -368,69 +371,81 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
 //  0 : draw
 //  1 : win, but draw under 50-move rule
 //  2 : win
-int Tablebases::probe_wdl(Position& pos, int *success)
+
+int Syzygy::probeWdl(Position& pos, int& success)
 {
   int v;
 
-  *success = 1;
+  success = 1;
   v = probe_ab(pos, -2, 2, success);
 
   // If en passant is not possible, we are done.
-  if (pos.ep_square() == SQ_NONE)
+  if (pos.getEnPassantSquare() == Square::NoSquare)
     return v;
-  if (!(*success)) return 0;
+  if (!success) return 0;
 
   // Now handle en passant.
   int v1 = -3;
   // Generate (at least) all legal en passant captures.
-  ExtMove stack[192];
-  ExtMove *moves, *end;
-  StateInfo st;
+  MoveList moveList;
+  History history;
 
-  if (!pos.checkers())
-    end = generate<CAPTURES>(pos, stack);
+  if (!pos.inCheck())
+      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
   else
-    end = generate<EVASIONS>(pos, stack);
+      MoveGen::generateLegalEvasions(pos, moveList);
 
-  CheckInfo ci(pos);
-
-  for (moves = stack; moves < end; moves++) {
-    Move capture = moves->move;
-    if (type_of(capture) != ENPASSANT
-	  || !pos.legal(capture, ci.pinned))
-      continue;
-    pos.do_move(capture, st, ci, pos.gives_check(capture, ci));
+  for (auto i = 0; i < moveList.size(); ++i) {
+      const auto& move = moveList[i];
+      if (move.getPromotion() != Piece::Pawn)
+          continue;
+      if (!(pos.makeMove(move, history))) {
+          continue;
+      }
     int v0 = -probe_ab(pos, -2, 2, success);
-    pos.undo_move(capture);
-    if (*success == 0) return 0;
+    pos.unmakeMove(move, history);
+    if (success == 0) return 0;
     if (v0 > v1) v1 = v0;
   }
   if (v1 > -3) {
     if (v1 >= v) v = v1;
-    else if (v == 0) {
+    else if (v == 0) 
+    {
+        int i;
       // Check whether there is at least one legal non-ep move.
-      for (moves = stack; moves < end; moves++) {
-	Move capture = moves->move;
-	if (type_of(capture) == ENPASSANT) continue;
-	if (pos.legal(capture, ci.pinned)) break;
+        for (i = 0; i < moveList.size(); ++i) {
+            const auto& move = moveList[i];
+            if (move.getPromotion() == Piece::Pawn) continue;
+            if (pos.makeMove(move, history)) {
+                pos.unmakeMove(move, history);
+                break;
+            }
       }
-      if (moves == end && !pos.checkers()) {
-	end = generate<QUIETS>(pos, end);
-	for (; moves < end; moves++) {
-	  Move move = moves->move;
-	  if (pos.legal(move, ci.pinned))
-	    break;
-	}
+      if (i == moveList.size() && !pos.inCheck()) {
+          moveList.clear();
+          MoveGen::generatePseudoLegalMoves(pos, moveList);
+          for (i = 0; i < moveList.size(); ++i) {
+              const auto& move = moveList[i];
+              if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+              {
+                  continue;
+              }
+              if (pos.makeMove(move, history)) {
+                  pos.unmakeMove(move, history);
+                  break;
+              }
+          }
       }
       // If not, then we are forced to play the losing ep capture.
-      if (moves == end)
-	v = v1;
+      if (i == moveList.size())
+	      v = v1;
     }
   }
 
   return v;
 }
 
+/*
 // This routine treats a position with en passant captures as one without.
 static int probe_dtz_no_ep(Position& pos, int *success)
 {
