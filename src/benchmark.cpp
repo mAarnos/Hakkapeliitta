@@ -38,7 +38,7 @@ uint64_t Benchmark::perft(Position& pos, int depth)
     for (auto i = 0; i < moves.size(); ++i)
     {
         const auto& move = moves[i];
-        if (!(pos.makeMove(move, history)))
+        if (!pos.makeMove(move, history))
         {
             continue;
         }

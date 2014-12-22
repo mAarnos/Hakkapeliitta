@@ -540,7 +540,6 @@ static int wdl_to_dtz[] = {
   -1, -101, 0, 101, 1
 };
 
-/*
 
 // Probe the DTZ table for a particular position.
 // If *success != 0, the probe was successful.
@@ -568,37 +567,36 @@ static int wdl_to_dtz[] = {
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 //
-int Tablebases::probe_dtz(Position& pos, int *success)
+int Syzygy::probeDtz(Position& pos, int& success)
 {
-  *success = 1;
+  success = 1;
   int v = probe_dtz_no_ep(pos, success);
 
-  if (pos.ep_square() == SQ_NONE)
+  if (pos.getEnPassantSquare() == Square::NoSquare)
     return v;
-  if (*success == 0) return 0;
+  if (success == 0) return 0;
 
   // Now handle en passant.
   int v1 = -3;
 
-  ExtMove stack[192];
-  ExtMove *moves, *end;
-  StateInfo st;
+  MoveList moveList;
+  History history;
 
-  if (!pos.checkers())
-    end = generate<CAPTURES>(pos, stack);
+  if (!pos.inCheck())
+      MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
   else
-    end = generate<EVASIONS>(pos, stack);
-  CheckInfo ci(pos);
+      MoveGen::generateLegalEvasions(pos, moveList);
 
-  for (moves = stack; moves < end; moves++) {
-    Move capture = moves->move;
-    if (type_of(capture) != ENPASSANT
-		|| !pos.legal(capture, ci.pinned))
-      continue;
-    pos.do_move(capture, st, ci, pos.gives_check(capture, ci));
+  for (auto i = 0; i < moveList.size(); ++i) {
+      const auto& move = moveList[i];
+      if (move.getPromotion() != Piece::Pawn)
+          continue;
+      if (!pos.makeMove(move, history)) {
+          continue;
+      }
     int v0 = -probe_ab(pos, -2, 2, success);
-    pos.undo_move(capture);
-    if (*success == 0) return 0;
+    pos.unmakeMove(move, history);
+    if (success == 0) return 0;
     if (v0 > v1) v1 = v0;
   }
   if (v1 > -3) {
@@ -618,46 +616,37 @@ int Tablebases::probe_dtz(Position& pos, int *success)
     } else if (v1 >= 0) {
       v = v1;
     } else {
-      for (moves = stack; moves < end; moves++) {
-	Move move = moves->move;
-	if (type_of(move) == ENPASSANT) continue;
-	if (pos.legal(move, ci.pinned)) break;
+        int i;
+        for (i = 0; i < moveList.size(); ++i) {
+            const auto& move = moveList[i];
+            if (move.getPromotion() == Piece::Pawn) continue;
+            if (pos.makeMove(move, history)) {
+                pos.unmakeMove(move, history);
+                break;
+            }
       }
-      if (moves == end && !pos.checkers()) {
-	end = generate<QUIETS>(pos, end);
-	for (; moves < end; moves++) {
-	  Move move = moves->move;
-	  if (pos.legal(move, ci.pinned))
-	    break;
-	}
+      if (i == moveList.size() && !pos.inCheck()) {
+          moveList.clear();
+          MoveGen::generatePseudoLegalMoves(pos, moveList);
+          for (i = 0; i < moveList.size(); ++i) {
+              const auto& move = moveList[i];
+              if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King)) 
+                  continue;
+              if (pos.makeMove(move, history)) {
+                  pos.unmakeMove(move, history);
+                  break;
+              }
+	        }
       }
-      if (moves == end)
-	v = v1;
+      if (i == moveList.size())
+	      v = v1;
     }
   }
 
   return v;
 }
 
-// Check whether there has been at least one repetition of positions
-// since the last capture or pawn move.
-static int has_repeated(StateInfo *st)
-{
-  while (1) {
-    int i = 4, e = std::min(st->rule50, st->pliesFromNull);
-    if (e < i)
-      return 0;
-    StateInfo *stp = st->previous->previous;
-    do {
-      stp = stp->previous->previous;
-      if (stp->key == st->key)
-	return 1;
-      i += 2;
-    } while (i <= e);
-    st = st->previous;
-  }
-}
-
+/*
 static Value wdl_to_Value[5] = {
   -VALUE_MATE + MAX_PLY + 1,
   VALUE_DRAW - 2,
