@@ -22,6 +22,7 @@ public:
     Move& operator[](int index) { return moveList[index]; }
     const Move& operator[](int index) const { return moveList[index]; }
     void clear() { numberOfMoves = 0; };
+    void resize(int newSize) { numberOfMoves = newSize; }
     int size() const { return numberOfMoves; }
     bool empty() const { return numberOfMoves == 0; }
 private:
