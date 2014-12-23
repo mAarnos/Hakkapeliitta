@@ -23,7 +23,6 @@ void PawnHashTable::setSize(size_t sizeInMegaBytes)
     table.resize(tableSize);
 }
 
-
 void PawnHashTable::clear()
 {
     auto tableSize = table.size();

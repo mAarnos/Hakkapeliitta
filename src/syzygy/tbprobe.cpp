@@ -369,16 +369,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int& success)
 
     // Generate (at least) all legal non-ep captures including (under)promotions.
     // It is OK to generate more, as long as they are filtered out below.
-    if (!pos.inCheck())
-    {
-        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-        // Since underpromotion captures are not included, we need to add them.
-        add_underprom_caps(pos, moveList);
-    }
-    else
-    {
-        MoveGen::generateLegalEvasions(pos, moveList);
-    }
+    MoveGen::generatePseudoLegalMoves(pos, moveList);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -435,10 +426,7 @@ int Syzygy::probeWdl(Position& pos, int& success)
     MoveList moveList;
     History history;
 
-    if (!pos.inCheck())
-        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-    else
-        MoveGen::generateLegalEvasions(pos, moveList);
+    MoveGen::generatePseudoLegalMoves(pos, moveList);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -471,24 +459,6 @@ int Syzygy::probeWdl(Position& pos, int& success)
                     break;
                 }
             }
-            if (i == moveList.size() && !pos.inCheck())
-            {
-                moveList.clear();
-                MoveGen::generatePseudoLegalMoves(pos, moveList);
-                for (i = 0; i < moveList.size(); ++i)
-                {
-                    const auto& move = moveList[i];
-                    if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
-                    {
-                        continue;
-                    }
-                    if (pos.makeMove(move, history))
-                    {
-                        pos.unmakeMove(move, history);
-                        break;
-                    }
-                }
-            }
             // If not, then we are forced to play the losing ep capture.
             if (i == moveList.size())
                 v = v1;
@@ -518,10 +488,7 @@ static int probe_dtz_no_ep(Position& pos, int& success)
     {
         // Generate at least all legal non-capturing pawn moves
         // including non-capturing promotions.
-        if (!pos.inCheck())
-            MoveGen::generatePseudoLegalMoves(pos, moveList);
-        else
-            MoveGen::generateLegalEvasions(pos, moveList);
+        MoveGen::generatePseudoLegalMoves(pos, moveList);
 
         for (auto i = 0; i < moveList.size(); ++i)
         {
@@ -570,10 +537,7 @@ static int probe_dtz_no_ep(Position& pos, int& success)
     else
     {
         int best = -1;
-        if (!pos.inCheck())
-            MoveGen::generatePseudoLegalMoves(pos, moveList);
-        else
-            MoveGen::generateLegalEvasions(pos, moveList);
+        MoveGen::generatePseudoLegalMoves(pos, moveList);
         for (auto i = 0; i < moveList.size(); ++i)
         {
             int v;
@@ -624,10 +588,7 @@ int Syzygy::probeDtz(Position& pos, int& success)
     MoveList moveList;
     History history;
 
-    if (!pos.inCheck())
-        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
-    else
-        MoveGen::generateLegalEvasions(pos, moveList);
+    MoveGen::generatePseudoLegalMoves(pos, moveList);
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -681,22 +642,6 @@ int Syzygy::probeDtz(Position& pos, int& success)
                 {
                     pos.unmakeMove(move, history);
                     break;
-                }
-            }
-            if (i == moveList.size() && !pos.inCheck())
-            {
-                moveList.clear();
-                MoveGen::generatePseudoLegalMoves(pos, moveList);
-                for (i = 0; i < moveList.size(); ++i)
-                {
-                    const auto& move = moveList[i];
-                    if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
-                        continue;
-                    if (pos.makeMove(move, history))
-                    {
-                        pos.unmakeMove(move, history);
-                        break;
-                    }
                 }
             }
             if (i == moveList.size())

@@ -9,7 +9,7 @@ also supports Syzygy tablebases.
  - Hash: set the amount of memory the main transposition table can use (in MB).
  - PawnHash: set the amount of memory the pawn hash table can use (in MB).
  - Contempt: positive values make Hakkapeliitta avoid draws, negative values make it prefer them.
- - SyzygyProbeLimit: 0, 1 or 2 means tablebases aren't probed, 3 means 3-man tablebases are probed, 4 means 4-man etc. On a 32-bit machine syzygyProbeLimit can only be set at maximum to 5.
+ - SyzygyProbeLimit: values 0, 1 and 2 mean that tablebases aren't probed, value 3 means that 3-man tablebases are probed etc. On a 32-bit machine SyzygyProbeLimit can only be set at maximum to 5.
  - SyzygyPath: set the path to the Syzygy tablebases. Multiple directories are possible if they are separated by ";" on Windows and ":" on Linux. Do not use spaces around the ";" or ":".
 
 ### Compiling it yourself
@@ -22,7 +22,7 @@ and Clang 3.4 (or higher).
 
 ### Acknowledgements	
 
-Thanks to the following people(or organizations) my engine is what it is today.
+Thanks to the following people (or organizations) my engine is what it is today.
 If you think I have forgotten somebody/something please let me know.
 
  - Chess Programming Wiki

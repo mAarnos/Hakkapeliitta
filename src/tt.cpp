@@ -7,7 +7,7 @@
 
 TranspositionTable::TranspositionTable()
 {
-    setSize(1); 
+    setSize(32); 
 }
 
 void TranspositionTable::setSize(size_t sizeInMegaBytes)
