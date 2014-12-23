@@ -98,7 +98,7 @@ void TranspositionTable::save(const Position& pos, int ply, const Move& move, in
     assert(hashEntry.getFlags(replace) == flags);
 }
 
-bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta) const
+bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta, int& allowNullMove) const
 {
     assert(ply >= 0 && ply < 128);
 
@@ -106,7 +106,6 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
 
     for (auto entry = 0; entry < 4; ++entry)
     {
-        // TODO: Add avoid nullmove trick here.
         if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == pos.getHashKey())
         {
             move.setMove(hashEntry.getBestMove(entry));
@@ -114,6 +113,10 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
             auto hashDepth = hashEntry.getDepth(entry);
             auto flags = hashEntry.getFlags(entry);
 
+            if (flags == UpperBoundScore && depth - 1 - 3 <= hashDepth && hashScore <= alpha)
+            {
+                allowNullMove = 0;
+            }
             if (hashDepth >= depth)
             {
                 // Correct the mate score back.

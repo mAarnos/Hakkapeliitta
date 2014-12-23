@@ -18,7 +18,7 @@ public:
     TranspositionTable();
 
     void save(const Position& pos, int ply, const Move& move, int score, int depth, int flags);
-    bool probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta) const;
+    bool probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta, int& allowNullMove) const;
     void prefetch(HashKey hk);
 
 	void setSize(size_t sizeInMegaBytes);

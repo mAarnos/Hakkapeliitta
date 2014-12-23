@@ -134,6 +134,7 @@ void Search::think(const Position& root)
 	auto delta = aspirationWindow;
     auto score = matedInPly(0);
 	auto inCheck = pos.inCheck();
+    auto allowNullMove = 0; // Not used for anything.
 	MoveList rootMoveList;
 	History history;
 	Move bestMove(0, 0, 0, 0);
@@ -184,7 +185,7 @@ void Search::think(const Position& root)
     }
 
     // Get the tt move from a possible previous search.
-    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta);
+    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta, allowNullMove);
 
     repetitionHashes[0] = pos.getHashKey();
     for (auto depth = 1;;)
@@ -676,7 +677,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     }
 
     // Probe the transposition table. Possibly the logic should be moved here.
-    if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta))
+    if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove))
     {
         return score;
     }
@@ -737,7 +738,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
-        transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta);
+        transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove);
     }
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
