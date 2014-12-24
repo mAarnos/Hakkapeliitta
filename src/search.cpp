@@ -12,12 +12,12 @@ TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;
 KillerTable Search::killerTable;
 
-std::unordered_set<HashKey> Search::repetitionHashesBeforeRoot;
+int Search::rootPly;
+std::array<HashKey, 1024> Search::repetitionHashes;
 
 int Search::contemptValue;
 int Search::syzygyProbeLimit;
 std::array<int, 2> Search::contempt;
-std::array<HashKey, 128> Search::repetitionHashes;
 bool Search::searching;
 bool Search::pondering;
 bool Search::infinite;
@@ -64,6 +64,7 @@ int currentRootScore;
 
 void Search::initialize()
 {
+    rootPly = 0;
     contemptValue = 0;
     contempt.fill(0);
     syzygyProbeLimit = 0;
@@ -86,18 +87,9 @@ void Search::initialize()
 
 bool Search::repetitionDraw(const Position& pos, int ply)
 {
-    auto temp = ply - pos.getFiftyMoveDistance();
+    auto temp = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
 
-    if (temp < 0) 
-    {
-        if (repetitionHashesBeforeRoot.count(pos.getHashKey()) > 0)
-        {
-            return true;
-        }
-        temp = 0;
-    }
-
-    for (auto i = ply - 2; i >= temp; i -= 2)
+    for (auto i = rootPly + ply - 2; i >= temp; i -= 2)
     {
         if (repetitionHashes[i] == pos.getHashKey())
         {
@@ -187,7 +179,7 @@ void Search::think(const Position& root)
     // Get the tt move from a possible previous search.
     transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta, allowNullMove);
 
-    repetitionHashes[0] = pos.getHashKey();
+    repetitionHashes[rootPly] = pos.getHashKey();
     for (auto depth = 1;;)
     {
         auto previousAlpha = alpha;
@@ -719,7 +711,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
     {
-        repetitionHashes[ply] = pos.getHashKey();
+        repetitionHashes[rootPly + ply] = pos.getHashKey();
         pos.makeNullMove(history);
         ++nodeCount;
         --nodesToTimeCheck;
@@ -751,7 +743,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
     auto oneReply = (moveList.size() == 1);
 
-    repetitionHashes[ply] = pos.getHashKey();
+    repetitionHashes[rootPly + ply] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
