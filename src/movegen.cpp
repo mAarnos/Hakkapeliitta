@@ -309,7 +309,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     auto checkerLocation = Bitboards::lsb(checkers);
 
     // Find all our pinned pieces.
-    auto pinned = 0ull;
+    Bitboard pinned = 0;
     auto potentialPinners = (Bitboards::bishopAttacks(from, 0) 
                           & (pos.getBitboard(!side, Piece::Bishop) | pos.getBitboard(!side, Piece::Queen)));
     potentialPinners |= (Bitboards::rookAttacks(from, 0) 

@@ -123,7 +123,6 @@ bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& sc
                 if (isMateScore(hashScore))
                 {
                     hashScore += static_cast<int16_t>(hashScore > 0 ? -ply : ply);
-                    assert(hashScore < infinity && hashScore > -infinity);
                 }
 
                 if (flags == ExactScore)
@@ -190,7 +189,7 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
         if ((entry > 3) // No entry found
         || (hashEntry.getFlags(entry) != ExactScore && ply >= 2) // Always try to get a move to ponder on.
         || !hashEntry.getBestMove(entry) // No move found in the entry.
-        || previousHashes.count(root.getHashKey()) > 0 && ply >= 2) // Repetition.
+        || (previousHashes.count(root.getHashKey()) > 0 && ply >= 2)) // Repetition.
         {
             break;
         }

@@ -12,7 +12,6 @@
 
 #include <mutex>
 #include <cstdio>
-// #include <unistd.h>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -20,6 +19,7 @@
 #include <fcntl.h>
 #ifndef _WIN32
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 #include "tbcore.hpp"
 #include "tbprobe.hpp"

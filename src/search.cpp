@@ -607,7 +607,8 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         nodesToTimeCheck = 10000;
         if (!infinite)
         {
-            auto time = sw.elapsed<std::chrono::milliseconds>();
+            // Casting works around a few warnings.
+            auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
             if (time > maxTime) // Hard cutoff for search time, if we don't stop we risk running out of time later.
             {
                 searching = false;

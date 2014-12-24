@@ -16,13 +16,13 @@
 #define DECOMP64
 #endif
 
-#include "..\color.hpp"
-#include "..\piece.hpp"
-#include "..\zobrist.hpp"
-#include "..\position.hpp"
-#include "..\movelist.hpp"
-#include "..\movegen.hpp"
-#include "..\search.hpp"
+#include "../color.hpp"
+#include "../piece.hpp"
+#include "../zobrist.hpp"
+#include "../position.hpp"
+#include "../movelist.hpp"
+#include "../movegen.hpp"
+#include "../search.hpp"
 #include "tbprobe.hpp"
 #include "tbcore.hpp"
 #include "tbcore-impl.hpp"
