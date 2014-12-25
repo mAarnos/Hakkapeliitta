@@ -1,12 +1,16 @@
 #include "position.hpp"
+#include <iostream>
+#include <vector>
+#include <sstream>
+#include <stdexcept>
 #include "bitboard.hpp"
-#include "hash.hpp"
-#include "magic.hpp"
+#include "zobrist.hpp"
+#include "color.hpp"
+#include "square.hpp"
 #include "eval.hpp"
+#include "utils/synchronized_ostream.hpp"
 
-Position root;
-
-array<int, Squares> castlingMask = {
+const std::array<int, 64> Position::castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -17,88 +21,114 @@ array<int, Squares> castlingMask = {
 	8, 0, 0, 0, 12, 0, 0, 4
 };
 
-void Position::displayBoard()
+const std::array<int, 6> Position::piecePhase = {
+    0, 3, 3, 5, 10, 0
+};
+
+const int Position::totalPhase = piecePhase[Piece::Pawn] * 16 +
+                                 piecePhase[Piece::Knight] * 4 +
+                                 piecePhase[Piece::Bishop] * 4 +
+                                 piecePhase[Piece::Rook] * 4 +
+                                 piecePhase[Piece::Queen] * 2;
+
+Position::Position()
 {
-	string pieceToMark = "PNBRQKpnbrqk.";
-	cout << "  +-----------------------+" << endl;
-	for (int i = 7; i >= 0; i--)
-	{
-		cout << i + 1 << " ";
-		for (int j = 0; j < 8; j++)
-		{
-			cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
-		}
-		cout << "|" << endl << "  +--+--+--+--+--+--+--+--+" << endl;
-	}
-	cout << "   A  B  C  D  E  F  G  H" << endl;
+    bitboards.fill(0);
+    board.fill(Piece::Empty);
+    hashKey = pawnHashKey = materialHashKey = 0;
+    sideToMove = Color::White;
+    castlingRights = 0;
+    enPassant = Square::NoSquare;
+    phase = 0;
+    fiftyMoveDistance = 0;
+    totalPieceCount = 0;
+    ply = 0;
+    pstMaterialScoreOp = pstMaterialScoreEd = 0;
+    pieceCount.fill(0);
 }
 
-void Position::initializeBoardFromFEN(string FEN)
+void Position::displayBoard() const
 {
-	unsigned int i, j;
-	int aRank, aFile;
+	static std::string pieceToMark = "PNBRQKpnbrqk.";
 
-	board.fill(Empty);
+	sync_cout << "  +-----------------------+" << std::endl;
+	for (auto i = 7; i >= 0; --i)
+	{
+		sync_cout << i + 1 << " ";
+		for (auto j = 0; j < 8; ++j)
+		{
+			sync_cout << "|" << pieceToMark[board[i * 8 + j]] << " ";
+		}
+		sync_cout << "|" << std::endl << "  +--+--+--+--+--+--+--+--+" << std::endl;
+	}
+	sync_cout << "   A  B  C  D  E  F  G  H" << std::endl;
+}
+
+void Position::initializePositionFromFen(const std::string& fen)
+{
+	board.fill(Piece::Empty);
 
 	// Split the FEN into parts.
-	vector<string> strList;
-	stringstream ss(FEN);
-	string item;
+	std::vector<std::string> strList;
+	std::stringstream ss(fen);
+	std::string item;
 	while (getline(ss, item, ' ')) 
 	{
 		strList.push_back(item);
 	}
 
-	j = 1; i = 0;
+	auto i = 0, j = 1;
 	// Translate the FEN string into piece locations on the board.
-	while ((j <= 64) && (i <= strList[0].length())) 
+	while ((j <= 64) && (i <= static_cast<int>(strList[0].length()))) 
 	{
-		char letter = strList[0].at(i);
-		i++;
-		aFile = 1 + File(j - 1);
-		aRank = 8 - Rank(j - 1);
-		int sq = (int)(((aRank - 1) * 8) + (aFile - 1));
+        auto letter = strList[0][i++];
+		auto f = 1 + file(j - 1);
+        auto r = 8 - rank(j - 1);
+		auto sq = (((r - 1) * 8) + (f - 1));
 		switch (letter)
 		{
-			case 'p': board[sq] = BlackPawn; break;
-			case 'r': board[sq] = BlackRook; break;
-			case 'n': board[sq] = BlackKnight; break;
-			case 'b': board[sq] = BlackBishop; break;
-			case 'q': board[sq] = BlackQueen; break;
-			case 'k': board[sq] = BlackKing; break;
-			case 'P': board[sq] = WhitePawn; break;
-			case 'R': board[sq] = WhiteRook; break;
-			case 'N': board[sq] = WhiteKnight; break;
-			case 'B': board[sq] = WhiteBishop; break;
-			case 'Q': board[sq] = WhiteQueen; break;
-			case 'K': board[sq] = WhiteKing; break;
-			case '/': j--; break;
+            case 'p': board[sq] = Piece::BlackPawn; break;
+            case 'r': board[sq] = Piece::BlackRook; break;
+            case 'n': board[sq] = Piece::BlackKnight; break;
+            case 'b': board[sq] = Piece::BlackBishop; break;
+            case 'q': board[sq] = Piece::BlackQueen; break;
+            case 'k': board[sq] = Piece::BlackKing; break;
+            case 'P': board[sq] = Piece::WhitePawn; break;
+            case 'R': board[sq] = Piece::WhiteRook; break;
+            case 'N': board[sq] = Piece::WhiteKnight; break;
+            case 'B': board[sq] = Piece::WhiteBishop; break;
+            case 'Q': board[sq] = Piece::WhiteQueen; break;
+            case 'K': board[sq] = Piece::WhiteKing; break;
+			case '/': --j; break;
 			case '1': break;
-			case '2': j++; break;
+			case '2': ++j; break;
 			case '3': j += 2; break;
 			case '4': j += 3; break;
 			case '5': j += 4; break;
 			case '6': j += 5; break;
 			case '7': j += 6; break;
 			case '8': j += 7; break;
-			default: return;
+            default: throw std::invalid_argument("fen string is incorrect: unknown character encountered");
 		}
-		j++;
+		++j;
 	}
 
 	// set the turn; default = White 
-	sideToMove = White;
+	sideToMove = Color::White;
 	if (strList.size() >= 2)
 	{
 		if (strList[1] == "w")
 		{
-			sideToMove = White;
+            sideToMove = Color::White;
 		}
-		else if (strList[1] == "b")
-		{
-			sideToMove = Black;
-		}
-		else return;
+        else if (strList[1] == "b")
+        {
+            sideToMove = Color::Black;
+        }
+        else
+        {
+            throw std::invalid_argument("fen string is incorrect: side to move is corrupted");
+        }
 	}
 
 	// Set castlingRights to default: no castling allowed.
@@ -106,35 +136,38 @@ void Position::initializeBoardFromFEN(string FEN)
 	// Add all given castling rights.
 	if (strList.size() >= 3)
 	{
-		if (strList[2].find('K') != string::npos)
+		if (strList[2].find('K') != std::string::npos)
 		{
-			castlingRights += WhiteOO;
+			castlingRights += 1;
 		}
-		if (strList[2].find('Q') != string::npos)
+        if (strList[2].find('Q') != std::string::npos)
 		{
-			castlingRights += WhiteOOO;
+			castlingRights += 2;
 		}
-		if (strList[2].find('k') != string::npos)
+        if (strList[2].find('k') != std::string::npos)
 		{
-			castlingRights += BlackOO;
+			castlingRights += 4;
 		}
-		if (strList[2].find('q') != string::npos)
+        if (strList[2].find('q') != std::string::npos)
 		{
-			castlingRights += BlackOOO;
+			castlingRights += 8;
 		}
 	}
 
 	// Set the en passant square, if any.
-	enPassantSquare = NoSquare;
+	enPassant = Square::NoSquare;
 	if ((strList.size() >= 4) && (strList[3].length() >= 2))
 	{
 		if ((strList[3].at(0) >= 'a') && (strList[3].at(0) <= 'h') && ((strList[3].at(1) == '3') || (strList[3].at(1) == '6')))
 		{
-			aFile = strList[3].at(0) - 96; // ASCII 'a' = 97 
-			aRank = strList[3].at(1) - 48; // ASCII '1' = 49 
-			enPassantSquare = (int)((aRank - 1) * 8 + aFile - 1);
+			auto f = strList[3][0] - 96; // ASCII 'a' = 97 
+			auto r = strList[3][1] - 48; // ASCII '1' = 49 
+			enPassant = ((r - 1) * 8 + f - 1);
 		}
-		else return;
+        else
+        {
+            throw std::invalid_argument("fen string is incorrect: en passant square is corrupted");
+        }
 	}
 
 	// Fifty move distance, we start at 0 by default.
@@ -144,65 +177,67 @@ void Position::initializeBoardFromFEN(string FEN)
 		fiftyMoveDistance = stoi(strList[4]);
 	}
 
-	hply = 0;
+	ply = 0;
 	if (strList.size() >= 6)
 	{
-		hply = 2 * stoi(strList[5]) - 1;
+		ply = 2 * stoi(strList[5]) - 1;
 		// Avoid possible underflow.
-		if (hply < 0)
+		if (ply < 0)
 		{
-			hply = 0; 
+			ply = 0; 
 		}
-		if (sideToMove == Black)
+		if (sideToMove == Color::Black)
 		{
-			hply++;
+			++ply;
 		}
 	}
 
+    // Populate the bitboards.
 	bitboards.fill(0);
-	scoreOp = 0;
-	scoreEd = 0;
-
-	// populate the bitboards
-	for (i = A1; i <= H8; i++) 
+    pieceCount.fill(0);
+    pstMaterialScoreOp = pstMaterialScoreEd = 0;
+	for (Square sq = Square::A1; sq <= Square::H8; ++sq) 
 	{
-		if (board[i] != Empty)
+		if (board[sq] != Piece::Empty)
 		{
-			bitboards[board[i]] |= bit[i];
-			scoreOp += pieceSquareTableOpening[board[i]][i];
-			scoreEd += pieceSquareTableEnding[board[i]][i];
+			bitboards[board[sq]] |= Bitboards::bit[sq];
+            pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[board[sq]][sq];
+            pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[board[sq]][sq];
+            ++pieceCount[board[sq]];
 		}
 	}
-	bitboards[12] = bitboards[WhiteKing] | bitboards[WhiteQueen] | bitboards[WhiteRook] | bitboards[WhiteBishop] | bitboards[WhiteKnight] | bitboards[WhitePawn];
-	bitboards[13] = bitboards[BlackKing] | bitboards[BlackQueen] | bitboards[BlackRook] | bitboards[BlackBishop] | bitboards[BlackKnight] | bitboards[BlackPawn];
+
+    bitboards[12] = bitboards[Piece::WhiteKing] | bitboards[Piece::WhiteQueen] | bitboards[Piece::WhiteRook] 
+                  | bitboards[Piece::WhiteBishop] | bitboards[Piece::WhiteKnight] | bitboards[Piece::WhitePawn];
+    bitboards[13] = bitboards[Piece::BlackKing] | bitboards[Piece::BlackQueen] | bitboards[Piece::BlackRook] 
+                  | bitboards[Piece::BlackBishop] | bitboards[Piece::BlackKnight] | bitboards[Piece::BlackPawn];
 	bitboards[14] = bitboards[12] | bitboards[13];
+    totalPieceCount = Bitboards::popcnt<false>(bitboards[14]);
 
-	hash = calculateHash();
-	pawnHash = calculatePawnHash();
-	matHash = calculateMaterialHash();
+    // Calculate all the different hash keys for the position.
+	hashKey = calculateHash();
+	pawnHashKey = calculatePawnHash();
+	materialHashKey = calculateMaterialHash();
 
-	phase = totalPhase;
-	for (int i = Knight; i < King; i++)
-	{
-		phase -= popcnt(bitboards[White + i] | bitboards[Black * 6 + i]) * piecePhase[i];
-	}
-
-	memset(historyStack, 0, sizeof(historyStack));
-
-	return;
+    // Calculate the phase of the game.
+    phase = totalPhase;
+    for (Piece p = Piece::Knight; p < Piece::King; ++p)
+    {
+        phase -= (pieceCount[Color::White + p] + pieceCount[Color::Black * 6 + p]) * piecePhase[p];
+    }
 }
 
-std::string Position::boardToFen() const
+std::string Position::positionToFen() const
 {
     std::string fen;
 
-    for (auto rank = 7; rank >= 0; --rank)
+    for (auto r = 7; r >= 0; --r)
     {
         auto emptySquares = 0;
-        for (auto file = 0; file < 8; ++file)
+        for (auto f = 0; f < 8; ++f)
         {
-            auto piece = board[rank * 8 + file];
-            if (piece == Empty)
+            int piece = board[r * 8 + f];
+            if (piece == Piece::Empty)
             {
                 ++emptySquares;
             }
@@ -216,19 +251,19 @@ std::string Position::boardToFen() const
 
                 switch (piece)
                 {
-                case BlackPawn: fen += "p"; break;
-                case BlackRook: fen += "r"; break;
-                case BlackKnight: fen += "n"; break;
-                case BlackBishop: fen += "b"; break;
-                case BlackQueen: fen += "q"; break;
-                case BlackKing: fen += "k"; break;
-                case WhitePawn: fen += "P"; break;
-                case WhiteRook: fen += "R"; break;
-                case WhiteKnight: fen += "N"; break;
-                case WhiteBishop: fen += "B"; break;
-                case WhiteQueen: fen += "Q"; break;
-                case WhiteKing: fen += "K"; break;
-                default: return "";
+                    case Piece::BlackPawn: fen += "p"; break;
+                    case Piece::BlackRook: fen += "r"; break;
+                    case Piece::BlackKnight: fen += "n"; break;
+                    case Piece::BlackBishop: fen += "b"; break;
+                    case Piece::BlackQueen: fen += "q"; break;
+                    case Piece::BlackKing: fen += "k"; break;
+                    case Piece::WhitePawn: fen += "P"; break;
+                    case Piece::WhiteRook: fen += "R"; break;
+                    case Piece::WhiteKnight: fen += "N"; break;
+                    case Piece::WhiteBishop: fen += "B"; break;
+                    case Piece::WhiteQueen: fen += "Q"; break;
+                    case Piece::WhiteKing: fen += "K"; break;
+                    default: return "";
                 }
             }
         }
@@ -268,10 +303,10 @@ std::string Position::boardToFen() const
     }
 
     fen += " ";
-    if (enPassantSquare != NoSquare)
+    if (enPassant != Square::NoSquare)
     {
-        fen += static_cast<char>('a' + File(enPassantSquare));
-        fen += static_cast<char>('1' + Rank(enPassantSquare));
+        fen += static_cast<char>('a' + file(enPassant));
+        fen += static_cast<char>('1' + rank(enPassant));
     }
     else
     {
@@ -281,358 +316,476 @@ std::string Position::boardToFen() const
     fen += " ";
     fen += std::to_string(fiftyMoveDistance);
     fen += " ";
-    fen += std::to_string((hply + 1) / 2);
+    fen += std::to_string((ply + 1) / 2);
 
     return fen;
 }
 
-// Template or this? Can't pick my poison at least yet.
-bool Position::isAttacked(int sq, bool side)
+bool Position::makeMove(const Move& m, History& history)
 {
-	if (side)
-	{
-		if (knightAttacks[sq] & bitboards[BlackKnight] || pawnAttacks[White][sq] & bitboards[BlackPawn] || kingAttacks[sq] & bitboards[BlackKing])
-		{
-			return true;
-		}
-		uint64_t BQ = bitboards[BlackBishop] | bitboards[BlackQueen];
-		if ((bishopAttacks(sq, bitboards[14]) & BQ))
-		{
-			return true;
-		}
-		uint64_t RQ = bitboards[BlackRook] | bitboards[BlackQueen];
-		if (rookAttacks(sq, bitboards[14]) & RQ)
-		{
-			return true;
-		}
-	}
-	else
-	{
-		if (knightAttacks[sq] & bitboards[WhiteKnight] || pawnAttacks[Black][sq] & bitboards[WhitePawn] || kingAttacks[sq] & bitboards[WhiteKing])
-		{
-			return true;
-		}
-		uint64_t BQ = bitboards[WhiteBishop] | bitboards[WhiteQueen];
-		if ((bishopAttacks(sq, bitboards[14]) & BQ))
-		{
-			return true;
-		}
-		uint64_t RQ = bitboards[WhiteRook] | bitboards[WhiteQueen];
-		if (rookAttacks(sq, bitboards[14]) & RQ)
-		{
-			return true;
-		}
-	}
-
-	return false;
+    return (sideToMove ? makeMove<true>(m, history) : makeMove<false>(m, history));
 }
 
-bool Position::makeMove(Move m)
+void Position::unmakeMove(const Move& m, const History& history)
 {
-	uint64_t fromToBB;
-	int from = m.getFrom();
-	int to = m.getTo();
-	int promotion = m.getPromotion();
-	int piece = board[from];
-	int captured = board[to];
-
-	writeHistory(captured);
-
-	fromToBB = bit[from] | bit[to];
-
-	board[to] = board[from];
-	board[from] = Empty;
-
-	scoreOp += pieceSquareTableOpening[piece][to] - pieceSquareTableOpening[piece][from];
-	scoreEd += pieceSquareTableEnding[piece][to] - pieceSquareTableEnding[piece][from];
-
-	if (enPassantSquare != NoSquare)
-	{
-		hash ^= enPassantHash[enPassantSquare];
-		enPassantSquare = NoSquare;
-	}
-
-	fiftyMoveDistance++;
-
-	bitboards[piece] ^= fromToBB;
-	bitboards[12 + sideToMove] ^= fromToBB; 
-
-	hash ^= (pieceHash[piece][from] ^ pieceHash[piece][to]);
-
-	if (captured != Empty)
-	{
-		makeCapture(captured, to);
-		bitboards[14] ^= bit[from];
-	}
-	else
-	{
-		bitboards[14] ^= fromToBB;
-	}
-
-	if ((piece % Pieces) == Pawn)
-	{
-		fiftyMoveDistance = 0;
-		pawnHash ^= (pieceHash[piece][from] ^ pieceHash[piece][to]);
-
-		if ((to ^ from) == 16)
-		{
-			enPassantSquare = to - 8 + 16 * sideToMove;
-			hash ^= enPassantHash[enPassantSquare];
-		}
-		else if (promotion == Pawn)
-		{
-			makeEnPassant(to - 8 + 16 * sideToMove);
-		}
-		else if (promotion != Empty)
-		{
-			makePromotion(promotion, to);
-		}
-	}
-	else if (promotion == King)
-	{
-		makeCastling(from, to);
-	}
-
-	sideToMove = !sideToMove;
-	hash ^= turnHash;
-
-	// Update castling rights if needed
-	if (castlingRights && (castlingMask[from] | castlingMask[to]))
-	{
-		int cf = castlingMask[from] | castlingMask[to];
-		hash ^= castlingRightsHash[castlingRights & cf];
-		castlingRights &= ~cf;
-	}
-
-	// Check if the move leaves us in check.
-	if (isAttacked(bitScanForward(bitboards[King + !sideToMove * 6]), sideToMove))
-	{
-		unmakeMove(m);
-		return false;
-	}
-
-	return true;
+    sideToMove ? unmakeMove<true>(m, history) : unmakeMove<false>(m, history);
 }
 
-void Position::unmakeMove(Move m)
+bool Position::isAttacked(Square sq, Color side) const
 {
-	uint64_t fromToBB;
-	int from = m.getFrom();
-	int to = m.getTo();
-	int promotion = m.getPromotion();
-	int piece = board[to];
-	int captured;
-
-	readHistory(captured);
-
-	sideToMove = !sideToMove;
-
-	if (promotion == Pawn)
-	{
-		unmakeEnPassant(to - 8 + 16 * sideToMove);
-	}
-	else if (promotion == King)
-	{
-		unmakeCastling(from, to);
-	}
-	else if (promotion != Empty)
-	{
-		// Hack, fixes a slight problem with the backup when doing a promotion.
-		piece = Pawn + sideToMove * 6;
-		unmakePromotion(promotion, to);
-	}
-
-	fromToBB = bit[from] | bit[to];
-
-	bitboards[piece] ^= fromToBB;
-	bitboards[12 + sideToMove] ^= fromToBB;
-
-	board[from] = piece;
-	board[to] = captured;
-
-	scoreOp += pieceSquareTableOpening[piece][from] - pieceSquareTableOpening[piece][to];
-	scoreEd += pieceSquareTableEnding[piece][from] - pieceSquareTableEnding[piece][to];
-
-	if (captured != Empty)
-	{
-		unmakeCapture(captured, to);
-		bitboards[14] |= bit[from];
-	}
-	else
-	{
-		bitboards[14] ^= fromToBB;
-	}
+    return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
 }
 
-void Position::makeCapture(int captured, int to)
+int Position::SEE(const Move& m) const
 {
-	bitboards[captured] ^= bit[to];
-	bitboards[12 + !sideToMove] ^= bit[to];
-	fiftyMoveDistance = 0;
+    // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
+    // Score for kings is not mateScore due to some annoying wrap-around problems. Doesn't really matter though.
+    static const std::array<int, 13> pieceValues = {
+        100, 300, 300, 500, 900, 10000, 100, 300, 300, 500, 900, 10000, 0
+    };
+    static std::array<int, 32> materialGains;
+    auto occupied = getOccupiedSquares();
+    auto from = m.getFrom();
+    auto to = m.getTo();
+    auto promotion = m.getPromotion();
+    auto toAtPromoRank = (to <= 7 || to >= 56); 
+    auto stm = sideToMove;
+    int lastAttackerValue, next;
 
-	scoreOp -= pieceSquareTableOpening[captured][to];
-	scoreEd -= pieceSquareTableEnding[captured][to];
+    if (promotion == Piece::King)
+    {
+        return 0;
+    }
+    else if (promotion == Piece::Pawn)
+    {
+        materialGains[0] = pieceValues[Piece::Pawn];
+        lastAttackerValue = pieceValues[Piece::Pawn];
+        occupied ^= Bitboards::bit[enPassant];
+    }
+    else
+    {
+        materialGains[0] = pieceValues[board[to]];
+        lastAttackerValue = pieceValues[board[from]];
+        if (promotion != Piece::Empty)
+        {
+            materialGains[0] += pieceValues[promotion] - pieceValues[Piece::Pawn];
+            lastAttackerValue += pieceValues[promotion] - pieceValues[Piece::Pawn];
+        }
+    }
 
-	hash ^= pieceHash[captured][to];
-	matHash ^= materialHash[captured][popcnt(bitboards[captured])];
+    occupied ^= Bitboards::bit[from];
+    auto attackers = (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteRook] 
+                                                            | bitboards[Piece::BlackRook]))
+                 | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteBishop]
+                                                            | bitboards[Piece::BlackBishop]))
+                 | (Bitboards::knightAttacks[to] & (bitboards[Piece::WhiteKnight] | bitboards[Piece::BlackKnight]))
+                 | (Bitboards::kingAttacks[to] & (bitboards[Piece::WhiteKing] | bitboards[Piece::BlackKing]))
+                 | (Bitboards::pawnAttacks[Color::Black][to] & (bitboards[Piece::WhitePawn]))
+                 | (Bitboards::pawnAttacks[Color::White][to] & (bitboards[Piece::BlackPawn]));
+    attackers &= occupied;
+    stm = !stm;
+    auto numberOfCaptures = 1;
 
-	int pieceType = (captured % Pieces);
-	phase += piecePhase[pieceType];
-	if (pieceType == Pawn)
-	{
-		pawnHash ^= pieceHash[captured][to];
-	}
+    while (attackers & bitboards[12 + stm])
+    {
+        if (!toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Knight + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Knight + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Bishop + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Bishop + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Rook + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Rook + stm * 6] & attackers);
+        }
+        else if (toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
+        }
+        else if (bitboards[Piece::Queen + stm * 6] & attackers)
+        {
+            next = Bitboards::lsb(bitboards[Piece::Queen + stm * 6] & attackers);
+        }
+        else
+        {
+            next = Bitboards::lsb(bitboards[Piece::King + stm * 6]);
+        }
+
+        // Update the materialgains array.
+        materialGains[numberOfCaptures] = -materialGains[numberOfCaptures - 1] + lastAttackerValue;
+        // Remember the value of the capturing piece because it is going to be captured next.
+        lastAttackerValue = pieceValues[board[next]];
+        // If we are going to do a promotion we need to correct the values a bit.
+        if (toAtPromoRank && lastAttackerValue == pieceValues[Piece::Pawn])
+        {
+            materialGains[numberOfCaptures] += pieceValues[Piece::Queen] - pieceValues[Piece::Pawn];
+            lastAttackerValue += pieceValues[Piece::Queen] - pieceValues[Piece::Pawn];
+        }
+
+        occupied ^= Bitboards::bit[next];
+        attackers |= (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                            | bitboards[Piece::BlackQueen] 
+                                                            | bitboards[Piece::WhiteRook] 
+                                                            | bitboards[Piece::BlackRook]))
+                  | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen] 
+                                                             | bitboards[Piece::BlackQueen] 
+                                                             | bitboards[Piece::WhiteBishop] 
+                                                             | bitboards[Piece::BlackBishop]));
+        attackers &= occupied;
+
+        stm = !stm;
+        if ((board[next] % 6) == Piece::King && (attackers & bitboards[12 + stm]))
+            break;
+        numberOfCaptures++;
+    }
+
+    while (--numberOfCaptures)
+    {
+        materialGains[numberOfCaptures - 1] = std::min(-materialGains[numberOfCaptures], materialGains[numberOfCaptures - 1]);
+    }
+
+    return materialGains[0];
 }
 
-void Position::makePromotion(int promotion, int to)
+template <bool side> 
+bool Position::makeMove(const Move& m, History& history)
 {
-	// This needs to be above the rest due to reasons. Try to fix that.
-	matHash ^= materialHash[promotion + sideToMove * 6][popcnt(bitboards[promotion + sideToMove * 6])];
+    auto from = m.getFrom();
+    auto to = m.getTo();
+    auto promotion = m.getPromotion();
+    auto piece = board[from];
+    auto captured = board[to];
+    auto fromToBB = Bitboards::bit[from] | Bitboards::bit[to];
 
-	bitboards[Pawn + sideToMove * 6] ^= bit[to];
-	bitboards[promotion + sideToMove * 6] |= bit[to];
-	hash ^= pieceHash[board[to]][to] ^ pieceHash[promotion + sideToMove * 6][to];
-	pawnHash ^= pieceHash[board[to]][to];
-	matHash ^= materialHash[Pawn + sideToMove * 6][popcnt(bitboards[Pawn + sideToMove * 6])];
-	board[to] = promotion + sideToMove * 6;
-	phase -= piecePhase[promotion];
-	scoreOp += pieceSquareTableOpening[promotion + sideToMove * 6][to] - pieceSquareTableOpening[Pawn + sideToMove * 6][to];
-	scoreEd += pieceSquareTableEnding[promotion + sideToMove * 6][to] - pieceSquareTableEnding[Pawn + sideToMove * 6][to];
+    ++ply;
+    // Save all information needed to take back a move.
+    history.hash = hashKey;
+    history.pHash = pawnHashKey;
+    history.captured = captured;
+    history.ep = enPassant;
+    history.fifty = fiftyMoveDistance;
+    history.castle = castlingRights;
+
+    pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[piece][to] 
+                        - Evaluation::pieceSquareTableOpening[piece][from];
+    pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[piece][to]
+                        - Evaluation::pieceSquareTableEnding[piece][from];
+
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHash[enPassant];
+        enPassant = Square::NoSquare;
+    }
+
+    board[to] = board[from];
+    board[from] = Piece::Empty;
+    bitboards[piece] ^= fromToBB;
+    bitboards[12 + side] ^= fromToBB;
+    ++fiftyMoveDistance;
+    hashKey ^= (Zobrist::pieceHash[piece][from] ^ Zobrist::pieceHash[piece][to]);
+
+    if (captured != Piece::Empty)
+    {
+        --totalPieceCount;
+        bitboards[captured] ^= Bitboards::bit[to];
+        bitboards[12 + !side] ^= Bitboards::bit[to];
+        fiftyMoveDistance = 0;
+        pstMaterialScoreOp -= Evaluation::pieceSquareTableOpening[captured][to];
+        pstMaterialScoreEd -= Evaluation::pieceSquareTableEnding[captured][to];
+        hashKey ^= Zobrist::pieceHash[captured][to];
+        materialHashKey ^= Zobrist::materialHash[captured][--pieceCount[captured]];
+
+        auto pieceType = (captured % 6);
+        phase += piecePhase[pieceType];
+        if (pieceType == Piece::Pawn)
+        {
+            pawnHashKey ^= Zobrist::pieceHash[captured][to];
+        }
+
+        bitboards[14] ^= Bitboards::bit[from];
+    }
+    else
+    {
+        bitboards[14] ^= fromToBB;
+    }
+
+    if ((piece % 6) == Piece::Pawn)
+    {
+        fiftyMoveDistance = 0;
+        pawnHashKey ^= (Zobrist::pieceHash[piece][from] ^ Zobrist::pieceHash[piece][to]);
+
+        if ((to ^ from) == 16) // Double pawn move
+        {
+            enPassant = from ^ 24;
+            hashKey ^= Zobrist::enPassantHash[enPassant];
+        }
+        else if (promotion == Piece::Pawn) // En passant
+        {
+            auto enPassantSquare = to ^ 8;
+            --totalPieceCount;
+            bitboards[Piece::Pawn + !side * 6] ^= Bitboards::bit[enPassantSquare];
+            bitboards[12 + !side] ^= Bitboards::bit[enPassantSquare];
+            bitboards[14] ^= Bitboards::bit[enPassantSquare];
+            board[enPassantSquare] = Piece::Empty;
+            hashKey ^= Zobrist::pieceHash[Piece::Pawn + !side * 6][enPassantSquare];
+            pawnHashKey ^= Zobrist::pieceHash[Piece::Pawn + !side * 6][enPassantSquare];
+            materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][--pieceCount[Piece::Pawn + !side * 6]];
+            pstMaterialScoreOp -= Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][enPassantSquare];
+            pstMaterialScoreEd -= Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][enPassantSquare];
+        }
+        else if (promotion != Piece::Empty) // Promotion
+        {
+            // This needs to be above the rest due to reasons. Try to fix that.
+            materialHashKey ^= Zobrist::materialHash[promotion + side * 6][pieceCount[promotion + side * 6]++];
+            phase -= piecePhase[promotion];
+            bitboards[Piece::Pawn + side * 6] ^= Bitboards::bit[to];
+            bitboards[promotion + side * 6] |= Bitboards::bit[to];
+            board[to] = promotion + sideToMove * 6;
+            hashKey ^= Zobrist::pieceHash[Piece::Pawn + side * 6][to] ^ Zobrist::pieceHash[promotion + side * 6][to];
+            pawnHashKey ^= Zobrist::pieceHash[Piece::Pawn + side * 6][to];
+            materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][--pieceCount[Piece::Pawn + side * 6]];
+            pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[promotion + side * 6][to]
+                                - Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][to];
+            pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[promotion + side * 6][to]
+                                - Evaluation::pieceSquareTableEnding[Piece::Pawn + side * 6][to];
+        }
+    }
+    else if (promotion == Piece::King)
+    {
+        auto fromRook = (from > to ? (to - 2) : (to + 1));
+        auto toRook = (from > to ? (from - 1) : (from + 1));
+        auto fromToBBCastling = Bitboards::bit[fromRook] | Bitboards::bit[toRook];
+
+        bitboards[Piece::Rook + side * 6] ^= fromToBBCastling;
+        bitboards[12 + side] ^= fromToBBCastling;
+        bitboards[14] ^= fromToBBCastling;
+        board[toRook] = board[fromRook];
+        board[fromRook] = Piece::Empty;
+        hashKey ^= Zobrist::pieceHash[Piece::Rook + side * 6][fromRook] 
+                 ^ Zobrist::pieceHash[Piece::Rook + side * 6][toRook];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][toRook]
+                            - Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][fromRook];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][toRook]
+                            - Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][fromRook];
+    }
+
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHash;
+
+    // Update castling rights if needed
+    if (castlingRights && (castlingMask[from] | castlingMask[to]))
+    {
+        auto cf = castlingMask[from] | castlingMask[to];
+        hashKey ^= Zobrist::castlingRightsHash[castlingRights & cf];
+        castlingRights &= ~cf;
+    }
+
+    // Check if the move leaves us in check.
+    if (isAttacked(Bitboards::lsb(bitboards[Piece::King + side * 6]), !side))
+    {
+        unmakeMove(m, history);
+        return false;
+    }
+
+    return true;
 }
 
-void Position::makeEnPassant(int to)
+template bool Position::makeMove<false>(const Move& m, History& history);
+template bool Position::makeMove<true>(const Move& m, History& history);
+
+template <bool side> 
+void Position::unmakeMove(const Move& m, const History& history)
 {
-	bitboards[Pawn + !sideToMove * 6] ^= bit[to];
-	bitboards[12 + !sideToMove] ^= bit[to];
-	bitboards[14] ^= bit[to];
-	board[to] = Empty;
-	scoreOp -= pieceSquareTableOpening[Pawn + !sideToMove * 6][to];
-	scoreEd -= pieceSquareTableEnding[Pawn + !sideToMove * 6][to];
-	hash ^= pieceHash[Pawn + !sideToMove * 6][to];
-	pawnHash ^= pieceHash[Pawn + !sideToMove * 6][to];
-	matHash ^= materialHash[Pawn + !sideToMove * 6][popcnt(bitboards[Pawn + !sideToMove * 6])];
+    auto from = m.getFrom();
+    auto to = m.getTo();
+    auto promotion = m.getPromotion();
+    auto piece = board[to];
+    auto fromToBB = Bitboards::bit[from] | Bitboards::bit[to];
+
+    --ply;
+    // Back up irreversible information from history.
+    hashKey = history.hash;
+    pawnHashKey = history.pHash;
+    auto captured = history.captured;
+    enPassant = history.ep;
+    fiftyMoveDistance = history.fifty;
+    castlingRights = history.castle;
+
+    sideToMove = !sideToMove;
+
+    if (promotion == Piece::Pawn)
+    {
+        auto enPassantSquare = to ^ 8;
+        ++totalPieceCount;
+        bitboards[Piece::Pawn + side * 6] |= Bitboards::bit[enPassantSquare];
+        bitboards[12 + side] |= Bitboards::bit[enPassantSquare];
+        bitboards[14] |= Bitboards::bit[enPassantSquare];
+        board[enPassantSquare] = Piece::Pawn + side * 6;
+        materialHashKey ^= Zobrist::materialHash[Piece::Pawn + side * 6][pieceCount[Piece::Pawn + side * 6]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][enPassantSquare];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Pawn + side * 6][enPassantSquare];
+    }
+    else if (promotion == Piece::King)
+    {
+        auto fromRook = (from > to ? (to - 2) : (to + 1));
+        auto toRook = (from > to ? (from - 1) : (from + 1));
+        auto fromToBBCastling = Bitboards::bit[fromRook] | Bitboards::bit[toRook];
+
+        bitboards[Piece::Rook + !side * 6] ^= fromToBBCastling;
+        bitboards[12 + !side] ^= fromToBBCastling;
+        bitboards[14] ^= fromToBBCastling;
+        board[fromRook] = board[toRook];
+        board[toRook] = Piece::Empty;
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Rook + !side * 6][fromRook]
+                            - Evaluation::pieceSquareTableOpening[Piece::Rook + !side * 6][toRook];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Rook + !side * 6][fromRook]
+                            - Evaluation::pieceSquareTableEnding[Piece::Rook + !side * 6][toRook];
+    }
+    else if (promotion != Piece::Empty)
+    {
+        piece = Piece::Pawn + !side * 6; // Hack, fixes a slight problem with the backup when doing a promotion.
+        bitboards[piece] ^= Bitboards::bit[to];
+        bitboards[promotion + !side * 6] ^= Bitboards::bit[to];
+        phase += piecePhase[promotion];
+        materialHashKey ^= Zobrist::materialHash[promotion + !side * 6][--pieceCount[promotion + !side * 6]];
+        materialHashKey ^= Zobrist::materialHash[Piece::Pawn + !side * 6][pieceCount[piece]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][to]
+                            - Evaluation::pieceSquareTableOpening[promotion + !side * 6][to];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][to]
+                            - Evaluation::pieceSquareTableEnding[promotion + !side * 6][to];
+    }
+
+    bitboards[piece] ^= fromToBB;
+    bitboards[12 + !side] ^= fromToBB;
+
+    board[from] = piece;
+    board[to] = captured;
+
+    pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[piece][from]
+                        - Evaluation::pieceSquareTableOpening[piece][to];
+    pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[piece][from]
+                        - Evaluation::pieceSquareTableEnding[piece][to];
+
+    if (captured != Piece::Empty)
+    {
+        ++totalPieceCount;
+        bitboards[captured] |= Bitboards::bit[to];
+        bitboards[12 + side] |= Bitboards::bit[to];
+        bitboards[14] |= Bitboards::bit[from];
+        phase -= piecePhase[captured % 6];
+        materialHashKey ^= Zobrist::materialHash[captured][pieceCount[captured]++];
+        pstMaterialScoreOp += Evaluation::pieceSquareTableOpening[captured][to];
+        pstMaterialScoreEd += Evaluation::pieceSquareTableEnding[captured][to];
+    }
+    else
+    {
+        bitboards[14] ^= fromToBB;
+    }
 }
 
-void Position::makeCastling(int from, int to)
-{
-	int fromRook, toRook;
-	if (from > to)
-	{
-		fromRook = to - 2;
-		toRook = from - 1;
-	}
-	else
-	{
-		fromRook = to + 1;
-		toRook = from + 1;
-	}
+template void Position::unmakeMove<false>(const Move& m, const History& history);
+template void Position::unmakeMove<true>(const Move& m, const History& history);
 
-	bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
-	bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
-	bitboards[14] ^= bit[fromRook] | bit[toRook];
-	board[toRook] = board[fromRook];
-	board[fromRook] = Empty;
-	scoreOp += pieceSquareTableOpening[Rook + sideToMove * 6][toRook] - pieceSquareTableOpening[Rook + sideToMove * 6][fromRook];
-	scoreEd += pieceSquareTableEnding[Rook + sideToMove * 6][toRook] - pieceSquareTableEnding[Rook + sideToMove * 6][fromRook];
-	hash ^= (pieceHash[Rook + sideToMove * 6][fromRook] ^ pieceHash[Rook + sideToMove * 6][toRook]);
+template <bool side> 
+bool Position::isAttacked(Square sq) const
+{
+    return (Bitboards::knightAttacks[sq] & bitboards[Piece::Knight + 6 * side]
+        || Bitboards::pawnAttacks[!side][sq] & bitboards[Piece::Pawn + 6 * side]
+        || Bitboards::kingAttacks[sq] & bitboards[Piece::King + 6 * side]
+        || Bitboards::bishopAttacks(sq, bitboards[14]) & (bitboards[Piece::Bishop + 6 * side] | bitboards[Piece::Queen + 6 * side])
+        || Bitboards::rookAttacks(sq, bitboards[14]) & (bitboards[Piece::Rook + 6 * side] | bitboards[Piece::Queen + 6 * side]));
 }
 
-void Position::unmakeCapture(int captured, int to)
+template bool Position::isAttacked<false>(Square sq) const;
+template bool Position::isAttacked<true>(Square sq) const;
+
+HashKey Position::calculateHash() const
 {
-	bitboards[captured] |= bit[to];
-	bitboards[12 + !sideToMove] |= bit[to];
-	scoreOp += pieceSquareTableOpening[captured][to];
-	scoreEd += pieceSquareTableEnding[captured][to];
-	phase -= piecePhase[captured % Pieces];
+    HashKey h = 0;
+
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+    {
+        if (board[sq] != Piece::Empty)
+        {
+            h ^= Zobrist::pieceHash[board[sq]][sq];
+        }
+    }
+
+    if (enPassant != Square::NoSquare)
+    {
+        h ^= Zobrist::enPassantHash[enPassant];
+    }
+    if (sideToMove)
+    {
+        h ^= Zobrist::turnHash;
+    }
+    if (castlingRights)
+    {
+        h ^= Zobrist::castlingRightsHash[castlingRights];
+    }
+
+    return h;
 }
 
-void Position::unmakePromotion(int promotion, int to)
+HashKey Position::calculatePawnHash() const
 {
-	bitboards[Pawn + sideToMove * 6] ^= bit[to];
-	bitboards[promotion + sideToMove * 6] ^= bit[to];
-	phase += piecePhase[promotion];
-	scoreOp += pieceSquareTableOpening[Pawn + sideToMove * 6][to] - pieceSquareTableOpening[promotion + sideToMove * 6][to];
-	scoreEd += pieceSquareTableEnding[Pawn + sideToMove * 6][to] - pieceSquareTableEnding[promotion + sideToMove * 6][to];
+    HashKey p = 0;
+
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+    {
+        if (board[sq] == Piece::WhitePawn || board[sq] == Piece::BlackPawn)
+        {
+            p ^= Zobrist::pieceHash[board[sq]][sq];
+        }
+    }
+
+    return p;
 }
 
-void Position::unmakeEnPassant(int to)
+HashKey Position::calculateMaterialHash() const
 {
-	bitboards[Pawn + !sideToMove * 6] |= bit[to];
-	bitboards[12 + !sideToMove] |= bit[to];
-	bitboards[14] |= bit[to];
-	board[to] = Pawn + !sideToMove * 6;
-	scoreOp += pieceSquareTableOpening[Pawn + !sideToMove * 6][to];
-	scoreEd += pieceSquareTableEnding[Pawn + !sideToMove * 6][to];
+    HashKey m = 0;
+
+    for (Piece p = Piece::WhitePawn; p <= Piece::BlackKing; ++p)
+    {
+        for (auto i = 0; i < pieceCount[p]; ++i)
+        {
+            m ^= Zobrist::materialHash[p][i];
+        }
+    }
+
+    return m;
 }
 
-void Position::unmakeCastling(int from, int to)
+void Position::makeNullMove(History& history)
 {
-	int fromRook, toRook;
-	if (from > to)
-	{
-		fromRook = to - 2;
-		toRook = from - 1;
-	}
-	else
-	{
-		fromRook = to + 1;
-		toRook = from + 1;
-	}
-
-	bitboards[Rook + sideToMove * 6] ^= bit[fromRook] | bit[toRook];
-	bitboards[12 + sideToMove] ^= bit[fromRook] | bit[toRook];
-	bitboards[14] ^= bit[fromRook] | bit[toRook];
-	board[fromRook] = board[toRook];
-	board[toRook] = Empty;
-	scoreOp += pieceSquareTableOpening[Rook + sideToMove * 6][fromRook] - pieceSquareTableOpening[Rook + sideToMove * 6][toRook];
-	scoreEd += pieceSquareTableEnding[Rook + sideToMove * 6][fromRook] - pieceSquareTableEnding[Rook + sideToMove * 6][toRook];
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHash;
+    history.ep = enPassant;
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHash[enPassant];
+        enPassant = Square::NoSquare;
+    }
 }
 
-void Position::writeHistory(int & captured)
+void Position::unmakeNullMove(const History& history)
 {
-	historyStack[hply].castle = castlingRights;
-	historyStack[hply].ep = enPassantSquare;
-	historyStack[hply].fifty = fiftyMoveDistance;
-	historyStack[hply].captured = captured;
-	historyStack[hply].hash = hash;
-	historyStack[hply].pHash = pawnHash;
-	historyStack[hply].mHash = matHash;
-	hply++;
-}
-
-void Position::readHistory(int & captured)
-{
-	hply--;
-	castlingRights = historyStack[hply].castle;
-	enPassantSquare = historyStack[hply].ep;
-	fiftyMoveDistance = historyStack[hply].fifty;
-	captured = historyStack[hply].captured;
-	hash = historyStack[hply].hash;
-	pawnHash = historyStack[hply].pHash;
-	matHash = historyStack[hply].mHash;
-}
-
-void Position::makeNullMove()
-{
-	sideToMove = !sideToMove;
-	hash ^= turnHash;
-	historyStack[hply].ep = enPassantSquare;
-	if (enPassantSquare != NoSquare)
-	{
-		hash ^= enPassantHash[enPassantSquare];
-		enPassantSquare = NoSquare;
-	}
-	hply++;
-}
-
-void Position::unmakeNullMove()
-{
-	hply--;
-	enPassantSquare = historyStack[hply].ep;
-	if (enPassantSquare != NoSquare)
-	{
-		hash ^= enPassantHash[enPassantSquare];
-	}
-	sideToMove = !sideToMove;
-	hash ^= turnHash;
+    enPassant = history.ep;
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHash[enPassant];
+    }
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHash;
 }

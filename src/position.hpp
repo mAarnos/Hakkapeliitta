@@ -1,130 +1,102 @@
-#ifndef POSITION_H_
-#define POSITION_H_
+#ifndef POSITION_HPP_
+#define POSITION_HPP_
 
-#include "defs.hpp"
+#include <array>
+#include <string>
 #include "bitboard.hpp"
 #include "move.hpp"
-#include "hash.hpp"
-
-// The maxinum supported game length in plies.
-const int maxGameLength = 1200;
-
-const array<int, Pieces> piecePhase = {
-	0, 3, 3, 5, 10, 0
-};
-const int totalPhase = piecePhase[Pawn] * 16 + piecePhase[Knight] * 4 + piecePhase[Bishop] * 4 + piecePhase[Rook] * 4 + piecePhase[Queen] * 2;
+#include "zobrist.hpp"
+#include "color.hpp"
+#include "piece.hpp"
 
 class History
 {
-	public:
-		int castle;
-		int ep;
-		int fifty;
-		int captured;
-		uint64_t hash;
-		uint64_t pHash;
-		uint64_t mHash;
+public:
+    HashKey hash;
+    HashKey pHash;  
+    Piece captured;
+    Square ep;
+    int fifty;
+    int castle;
 };
 
 class Position
 {
-	public:
-		void initializeBoardFromFEN(string FEN);
-        std::string boardToFen() const;
-		void displayBoard();
+public:
+    Position();
 
-		bool inCheck() { return isAttacked(bitScanForward(bitboards[King + sideToMove * 6]), !sideToMove); }
-		bool isAttacked(int sq, bool side);
+	void initializePositionFromFen(const std::string& fen);
+    std::string positionToFen() const;
+	void displayBoard() const;
 
-		// The first one returns all attacks to a square, the second one retuns all attacks by the side specified to a square.
-		uint64_t attacksTo(int to);
-		uint64_t attacksTo(int to, bool side);
+    Piece getBoard(Square sq) const { return board[sq]; }
 
-		// Hack, this shouldn't exist but I haven't figured out a way to do generateEvasions without it.
-		inline void replaceBitboard(uint64_t newBB, int bbNumber) { bitboards[bbNumber] = newBB; }
+    Bitboard getBitboard(Color colour, Piece piece) const { return bitboards[piece + colour * 6]; }
+    Bitboard getPieces(Color colour) const { return bitboards[12 + colour]; }
+    Bitboard getOccupiedSquares() const { return bitboards[14]; }
+    Bitboard getFreeSquares() const { return ~bitboards[14]; }
 
-		inline int getPiece(int sq) { return board[sq]; }
-		// Returns incorrect piecetype if there is nothing on the square. Use only if you known something is on the square specified.
-		inline int getPieceType(int sq) { return (board[sq] % Pieces); }
+    Color getSideToMove() const { return sideToMove; }
+    Square getEnPassantSquare() const { return enPassant; }
+    int getCastlingRights() const { return castlingRights; }
+    int getFiftyMoveDistance() const { return fiftyMoveDistance; }
 
-		inline uint64_t getBitboard(bool colour, int piece) { return bitboards[piece + colour * 6]; }
-		inline uint64_t getPieces(bool colour) { return bitboards[12 + colour]; }
-		inline uint64_t getOccupiedSquares() { return bitboards[14]; }
-		inline uint64_t getFreeSquares() { return ~bitboards[14]; }
+    HashKey getHashKey() const { return hashKey; }
+    HashKey getPawnHashKey() const { return pawnHashKey; }
+    HashKey getMaterialHashKey() const { return materialHashKey; }
 
-		inline uint64_t getHash() const { return hash; }
-		inline uint64_t getPawnHash() const { return pawnHash; }
-		inline uint64_t getMaterialHash() const { return matHash; }
-		
-		inline bool getSideToMove() { return sideToMove; }
-		inline int getEnPassantSquare() { return enPassantSquare; }
-		inline int getCastlingRights() { return castlingRights; }
-		inline int getFiftyMoveDistance() { return fiftyMoveDistance; }
+    bool makeMove(const Move& move, History& history);
+    void unmakeMove(const Move& move, const History& history);
+    void makeNullMove(History& history);
+    void unmakeNullMove(const History& history);
 
-		inline int getScoreOp() { return scoreOp; }
-		inline int getScoreEd() { return scoreEd; }
+    int getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
+    int getTotalPieceCount() const { return totalPieceCount; }
 
-        inline int getPhase() const { return phase; }
+    bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
+    bool isAttacked(Square sq, Color side) const;
 
-		inline int getKiller(int killerNumber, int ply) { return killer[killerNumber][ply]; }
-		inline void setKiller(int killerNumber, int ply, int newKiller) { killer[killerNumber][ply] = newKiller; }
-        inline void resetKillers() { memset(killer, 0, sizeof(killer)); }
+    int getGamePhase() const { return phase; }
 
-		bool repetitionDraw();
+    int getPstMaterialScoreOpening() const { return pstMaterialScoreOp; }
+    int getPstMaterialScoreEnding() const { return pstMaterialScoreEd; }
 
-		int SEE(Move m);
+    int SEE(const Move& m) const;
+private:
+	// All bitboards needed to represent the position.
+	// 6 bitboards for different white pieces + 1 for all white pieces.
+	// 6 bitboards for different black pieces + 1 for all black pieces.
+	// 1 for all occupied squares.
+	std::array<Bitboard, 15> bitboards;
+	// The board as a one-dimensional array.
+	// We have it because often we want to know what piece is on which square or something like that.
+	std::array<Piece, 64> board;
 
-		bool makeMove(Move m);
-		void unmakeMove(Move m);
+	// Miscellaneous, everything is pretty self explanatory.
+    HashKey hashKey, pawnHashKey, materialHashKey;
+	Color sideToMove;
+    int castlingRights;
+    Square enPassant;
+	int fiftyMoveDistance;
+    int totalPieceCount;
+    int phase;
+    int ply;
+    int pstMaterialScoreOp, pstMaterialScoreEd;
+    std::array<int, 12> pieceCount;
 
-		void makeNullMove();
-		void unmakeNullMove();
-	private:
-		// All bitboards needed to represent the position.
-		// 6 bitboards for different white pieces + 1 for all white pieces.
-		// 6 bitboards for different black pieces + 1 for all black pieces.
-		// 1 for all occupied squares.
-		array<uint64_t, 15> bitboards;
-		// The board as a one-dimensional array.
-		// We have it because often we want to know what piece is on which square or something like that.
-		array<int, Squares> board;
+	// These functions can be used to calculate different hash keys for the current position.
+	// They are slow so they are only used when initializing, instead we update them incrementally.
+    HashKey calculateHash() const;
+    HashKey calculatePawnHash() const;
+    HashKey calculateMaterialHash() const;
 
-		// Keeps track of the irreversible things in the gamestate.
-		History historyStack[maxGameLength];
+    template <bool side> bool makeMove(const Move& move, History& history);
+    template <bool side> void unmakeMove(const Move& move, const History& history);
+    template <bool side> bool isAttacked(Square sq) const;
 
-		// Miscellaneous, everything is pretty self explanatory.
-		bool sideToMove;
-		int castlingRights;
-		int enPassantSquare;
-		int fiftyMoveDistance;
-		int hply;
-		int phase;
-		int scoreOp, scoreEd;
-		uint64_t hash, pawnHash, matHash; 
-
-		// Killer moves. Since these are highly position specific we have to make them thread specific.
-		array<int, maxGameLength> killer[2];
-
-		// These functions can be used to calculate different hash keys for the current position.
-		// They are slow so they are only used when initializing, instead we update them incrementally.
-		uint64_t calculateHash();
-		uint64_t calculatePawnHash();
-		uint64_t calculateMaterialHash();
-
-		// Miscellaneous functions used by the program.
-		void makeCapture(int captured, int to);
-		void makePromotion(int promotion, int to);	
-		void makeEnPassant(int to);
-		void makeCastling(int from, int to);
-		void unmakeCapture(int captured, int to);
-		void unmakePromotion(int promotion, int to);
-		void unmakeEnPassant(int to);
-		void unmakeCastling(int from, int to);
-
-		void writeHistory(int & captured);
-        void readHistory(int & captured);
+    static const std::array<int, 64> castlingMask;
+    static const std::array<int, 6> piecePhase;
+    static const int totalPhase;
 };
-
-extern Position root;
 
 #endif

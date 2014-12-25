@@ -1,207 +1,69 @@
-#ifndef EVAL_H_
-#define EVAL_H_
+#ifndef EVAL_HPP_
+#define EVAL_HPP_
 
-#include "defs.hpp"
+#include <array>
+#include <vector>
+#include <unordered_map>
 #include "position.hpp"
+#include "zobrist.hpp"
+#include "pht.hpp"
 
-const int mateScore = 32767;
-const int maxMateScore = 32767 - maxGameLength;
-// Is the value here enough?
-const int infinity = mateScore + 1;
-
-inline bool isMateScore(int score)
+class Evaluation
 {
-    assert(score < infinity && score > -infinity);
-	return (score <= -maxMateScore || score >= maxMateScore);
-}
+public:
+    static void initialize();
 
-const array<int, Pieces> pieceValuesOpening = {
-	88, 235, 263, 402, 892, 0
+    static int evaluate(const Position& pos, bool& zugzwangLikely);
+
+    static std::array<int, 64> pieceSquareTableOpening[12];
+    static std::array<int, 64> pieceSquareTableEnding[12];
+
+    static std::unordered_map<HashKey, int> drawnEndgames;
+    static PawnHashTable pawnHashTable;
+private:
+    static const std::array<int, 6> pieceValuesOpening;
+    static const std::array<int, 6> pieceValuesEnding;
+
+    static const std::array<int, 64> openingPST[6];
+    static const std::array<int, 64> endingPST[6];
+
+    static const std::vector<int> mobilityOpening[6];
+    static const std::vector<int> mobilityEnding[6];
+
+    static const std::array<int, 6> attackWeight;
+    static const std::array<int, 100> kingSafetyTable;
+
+    static const std::array<int, 8> passedBonusOpening;
+    static const std::array<int, 8> passedBonusEnding;
+    static const std::array<int, 8> doubledPenaltyOpening;
+    static const std::array<int, 8> doubledPenaltyEnding;
+    static const std::array<int, 8> isolatedPenaltyOpening;
+    static const std::array<int, 8> isolatedPenaltyEnding;
+    static const std::array<int, 8> backwardPenaltyOpening;
+    static const std::array<int, 8> backwardPenaltyEnding;
+
+    static const int bishopPairBonusOpening;
+    static const int bishopPairBonusEnding;
+    static const int sideToMoveBonus;
+
+    static void initializeDrawnEndgames();
+
+    template <bool hardwarePopcnt> 
+    static int evaluate(const Position& pos, bool& zugzwangLikely);
+
+    template <bool hardwarePopcnt> 
+    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
+
+    static int pawnStructureEval(const Position& pos, int phase);
+    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
+
+    template <bool side>
+    static int evaluatePawnShelter(const Position& pos);
+
+    static int interpolateScore(int scoreOp, int scoreEd, int phase) 
+    {
+        return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
+    }
 };
-
-const array<int, Pieces> pieceValuesEnding = {
-	112, 258, 286, 481, 892, 0
-};
-
-const array<int, Squares> openingPST[Pieces] = {
-	{
-		0, 0, 0, 0, 0, 0, 0, 0,
-		-33,-18,-13,-18,-18,-13,-18,-33,
-		-28,-23,-13, -3, -3,-13,-23,-28,
-		-33,-18,-13, 12, 12,-13,-18,-33,
-		-18,-13, -8, 17, 17, -8,-13,-18,
-		7, 12, 17, 22, 22, 17, 12, 7,
-		42, 42, 42, 42, 42, 42, 42, 42,
-		0, 0, 0, 0, 0, 0, 0, 0
-	},
-	{
-		-36, -26, -16, -6, -6, -16, -26, -36,
-		-26, -16, -6, 9, 9, -6, -16, -26,
-		-16, -6, 9, 29, 29, 9, -6, -16,
-		-6, 9, 29, 39, 39, 29, 9, -6,
-		-6, 9, 39, 49, 49, 39, 9, -6,
-		-16, -6, 19, 59, 59, 19, -6, -16,
-		-26, -16, -6, 9, 9, -6, -16, -26,
-		-36, -26, -16, -6, -6, -16, -26, -36
-	},
-	{
-		-24, -19, -14, -9, -9, -14, -19, -24,
-		-9, 6, 1, 6, 6, 1, 6, -9,
-		-4, 1, 6, 11, 11, 6, 1, -4,
-		1, 6, 11, 16, 16, 11, 6, 1,
-		1, 11, 11, 16, 16, 11, 11, 1,
-		-4, 1, 6, 11, 11, 6, 1, -4,
-		-9, -4, 1, 6, 6, 1, -4, -9,
-		-14, -9, -4, 1, 1, -5, -9, -14
-	},
-	{
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-		7, 7, 9, 12, 12, 9, 7, 7,
-		-3, -3, -1, 2, 2, -1, -3, -3,
-	},
-	{
-		-19, -14, -9, -4, -4, -9, -14, -19,
-		-9, -4, 1, 6, 6, 1, -4, -9,
-		-4, 1, 6, 11, 11, 6, 1, -4,
-		1, 6, 11, 16, 16, 11, 6, 1,
-		1, 6, 11, 16, 16, 11, 6, 1,
-		-4, 1, 6, 11, 11, 6, 1, -4,
-		-9, -4, 1, 6, 6, 1, -4, -9,
-		-14, -9, -4, 1, 1, -4, -9, -14
-	},
-	{
-		5, 10, 2, 0, 0, 6, 10, 4,
-		5, 5, 0, -5, -5, 0, 5, 5,
-		-5, -5, -5, -10, -10, -5, -5, -5,
-		-10, -10, -20, -30, -30, -20, -10, -10,
-		-20, -25, -30, -40, -40, -30, -25, -20,
-		-40, -40, -50, -60, -60, -50, -40, -40,
-		-50, -50, -60, -60, -60, -60, -50, -50,
-		-60, -60, -60, -60, -60, -60, -60, -60
-	}
-};
-
-const array<int, Squares> endingPST[Pieces] = {
-	{
-		0, 0, 0, 0, 0, 0, 0, 0,
-		-22, -22, -22, -22, -22, -22, -22, -22,
-		-17, -17, -17, -17, -17, -17, -17, -17,
-		-12, -12, -12, -12, -12, -12, -12, -12,
-		-7, -7, -7, -7, -7, -7, -7, -7,
-		18, 18, 18, 18, 18, 18, 18, 18,
-		38, 38, 38, 38, 38, 38, 38, 38,
-		0, 0, 0, 0, 0, 0, 0, 0
-	},
-	{
-		-34, -24, -14, -4, -4, -14, -24, -34,
-		-24, -14, -4, 11, 11, -4, -14, -24,
-		-14, -4, 11, 31, 31, 11, -4, -14,
-		-4, 11, 31, 41, 41, 31, 11, -4,
-		-4, 11, 31, 41, 41, 31, 11, -4,
-		-14, -4, 11, 31, 31, 11, -4, -14,
-		-24, -14, -4, 11, 11, -4, -14, -24,
-		-34, -24, -14, -4, -4, -14, -24, -34
-	},
-	{
-		-15, -10, -5, 0, 0, -5, -10, -15,
-		-10, -5, 0, 5, 5, 0, -5, -10,
-		-5, 0, 5, 10, 10, 5, 0, -5,
-		0, 5, 10, 15, 15, 10, 5, 0,
-		0, 5, 10, 15, 15, 10, 5, 0,
-		-5, 0, 5, 10, 10, 5, 0, -5,
-		-10, -5, 0, 5, 5, 0, -5, -10,
-		-15, -10, -5, 0, 0, -5, -10, -15
-	},
-	{
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0,
-	},
-	{
-		-15, -10, -5, 0, 0, -5, -10, -15,
-		-10, -5, 0, 5, 5, 0, -5, -10,
-		-5, 0, 5, 10, 10, 5, 0, -5,
-		0, 5, 10, 15, 15, 10, 5, 0,
-		0, 5, 10, 15, 15, 10, 5, 0,
-		-5, 0, 5, 10, 10, 5, 0, -5,
-		-10, -5, 0, 5, 5, 0, -5, -10,
-		-15, -10, -5, 0, 0, -5, -10, -15
-	},
-	{
-		-38, -28, -18, -8, -8, -18, -28, -38,
-		-28, -18, -8, 13, 13, -8, -18, -28,
-		-18, -8, 13, 43, 43, 13, -8, -18,
-		-8, 13, 43, 53, 53, 43, 13, -8,
-		-8, 13, 43, 53, 53, 43, 13, -8,
-		-18, -8, 13, 43, 43, 13, -8, -18,
-		-28, -18, -8, 13, 13, -8, -18, -28,
-		-38, -28, -18, -8, -8, -18, -28, -38
-	}
-};
-
-const array<int, Squares> mobilityOpening[Pieces] = {
-	{},
-	{ -12, -8, -4, 0, 4, 8, 10, 12, 13 },
-	{ -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
-	{ -6, -4, -2, 0, 2, 4, 6, 8, 10, 11, 11, 11, 11, 12, 12 },
-	{ -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7 },
-	{}
-};
-
-const array<int, Squares> mobilityEnding[Pieces] = {
-	{},
-	{ -12, -8, -4, 0, 4, 8, 10, 12, 13 },
-	{ -12, -6, 0, 6, 12, 18, 22, 26, 28, 30, 31, 31, 32, 32 },
-	{ -12, -7, -3, 3, 7, 12, 16, 20, 24, 28, 30, 31, 31, 32, 32 },
-	{ -8, -6, -4, -2, 0, 2, 4, 6, 8, 9, 10, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11 },
-	{}
-};
-
-const int bishopPairBonusOpening = 32;
-const int bishopPairBonusEnding = 32;
-
-const int rookOnOpenFileBonus = 10;
-const int rookOnSemiOpenFileBonus = 5;
-
-extern int drawScore;
-inline int contempt(bool side)
-{
-	return side ? -drawScore : drawScore;
-}
-
-extern map<uint64_t, int> knownEndgames;
-
-extern array<int, Squares> pieceSquareTableOpening[12];
-extern array<int, Squares> pieceSquareTableEnding[12];
-
-const array<int, 6> attackWeight = {
-    0, 2, 2, 3, 5, 0
-};
-
-const array<int, 100> kingSafetyTable = {
-    0, 0, 1, 2, 3, 5, 7, 9, 12, 15,
-    18, 22, 26, 30, 35, 39, 44, 50, 56, 62,
-    68, 75, 82, 85, 89, 97, 105, 113, 122, 131,
-    140, 150, 169, 180, 191, 202, 213, 225, 237, 248,
-    260, 272, 283, 295, 307, 319, 330, 342, 354, 366,
-    377, 389, 401, 412, 424, 436, 448, 459, 471, 483,
-    494, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-    500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-    500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
-    500, 500, 500, 500, 500, 500, 500, 500, 500, 500
-};
-
-void initializeEval();
-int eval(Position & pos, bool & zugzwangLikely);
 
 #endif

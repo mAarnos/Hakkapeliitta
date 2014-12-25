@@ -1,26 +1,56 @@
-#ifndef UCI_H_
-#define UCI_H_
+#ifndef UCI_HPP_
+#define UCI_HPP_
 
-#include "defs.hpp"
+#include <iostream>
+#include <map>
+#include "position.hpp"
+#include "utils/threadpool.hpp"
 
-typedef int(*uciFunctionPointer)(string s);
-
-class uciCommand
+class UCI
 {
-	public:
-		string name;
-		uciFunctionPointer function;
+public:
+    UCI();
+
+    void mainLoop();
+private:
+    // A single command from the controller to us.
+    class Command
+    {
+    public:
+        Command(std::string name, std::string arguments) :
+            name(name), arguments(arguments)
+        {
+        }
+
+        std::string getName() const { return name; }
+        std::string getArguments() const { return arguments; }
+    private:
+        std::string name;
+        std::string arguments;
+    };
+
+    using FunctionPointer = void(*)(const Command& c);
+
+    void addCommand(std::string name, FunctionPointer fp);
+    std::map<std::string, FunctionPointer> commands;
+
+    static void preprocessLine(std::string& line);
+
+    static Position root;
+    static ThreadPool tp;
+
+    // UCI commands.
+
+    static void sendInformation(const Command& c);
+    static void isReady(const Command& c);
+    static void stop(const Command&);
+    static void quit(const Command& c);
+    static void setOption(const Command& c);
+    static void newGame(const Command& c);
+    static void position(const Command& c);
+    static void go(const Command& c);
+    static void displayBoard(const Command& c);
 };
 
-bool inputAvailable();
-
-void uciMainLoop();
-int uciProcessInput();
-void initInput();
-
-const int uciQuit = 0;
-const int uciOk = 1;
-
-extern bool searching;
 
 #endif

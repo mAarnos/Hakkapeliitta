@@ -1,31 +1,29 @@
-#ifndef MOVE_H_
-#define MOVE_H_
+#ifndef MOVE_HPP_
+#define MOVE_HPP_
 
-#include "defs.hpp"
+#include <cstdint>
 
 class Move
 {
-	public:
-		void clear();
+public:
+    Move() {}
 
-		void setFrom(int from);  
-		void setTo(int to);  
-		void setPromotion(int promotion);
+    Move(int from, int to, int promotion, int score): score(score)
+    {
+        move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
+    }
 
-		void setScore(int score);
-		void setMove(uint16_t m);
-	
-		int getFrom();  
-		int getTo();  
-		int getPromotion(); 
-
-		int getScore();
-		uint16_t getMove();
-	private:
-		uint16_t move;
-		int score;
+    uint16_t getFrom() const { return (move & 0x3f); }
+    uint16_t getTo() const { return ((move >> 6) & 0x3f); }
+    uint16_t getPromotion() const { return (move >> 12); }
+    uint16_t getMove() const { return move; }
+    int32_t getScore() const { return score; }
+    void setMove(uint16_t newMove) { move = newMove; }
+    void setScore(int32_t newScore) { score = newScore; }
+    bool empty() const { return !move; }
+private:
+    int32_t score;
+    uint16_t move;
 };
-
-
 
 #endif

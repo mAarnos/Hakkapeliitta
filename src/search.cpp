@@ -1,195 +1,360 @@
 #include "search.hpp"
-#include "movegen.hpp"
-#include "ttable.hpp"
+#include <iostream>
+#include <cmath>
+#include <sstream>
 #include "eval.hpp"
-#include "uci.hpp"
 #include "movegen.hpp"
-#include "time.hpp"
-#include "tbprobe.hpp"
+#include "utils/synchronized_ostream.hpp"
+#include "utils/exception.hpp"
+#include "syzygy/tbprobe.hpp"
 
-uint64_t nodeCount = 0;
-uint64_t tbHits = 0;
-int searchDepth;
-int syzygyProbeLimit = 0;
-bool probeTB;
+TranspositionTable Search::transpositionTable;
+HistoryTable Search::historyTable;
+KillerTable Search::killerTable;
 
-array<int, Squares> history[12];
-array<int, Squares> butterfly[12];
-vector<Move> pv;
+int Search::rootPly;
+std::array<HashKey, 1024> Search::repetitionHashes;
+
+int Search::contemptValue;
+int Search::syzygyProbeLimit;
+std::array<int, 2> Search::contempt;
+bool Search::searching;
+bool Search::pondering;
+bool Search::infinite;
+int Search::targetTime;
+int Search::maxTime;
+
+const int Search::aspirationWindow = 50;
+const int Search::nullReduction = 3;
+const int Search::futilityDepth = 4;
+const std::array<int, 1 + 4> Search::futilityMargins = {
+    50, 125, 125, 300, 300
+};
+const int Search::reverseFutilityDepth = 3;
+const std::array<int, 1 + 3> Search::reverseFutilityMargins = {
+    0, 260, 445, 900
+};
+const int Search::lmrFullDepthMoves = 4;
+const int Search::lmrReductionLimit = 3;
+std::array<int, 256> Search::lmrReductions;
+const int Search::lmpDepth = 4;
+const std::array<int, 1 + 4> Search::lmpMoveCount = {
+    0, 4, 8, 16, 32
+};
+const int Search::razoringDepth = 3;
+const std::array<int, 1 + 3> Search::razoringMargins = {
+    0, 125, 300, 300
+};
+
+const int32_t Search::hashMoveScore = 2147483647;
+const int32_t Search::captureMoveScore = hashMoveScore >> 1; 
+const std::array<int32_t, 1 + 4> Search::killerMoveScore = {
+    0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5 
+};
+
+bool Search::probeTb;
+int Search::tbHits;
+int Search::nodeCount;
+int Search::nodesToTimeCheck;
+int Search::selDepth;
+Stopwatch Search::sw;
 
 int lastRootScore;
-int bestRootScore;
+int currentRootScore;
 
-std::array<int, 256> reductions;
-
-int searchRoot(Position & pos, int ply, int depth, int alpha, int beta);
-
-void initSearch()
+void Search::initialize()
 {
+    rootPly = 0;
+    contemptValue = 0;
+    contempt.fill(0);
+    syzygyProbeLimit = 0;
+    searching = false;
+    infinite = false;
+    pondering = false;
+    targetTime = maxTime = 0;
+    nodeCount = 0;
+	tbHits = 0;
+    probeTb = true;
+    nodesToTimeCheck = 10000;
+    selDepth = 1;
+    lastRootScore = currentRootScore = -mateScore;
+
     for (auto i = 0; i < 256; ++i)
     {
-        reductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+        lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
     }
 }
 
-uint64_t perft(Position & pos, int depth)
+bool Search::repetitionDraw(const Position& pos, int ply)
 {
-	uint64_t generatedMoves, nodes = 0;
+    auto temp = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
 
-	if (depth == 0)
-	{
-		return 1;
-	}
+    for (auto i = rootPly + ply - 2; i >= temp; i -= 2)
+    {
+        if (repetitionHashes[i] == pos.getHashKey())
+        {
+            return true;
+        }
+    }
 
-	Move moveStack[256];
-	if (pos.inCheck())
-	{
-		generatedMoves = generateEvasions(pos, moveStack);
-	}
-	else
-	{
-		generatedMoves = generateMoves(pos, moveStack);
-	}
-	for (int i = 0; i < generatedMoves; i++)
-	{
-		if (!(pos.makeMove(moveStack[i])))
+    return false;
+}
+
+void removeIllegalMoves(Position& pos, MoveList& moveList)
+{
+    History history;
+    auto marker = 0;
+
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        if (!pos.makeMove(moveList[i], history))
+        {
+            continue;
+        }
+        moveList[marker++] = moveList[i];
+        pos.unmakeMove(moveList[i], history);
+    }
+
+    moveList.resize(marker);
+}
+
+void Search::think(const Position& root)
+{
+    auto pos = root; // Copy the position just for us.
+	auto alpha = -infinity;
+	auto beta = infinity;
+	auto delta = aspirationWindow;
+    auto score = matedInPly(0);
+	auto inCheck = pos.inCheck();
+    auto allowNullMove = 0; // Not used for anything.
+	MoveList rootMoveList;
+	History history;
+	Move bestMove(0, 0, 0, 0);
+
+	tbHits = 0;
+    probeTb = true;
+    nodeCount = 0;
+    nodesToTimeCheck = 10000;
+    contempt[pos.getSideToMove()] = -contemptValue;
+    contempt[!pos.getSideToMove()] = contemptValue;
+    lastRootScore = -mateScore;
+    selDepth = 1;
+    transpositionTable.startNewSearch();
+    historyTable.age();
+    killerTable.clear();
+	sw.reset();
+	sw.start();
+
+	inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList) 
+		    : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
+    removeIllegalMoves(pos, rootMoveList);
+
+    if (pos.getTotalPieceCount() <= syzygyProbeLimit)
+    {
+        tbHits = rootMoveList.size();
+
+        // If the current root position is in the tablebases then RootMoves
+        // contains only moves that preserve the draw or win.
+        auto rootInTb = Syzygy::rootProbe(pos, rootMoveList, score);
+
+        if (rootInTb)
+        {
+            probeTb = false;
+        }
+        else // If DTZ tables are missing, use WDL tables as a fallback
+        {
+            // Filter out moves that do not preserve a draw or win.
+            rootInTb = Syzygy::rootProbeWdl(pos, rootMoveList, score);
+            if (rootInTb)
+            { 
+                probeTb = false;
+            }
+            else
+            {
+                tbHits = 0;
+            }
+        }
+    }
+
+    // Get the tt move from a possible previous search.
+    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta, allowNullMove);
+
+    repetitionHashes[rootPly] = pos.getHashKey();
+    for (auto depth = 1;;)
+    {
+        auto previousAlpha = alpha;
+        auto previousBeta = beta;
+		auto movesSearched = 0;
+		auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+        currentRootScore = -mateScore;
+
+		orderMoves(pos, rootMoveList, bestMove, 0);
+		try {
+			for (auto i = 0; i < rootMoveList.size(); ++i)
+			{
+				selectMove(rootMoveList, i);
+				const auto& move = rootMoveList[i];
+				if (!pos.makeMove(move, history))
+				{
+					continue;
+				}
+                ++nodeCount;
+                --nodesToTimeCheck;
+
+				if (depth >= 12)
+				{
+					infoCurrMove(move, depth, i);
+				}
+
+				auto givesCheck = pos.inCheck();
+				auto extension = givesCheck ? 1 : 0;
+				auto newDepth = depth - 1 + extension;
+				auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+
+				if (!movesSearched)
+				{
+					score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
+				}
+				else
+				{
+					auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
+						? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+
+					score = -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck);
+
+					if (reduction && score > alpha) // Research in case reduced move is above alpha.
+					{
+						score = -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck);
+					}
+
+					if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
+					{
+						score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
+					}
+				}
+				pos.unmakeMove(move, history);
+				++movesSearched;
+
+                if (score > currentRootScore)
+				{
+                    currentRootScore = score;
+					if (score > alpha)
+					{
+						bestMove = move;
+						alpha = score;
+						if (score >= beta)
+						{
+                            if (!inCheck)
+                            {
+                                if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
+                                {
+                                    historyTable.addCutoff(pos, move, depth);
+                                    killerTable.addKiller(move, 0);
+                                }
+                                for (auto j = 0; j < i; ++j)
+                                {
+                                    const auto& move2 = rootMoveList[j];
+                                    if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
+                                    {
+                                        historyTable.addNotCutoff(pos, move2, depth);
+                                    }
+                                }
+                            }
+							break;
+						}
+                        transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, UpperBoundScore);
+						auto pv = transpositionTable.extractPv(pos);
+                        infoPv(pv, depth, currentRootScore, ExactScore);
+					}
+				}
+			}
+		}
+		catch (const HakkapeliittaException&)
 		{
+            pos = root; // Exception messes up the position, fix it.
+		}
+
+        transpositionTable.save(pos, 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
+		auto pv = transpositionTable.extractPv(pos);
+
+        // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
+        if (!infinite && isMateScore(currentRootScore) && isMateScore(lastRootScore) && depth > 6)
+        {
+            searching = false;
+        }
+
+        // If we have reached the max depth stop searching. Should not happen during gameplay, only analysis.
+        if (depth >= 127 && currentRootScore > previousAlpha && currentRootScore < previousBeta)
+        {
+            searching = false;
+        }
+
+		if (!searching)
+        { 
+			auto searchTime = sw.elapsed<std::chrono::milliseconds>();
+            sync_cout << "info time " << searchTime
+                      << " nodes " << nodeCount
+                      << " nps " << (nodeCount / (searchTime + 1)) * 1000
+                      << " tbhits " << tbHits << std::endl
+                      << "bestmove " << algebraicMove(pv[0]) << std::endl;
+            break;
+		}
+
+        lastRootScore = currentRootScore;
+
+        // The score is outside the aspiration windows, we need to loosen them up.
+        if (currentRootScore <= previousAlpha || currentRootScore >= previousBeta)
+		{
+            auto lowerBound = currentRootScore >= previousBeta;
+            if (isMateScore(currentRootScore)) 
+            {
+                // We apparently found a mate, in this case we remove aspiration windows completely to not miss a faster mate.
+                alpha = -infinity;
+                beta = infinity;
+            }
+            else
+            {
+                // Loosen the window we breached a bit. 
+                if (lowerBound)
+                {
+                    alpha = previousAlpha;
+                    beta = previousBeta + delta;
+                }
+                else
+                {
+                    alpha = previousAlpha - delta;
+                    beta = previousBeta;
+                }
+                delta *= 2; // Exponential increase to the amount of widening seems best.
+            }
+            infoPv(pv, depth, currentRootScore, lowerBound ? LowerBoundScore : UpperBoundScore);
 			continue;
 		}
-		nodes += perft(pos, depth - 1);
-		pos.unmakeMove(moveStack[i]);
-	}
+        infoPv(pv, depth, currentRootScore, ExactScore);
 
-	return nodes;
+        // Adjust alpha and beta based on the last score.
+        // Don't adjust if depth is low - it's a waste of time.
+		// Also don't use aspiration windows when searching for faster mate.
+        if (depth >= 4 && !isMateScore(currentRootScore))
+        {
+            alpha = currentRootScore - aspirationWindow;
+            beta = currentRootScore + aspirationWindow;
+        }
+        else
+        {
+            alpha = -infinity;
+            beta = infinity;
+        }
+        delta = aspirationWindow;
+        ++depth;
+    }
+
+	sw.stop();
 }
 
-// repetitionCount is used to detect twofold repetitions of the current position.
-// Also detects fifty move rule draws.
-bool Position::repetitionDraw()
+std::string Search::algebraicMove(const Move& move)
 {
-	if (fiftyMoveDistance >= 100)
-	{
-		return true;
-	}
-	// We can skip every position where sideToMove is different from the current one. Also we don't need to go further than hply-fifty because the position must be different.
-	for (int i = hply - 2; i >= (hply - fiftyMoveDistance) && i >= 0; i -= 2)  
-	{
-		if (historyStack[i].hash == hash)
-		{
-			return true;
-		}
-	}
-	return false;
-}
-
-void orderMoves(Position & pos, Move * moveStack, int moveAmount, int ttMove, int ply)
-{
-	for (int i = 0; i < moveAmount; i++)
-	{
-		if (ttMove == moveStack[i].getMove())
-		{
-			moveStack[i].setScore(hashMove);
-		}
-		else if (pos.getPiece(moveStack[i].getTo()) != Empty || ((moveStack[i].getPromotion() != Empty) && (moveStack[i].getPromotion() != King)))
-		{
-			int score = pos.SEE(moveStack[i]);
-			// If the capture is good, order it way higher than anything else with the exception of the hash move.
-			if (score >= 0)
-			{
-				score += captureMove;
-			}
-			moveStack[i].setScore(score);
-		}
-		else if (moveStack[i].getMove() == pos.getKiller(0, ply))
-		{
-			moveStack[i].setScore(killerMove1);
-		}
-		else if (moveStack[i].getMove() == pos.getKiller(1, ply))
-		{
-			moveStack[i].setScore(killerMove2);
-		}
-		else if (ply > 1 && moveStack[i].getMove() == pos.getKiller(0, ply - 2))
-		{
-			moveStack[i].setScore(killerMove3);
-		}
-		else if (ply > 1 && moveStack[i].getMove() == pos.getKiller(1, ply - 2))
-		{
-			moveStack[i].setScore(killerMove4);
-		}
-		else
-		{
-            auto relativeHistoryScore = history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] * 100 /
-                (butterfly[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] + 1);
-            assert(relativeHistoryScore < killerMove4);
-			moveStack[i].setScore(relativeHistoryScore);
-		}
-	}
-}
-
-void orderCaptures(Position & pos, Move * moveStack, int moveAmount)
-{
-	for (int i = 0; i < moveAmount; i++)
-	{
-		moveStack[i].setScore(pos.SEE(moveStack[i]));
-	}
-}
-
-void selectMove(Move * moveStack, int moveAmount, int i)
-{
-	int k = i;
-	int best = moveStack[i].getScore();
-
-	for (int j = i + 1; j < moveAmount; j++)
-	{
-		if (moveStack[j].getScore() > best)
-		{
-			best = moveStack[j].getScore();
-			k = j;
-		}
-	}
-	if (k > i)
-	{
-		swap(moveStack[i], moveStack[k]);
-	}
-}
-
-// Clean this function up.
-void reconstructPV(Position pos, vector<Move> & pv)
-{
-	Move m;
-	pv.clear();
-
-	int ply = 0;
-	int entry;
-	while (ply < 63)
-	{
-		ttEntry * hashEntry = &tt.getEntry(pos.getHash() % tt.getSize());
-		for (entry = 0; entry < 4; entry++)
-		{
-			if ((hashEntry->getHash(entry) ^ hashEntry->getData(entry)) == pos.getHash())
-			{
-				break;
-			}
-		}
-
-		if ((entry > 3)
-		|| (hashEntry->getFlags(entry) != ttExact && ply >= 2)
-		|| (pos.repetitionDraw() && ply >= 2)
-		|| (hashEntry->getBestMove(entry) == ttMoveNone))
-		{
-			break;
-		}
-		m.setMove(hashEntry->getBestMove(entry));
-		pv.push_back(m);
-		pos.makeMove(m);
-		ply++;
-	}
-}
-
-// Displays the pv in the format UCI-protocol wants(from, to, if promotion add what promotion).
-void displayPV(vector<Move> pv, int length)
-{
-	static array<string, Squares> squareToNotation = {
+	static std::array<std::string, 64> squareToNotation = {
 		"a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
 		"a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
 		"a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
@@ -200,159 +365,164 @@ void displayPV(vector<Move> pv, int length)
 		"a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
 	};
 
-	static array<string, Pieces> promotionToNotation = {
+	static std::array<std::string, 64> promotionToNotation = {
 		"p", "n", "b", "r", "q", "k"
 	};
 
-	for (int i = 0; i < length; i++)
+	std::string s;
+	auto from = move.getFrom();
+	auto to = move.getTo();
+	auto promotion = move.getPromotion();
+
+	s += squareToNotation[from] + squareToNotation[to];
+	if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
 	{
-		int from = pv[i].getFrom();
-		int to = pv[i].getTo();
-		int promotion = pv[i].getPromotion();
-
-		cout << squareToNotation[from] << squareToNotation[to];
-
-		if (promotion != Empty && promotion != King && promotion != Pawn)
-		{
-			cout << promotionToNotation[promotion];
-		}
-		cout << " ";
+		s += promotionToNotation[promotion];
 	}
-	cout << endl;
+
+	return s;
 }
 
-void think()
+std::string Search::algebraicMoves(const std::vector<Move>& moves)
 {
-	int alpha, beta, delta;
+	std::string s;
 
-	tt.startNewSearch();
-	
-	searching = true;
-    for (auto & row : history)
-    {
-        for (auto & column : row)
-        {
-            column /= 2;
-        }
-    }
-    for (auto & row : butterfly)
-    {
-        for (auto & column : row)
-        {
-            column /= 2;
-        }
-    }
-
-    root.resetKillers();
-	nodeCount = 0;
-	tbHits = 0;
-	countDown = stopInterval;
-
-	alpha = -infinity;
-	beta = infinity;
-    delta = aspirationWindow;
-
-	t.reset();
-	t.start();
-
-	for (searchDepth = 1;;)
+	for (auto& move : moves)
 	{
-		int score = lastRootScore = searchRoot(root, 0, searchDepth, alpha, beta);
-		reconstructPV(root, pv);
+		s += algebraicMove(move) + " ";
+	}
 
-		uint64_t searchTime = t.getms();
+	return s;
+}
 
-		if (searching == false || searchDepth >= 64)
-		{
-			cout << "info " << "time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << endl << "bestmove ";
-			displayPV(pv, 1);
-			return;
-		}
+void Search::infoCurrMove(const Move& move, int depth, int nr)
+{
+	sync_cout << "info depth " << depth 
+		      << " currmove " << algebraicMove(move) 
+			  << " currmovenumber " << nr + 1 << std::endl;
+}
 
-		if (score <= alpha)
-		{
-			alpha -= delta;
-            delta *= 2;
-			if (isMateScore(score))
-			{
-				int v;
-				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchDepth << " score mate " << v << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-				displayPV(pv, (int)pv.size());
-			}
-			else
-			{
-				cout << "info " << "depth " << searchDepth << " score cp " << score << " upperbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-				displayPV(pv, (int)pv.size());
-			}
-			continue;
-		}
-		if (score >= beta)
-		{
-			beta += delta;
-            delta *= 2;
-			if (isMateScore(score))
-			{
-				int v;
-				score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-				cout << "info " << "depth " << searchDepth << " score mate " << v << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-				displayPV(pv, (int)pv.size());
-			}
-			else
-			{
-				cout << "info " << "depth " << searchDepth << " score cp " << score << " lowerbound " << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-				displayPV(pv, (int)pv.size());
-			}
-			continue;
-		}
+void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int flags)
+{
+	std::stringstream ss;
 
-		if (isMateScore(score))
-		{
-			int v;
-			score > 0 ? v = ((mateScore - score + 1) >> 1) : v = ((-score - mateScore) >> 1);
-			cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-			displayPV(pv, (int)pv.size());
-		}
-		else
-		{
-			cout << "info " << "depth " << searchDepth << " score cp " << score << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-			displayPV(pv, (int)pv.size());
-		}
+	ss << "info depth " << depth << " seldepth " << selDepth;
+	if (isMateScore(score))
+	{
+		score = (score > 0 ? ((mateScore - score + 1) >> 1) : ((-score - mateScore) >> 1));
+		ss << " score mate " << score;
+	}
+	else
+	{
+		ss << " score cp " << score;
+	}
 
-		// Adjust alpha and beta based on the last score.
-		// Don't adjust if depth is low - it's a waste of time.
-		if (searchDepth >= 4 && !isMateScore(score))
-		{
-			alpha = score - aspirationWindow;
-			beta = score + aspirationWindow;
-		}
+	if (flags == LowerBoundScore)
+	{
+		ss << " lowerbound ";
+	}
+	else if (flags == UpperBoundScore)
+	{
+		ss << " upperbound ";
+	}
+
+	auto searchTime = sw.elapsed<std::chrono::milliseconds>();
+    ss << " time " << searchTime
+       << " nodes " << nodeCount
+       << " nps " << (nodeCount / (searchTime + 1)) * 1000
+       << " tbhits " << tbHits
+       << " pv " << algebraicMoves(moves) << std::endl;
+
+	sync_cout << ss.str(); 
+}
+
+// Move ordering goes like this:
+// 1. Hash move (which can also be the PV-move)
+// 2. Good captures and promotions
+// 3. Equal captures and promotions
+// 4. Killer moves
+// 5. Quiet moves sorted by the history heuristic
+// 6. Bad captures
+void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply)
+{
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        auto& move = moveList[i];
+
+        if (move.getMove() == ttMove.getMove()) // Move from transposition table
+        {
+            move.setScore(hashMoveScore);
+        }
+        else if (pos.getBoard(move.getTo()) != Piece::Empty 
+             || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+        {
+            auto score = pos.SEE(move);
+            if (score >= 0) // Order good captures and promotions after ttMove
+            {
+                score += captureMoveScore;
+            }
+            move.setScore(score);
+        }
         else
         {
-            alpha = -infinity;
-            beta = infinity;
+            auto killerScore = killerTable.isKiller(move, ply);
+            if (killerScore > 0)
+            {
+                move.setScore(killerMoveScore[killerScore]);
+            }
+            else
+            {
+                move.setScore(historyTable.getScore(pos, move));
+            }
         }
-
-        delta = aspirationWindow;
-		searchDepth++;
-	}
+    }
 }
 
-int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
+void Search::orderCaptures(const Position& pos, MoveList& moveList)
 {
-    int score, bestScore, delta;
-    int generatedMoves;
-    Move moveStack[64];
-    bool zugzwanglikely;
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        moveList[i].setScore(pos.SEE(moveList[i]));
+    }
+}
+
+void Search::selectMove(MoveList& moveList, int currentMove)
+{
+    auto bestMove = currentMove;
+    auto bestScore = moveList[currentMove].getScore();
+
+    for (auto i = currentMove + 1; i < moveList.size(); ++i)
+    {
+        if (moveList[i].getScore() > bestScore)
+        {
+            bestScore = moveList[i].getScore();
+            bestMove = i;
+        }
+    }
+
+    if (bestMove > currentMove)
+    {
+        std::swap(moveList[currentMove], moveList[bestMove]);
+    }
+}
+
+int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool inCheck)
+{
+    int bestScore, delta;
+    bool zugzwangLikely;
+    MoveList moveList;
+    History history;
 
     if (inCheck)
     {
-        bestScore = -mateScore + ply;
-        generatedMoves = generateEvasions(pos, moveStack);
-        orderMoves(pos, moveStack, generatedMoves, ttMoveNone, ply);
+        bestScore = matedInPly(ply);
+		delta = -infinity;
+        MoveGen::generateLegalEvasions(pos, moveList);
+        orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
     }
     else
     {
-        bestScore = eval(pos, zugzwanglikely);
+        bestScore = Evaluation::evaluate(pos, zugzwangLikely);
         if (bestScore > alpha)
         {
             if (bestScore >= beta)
@@ -361,39 +531,34 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
             }
             alpha = bestScore;
         }
-        delta = bestScore + futilityMargin[0];
-        generatedMoves = generateCaptures(pos, moveStack);
-        orderCaptures(pos, moveStack, generatedMoves);
+        delta = bestScore + futilityMargins[0];
+        MoveGen::generatePseudoLegalCaptureMoves(pos, moveList);
+        orderCaptures(pos, moveList);
     }
 
-    for (int i = 0; i < generatedMoves; i++)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        selectMove(moveStack, generatedMoves, i);
-        if (!inCheck) // If we are in check try all moves.
+        selectMove(moveList, i);
+        const auto& move = moveList[i];
+
+        if (!inCheck) // don't do any pruning if in check
         {
-            // We only try good captures, so if we have reached the bad captures we can stop.
-            if (moveStack[i].getScore() < 0)
-            {
-                break;
-            }
-            // Delta pruning. Check if the score is below the delta-pruning safety margin.
-            // we can return alpha straight away as all captures following a failure are equal or worse to it - that is they will fail as well
-            if (delta + moveStack[i].getScore() < alpha)
+            // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
+            if (move.getScore() < 0 || (delta + move.getScore() < alpha))
             {
                 break;
             }
         }
 
-        if (!(pos.makeMove(moveStack[i])))
+        if (!pos.makeMove(move, history))
         {
             continue;
         }
-        nodeCount++;
-        --countDown;
+        ++nodeCount;
+        --nodesToTimeCheck;
 
-        auto givesCheck = pos.inCheck();
-        score = -qsearch(pos, ply + 1, -beta, -alpha, givesCheck);
-        pos.unmakeMove(moveStack[i]);
+        auto score = -quiescenceSearch(pos, ply + 1, -beta, -alpha, pos.inCheck());
+        pos.unmakeMove(move, history);
 
         if (score > bestScore)
         {
@@ -412,403 +577,267 @@ int qsearch(Position & pos, int ply, int alpha, int beta, bool inCheck)
     return bestScore;
 }
 
-int alphabetaPVS(Position & pos, int ply, int depth, int alpha, int beta, int allowNullMove, bool inCheck)
+#ifdef _WIN32
+#pragma warning (disable : 4127) // Shuts up warnings about conditional branches always being true/false.
+#endif
+template <bool pvNode>
+int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int allowNullMove, bool inCheck)
 {
-	bool pvNode = ((alpha + 1) != beta), futileNode = false, lmpNode = false, zugzwangLikely;
-	int score, generatedMoves, staticEval, ttFlag = ttAlpha, bestScore = -mateScore, movesSearched = 0, prunedMoves = 0;
-	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone;
-    auto oneReply = false;
+    assert(alpha < beta);
 
-    prefetch(pos.getHash());
+    auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
+    auto ttFlag = UpperBoundScore;
+    auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
+    MoveList moveList;
+    History history;
+    Move ttMove(0, 0, 0, 0), bestMove(0, 0, 0, 0);
+    int score;
 
-	// Check if we have overstepped the time limit or if the user has given a new order.
-	if (countDown <= 0)
-	{
-		checkTimeAndInput();
-	}
-
-	// Check for aborted search(either due to going beyond the allocated time or a new command) and repetition+fifty move draws.
-	if (!searching || pos.repetitionDraw())
-	{
-		return contempt(pos.getSideToMove());
-	}
-
-	// Mate distance pruning.
-	alpha = max(-mateScore + ply, alpha);
-	beta = min(mateScore - ply - 1, beta);
-	if (alpha >= beta)
-		return alpha;
-
-	// If we have gone as far as we wanted to go drop into quiescence search.
-	if (depth <= 0)
-	{
-		return qsearch(pos, ply, alpha, beta, inCheck);
-	}
-
-	// Probe the transposition table.
-	if ((score = ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove)) != probeFailed)
-	{
-		return score;
-	}
-
-	// Probe the Syzygy tablebases.
-	if (probeTB && popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
-	{
-		int found, v = probe_wdl(pos, &found);
-		if (found)
-		{
-			tbHits++;
-			if (v < -1) score = -mateScore + ply + 200;
-			else if (v > 1) score = mateScore - ply - 200;
-			else score = contempt(pos.getSideToMove()) + v;
-            // ttSave(pos, ply, depth + 4, score, ttExact, ttMoveNone);
-			return score;
-		}
-	}
-
-	// Get the static evaluation of the position.
-    staticEval = (inCheck ? 0 : eval(pos, zugzwangLikely));
-
-    // Reverse futility pruning.
-    if (!pvNode && !inCheck && !zugzwangLikely && depth <= staticNullMoveDepth && staticEval - staticNullMoveMargin[depth] >= beta)
-        return staticEval - staticNullMoveMargin[depth];
-
-    // Razoring.
-    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargin[depth])
+    // Used for sending seldepth info.
+    if (ply > selDepth)
     {
-        auto razoringAlpha = alpha - razoringMargin[depth];
-        score = qsearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
-        if (score <= razoringAlpha)
+        selDepth = ply;
+    }
+
+	// Small speed optimization, runs fine without it.
+    transpositionTable.prefetch(pos.getHashKey());
+
+    if (nodesToTimeCheck <= 0)
+    {
+        nodesToTimeCheck = 10000;
+        if (!infinite)
         {
-            ttSave(pos, ply, depth, score, ttAlpha, ttMoveNone);
+            // Casting works around a few warnings.
+            auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
+            if (time > maxTime) // Hard cutoff for search time, if we don't stop we risk running out of time later.
+            {
+                searching = false;
+            }
+            else if (time > targetTime)
+            {
+                if (currentRootScore == -mateScore) // No score for root -> new iteration -> most likely takes too long to complete -> stop
+                {
+                    searching = false;
+                }
+                else if (currentRootScore < lastRootScore) // Score dropping, extend search time up to 5x.
+                {
+                    if (time > 5 * targetTime) 
+                    {
+                        searching = false;
+                    }
+                }
+            }
+            else
+            {
+                // TODO: Add easy move here.
+            }
+        }
+
+        if (!searching)
+        {
+            throw HakkapeliittaException("Search: stop");
+        }
+    }
+
+    if (pos.getFiftyMoveDistance() >= 100)
+    {
+        if (inCheck) 
+        {
+            MoveGen::generateLegalEvasions(pos, moveList);
+            if (moveList.empty())
+            {
+                return bestScore; // Can't claim draw on fifty move if mated.
+            }
+        }
+        return contempt[pos.getSideToMove()];
+    }
+
+    if (repetitionDraw(pos, ply))
+    {
+        return contempt[pos.getSideToMove()];
+    }
+
+    // Mate distance pruning, safe at all types of nodes.
+    alpha = std::max(matedInPly(ply), alpha);
+    beta = std::min(mateInPly(ply + 1), beta);
+    if (alpha >= beta)
+        return alpha;
+
+    // If the depth is too low drop into quiescense search.
+    if (depth <= 0)
+    {
+        return quiescenceSearch(pos, ply, alpha, beta, inCheck);
+    }
+
+    // Probe the transposition table. Possibly the logic should be moved here.
+    if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove))
+    {
+        return score;
+    }
+
+    if (probeTb && pos.getTotalPieceCount() <= syzygyProbeLimit)
+    {
+        int success;
+        score = Syzygy::probeWdl(pos, success);
+        if (success)
+        {
+            ++tbHits;
+            if (score < -1) score = matedInPly(ply + 200);
+            else if (score > 1) score = mateInPly(ply + 200);
+            else score += contempt[pos.getSideToMove()];
             return score;
         }
     }
 
-	// Double null move pruning.
-    if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
-	{
-		pos.makeNullMove();
-		nodeCount++;
-        --countDown;
-		if (depth <= 4)
-		{
-			score = -qsearch(pos, ply + 1, -beta, -beta + 1, false);
-		}
-		else
-		{
-			score = -alphabetaPVS(pos, ply + 1, depth - 1 - nullReduction, -beta, -beta + 1, allowNullMove - 1, false);
-		}
-		pos.unmakeNullMove();
+    // Get the static evaluation of the position. Not needed in nodes where we are in check.
+    auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos, zugzwangLikely));
 
-		if (!searching)
-		{
-			return 0;
-		}
+    // Reverse futility pruning / static null move pruning.
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
+        return staticEval - reverseFutilityMargins[depth];
 
-		if (score >= beta)
-		{
-			ttSave(pos, ply, depth, score, ttBeta, ttMoveNone);
-			return score;
-		}
-	}
-
-	// Internal iterative deepening.
-	if (pvNode && ttMove == ttMoveNone && depth > 4)
-	{
-        // We can safely skip null move in IID since if it would have worked we wouldn't be here.
-		score = alphabetaPVS(pos, ply, depth - 2, alpha, beta, 0, inCheck);
-		ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove);
-	}
-
-	if (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin[depth] <= alpha)
-	{
-		futileNode = true;
-	}
-
-    if (!pvNode && !inCheck && depth <= lmpDepth)
+    // Razoring.
+    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
     {
-        lmpNode = true;
+        auto razoringAlpha = alpha - razoringMargins[depth];
+        score = quiescenceSearch(pos, ply, razoringAlpha, razoringAlpha + 1, false);
+        if (score <= razoringAlpha)
+        {
+            transpositionTable.save(pos, ply, ttMove, score, depth, UpperBoundScore);
+            return score;
+        }
     }
-	
-	Move moveStack[256];
-	if (inCheck)
-	{
-		generatedMoves = generateEvasions(pos, moveStack);
-        if (generatedMoves == 1)
-            oneReply = true;
-	}
-	else
-	{
-		generatedMoves = generateMoves(pos, moveStack);
-	}
-	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
-	for (int i = 0; i < generatedMoves; i++)
-	{
-		selectMove(moveStack, generatedMoves, i);
-		if (!(pos.makeMove(moveStack[i])))
-		{
-			continue;
-		}
-		nodeCount++;
-        --countDown;
 
-		int newDepth = depth - 1;
-		bool givesCheck = pos.inCheck();
+    // Null move pruning.
+    // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
+    if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
+    {
+        repetitionHashes[rootPly + ply] = pos.getHashKey();
+        pos.makeNullMove(history);
+        ++nodeCount;
+        --nodesToTimeCheck;
+        score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false);
+        pos.unmakeNullMove(history);
+        if (score >= beta)
+        {
+            transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
+            return score;
+        }
+    }
+
+    // Internal iterative deepening.
+    // Only done at PV-nodes due to the cost involved.
+    if (pvNode && ttMove.empty() && depth > 4)
+    {
+        // We can skip nullmove in IID since if it would have worked we wouldn't be here.
+        score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
+        transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove);
+    }
+
+    // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
+    orderMoves(pos, moveList, ttMove, ply);
+
+    // Set flags for certain kinds of nodes.
+    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+    auto oneReply = (moveList.size() == 1);
+
+    repetitionHashes[rootPly + ply] = pos.getHashKey();
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        selectMove(moveList, i);
+        const auto& move = moveList[i];
+        if (!pos.makeMove(move, history))
+        {
+            continue;
+        }
+        ++nodeCount;
+        --nodesToTimeCheck;
+
+        auto givesCheck = pos.inCheck();
         auto extension = (givesCheck || oneReply) ? 1 : 0;
-        newDepth += extension;
+        auto newDepth = depth - 1 + extension;
+        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
 
-        if (!extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
-		{
-            if (futileNode || (lmpNode && movesSearched >= lmpMoveCount[depth]))
+        // Futility pruning and late move pruning / move count based pruning.
+        if (nonCriticalMove && (futileNode || (lmpNode && movesSearched >= lmpMoveCount[depth])))
+        {
+            pos.unmakeMove(move, history);
+            ++prunedMoves;
+            continue;
+        }
+
+        if (!movesSearched)
+        {
+            score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+        }
+        else
+        {
+            auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
+                           ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+
+            score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
+
+            if (reduction && score > alpha) // Research in case reduced move is above alpha.
             {
-                pos.unmakeMove(moveStack[i]);
-                prunedMoves++;
-                continue;
+                score = -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
             }
-		}
 
-		if (!movesSearched)
-		{
-			score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2, givesCheck);
-		}
-		else
-		{
-			if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-                && !inCheck && !extension && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
-			{
-                // Progressively reduce later moves more and more.
-                auto reduction = reductions[movesSearched - fullDepthMoves];
-                score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2, givesCheck);
-			}
-			else
-			{
-				score = alpha + 1; // Hack to ensure that full-depth search is done.
-			}
-
-			if (score > alpha)
-			{
-                score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, 2, givesCheck);
-				if (score > alpha && score < beta)
-				{
-                    score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2, givesCheck);
-				}
-			}
-		}
-		pos.unmakeMove(moveStack[i]);
-		movesSearched++;
-
-		if (!searching)
-		{
-			return 0;
-		}
-
-		if (score > bestScore)
-		{
-			bestScore = score;
-			if (score > alpha)
-			{
-                bestMove = moveStack[i].getMove();
-				if (score >= beta)
-				{
-					ttSave(pos, ply, depth, score, ttBeta, bestMove);
-
-                    if (!inCheck)
-                    {                    
-                        // Update the history heuristic when a move which causes a cutoff.
-                        // Don't update if the move is not a quiet move.
-                        if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
-                        {
-                            history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
-                            if (moveStack[i].getMove() != pos.getKiller(0, ply))
-                            {
-                                pos.setKiller(1, ply, pos.getKiller(0, ply));
-                                pos.setKiller(0, ply, moveStack[i].getMove());
-                            }
-                        }
-                        for (auto j = 0; j < i; ++j)
-                        {
-                            if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
-                                ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
-                            {
-                                butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
-                            }
-                        }
-
-                    }
-
-					return score;
-				}
-				alpha = score;
-				ttFlag = ttExact;
-			}
-		}
-	}
-
-	if (!movesSearched)
-	{
-		if (!prunedMoves)
-		{
-			return (inCheck ? -mateScore + ply : contempt(pos.getSideToMove()));
-		}
-		else
-		{
-			return staticEval;
-		}
-	}
-
-	ttSave(pos, ply, depth, bestScore, ttFlag, bestMove);
-
-	return bestScore;
-}
-
-int searchRoot(Position & pos, int ply, int depth, int alpha, int beta)
-{
-	int score, generatedMoves, newDepth, movesSearched = 0;
-	uint16_t ttMove = ttMoveNone, bestMove = ttMoveNone; 
-	bool givesCheck, inCheck = pos.inCheck();
-    int allowNullMove; // not used for anything
-    bestRootScore = -mateScore;
-
-	// Probe the transposition table to get the PV-Move, if any.
-	ttProbe(pos, ply, depth, alpha, beta, ttMove, allowNullMove);
-
-	Move moveStack[256];
-	generatedMoves = generateMoves(pos, moveStack);
-
-	// Check if the root position is in tablebases, and if it is remove moves which do not maintain the correct result.
-	probeTB = true;
-	if (popcnt(pos.getOccupiedSquares()) <= syzygyProbeLimit)
-	{
-		bool rootInTB = root_probe(pos, score, moveStack, generatedMoves);
-		if (rootInTB)
-		{
-			tbHits += generatedMoves;
-			probeTB = false; // Do not probe tablebases during the search
-		}
-		else // If DTZ tables are missing, use WDL tables as a fallback
-		{
-			// Filter out moves that do not preserve a draw or win
-			rootInTB = root_probe_wdl(pos, score, moveStack, generatedMoves);
-			if (rootInTB)
-			{
-				tbHits += generatedMoves;
-				probeTB = false; // Do not probe tablebases during the search
-			}
-		}
-	}
-
-	orderMoves(pos, moveStack, generatedMoves, ttMove, ply);
-	for (int i = 0; i < generatedMoves; i++)
-	{
-		selectMove(moveStack, generatedMoves, i);
-		if (!(pos.makeMove(moveStack[i])))
-		{
-			continue;
-		}
-		nodeCount++;
-        --countDown;
-
-		newDepth = depth - 1;
-		givesCheck = pos.inCheck();
-		if (givesCheck)
-		{
-			newDepth++;
-		}
-
-		if (!movesSearched)
-		{
-            score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2, givesCheck);
-		}
-		else
-		{
-            if (movesSearched >= fullDepthMoves && depth >= reductionLimit
-                && !inCheck && !givesCheck && moveStack[i].getScore() < killerMove4 && moveStack[i].getScore() >= 0)
+            if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
             {
-                // Progressively reduce later moves more and more.
-                auto reduction = reductions[movesSearched - fullDepthMoves];
-                score = -alphabetaPVS(pos, ply + 1, newDepth - reduction, -alpha - 1, -alpha, 2, givesCheck);
+                score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
             }
-			else
-			{
-				score = alpha + 1; // Hack to ensure that full-depth search is done.
-			}
+        }
+        pos.unmakeMove(move, history);
+        ++movesSearched;
 
-			if (score > alpha)
-			{
-                score = -alphabetaPVS(pos, ply + 1, newDepth, -alpha - 1, -alpha, 2, givesCheck);
-				if (score > alpha && score < beta)
-				{
-                    score = -alphabetaPVS(pos, ply + 1, newDepth, -beta, -alpha, 2, givesCheck);
-				}
-			}
-		}
-		pos.unmakeMove(moveStack[i]);
-		movesSearched++;
-
-		if (!searching)
-		{
-			return 0;
-		}
-
-        if (score > bestRootScore)
-		{
-            bestRootScore = score;
-			if (score > alpha)
-			{
-                bestMove = moveStack[i].getMove();
-				if (score >= beta)
-				{
-					ttSave(pos, ply, depth, score, ttBeta, bestMove);
+        if (score > bestScore)
+        {
+            if (score > alpha)
+            {
+                if (score >= beta)
+                {
+                    transpositionTable.save(pos, ply, move, score, depth, LowerBoundScore);
 
                     if (!inCheck)
                     {
-                        // Update the history heuristic when a move which improves alpha is found.
-                        // Don't update if the move is not a quiet move.
-                        if ((pos.getPiece(moveStack[i].getTo()) == Empty) && ((moveStack[i].getPromotion() == Empty) || (moveStack[i].getPromotion() == King)))
+                        if (pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King))
                         {
-                            history[pos.getPiece(moveStack[i].getFrom())][moveStack[i].getTo()] += depth * depth;
-                            if (moveStack[i].getMove() != pos.getKiller(0, ply))
-                            {
-                                pos.setKiller(1, ply, pos.getKiller(0, ply));
-                                pos.setKiller(0, ply, moveStack[i].getMove());
-                            }
+                            historyTable.addCutoff(pos, move, depth);
+                            killerTable.addKiller(move, ply);
                         }
                         for (auto j = 0; j < i; ++j)
                         {
-                            if ((pos.getPiece(moveStack[j].getTo()) == Empty) &&
-                                ((moveStack[j].getPromotion() == Empty) || (moveStack[j].getPromotion() == King)))
+                            const auto& move2 = moveList[j];
+                            if (pos.getBoard(move2.getTo()) == Piece::Empty && (move2.getPromotion() == Piece::Empty || move2.getPromotion() == Piece::King))
                             {
-                                butterfly[pos.getPiece(moveStack[j].getFrom())][moveStack[j].getTo()] += depth * depth;
+                                historyTable.addNotCutoff(pos, move2, depth);
                             }
                         }
                     }
 
-					return score;
-				}
+                    return score;
+                }
+                bestMove = move;
+                alpha = score;
+                ttFlag = ExactScore;
+            }
+            bestScore = score;
+        }
+    }
 
-				alpha = score;
-				ttSave(pos, ply, depth, score, ttAlpha, bestMove);
+    if (!movesSearched)
+    {
+        if (!prunedMoves)
+        {
+            return (inCheck ? bestScore : contempt[pos.getSideToMove()]);
+        }
+        return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
+    }
 
-				int searchTime = (int)t.getms();
-				reconstructPV(pos, pv);
-				if (isMateScore(alpha))
-				{
-					int v;
-					alpha > 0 ? v = ((mateScore - alpha + 1) >> 1) : v = ((-alpha - mateScore) >> 1);
-					cout << "info " << "depth " << searchDepth << " score mate " << v << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-					displayPV(pv, (int)pv.size());
-				}
-				else
-				{
-					cout << "info " << "depth " << searchDepth << " score cp " << alpha << " time " << searchTime << " nodes " << nodeCount << " nps " << (nodeCount / (searchTime + 1)) * 1000 << " tbhits " << tbHits << " pv ";
-					displayPV(pv, (int)pv.size());
-				}
-			}
-		}
-	}
+    transpositionTable.save(pos, ply, bestMove, bestScore, depth, ttFlag);
 
-    ttSave(pos, ply, depth, bestRootScore, ttExact, bestMove);
-
-    return bestRootScore;
+    return bestScore;
 }
