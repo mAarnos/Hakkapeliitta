@@ -34,7 +34,7 @@ If you think I have forgotten somebody/something please let me know.
  - Texel, Peter Österlund
  - Ivanhoe, ??? 
  - Inside Prodeo, Ed Schroeder
- - Winglet, ??? 
+ - Winglet, Stef Luijten
  - Maverick, Steve Maughan
  - TSCP, Tom Kerrigan 
 
