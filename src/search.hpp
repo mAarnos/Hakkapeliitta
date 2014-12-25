@@ -11,7 +11,7 @@
 #include "killer.hpp"
 #include "tt.hpp"
 #include "zobrist.hpp"
-#include "utils\stopwatch.hpp"
+#include "utils/stopwatch.hpp"
 
 const int mateScore = 32767; // mate in 0
 const int maxMateScore = 32767 - 1000; // mate in 500

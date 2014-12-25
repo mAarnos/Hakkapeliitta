@@ -3,10 +3,10 @@
 #include <regex>
 #include "search.hpp"
 #include "eval.hpp"
-#include "utils\clamp.hpp"
-#include "utils\synchronized_ostream.hpp"
-#include "utils\large_pages.hpp"
-#include "syzygy\tbprobe.hpp"
+#include "utils/clamp.hpp"
+#include "utils/synchronized_ostream.hpp"
+#include "utils/large_pages.hpp"
+#include "syzygy/tbprobe.hpp"
 
 Position UCI::root;
 ThreadPool UCI::tp(1);

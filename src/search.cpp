@@ -4,9 +4,9 @@
 #include <sstream>
 #include "eval.hpp"
 #include "movegen.hpp"
-#include "utils\synchronized_ostream.hpp"
-#include "utils\exception.hpp"
-#include "syzygy\tbprobe.hpp"
+#include "utils/synchronized_ostream.hpp"
+#include "utils/exception.hpp"
+#include "syzygy/tbprobe.hpp"
 
 TranspositionTable Search::transpositionTable;
 HistoryTable Search::historyTable;

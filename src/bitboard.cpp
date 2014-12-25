@@ -3,7 +3,7 @@
 #include <iostream>
 #include <cstring>
 #include "color.hpp"
-#include "utils\synchronized_ostream.hpp"
+#include "utils/synchronized_ostream.hpp"
 
 std::array<Bitboard, 64> Bitboards::bit;
 std::array<Bitboard, 64> Bitboards::kingAttacks;

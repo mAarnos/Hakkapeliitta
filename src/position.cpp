@@ -8,7 +8,7 @@
 #include "color.hpp"
 #include "square.hpp"
 #include "eval.hpp"
-#include "utils\synchronized_ostream.hpp"
+#include "utils/synchronized_ostream.hpp"
 
 const std::array<int, 64> Position::castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,

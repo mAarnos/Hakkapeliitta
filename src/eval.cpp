@@ -2,7 +2,7 @@
 #include "piece.hpp"
 #include "color.hpp"
 #include "square.hpp"
-#include "utils\clamp.hpp"
+#include "utils/clamp.hpp"
 
 PawnHashTable Evaluation::pawnHashTable;
 

@@ -4,7 +4,7 @@
 #include <iostream>
 #include <map>
 #include "position.hpp"
-#include "utils\threadpool.hpp"
+#include "utils/threadpool.hpp"
 
 class UCI
 {

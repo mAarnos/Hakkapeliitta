@@ -3,8 +3,8 @@
 #include <iostream>
 #include "move.hpp"
 #include "movegen.hpp"
-#include "utils\stopwatch.hpp"
-#include "utils\synchronized_ostream.hpp"
+#include "utils/stopwatch.hpp"
+#include "utils/synchronized_ostream.hpp"
 
 void Benchmark::runPerft()
 {

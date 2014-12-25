@@ -4,8 +4,8 @@
 #include "benchmark.hpp"
 #include "eval.hpp"
 #include "search.hpp"
-#include "utils\synchronized_ostream.hpp"
-#include "utils\large_pages.hpp"
+#include "utils/synchronized_ostream.hpp"
+#include "utils/large_pages.hpp"
 
 int main() 
 {
