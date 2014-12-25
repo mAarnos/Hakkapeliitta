@@ -366,7 +366,7 @@ void Bitboards::initialize()
  #else
     __cpuid(regs, 0x00000001);
  #endif
-    hardwarePopcntSupported = (regs[3] & (1 << 23)) != 0;
+    hardwarePopcntSupported = (regs[2] & (1 << 23)) != 0;
 #endif
     if (hardwarePopcntSupported)
     {
