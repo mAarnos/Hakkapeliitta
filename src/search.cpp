@@ -222,15 +222,14 @@ void Search::think(const Position& root)
 
 					score = -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck);
 
-					if (reduction && score > alpha) // Research in case reduced move is above alpha.
-					{
-						score = -search<false>(pos, newDepth, 1, -alpha - 1, -alpha, 2, givesCheck);
-					}
-
-					if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
-					{
-						score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
-					}
+                    if (score > alpha)
+                    {
+                        score = -search<true>(pos, newDepth - reduction, 1, -beta, -alpha, 2, givesCheck);
+                        if (reduction && score > alpha)
+                        {
+                            score = -search<true>(pos, newDepth, 1, -beta, -alpha, 2, givesCheck);
+                        }
+                    }
 				}
 				pos.unmakeMove(move, history);
 				++movesSearched;
@@ -780,14 +779,21 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
             score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
 
-            if (reduction && score > alpha) // Research in case reduced move is above alpha.
+            // If a reduced search doesn't fail low in a PV-node we first open the window and search with a reduced depth.
+            // If that doesn't fail low either only then do we stop reducing the move.
+            // Test the other idea sometime again.
+            // In non-PV-nodes if a reduced move doesn't fail low all we can do is remove the reduction.
+            if (pvNode && score > alpha)
+            {
+                score = -search<true>(pos, newDepth - reduction, ply + 1, -beta, -alpha, 2, givesCheck);
+                if (reduction && score > alpha)
+                {
+                    score = -search<true>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
+                }
+            }
+            else if (reduction && score > alpha) 
             {
                 score = -search<false>(pos, newDepth, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
-            }
-
-            if (score > alpha && score < beta) // Full-window research in case a new pv is found. Can only happen in PV-nodes.
-            {
-                score = -search<pvNode>(pos, newDepth, ply + 1, -beta, -alpha, 2, givesCheck);
             }
         }
         pos.unmakeMove(move, history);
