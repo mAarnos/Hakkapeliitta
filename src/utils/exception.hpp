@@ -3,11 +3,10 @@
 
 #include <stdexcept>
 
-// Specific exception for problems in the algorithms of this program.
-class HakkapeliittaException : public std::runtime_error
+class StopSearchException : public std::runtime_error
 {
 public:
-    HakkapeliittaException(const std::string& description) : std::runtime_error(description) {}
+    StopSearchException(const std::string& description) : std::runtime_error(description) {}
 };
 
 #endif

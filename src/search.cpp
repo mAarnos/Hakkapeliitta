@@ -268,7 +268,7 @@ void Search::think(const Position& root)
 				}
 			}
 		}
-		catch (const HakkapeliittaException&)
+        catch (const StopSearchException&)
 		{
             pos = root; // Exception messes up the position, fix it.
 		}
@@ -634,7 +634,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
         if (!searching)
         {
-            throw HakkapeliittaException("Search: stop");
+            throw StopSearchException("allocated time has run out");
         }
     }
 
