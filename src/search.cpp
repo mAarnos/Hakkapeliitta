@@ -601,10 +601,11 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 	// Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());
 
+    // Time check things.
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        if (!infinite)
+        if (!infinite) // Can't stop search if ordered to run indefinitely
         {
             // Casting works around a few warnings.
             auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
@@ -638,6 +639,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
     }
 
+    // Check for fifty move draws.
     if (pos.getFiftyMoveDistance() >= 100)
     {
         if (inCheck) 
@@ -650,7 +652,8 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
         return contempt[pos.getSideToMove()];
     }
-
+     
+    // Check for repetition draws. Technically we are checking for 2-fold repetitions instead of 3-fold, but that is enough for game theoric correctness.
     if (repetitionDraw(pos, ply))
     {
         return contempt[pos.getSideToMove()];
@@ -674,6 +677,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return score;
     }
 
+    // Probe the endgame tablebases.
     if (probeTb && pos.getTotalPieceCount() <= syzygyProbeLimit)
     {
         int success;
@@ -692,10 +696,12 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos, zugzwangLikely));
 
     // Reverse futility pruning / static null move pruning.
+    // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
     if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
     // Razoring.
+    // Not useful in PV-nodes as this tries to search for nodes where score <= alpha but in PV-nodes score > alpha.
     if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
     {
         auto razoringAlpha = alpha - razoringMargins[depth];
@@ -737,7 +743,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
     orderMoves(pos, moveList, ttMove, ply);
 
-    // Set flags for certain kinds of nodes.
+    // Futility pruning is useless at PV-nodes for the same reason as razoring.
     auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
