@@ -767,7 +767,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
 
         // Futility pruning and late move pruning / move count based pruning.
-        if (nonCriticalMove && (futileNode || (lmpNode && movesSearched >= lmpMoveCount[depth])))
+        if (nonCriticalMove && (futileNode || (lmpNode && i >= lmpMoveCount[depth])))
         {
             pos.unmakeMove(move, history);
             ++prunedMoves;
