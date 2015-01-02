@@ -217,8 +217,8 @@ void Search::think(const Position& root)
 				}
 				else
 				{
-					auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
-						? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+					auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
+						? lmrReductions[i - lmrFullDepthMoves] : 0);
 
 					score = -search<false>(pos, newDepth - reduction, 1, -alpha - 1, -alpha, 2, givesCheck);
 
@@ -780,8 +780,8 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         }
         else
         {
-            auto reduction = ((lmrNode && movesSearched >= lmrFullDepthMoves && nonCriticalMove)
-                           ? lmrReductions[movesSearched - lmrFullDepthMoves] : 0);
+            auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
+                           ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
             score = -search<false>(pos, newDepth - reduction, ply + 1, -alpha - 1, -alpha, 2, givesCheck);
 
