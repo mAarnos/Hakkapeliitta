@@ -542,9 +542,16 @@ int Search::quiescenceSearch(Position& pos, int ply, int alpha, int beta, bool i
 
         if (!inCheck) // don't do any pruning if in check
         {
-            // Bad capture pruning + delta pruning. Assumes that the moves are sorted from highest SEE value to lowest.
-            if (move.getScore() < 0 || (delta + move.getScore() < alpha))
+            // Bad capture pruning. Assumes that the moves are sorted from highest SEE value to lowest.
+            if (move.getScore() < 0)
             {
+                break;
+            }
+
+            // Delta pruning. Same assumption as previous part.
+            if (delta + move.getScore() <= alpha)
+            {
+                bestScore = std::max(bestScore, delta + move.getScore());
                 break;
             }
         }
