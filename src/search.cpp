@@ -701,6 +701,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
     auto staticEval = (inCheck ? -infinity : Evaluation::evaluate(pos, zugzwangLikely));
+    auto positionIsCloseToMate = isMateScore(alpha) || isMateScore(beta);
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
@@ -751,7 +752,7 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     orderMoves(pos, moveList, ttMove, ply);
 
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
-    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto futileNode = (!pvNode && !inCheck && !positionIsCloseToMate && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
     auto oneReply = (moveList.size() == 1);
