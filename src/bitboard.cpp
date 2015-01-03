@@ -307,8 +307,7 @@ void Bitboards::initialize()
         for (Square j = Square::A1; j <= Square::H8; ++j)
         {
             auto h = heading[i][j];
-            if (h != -1)
-                between[i][j] = rays[h][i] & rays[7 - h][j];
+            between[i][j] = h != -1 ? rays[h][i] & rays[7 - h][j] : 0;
         }
     }
 
@@ -342,10 +341,8 @@ void Bitboards::initialize()
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        if (sq < Square::A8)
-            kingZone[Color::White][sq] = kingAttacks[sq] | kingAttacks[sq + 8];
-        if (sq > Square::H1)
-            kingZone[Color::Black][sq] = kingAttacks[sq] | kingAttacks[sq - 8];
+        kingZone[Color::White][sq] = sq < Square::A8 ? kingAttacks[sq] | kingAttacks[sq + 8] : kingAttacks[sq];
+        kingZone[Color::Black][sq] = sq > Square::H1 ? kingAttacks[sq] | kingAttacks[sq - 8] : kingAttacks[sq];
     }
 
     initMagics(bishopInit, bishopMagic, bishopDirections, 64 - 9);

@@ -95,7 +95,7 @@ void UCI::preprocessLine(std::string& line)
 void UCI::sendInformation(const Command&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta dev 020115" << std::endl;
+    sync_cout << "id name Hakkapeliitta dev 030115" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
