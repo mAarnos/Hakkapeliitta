@@ -5,7 +5,8 @@
 #include "utils/clamp.hpp"
 #include "search.hpp"
 
-TranspositionTable::TranspositionTable()
+TranspositionTable::TranspositionTable():
+table(nullptr), tableSize(0)
 {
     setSize(32); 
 }
@@ -13,8 +14,7 @@ TranspositionTable::TranspositionTable()
 void TranspositionTable::setSize(size_t sizeInMegaBytes)
 {
     // Clear the tt completely to avoid any funny business.
-    table.clear();
-    generation = 1;
+    delete table;
 
     // If size is not a power of two make it the biggest power of two smaller than size.
     if (sizeInMegaBytes & (sizeInMegaBytes - 1))
@@ -22,21 +22,20 @@ void TranspositionTable::setSize(size_t sizeInMegaBytes)
         sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
     }
 
-    auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(TranspositionTableEntry));
-    table.resize(tableSize);
+    tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(Cluster));
+    table = static_cast<Cluster*>(malloc(tableSize * sizeof(Cluster)));
+    clear();
 }
 
 void TranspositionTable::clear()
 {
-    auto tableSize = table.size();
-    table.clear();
-    table.resize(tableSize);
+    memset(table, 0, sizeof(Cluster) * tableSize);
     generation = 1;
 }
 
 void TranspositionTable::prefetch(HashKey hk)
 {
-    auto address = reinterpret_cast<char*>(&table[hk & (table.size() - 1)]);
+    auto address = reinterpret_cast<char*>(&table[hk & (tableSize - 1)]);
 #if defined (_MSC_VER) || defined(__INTEL_COMPILER)
     _mm_prefetch(address, _MM_HINT_T0);
 #else
@@ -52,7 +51,8 @@ void TranspositionTable::save(const Position& pos, int ply, const Move& move, in
     assert(flags >= 0 && flags <= 255);
 
     auto best = move.getMove();
-    auto& hashEntry = table[pos.getHashKey() & (table.size() - 1)];
+    auto hashEntry = table[pos.getHashKey() & (tableSize - 1)].entries;
+    auto replace = hashEntry;
 
     // We only store pure mate scores so that we can use them in other parts of the search tree too.
     if (isMateScore(score))
@@ -60,110 +60,56 @@ void TranspositionTable::save(const Position& pos, int ply, const Move& move, in
         score += (score > 0 ? ply : -ply);
     }
 
-    auto replace = 0;
-    for (auto i = 0; i < 4; ++i)
+    for (auto i = 0; i < 4; ++i, ++hashEntry)
     {
-        if ((hashEntry.getHash(i) ^ hashEntry.getData(i)) == pos.getHashKey())
+        if ((hashEntry->getHash() ^ hashEntry->getData()) == pos.getHashKey())
         {
-            replace = i;
+            replace = hashEntry;
             if (!best)
             {
-                best = hashEntry.getBestMove(replace);
+                best = hashEntry->getBestMove();
             }
             break;
         }
 
         // Here we check if we have found an entry which is worse than the current worse entry.
         // If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-        auto c1 = (hashEntry.getGeneration(replace) > hashEntry.getGeneration(i));
-        auto c2 = (hashEntry.getDepth(replace) > hashEntry.getDepth(i));
+        auto c1 = (replace->getGeneration() > hashEntry->getGeneration());
+        auto c2 = (replace->getDepth() > hashEntry->getDepth());
 
         if (c1 || c2)
         {
-            replace = i;
+            replace = hashEntry;
         }
     }
 
-    hashEntry.setData(replace, (static_cast<uint64_t>(best) | 
-                                static_cast<uint64_t>(generation) << 16 | 
-                                static_cast<uint64_t>(score & 0xffff) << 32 | 
-                                static_cast<uint64_t>(depth & 0xff) << 48) | 
-                                static_cast<uint64_t>(flags) << 56);
-    hashEntry.setHash(replace, pos.getHashKey() ^ hashEntry.getData(replace));
+    replace->setData((static_cast<uint64_t>(best) | 
+                      static_cast<uint64_t>(generation) << 16 | 
+                      static_cast<uint64_t>(score & 0xffff) << 32 | 
+                      static_cast<uint64_t>(depth & 0xff) << 48) | 
+                      static_cast<uint64_t>(flags) << 56);
+    replace->setHash(pos.getHashKey() ^ replace->getData());
 
-    assert(hashEntry.getBestMove(replace) == best);
-    assert(hashEntry.getGeneration(replace) == generation);
-    assert((hashEntry.getScore(replace)) == score);
-    assert(hashEntry.getDepth(replace) == depth);
-    assert(hashEntry.getFlags(replace) == flags);
+    assert(replace->getBestMove() == best);
+    assert(replace->getGeneration() == generation);
+    assert(replace->getScore() == score);
+    assert(replace->getDepth() == depth);
+    assert(replace->getFlags() == flags);
 }
 
-bool TranspositionTable::probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta, int& allowNullMove) const
+const TranspositionTableEntry* TranspositionTable::probe(const Position& pos) const
 {
-    assert(ply >= 0 && ply < 128);
+    const TranspositionTableEntry* hashEntry = &table[pos.getHashKey() & (tableSize - 1)].entries[0];
 
-    const auto& hashEntry = table[pos.getHashKey() & (table.size() - 1)];
-
-    for (auto entry = 0; entry < 4; ++entry)
+    for (auto i = 0; i < 4; ++i, ++hashEntry)
     {
-        if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == pos.getHashKey())
+        if ((hashEntry->getHash() ^ hashEntry->getData()) == pos.getHashKey())
         {
-            move.setMove(hashEntry.getBestMove(entry));
-            auto hashScore = hashEntry.getScore(entry);
-            auto hashDepth = hashEntry.getDepth(entry);
-            auto flags = hashEntry.getFlags(entry);
-
-            if (flags == UpperBoundScore && depth - 1 - 3 <= hashDepth && hashScore <= alpha)
-            {
-                allowNullMove = 0;
-            }
-            if (hashDepth >= depth)
-            {
-                // Correct the mate score back.
-                if (isMateScore(hashScore))
-                {
-                    hashScore += static_cast<int16_t>(hashScore > 0 ? -ply : ply);
-                }
-
-                if (flags == ExactScore)
-                {
-                    score = hashScore;
-                    return true;
-                }
-
-                if (flags == UpperBoundScore)
-                {
-                    if (hashScore <= alpha)
-                    {
-                        score = hashScore;
-                        return true;
-                    }
-                    if (hashScore < beta)
-                    {
-                        beta = hashScore;
-                        return false;
-                    }
-                }
-                else if (flags == LowerBoundScore)
-                {
-                    if (hashScore >= beta)
-                    {
-                        score = hashScore;
-                        return true;
-                    }
-                    if (hashScore > alpha)
-                    {
-                        alpha = hashScore;
-                        return false;
-                    }
-                }
-            }
-
-            break; 
+            return hashEntry;
         }
     }
 
-    return false;
+    return nullptr;
 }
 
 std::vector<Move> TranspositionTable::extractPv(Position root) const
@@ -175,25 +121,16 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
 
     for (auto ply = 0; ply < 128; ++ply)
     {
-        const auto& hashEntry = table[root.getHashKey() & (table.size() - 1)];
+        auto entry = probe(root);
 
-        int entry;
-        for (entry = 0; entry < 4; ++entry)
-        {
-            if ((hashEntry.getHash(entry) ^ hashEntry.getData(entry)) == root.getHashKey())
-            {
-                break;
-            }
-        }
-
-        if ((entry > 3) // No entry found
-        || (hashEntry.getFlags(entry) != ExactScore && ply >= 2) // Always try to get a move to ponder on.
-        || !hashEntry.getBestMove(entry) // No move found in the entry.
+        if (!entry // No entry found
+        || (entry->getFlags() != ExactScore && ply >= 2) // Always try to get a move to ponder on.
+        || !entry->getBestMove() // No move found in the entry.
         || (previousHashes.count(root.getHashKey()) > 0 && ply >= 2)) // Repetition.
         {
             break;
         }
-        m.setMove(hashEntry.getBestMove(entry));
+        m.setMove(entry->getBestMove());
         pv.push_back(m);
         previousHashes.insert(root.getHashKey());
         root.makeMove(m, history);

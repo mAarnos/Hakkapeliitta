@@ -177,7 +177,11 @@ void Search::think(const Position& root)
     }
 
     // Get the tt move from a possible previous search.
-    transpositionTable.probe(pos, 0, bestMove, score, 0, alpha, beta, allowNullMove);
+    auto ttEntry = transpositionTable.probe(pos);
+    if (ttEntry)
+    {
+        bestMove.setMove(ttEntry->getBestMove());
+    }
 
     repetitionHashes[rootPly] = pos.getHashKey();
     for (auto depth = 1;;)
@@ -678,10 +682,34 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
         return quiescenceSearch(pos, ply, alpha, beta, inCheck);
     }
 
-    // Probe the transposition table. Possibly the logic should be moved here.
-    if (transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove))
+    // Probe the transposition table. 
+    auto ttEntry = transpositionTable.probe(pos);
+    if (ttEntry)
     {
-        return score;
+        ttMove.setMove(ttEntry->getBestMove());
+        if (ttEntry->getDepth() >= depth)
+        {
+            auto ttScore = ttEntry->getScore();
+            auto ttFlags = ttEntry->getFlags();
+
+            // Correct mate scores back to normal form.
+            if (isMateScore(ttScore))
+            {
+                ttScore += static_cast<int16_t>(ttScore > 0 ? -ply : ply);
+            }
+
+            if (ttFlags == ExactScore || (ttFlags == UpperBoundScore && ttScore <= alpha) || (ttFlags == LowerBoundScore && ttScore >= beta))
+                return ttScore;
+
+            if (ttFlags == UpperBoundScore && ttScore < beta)
+            {
+                beta = ttScore;
+            }
+            else if (ttFlags == LowerBoundScore && ttScore > alpha)
+            {
+                alpha = ttScore;
+            }
+        }
     }
 
     // Probe the endgame tablebases.
@@ -724,16 +752,22 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     if (!pvNode && allowNullMove && !inCheck && !zugzwangLikely)
     {
-        repetitionHashes[rootPly + ply] = pos.getHashKey();
-        pos.makeNullMove(history);
-        ++nodeCount;
-        --nodesToTimeCheck;
-        score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false);
-        pos.unmakeNullMove(history);
-        if (score >= beta)
+        if (!(ttEntry 
+           && ttEntry->getFlags() == UpperBoundScore 
+           && ttEntry->getDepth() >= depth - 1 - nullReduction
+           && ttEntry->getScore() <= alpha))
         {
-            transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
-            return score;
+            repetitionHashes[rootPly + ply] = pos.getHashKey();
+            pos.makeNullMove(history);
+            ++nodeCount;
+            --nodesToTimeCheck;
+            score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, allowNullMove - 2, false);
+            pos.unmakeNullMove(history);
+            if (score >= beta)
+            {
+                transpositionTable.save(pos, ply, ttMove, score, depth, LowerBoundScore);
+                return score;
+            }
         }
     }
 
@@ -743,7 +777,13 @@ int Search::search(Position& pos, int depth, int ply, int alpha, int beta, int a
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         score = search<true>(pos, depth - 2, ply, alpha, beta, 0, inCheck);
-        transpositionTable.probe(pos, ply, ttMove, score, depth, alpha, beta, allowNullMove);
+
+        // Now probe the TT and get the best move.
+        auto tte = transpositionTable.probe(pos);
+        if (tte)
+        {
+            ttMove.setMove(tte->getBestMove());
+        }
     }
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.

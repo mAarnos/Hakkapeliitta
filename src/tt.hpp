@@ -12,13 +12,33 @@ enum TTFlags
     ExactScore = 1, UpperBoundScore = 2, LowerBoundScore = 4
 };
 
+// A single entry in the transposition table. 
+class TranspositionTableEntry
+{
+public:
+    TranspositionTableEntry() { hash = 0; data = 0; }
+
+    void setHash(uint64_t newHash) { hash = newHash; }
+    void setData(uint64_t newData) { data = newData; }
+    uint64_t getHash() const { return hash; }
+    uint64_t getData() const { return data; }
+    uint16_t getBestMove() const { return static_cast<uint16_t>(data); }
+    uint16_t getGeneration() const { return static_cast<uint16_t>(data >> 16); }
+    int16_t getScore() const { return static_cast<int16_t>(data >> 32); }
+    uint8_t getDepth() const { return static_cast<uint8_t>(data >> 48); }
+    uint8_t getFlags() const { return data >> 56; };
+private:
+    uint64_t hash;
+    uint64_t data;
+};
+
 class TranspositionTable
 {
 public:
     TranspositionTable();
 
     void save(const Position& pos, int ply, const Move& move, int score, int depth, int flags);
-    bool probe(const Position& pos, int ply, Move& move, int& score, int depth, int& alpha, int& beta, int& allowNullMove) const;
+    const TranspositionTableEntry* probe(const Position& pos) const;
     void prefetch(HashKey hk);
 
 	void setSize(size_t sizeInMegaBytes);
@@ -26,31 +46,19 @@ public:
     void startNewSearch() { ++generation; }
     std::vector<Move> extractPv(Position root) const;
 private:
-    // A single entry in the transposition table. In actuality it is a bucket containing four entries and not a single entry.
+    // A bucket containing four hash entries.
     // Doing this has some desirable properties when deciding what entries to overwrite.
     // We have four entries because the common cache line size nowadays is 64 bytes.
-    // uint64_t hash[4] + uint64_t data[4] = 8*uint64_t = 64 bytes.
-    // Basically this means that a single tt entry fits perfectly into the cacheline.
-    class TranspositionTableEntry
+    // uint64_t hash * 4 + uint64_t data * 4 = 8 * uint64_t = 64 bytes.
+    // Basically this means that a single cluster fits perfectly into the cacheline.
+    class Cluster
     {
     public:
-        TranspositionTableEntry() { hash.fill(0); data.fill(0); }
-
-        void setHash(int entry, uint64_t newHash) { hash[entry] = newHash; }
-        void setData(int entry, uint64_t newData) { data[entry] = newData; }
-        uint64_t getHash(int entry) const { return hash[entry]; }
-        uint64_t getData(int entry) const { return data[entry]; }
-        uint16_t getBestMove(int entry) const { return static_cast<uint16_t>(data[entry]); }
-        uint16_t getGeneration(int entry) const { return static_cast<uint16_t>(data[entry] >> 16); }
-        int16_t getScore(int entry) const { return static_cast<int16_t>(data[entry] >> 32); }
-        uint8_t getDepth(int entry) const { return static_cast<uint8_t>(data[entry] >> 48); }
-        uint8_t getFlags(int entry) const { return data[entry] >> 56; };
-    private:
-        std::array<uint64_t, 4> hash;
-        std::array<uint64_t, 4> data;
+        TranspositionTableEntry entries[4];
     };
 
-    std::vector<TranspositionTableEntry> table;
+    Cluster* table;
+    size_t tableSize;
     uint32_t generation;
 };
 
