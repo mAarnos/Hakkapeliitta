@@ -4,12 +4,14 @@
 #include <cstdint>
 #include "position.hpp"
 
+// No further improvement necessary.
+
 class Benchmark
 {
 public:
-    static void runPerft();
+    static void runPerft(Position& pos, int depth);
 private:
-    static uint64_t perft(Position& pos, int depth);
+    static uint64_t perft(const Position& pos, int depth);
 };
 
 #endif

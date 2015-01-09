@@ -5,17 +5,18 @@
 #include "color.hpp"
 #include "utils/synchronized_ostream.hpp"
 
-std::array<Bitboard, 64> Bitboards::bit;
-std::array<Bitboard, 64> Bitboards::kingAttacks;
-std::array<Bitboard, 64> Bitboards::knightAttacks;
-std::array<Bitboard, 64> Bitboards::pawnAttacks[2];
-std::array<Bitboard, 64> Bitboards::pawnSingleMoves[2];
-std::array<Bitboard, 64> Bitboards::pawnDoubleMoves[2];
-std::array<Bitboard, 64> Bitboards::rays[8];
-std::array<Bitboard, 64> Bitboards::between[64];
+std::array<Bitboard, 64> Bitboards::bits;
+std::array<Bitboard, 64> Bitboards::kingAttack;
+std::array<Bitboard, 64> Bitboards::knightAttack;
+std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnAttack;
+std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnSingleMove;
+std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnDoubleMove;
+std::array<std::array<Bitboard, 64>, 8> Bitboards::rays;
+std::array<std::array<Bitboard, 64>, 64> Bitboards::between;
+std::array<std::array<Bitboard, 64>, 64> Bitboards::line;
 
-std::array<Bitboard, 64> Bitboards::passed[2];
-std::array<Bitboard, 64> Bitboards::backward[2];
+std::array<std::array<Bitboard, 64>, 2> Bitboards::passed;
+std::array<std::array<Bitboard, 64>, 2> Bitboards::backward;
 std::array<Bitboard, 64> Bitboards::isolated;
 
 const std::array<Bitboard, 8> Bitboards::ranks = {
@@ -40,7 +41,7 @@ const std::array<Bitboard, 8> Bitboards::files = {
     0x8080808080808080
 };
 
-std::array<Bitboard, 64> Bitboards::kingZone[2];
+std::array<std::array<Bitboard, 64>, 2> Bitboards::kingZone;
 
 bool Bitboards::hardwarePopcntSupported;
 
@@ -222,63 +223,50 @@ void Bitboards::initialize()
 		heading[i].resize(64, -1);
 	}
 
-    // Clear bitboards which would be destroyed by multiple initialization.
-    memset(pawnSingleMoves, 0, sizeof(pawnSingleMoves));
-    memset(pawnDoubleMoves, 0, sizeof(pawnDoubleMoves));
-    memset(rays, 0, sizeof(rays));
-    memset(passed, 0, sizeof(passed));
-    memset(backward, 0, sizeof(backward));
-    isolated.fill(0);
-    lookupTable.fill(0);
-
     // Single bits
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        bit[sq] = 1ull << sq;
+        bits[sq] = 1ull << sq;
     }
 
     // King attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        auto kingSet = bit[sq];
-        kingSet |= (bit[sq] << 1) & 0xFEFEFEFEFEFEFEFE;
-        kingSet |= (bit[sq] >> 1) & 0x7F7F7F7F7F7F7F7F;
-        kingSet = ((kingSet << 8) | (kingSet >> 8) | (kingSet ^ bit[sq]));
-        kingAttacks[sq] = kingSet;
+        auto kingSet = bits[sq];
+        kingSet |= (bits[sq] << 1) & 0xFEFEFEFEFEFEFEFE;
+        kingSet |= (bits[sq] >> 1) & 0x7F7F7F7F7F7F7F7F;
+        kingSet = ((kingSet << 8) | (kingSet >> 8) | (kingSet ^ bits[sq]));
+        kingAttack[sq] = kingSet;
     }
 
     // Knight attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        auto knightSet = (bit[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
-        knightSet |= (bit[sq] << 10) & 0xFCFCFCFCFCFCFCFC;
-        knightSet |= (bit[sq] << 15) & 0x7F7F7F7F7F7F7F7F;
-        knightSet |= (bit[sq] << 6) & 0x3F3F3F3F3F3F3F3F;
-        knightSet |= (bit[sq] >> 17) & 0x7F7F7F7F7F7F7F7F;
-        knightSet |= (bit[sq] >> 10) & 0x3F3F3F3F3F3F3F3F;
-        knightSet |= (bit[sq] >> 15) & 0xFEFEFEFEFEFEFEFE;
-        knightSet |= (bit[sq] >> 6) & 0xFCFCFCFCFCFCFCFC;
-        knightAttacks[sq] = knightSet;
+        auto knightSet = (bits[sq] << 17) & 0xFEFEFEFEFEFEFEFE;
+        knightSet |= (bits[sq] << 10) & 0xFCFCFCFCFCFCFCFC;
+        knightSet |= (bits[sq] << 15) & 0x7F7F7F7F7F7F7F7F;
+        knightSet |= (bits[sq] << 6) & 0x3F3F3F3F3F3F3F3F;
+        knightSet |= (bits[sq] >> 17) & 0x7F7F7F7F7F7F7F7F;
+        knightSet |= (bits[sq] >> 10) & 0x3F3F3F3F3F3F3F3F;
+        knightSet |= (bits[sq] >> 15) & 0xFEFEFEFEFEFEFEFE;
+        knightSet |= (bits[sq] >> 6) & 0xFCFCFCFCFCFCFCFC;
+        knightAttack[sq] = knightSet;
     }
 
     // Pawn attacks
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        pawnAttacks[Color::White][sq] = ((bit[sq] << 9) & 0xFEFEFEFEFEFEFEFE) | ((bit[sq] << 7) & 0x7F7F7F7F7F7F7F7F);
-        pawnAttacks[Color::Black][sq] = ((bit[sq] >> 9) & 0x7F7F7F7F7F7F7F7F) | ((bit[sq] >> 7) & 0xFEFEFEFEFEFEFEFE);
+        pawnAttack[Color::White][sq] = ((bits[sq] << 9) & 0xFEFEFEFEFEFEFEFE) | ((bits[sq] << 7) & 0x7F7F7F7F7F7F7F7F);
+        pawnAttack[Color::Black][sq] = ((bits[sq] >> 9) & 0x7F7F7F7F7F7F7F7F) | ((bits[sq] >> 7) & 0xFEFEFEFEFEFEFEFE);
     }
 
     // Pawn moves
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        if (sq <= Square::H7)
-            pawnSingleMoves[Color::White][sq] = bit[sq + 8];
-        if (sq >= Square::A2)
-            pawnSingleMoves[Color::Black][sq] = bit[sq - 8];
-        if (sq >= Square::A2 && sq <= Square::H2)
-            pawnDoubleMoves[Color::White][sq] = bit[sq + 16];
-        if (sq >= Square::A7 && sq <= Square::H7)
-            pawnDoubleMoves[Color::Black][sq] = bit[sq - 16];
+        pawnSingleMove[Color::White][sq] = (sq <= Square::H7 ? bits[sq + 8] : 0);
+        pawnSingleMove[Color::Black][sq] = (sq >= Square::A2 ? bits[sq - 8] : 0);
+        pawnDoubleMove[Color::White][sq] = ((sq >= Square::A2 && sq <= Square::H2) ? bits[sq + 16] : 0);
+        pawnDoubleMove[Color::Black][sq] = ((sq >= Square::A7 && sq <= Square::H7) ? bits[sq - 16] : 0);
     }
 
     // Rays to all directions
@@ -289,6 +277,7 @@ void Bitboards::initialize()
 
         for (auto i = 0; i < 8; ++i)
         {
+            rays[i][sq] = 0;
             for (auto j = 1; j < 8; ++j)
             {
                 auto toRank = rankDirection[i] * j + r;
@@ -296,7 +285,7 @@ void Bitboards::initialize()
                 if (toRank < 0 || toRank > 7 || toFile < 0 || toFile > 7) // Check if we went over the side of the board.
                     break;
                 heading[sq][toRank * 8 + toFile] = i;
-                rays[i][sq] |= bit[toRank * 8 + toFile];
+                rays[i][sq] |= bits[toRank * 8 + toFile];
             }
         }
     }
@@ -307,19 +296,27 @@ void Bitboards::initialize()
         for (Square j = Square::A1; j <= Square::H8; ++j)
         {
             auto h = heading[i][j];
-            between[i][j] = h != -1 ? rays[h][i] & rays[7 - h][j] : 0;
+            between[i][j] = (h != -1 ? rays[h][i] & rays[7 - h][j] : 0);
+            line[i][j] = (h != -1 ? rays[h][i] | rays[7 - h][j] : 0);
         }
     }
 
     // Pawn evaluation bitboards: passed pawn, backward pawns, isolated pawns.
     // cppCheck(a static code analyzer) gives a false positive here about out of bounds array access.
-    for (Square sq = Square::A2; sq <= Square::H7; ++sq)
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        auto f = file(sq);
+        isolated[sq] = 0;
+
+        if (sq < Square::A2 || sq > Square::H7)
+        {
+            passed[Color::White][sq] = passed[Color::Black][sq] = 0;
+            continue;
+        }
 
         passed[Color::White][sq] = rays[6][sq];
         passed[Color::Black][sq] = rays[1][sq];
 
+        auto f = file(sq);
         if (f != 7)
         {
             passed[Color::White][sq] |= rays[6][sq + 1];
@@ -341,10 +338,11 @@ void Bitboards::initialize()
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        kingZone[Color::White][sq] = sq < Square::A8 ? kingAttacks[sq] | kingAttacks[sq + 8] : kingAttacks[sq];
-        kingZone[Color::Black][sq] = sq > Square::H1 ? kingAttacks[sq] | kingAttacks[sq - 8] : kingAttacks[sq];
+        kingZone[Color::White][sq] = sq < Square::A8 ? kingAttack[sq] | kingAttack[sq + 8] : kingAttack[sq];
+        kingZone[Color::Black][sq] = sq > Square::H1 ? kingAttack[sq] | kingAttack[sq - 8] : kingAttack[sq];
     }
 
+    lookupTable.fill(0);
     initMagics(bishopInit, bishopMagic, bishopDirections, 64 - 9);
     initMagics(rookInit, rookMagic, rookDirections, 64 - 12);
 
@@ -375,23 +373,25 @@ void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magi
 {
     std::vector<int> squares;
 
-    auto rookMask = [](int sq) {
+    auto rookMask = [](int sq) 
+    {
         auto result = 0ull;
-        auto rk = sq / 8, fl = sq % 8;
-        for (auto r = rk + 1; r <= 6; r++) result |= (bit[fl + r * 8]);
-        for (auto r = rk - 1; r >= 1; r--) result |= (bit[fl + r * 8]);
-        for (auto f = fl + 1; f <= 6; f++) result |= (bit[f + rk * 8]);
-        for (auto f = fl - 1; f >= 1; f--) result |= (bit[f + rk * 8]);
+        auto rk = rank(sq), fl = file(sq);
+        for (auto r = rk + 1; r <= 6; r++) result |= (bits[fl + r * 8]);
+        for (auto r = rk - 1; r >= 1; r--) result |= (bits[fl + r * 8]);
+        for (auto f = fl + 1; f <= 6; f++) result |= (bits[f + rk * 8]);
+        for (auto f = fl - 1; f >= 1; f--) result |= (bits[f + rk * 8]);
         return result;
     };
 
-    auto bishopMask = [](int sq) {
+    auto bishopMask = [](int sq) 
+    {
         auto result = 0ull;
-        auto rk = sq / 8, fl = sq % 8;
-        for (auto r = rk + 1, f = fl + 1; r <= 6 && f <= 6; r++, f++) result |= (bit[f + r * 8]);
-        for (auto r = rk + 1, f = fl - 1; r <= 6 && f >= 1; r++, f--) result |= (bit[f + r * 8]);
-        for (auto r = rk - 1, f = fl + 1; r >= 1 && f <= 6; r--, f++) result |= (bit[f + r * 8]);
-        for (auto r = rk - 1, f = fl - 1; r >= 1 && f >= 1; r--, f--) result |= (bit[f + r * 8]);
+        auto rk = rank(sq), fl = file(sq);
+        for (auto r = rk + 1, f = fl + 1; r <= 6 && f <= 6; r++, f++) result |= (bits[f + r * 8]);
+        for (auto r = rk + 1, f = fl - 1; r <= 6 && f >= 1; r++, f--) result |= (bits[f + r * 8]);
+        for (auto r = rk - 1, f = fl + 1; r >= 1 && f <= 6; r--, f++) result |= (bits[f + r * 8]);
+        for (auto r = rk - 1, f = fl - 1; r >= 1 && f >= 1; r--, f--) result |= (bits[f + r * 8]);
         return result;
     };
 
@@ -415,14 +415,14 @@ void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magi
             for (auto j = 0u; j < squares.size(); ++j)
             {
                 if (k & (1 << j))
-                    bb |= bit[squares[j]];
+                    bb |= bits[squares[j]];
             }
             auto bb2 = 0ull;
             for (auto j = 0; j < 4; ++j)
             {
                 for (auto d = 1; !((sq88 + d * dir[j][1]) & 0x88); ++d)
                 {
-                    bb2 |= bit[sq + d * dir[j][0]];
+                    bb2 |= bits[sq + d * dir[j][0]];
                     if (bb & 1ull << (sq + d * dir[j][0]))
                         break;
                 }

@@ -2,14 +2,17 @@
 #define SQUARE_HPP_
 
 #include <cassert>
+#include <cstdint>
 
+// Represents a single square of the board.
 class Square
 {
 public:
     Square() : square(NoSquare) {};
-    Square(int newSquare) : square(newSquare) {};
+    Square(int newSquare) { assert(newSquare >= A1 && newSquare <= NoSquare); square = static_cast<int8_t>(newSquare); };
 
-    enum {
+    enum 
+    {
         A1, B1, C1, D1, E1, F1, G1, H1,
         A2, B2, C2, D2, E2, F2, G2, H2,
         A3, B3, C3, D3, E3, F3, G3, H3,
@@ -21,29 +24,35 @@ public:
         NoSquare
     };
 
-    operator int() const { return square; }
-    operator int&() { return square; }
+    operator int8_t() const { return square; }
+    operator int8_t&() { return square; }
 private:
-    int square;
+    int8_t square;
 };
 
-// Checks if the square is okay, i.e. >= A1 and <= H8. 
-inline bool isSquareOk(Square sq)
+// Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
+inline bool squareIsOkLoose(Square sq)
 {
-    return ((sq >= Square::A1) && (sq <= Square::H8));
+    return (sq >= Square::A1 && sq <= Square::NoSquare);
+}
+
+// Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
+inline bool squareIsOkStrict(Square sq)
+{
+    return (sq >= Square::A1 && sq <= Square::H8);
 }
 
 // Returns the number of the file the square is on.
 inline int file(Square sq)
 {
-    assert(isSquareOk(sq));
+    assert(squareIsOkStrict(sq));
     return (sq % 8);
 }
 
 // Returns the number of the rank the square is on.
 inline int rank(Square sq)
 {
-    assert(isSquareOk(sq));
+    assert(squareIsOkStrict(sq));
     return (sq / 8);
 }
 

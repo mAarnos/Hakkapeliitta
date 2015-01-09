@@ -1,44 +1,49 @@
 #include "zobrist.hpp"
 #include <random>
 #include "square.hpp"
+#include "piece.hpp"
 #include "bitboard.hpp"
 
-std::array<HashKey, 64> Zobrist::pieceHash[12];
-std::array<HashKey, 8> Zobrist::materialHash[12];
-std::array<HashKey, 16> Zobrist::castlingRightsHash;
-std::array<HashKey, 64> Zobrist::enPassantHash;
-HashKey Zobrist::turnHash;
+// No further improvement necessary.
+
+std::array<std::array<HashKey, 64>, 12> Zobrist::piece;
+std::array<std::array<HashKey, 8>, 12> Zobrist::material;
+std::array<HashKey, 16> Zobrist::castling;
+std::array<HashKey, 64> Zobrist::ep;
+HashKey Zobrist::turn;
+HashKey Zobrist::mangle;
 
 void Zobrist::initialize()
 {
     std::mt19937_64 rng(123456789);
 
-    for (auto p = 0; p < 12; ++p)
+    for (Piece p = Piece::WhitePawn; p <= Piece::BlackKing; ++p)
     {
         for (Square sq = Square::A1; sq <= Square::H8; ++sq)
         {
-            pieceHash[p][sq] = rng();
+            piece[p][sq] = rng(); 
         }
         for (auto j = 0; j < 8; ++j)
         {
-            materialHash[p][j] = rng();
+            material[p][j] = rng(); 
         }
     }
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        enPassantHash[sq] = rng();
+        ep[sq] = rng(); 
     }
 
-    for (auto cr = 0; cr < 16; ++cr)
+    for (auto cr = 0; cr <= 15; ++cr)
     {
         Bitboard castlingRight = cr;
         while (castlingRight)
         {
-            auto key = castlingRightsHash[1ull << Bitboards::popLsb(castlingRight)];
-            castlingRightsHash[cr] ^= key ? key : rng();
+            auto key = castling[1ull << Bitboards::popLsb(castlingRight)];
+            castling[cr] ^= key ? key : rng(); 
         }
     }
 
-    turnHash = rng();
+    turn = rng(); 
+    mangle = rng();
 }

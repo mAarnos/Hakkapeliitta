@@ -1,33 +1,65 @@
 #ifndef MOVELIST_HPP_
 #define MOVELIST_HPP_
 
-#include <array>
-#include <type_traits>
 #include <cassert>
 #include "move.hpp"
 
+// Holds generated moves. Maximum amount of moves supported is 218.
+// The slightly peculiar design is caused by the desire to avoid calling constructors on 218 Move objects.
 class MoveList
 {
 public:
     MoveList() : numberOfMoves(0) {};
 
-    // Perfect forwarder for pushing both lvalues and rvalues with the same efficiency.
-    // Why? Because I could.
-    template<class T, class = std::enable_if<std::is_same<T, Move>::value>>
-    void push_back(T&& move) 
-    {  
-        moveList[numberOfMoves++] = std::forward<T>(move); 
-    }
+    Move& operator[](int index);
+    const Move& operator[](int index) const;
 
-    Move& operator[](int index) { return moveList[index]; }
-    const Move& operator[](int index) const { return moveList[index]; }
-    void clear() { numberOfMoves = 0; };
-    void resize(int newSize) { numberOfMoves = newSize; }
-    int size() const { return numberOfMoves; }
-    bool empty() const { return numberOfMoves == 0; }
+    void push_back(const Move& move);
+    void clear();
+    void resize(int newSize);
+    int size() const;
+    bool empty() const;
 private:
-    std::array<Move, 218> moveList;
-    int numberOfMoves;
+    int32_t moveList[sizeof(Move[218]) / sizeof(int32_t)];
+    int32_t numberOfMoves;
 };
+
+inline Move& MoveList::operator[](int index)
+{
+    assert(index >= 0 && index < numberOfMoves);
+    return (reinterpret_cast<Move*>(&moveList[0]))[index];
+}
+
+inline const Move& MoveList::operator[](int index) const
+{
+    assert(index >= 0 && index < numberOfMoves);
+    return (reinterpret_cast<const Move*>(&moveList[0]))[index];
+}
+
+inline void MoveList::push_back(const Move& move)
+{
+    assert(numberOfMoves < 218);
+    (reinterpret_cast<Move*>(&moveList[0]))[numberOfMoves++] = move;
+}
+
+inline void MoveList::clear() 
+{ 
+    numberOfMoves = 0; 
+};
+
+inline void MoveList::resize(int newSize)
+{ 
+    numberOfMoves = newSize;
+}
+
+inline int MoveList::size() const
+{ 
+    return numberOfMoves; 
+}
+
+inline bool MoveList::empty() const 
+{ 
+    return numberOfMoves == 0;
+}
 
 #endif
