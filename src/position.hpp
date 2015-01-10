@@ -90,12 +90,15 @@ private:
     Bitboard pinnedPieces(Color c) const { return checkBlockers(c, c); }
     Bitboard checkBlockers(Color c, Color kingColor) const;
 
-    static const std::array<int, 64> castlingMask;
-
     // Testing functions.
-    bool verifyHashKeys() const;
+    bool verifyHashKeysAndPhase() const;
     bool verifyPieceCounts() const;
     bool verifyBoardAndBitboards() const;
+
+    // Some stuff needed for making moves.
+    static const std::array<int, 64> castlingMask;
+    static const std::array<int8_t, 6> piecePhase;
+    static const int8_t totalPhase;
 };
 
 #endif

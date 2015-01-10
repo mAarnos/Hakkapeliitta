@@ -20,6 +20,16 @@ const std::array<int, 64> Position::castlingMask = {
 	8, 0, 0, 0, 12, 0, 0, 4
 };
 
+const std::array<int8_t, 6> Position::piecePhase = {
+    0, 3, 3, 5, 10, 0
+};
+
+const int8_t Position::totalPhase = piecePhase[Piece::Pawn] * 16 
+                                  + piecePhase[Piece::Knight] * 4 
+                                  + piecePhase[Piece::Bishop] * 4 
+                                  + piecePhase[Piece::Rook] * 4 
+                                  + piecePhase[Piece::Queen] * 2;
+
 Position::Position()
 {
     bitboards.fill(0);
@@ -184,6 +194,13 @@ Position::Position(const std::string& fen)
 
     pinned = pinnedPieces(sideToMove);
     dcCandidates = discoveredCheckCandidates();
+
+    // Calculate the phase of the game.
+    gamePhase = totalPhase;
+    for (Piece p = Piece::Knight; p < Piece::King; ++p)
+    {
+        gamePhase -= (pieceCount[Color::White + p] + pieceCount[Color::Black * 6 + p]) * piecePhase[p];
+    }
 }
 
 std::string Position::displayPositionAsString() const
@@ -251,6 +268,7 @@ void Position::makeMove(const Move& m)
         materialHashKey ^= Zobrist::materialHashKey(captured, --pieceCount[captured]);
 
         auto pieceType = getPieceType(captured);
+        gamePhase += piecePhase[pieceType];
         if (pieceType == Piece::Pawn)
         {
             pawnHashKey ^= Zobrist::pieceHashKey(captured, to);
@@ -288,6 +306,7 @@ void Position::makeMove(const Move& m)
             hashKey ^= Zobrist::pieceHashKey(Piece::Pawn + side * 6, to) ^ Zobrist::pieceHashKey(promotion + side * 6, to);
             pawnHashKey ^= Zobrist::pieceHashKey(Piece::Pawn + side * 6, to);
             materialHashKey ^= Zobrist::materialHashKey(Piece::Pawn + side * 6, --pieceCount[Piece::Pawn + side * 6]);
+            gamePhase -= piecePhase[promotion];
         }
     }
     else if (promotion == Piece::King)
@@ -319,7 +338,7 @@ void Position::makeMove(const Move& m)
     pinned = pinnedPieces(sideToMove);
     dcCandidates = discoveredCheckCandidates();
 
-    assert(verifyHashKeys());
+    assert(verifyHashKeysAndPhase());
     assert(verifyPieceCounts());
     assert(verifyBoardAndBitboards());
 }
@@ -503,9 +522,20 @@ int Position::givesCheck(const Move& move) const
     return 0;
 }
 
-bool Position::verifyHashKeys() const
+bool Position::verifyHashKeysAndPhase() const
 {
-    return hashKey == calculateHash() && pawnHashKey == calculatePawnHash() && materialHashKey == calculateMaterialHash();
+    if (hashKey != calculateHash() || pawnHashKey != calculatePawnHash() && materialHashKey != calculateMaterialHash())
+    {
+        return false;
+    }
+
+    auto correctPhase = totalPhase;
+    for (Piece p = Piece::Knight; p < Piece::King; ++p)
+    {
+        correctPhase -= (pieceCount[Color::White + p] + pieceCount[Color::Black * 6 + p]) * piecePhase[p];
+    }
+
+    return correctPhase == gamePhase;
 }
 
 bool Position::verifyPieceCounts() const
