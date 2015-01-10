@@ -163,38 +163,34 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 template <bool side>
 void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 {
-    int to;
+    int from, to;
     auto occupied = pos.getOccupiedSquares();
     auto targetBitboard = ~pos.getPieces(side);
 
-    auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
-    auto tempMove = Bitboards::kingAttacks(from) & targetBitboard;
+    auto kingLocation = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    auto tempMove = Bitboards::kingAttacks(kingLocation) & targetBitboard;
     // Remove our king from occupied so we can find out if squares "behind" our king are attacked.
-    Bitboards::clearBit(occupied, from);
+    Bitboards::clearBit(occupied, kingLocation);
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
         if (!(Bitboards::pawnAttacks(side, to) & pos.getBitboard(!side, Piece::Pawn)
             || Bitboards::knightAttacks(to) & pos.getBitboard(!side, Piece::Knight)
             || Bitboards::kingAttacks(to) & pos.getBitboard(!side, Piece::King)
-            || Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
-            | pos.getBitboard(!side, Piece::Bishop))
-            || Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen)
-            | pos.getBitboard(!side, Piece::Rook))))
+            || Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Bishop))
+            || Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Rook))))
         {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
+            moves.push_back(Move(kingLocation, to, Piece::Empty, 0));
         }
     }
     // And now put it back.
-    Bitboards::setBit(occupied, from);
+    Bitboards::setBit(occupied, kingLocation);
 
-    auto checkers = (Bitboards::rookAttacks(from, occupied) & (pos.getBitboard(!side, Piece::Queen)
-        | pos.getBitboard(!side, Piece::Rook)))
-        | (Bitboards::bishopAttacks(from, occupied) & (pos.getBitboard(!side, Piece::Queen)
-        | pos.getBitboard(!side, Piece::Bishop)))
-        | (Bitboards::knightAttacks(from) & pos.getBitboard(!side, Piece::Knight))
-        | (Bitboards::kingAttacks(from) & pos.getBitboard(!side, Piece::King))
-        | (Bitboards::pawnAttacks(side, from) & pos.getBitboard(!side, Piece::Pawn));
+    auto checkers = (Bitboards::rookAttacks(kingLocation, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Rook)))
+        | (Bitboards::bishopAttacks(kingLocation, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Bishop)))
+        | (Bitboards::knightAttacks(kingLocation) & pos.getBitboard(!side, Piece::Knight))
+        | (Bitboards::kingAttacks(kingLocation) & pos.getBitboard(!side, Piece::King))
+        | (Bitboards::pawnAttacks(side, kingLocation) & pos.getBitboard(!side, Piece::Pawn));
     // If we are checked by more than two pieces only the king can move and we are done.
     if (Bitboards::moreThanOneBitSet(checkers))
     {
@@ -236,7 +232,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
             }
         }
 
-        auto interpose = Bitboards::squaresBetween(Bitboards::lsb(pos.getBitboard(side, Piece::King)), checkerLocation);
+        auto interpose = Bitboards::squaresBetween(kingLocation, checkerLocation);
         if (interpose)
         {
             if (Bitboards::pawnSingleMoves(side, from) & occupied)
@@ -266,7 +262,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
         }
     }
 
-    auto interpose = Bitboards::squaresBetween(Bitboards::lsb(pos.getBitboard(side, Piece::King)), checkerLocation) | checkers;
+    auto interpose = Bitboards::squaresBetween(kingLocation, checkerLocation) | checkers;
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
     while (tempPiece)
     {

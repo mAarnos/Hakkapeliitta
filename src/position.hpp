@@ -70,8 +70,9 @@ private:
     Square enPassant;
     int8_t fiftyMoveDistance;
     int8_t totalPieceCount;
-    short gamePly;
     std::array<int8_t, 12> pieceCount;
+    int8_t gamePhase;
+    short gamePly;
 
 	// These functions can be used to calculate different hash keys for the current position.
 	// They are slow so they are only used when initializing, instead we update them incrementally.

@@ -20,7 +20,7 @@ int main()
 
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
-    Benchmark::runPerft(pos, 7);
+    Benchmark::runPerft(pos, 6);
 
     return 0;
 }

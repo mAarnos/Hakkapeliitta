@@ -31,6 +31,7 @@ Position::Position()
     fiftyMoveDistance = 0;
     totalPieceCount = 0;
     gamePly = 0;
+    gamePhase = 0;
     pieceCount.fill(0);
 }
 
@@ -141,7 +142,6 @@ Position::Position(const std::string& fen)
 	}
 
 	// Fifty move distance, we start at 0 by default.
-    // TODO: test that this still works.
 	fiftyMoveDistance = 0;
 	if (strList.size() >= 5)
 	{
@@ -332,9 +332,9 @@ bool Position::isAttacked(Square sq) const
 {
     return (Bitboards::knightAttacks(sq) & getBitboard(side, Piece::Knight)
         || Bitboards::pawnAttacks(!side, sq) & getBitboard(side, Piece::Pawn)
-        || Bitboards::kingAttacks(sq) & getBitboard(side, Piece::King)
         || Bitboards::bishopAttacks(sq, getOccupiedSquares()) & (getBitboard(side, Piece::Bishop) | getBitboard(side, Piece::Queen))
-        || Bitboards::rookAttacks(sq, getOccupiedSquares()) & (getBitboard(side, Piece::Rook) | getBitboard(side, Piece::Queen)));
+        || Bitboards::rookAttacks(sq, getOccupiedSquares()) & (getBitboard(side, Piece::Rook) | getBitboard(side, Piece::Queen))
+        || Bitboards::kingAttacks(sq) & getBitboard(side, Piece::King));
 }
 
 template bool Position::isAttacked<false>(Square sq) const;
@@ -446,7 +446,8 @@ bool Position::legal(const Move& move, bool inCheck) const
     }
 
     // Otherwise a move is legal if it is not pinned or it is moving along the ray towards or away from the king.
-    return !Bitboards::testBit(pinned, from) || Bitboards::testBit(Bitboards::lineFormedBySquares(from, to), Bitboards::lsb(getBitboard(sideToMove, Piece::King)));
+    return !Bitboards::testBit(pinned, from) 
+         || Bitboards::testBit(Bitboards::lineFormedBySquares(from, to), Bitboards::lsb(getBitboard(sideToMove, Piece::King)));
 }
 
 int Position::givesCheck(const Move& move) const
@@ -541,7 +542,7 @@ bool Position::verifyBoardAndBitboards() const
         if (board[sq] == Piece::Empty)
         {
             // Test that none of the bitboards has a bit set at the specified location.
-            for (auto i = 0; i < 15; ++i)
+            for (auto i = 0; i < 14; ++i)
             {
                 if (Bitboards::testBit(bitboards[i], sq))
                     return false;

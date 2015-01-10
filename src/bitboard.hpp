@@ -137,12 +137,12 @@ public:
     {
         assert(pieceTypeIsOk(piece));
 
-        if (piece == Piece::Pawn) return Bitboards::pawnAttacks(sideToMove, sq);
-        if (piece == Piece::Knight) return Bitboards::knightAttacks(sq);
-        if (piece == Piece::Bishop) return Bitboards::bishopAttacks(sq, occupied);
-        if (piece == Piece::Rook) return Bitboards::rookAttacks(sq, occupied);
-        if (piece == Piece::Queen) return Bitboards::queenAttacks(sq, occupied);
-        if (piece == Piece::King) return Bitboards::kingAttacks(sq);
+        if (piece == Piece::Pawn) return pawnAttacks(sideToMove, sq);
+        if (piece == Piece::Knight) return knightAttacks(sq);
+        if (piece == Piece::Bishop) return bishopAttacks(sq, occupied);
+        if (piece == Piece::Rook) return rookAttacks(sq, occupied);
+        if (piece == Piece::Queen) return queenAttacks(sq, occupied);
+        if (piece == Piece::King) return kingAttacks(sq);
 
         assert(false);
         return 0;
