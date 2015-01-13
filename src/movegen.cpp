@@ -13,11 +13,43 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
                         : generateLegalEvasions<false>(pos, moves);
 }
 
-void addMovesFromMask(MoveList& moveList, Bitboard mask, Square from)
+void addPieceMovesFromMask(MoveList& moveList, Bitboard mask, Square from)
 {
     while (mask)
     {
         auto to = Bitboards::popLsb(mask);
+        moveList.push_back(Move(from, to, Piece::Empty, 0));
+    }
+}
+
+template <bool side>
+void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask)
+{
+    while (mask)
+    {
+        auto to = Bitboards::popLsb(mask);
+        auto from = to - 8 + side * 16;
+        if (to >= Square::A8 || to <= Square::H1)
+        {
+            moveList.push_back(Move(from, to, Piece::Queen, 0));
+            moveList.push_back(Move(from, to, Piece::Rook, 0));
+            moveList.push_back(Move(from, to, Piece::Bishop, 0));
+            moveList.push_back(Move(from, to, Piece::Knight, 0));
+        }
+        else
+        {
+            moveList.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
+}
+
+template <bool side>
+void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask)
+{
+    while (mask)
+    {
+        auto to = Bitboards::popLsb(mask);
+        auto from = to - 16 + side * 32;
         moveList.push_back(Move(from, to, Piece::Empty, 0));
     }
 }
@@ -35,33 +67,13 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     auto m = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
-    auto tempMove = m;
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 8 + side * 16;
-        if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
-    tempMove = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares;
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 16 + side * 32;
-        moves.push_back(Move(from, to, Piece::Empty, 0));
-    }
+    addPawnSingleMovesFromMask<side>(moves, m);
+
+    m = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares;
+    addPawnDoubleMovesFromMask<side>(moves, m);
 
     auto ep = (pos.getEnPassantSquare() != Square::NoSquare ? Bitboards::bit(pos.getEnPassantSquare()) : 0);
-    tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
+    auto tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
@@ -111,7 +123,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::knightAttacks(from) & targetBB;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Bishop);
@@ -119,7 +131,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & targetBB;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Rook);
@@ -127,7 +139,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::rookAttacks(from, occupiedSquares) & targetBB;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Queen);
@@ -135,13 +147,14 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::queenAttacks(from, occupiedSquares) & targetBB;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
     tempMove = Bitboards::kingAttacks(from) & targetBB;
-    addMovesFromMask(moves, tempMove, from);
+    addPieceMovesFromMask(moves, tempMove, from);
 
+    // TODO: fix this absurdity
     if (!pos.isAttacked(Square::E1 + 56 * side, !side))
     {
         if (pos.getCastlingRights() & (1 << (2 * side))) // Short castling.
@@ -209,30 +222,10 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn) & ~pinned;
     auto m = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
-    tempMove = m & interpose;
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 8 + side * 16;
-        if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
-    tempMove = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares & interpose;
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 16 + side * 32;
-        moves.push_back(Move(from, to, Piece::Empty, 0));
-    }
+    addPawnSingleMovesFromMask<side>(moves, m & interpose);
+
+    m = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares & interpose;
+    addPawnDoubleMovesFromMask<side>(moves, m);
 
     auto ep = (pos.getEnPassantSquare() != Square::NoSquare && checkerLocation == (pos.getEnPassantSquare() - 8 + side * 16)) ? Bitboards::bit(pos.getEnPassantSquare()) : 0;
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (checkers | ep);
@@ -284,7 +277,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::knightAttacks(from) & interpose;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Bishop) & ~pinned;
@@ -292,7 +285,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::bishopAttacks(from, occupied) & interpose;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Rook) & ~pinned;
@@ -300,7 +293,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::rookAttacks(from, occupied) & interpose;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 
     tempPiece = pos.getBitboard(side, Piece::Queen) & ~pinned;
@@ -308,7 +301,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     {
         from = Bitboards::popLsb(tempPiece);
         tempMove = Bitboards::queenAttacks(from, occupied) & interpose;
-        addMovesFromMask(moves, tempMove, from);
+        addPieceMovesFromMask(moves, tempMove, from);
     }
 }
 
