@@ -34,7 +34,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     auto occupiedSquares = pos.getOccupiedSquares();
 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
-    auto m = (side ? tempPiece >> 8 : tempPiece << 8) & ~occupiedSquares;
+    auto m = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
     auto tempMove = m;
     while (tempMove)
     {
@@ -52,7 +52,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
             moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
-    tempMove = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & ~occupiedSquares;
+    tempMove = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares;
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
@@ -60,8 +60,8 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
         moves.push_back(Move(from, to, Piece::Empty, 0));
     }
 
-    auto ep = pos.getEnPassantSquare();
-    tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | (ep != Square::NoSquare ? Bitboards::bit(ep) : 0));
+    auto ep = (pos.getEnPassantSquare() != Square::NoSquare ? Bitboards::bit(pos.getEnPassantSquare()) : 0);
+    tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
@@ -83,7 +83,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
         }
     }
 
-    tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | (ep != Square::NoSquare ? Bitboards::bit(ep) : 0));
+    tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
     while (tempMove)
     {
         to = Bitboards::popLsb(tempMove);
@@ -203,6 +203,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
         return;
     }
     auto checkerLocation = Bitboards::lsb(checkers);
+    auto interpose = Bitboards::squaresBetween(kingLocation, checkerLocation) | checkers;
     auto pinned = pos.getPinnedPieces();
 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn) & ~pinned;
@@ -238,7 +239,6 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
             }
         }
 
-        auto interpose = Bitboards::squaresBetween(kingLocation, checkerLocation);
         if (interpose)
         {
             if (Bitboards::pawnSingleMoves(side, from) & occupied)
@@ -268,7 +268,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
         }
     }
 
-    auto interpose = Bitboards::squaresBetween(kingLocation, checkerLocation) | checkers;
+
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
     while (tempPiece)
     {
