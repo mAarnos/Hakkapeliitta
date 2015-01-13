@@ -14,7 +14,8 @@ public:
     Move& operator[](int index);
     const Move& operator[](int index) const;
 
-    void push_back(const Move& move);
+    template<class... T>
+    void emplace_back(T&&... args);
     void clear();
     void resize(int newSize);
     int size() const;
@@ -36,10 +37,10 @@ inline const Move& MoveList::operator[](int index) const
     return (reinterpret_cast<const Move*>(&moveList[0]))[index];
 }
 
-inline void MoveList::push_back(const Move& move)
+template<class... T>
+inline void MoveList::emplace_back(T&&... args)
 {
-    assert(numberOfMoves < 218);
-    (reinterpret_cast<Move*>(&moveList[0]))[numberOfMoves++] = move;
+    (reinterpret_cast<Move*>(&moveList[0]))[numberOfMoves++] = Move(std::forward<T>(args)...);
 }
 
 inline void MoveList::clear() 

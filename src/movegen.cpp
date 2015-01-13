@@ -18,7 +18,7 @@ void addPieceMovesFromMask(MoveList& moveList, Bitboard mask, Square from)
     while (mask)
     {
         auto to = Bitboards::popLsb(mask);
-        moveList.push_back(Move(from, to, Piece::Empty, 0));
+        moveList.emplace_back(from, to, Piece::Empty, 0);
     }
 }
 
@@ -31,14 +31,14 @@ void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask)
         auto from = to - 8 + side * 16;
         if (to >= Square::A8 || to <= Square::H1)
         {
-            moveList.push_back(Move(from, to, Piece::Queen, 0));
-            moveList.push_back(Move(from, to, Piece::Rook, 0));
-            moveList.push_back(Move(from, to, Piece::Bishop, 0));
-            moveList.push_back(Move(from, to, Piece::Knight, 0));
+            moveList.emplace_back(from, to, Piece::Queen, 0);
+            moveList.emplace_back(from, to, Piece::Rook, 0);
+            moveList.emplace_back(from, to, Piece::Bishop, 0);
+            moveList.emplace_back(from, to, Piece::Knight, 0);
         }
         else
         {
-            moveList.push_back(Move(from, to, Piece::Empty, 0));
+            moveList.emplace_back(from, to, Piece::Empty, 0);
         }
     }
 }
@@ -50,7 +50,32 @@ void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask)
     {
         auto to = Bitboards::popLsb(mask);
         auto from = to - 16 + side * 32;
-        moveList.push_back(Move(from, to, Piece::Empty, 0));
+        moveList.emplace_back(from, to, Piece::Empty, 0);
+    }
+}
+
+template <bool side, bool rightCaptures>
+void addPawnCapturesFromMask(MoveList& moveList, Bitboard mask, Square ep)
+{
+    while (mask)
+    {
+        auto to = Bitboards::popLsb(mask);
+        auto from = to - 7 - (2 * rightCaptures) + side * 16;
+        if (to == ep)
+        {
+            moveList.emplace_back(from, to, Piece::Pawn, 0);
+        }
+        else if (to >= Square::A8 || to <= Square::H1)
+        {
+            moveList.emplace_back(from, to, Piece::Queen, 0);
+            moveList.emplace_back(from, to, Piece::Rook, 0);
+            moveList.emplace_back(from, to, Piece::Bishop, 0);
+            moveList.emplace_back(from, to, Piece::Knight, 0);
+        }
+        else
+        {
+            moveList.emplace_back(from, to, Piece::Empty, 0);
+        }
     }
 }
 
@@ -59,7 +84,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 {
     assert(moves.empty());
 
-    int from, to;
+    int from;
     auto freeSquares = pos.getFreeSquares();
     auto enemyPieces = pos.getPieces(!side);
     auto targetBB = freeSquares | enemyPieces;
@@ -74,48 +99,10 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 
     auto ep = (pos.getEnPassantSquare() != Square::NoSquare ? Bitboards::bit(pos.getEnPassantSquare()) : 0);
     auto tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 7 + side * 16;
-        if (to == pos.getEnPassantSquare())
-        {
-            moves.push_back(Move(from, to, Piece::Pawn, 0));
-        }
-        else if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
+    addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare());
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 9 + side * 16;
-        if (to == pos.getEnPassantSquare())
-        {
-            moves.push_back(Move(from, to, Piece::Pawn, 0));
-        }
-        else if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
+    addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare());
 
     // Since pinned pieces do not have legal moves we can remove them.
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pos.getPinnedPieces();
@@ -163,7 +150,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
             {
                 if (!(pos.isAttacked(Square::F1 + 56 * side, !side)) && !(pos.isAttacked(Square::G1 + 56 * side, !side)))
                 {
-                    moves.push_back(Move(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0));
+                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0);
                 }
             }
         }
@@ -173,7 +160,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
             {
                 if (!(pos.isAttacked(Square::D1 + 56 * side, !side)) && !(pos.isAttacked(Square::C1 + 56 * side, !side)))
                 {
-                    moves.push_back(Move(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0));
+                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0);
                 }
             }
         }
@@ -201,7 +188,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
             || Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Bishop))
             || Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Rook))))
         {
-            moves.push_back(Move(kingLocation, to, Piece::Empty, 0));
+            moves.emplace_back(kingLocation, to, Piece::Empty, 0);
         }
     }
     Bitboards::setBit(occupied, kingLocation); // And now put it back.
@@ -229,48 +216,10 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 
     auto ep = (pos.getEnPassantSquare() != Square::NoSquare && checkerLocation == (pos.getEnPassantSquare() - 8 + side * 16)) ? Bitboards::bit(pos.getEnPassantSquare()) : 0;
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (checkers | ep);
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 7 + side * 16;
-        if (to == pos.getEnPassantSquare())
-        {
-            moves.push_back(Move(from, to, Piece::Pawn, 0));
-        }
-        else if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
+    addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare());
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (checkers | ep);
-    while (tempMove)
-    {
-        to = Bitboards::popLsb(tempMove);
-        from = to - 9 + side * 16;
-        if (to == pos.getEnPassantSquare())
-        {
-            moves.push_back(Move(from, to, Piece::Pawn, 0));
-        }
-        else if (to >= Square::A8 || to <= Square::H1)
-        {
-            moves.push_back(Move(from, to, Piece::Queen, 0));
-            moves.push_back(Move(from, to, Piece::Rook, 0));
-            moves.push_back(Move(from, to, Piece::Bishop, 0));
-            moves.push_back(Move(from, to, Piece::Knight, 0));
-        }
-        else
-        {
-            moves.push_back(Move(from, to, Piece::Empty, 0));
-        }
-    }
+    addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare());
 
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
     while (tempPiece)
