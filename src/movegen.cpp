@@ -172,6 +172,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
 {
     int from, to;
     auto occupied = pos.getOccupiedSquares();
+    auto freeSquares = pos.getFreeSquares();
     auto targetBitboard = ~pos.getPieces(side);
 
     auto kingLocation = Bitboards::lsb(pos.getBitboard(side, Piece::King));
@@ -207,67 +208,76 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     auto pinned = pos.getPinnedPieces();
 
     auto tempPiece = pos.getBitboard(side, Piece::Pawn) & ~pinned;
-    while (tempPiece)
+    auto m = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
+    tempMove = m & interpose;
+    while (tempMove)
     {
-        from = Bitboards::popLsb(tempPiece);
-        tempMove = Bitboards::pawnAttacks(side, from) & checkers;
-        while (tempMove)
+        to = Bitboards::popLsb(tempMove);
+        from = to - 8 + side * 16;
+        if (to >= Square::A8 || to <= Square::H1)
         {
-            to = Bitboards::popLsb(tempMove);
-            if (to >= Square::A8 || to <= Square::H1)
-            {
-                moves.push_back(Move(from, to, Piece::Queen, 0));
-                moves.push_back(Move(from, to, Piece::Rook, 0));
-                moves.push_back(Move(from, to, Piece::Bishop, 0));
-                moves.push_back(Move(from, to, Piece::Knight, 0));
-            }
-            else
-            {
-                moves.push_back(Move(from, to, Piece::Empty, 0));
-            }
+            moves.push_back(Move(from, to, Piece::Queen, 0));
+            moves.push_back(Move(from, to, Piece::Rook, 0));
+            moves.push_back(Move(from, to, Piece::Bishop, 0));
+            moves.push_back(Move(from, to, Piece::Knight, 0));
         }
-
-        auto enPassant = pos.getEnPassantSquare();
-        if (enPassant != Square::NoSquare)
+        else
         {
-            if (Bitboards::testBit(Bitboards::pawnAttacks(side, from), enPassant))
-            {
-                if (static_cast<int>(checkerLocation) == (enPassant - 8 + side * 16))
-                {
-                    moves.push_back(Move(from, pos.getEnPassantSquare(), Piece::Pawn, 0));
-                }
-            }
+            moves.push_back(Move(from, to, Piece::Empty, 0));
         }
+    }
+    tempMove = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares & interpose;
+    while (tempMove)
+    {
+        to = Bitboards::popLsb(tempMove);
+        from = to - 16 + side * 32;
+        moves.push_back(Move(from, to, Piece::Empty, 0));
+    }
 
-        if (interpose)
+    auto ep = (pos.getEnPassantSquare() != Square::NoSquare && checkerLocation == (pos.getEnPassantSquare() - 8 + side * 16)) ? Bitboards::bit(pos.getEnPassantSquare()) : 0;
+    tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (checkers | ep);
+    while (tempMove)
+    {
+        to = Bitboards::popLsb(tempMove);
+        from = to - 7 + side * 16;
+        if (to == pos.getEnPassantSquare())
         {
-            if (Bitboards::pawnSingleMoves(side, from) & occupied)
-            {
-                continue;
-            }
-            tempMove = Bitboards::pawnSingleMoves(side, from) & interpose;
-            if (!(Bitboards::pawnDoubleMoves(side, from) & occupied))
-            {
-                tempMove |= Bitboards::pawnDoubleMoves(side, from) & interpose;
-            }
-            while (tempMove)
-            {
-                to = Bitboards::popLsb(tempMove);
-                if (to >= Square::A8 || to <= Square::H1)
-                {
-                    moves.push_back(Move(from, to, Piece::Queen, 0));
-                    moves.push_back(Move(from, to, Piece::Rook, 0));
-                    moves.push_back(Move(from, to, Piece::Bishop, 0));
-                    moves.push_back(Move(from, to, Piece::Knight, 0));
-                }
-                else
-                {
-                    moves.push_back(Move(from, to, Piece::Empty, 0));
-                }
-            }
+            moves.push_back(Move(from, to, Piece::Pawn, 0));
+        }
+        else if (to >= Square::A8 || to <= Square::H1)
+        {
+            moves.push_back(Move(from, to, Piece::Queen, 0));
+            moves.push_back(Move(from, to, Piece::Rook, 0));
+            moves.push_back(Move(from, to, Piece::Bishop, 0));
+            moves.push_back(Move(from, to, Piece::Knight, 0));
+        }
+        else
+        {
+            moves.push_back(Move(from, to, Piece::Empty, 0));
         }
     }
 
+    tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (checkers | ep);
+    while (tempMove)
+    {
+        to = Bitboards::popLsb(tempMove);
+        from = to - 9 + side * 16;
+        if (to == pos.getEnPassantSquare())
+        {
+            moves.push_back(Move(from, to, Piece::Pawn, 0));
+        }
+        else if (to >= Square::A8 || to <= Square::H1)
+        {
+            moves.push_back(Move(from, to, Piece::Queen, 0));
+            moves.push_back(Move(from, to, Piece::Rook, 0));
+            moves.push_back(Move(from, to, Piece::Bishop, 0));
+            moves.push_back(Move(from, to, Piece::Knight, 0));
+        }
+        else
+        {
+            moves.push_back(Move(from, to, Piece::Empty, 0));
+        }
+    }
 
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
     while (tempPiece)

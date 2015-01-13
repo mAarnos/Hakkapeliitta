@@ -9,8 +9,6 @@ std::array<Bitboard, 64> Bitboards::bits;
 std::array<Bitboard, 64> Bitboards::kingAttack;
 std::array<Bitboard, 64> Bitboards::knightAttack;
 std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnAttack;
-std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnSingleMove;
-std::array<std::array<Bitboard, 64>, 2> Bitboards::pawnDoubleMove;
 std::array<std::array<Bitboard, 64>, 8> Bitboards::rays;
 std::array<std::array<Bitboard, 64>, 64> Bitboards::between;
 std::array<std::array<Bitboard, 64>, 64> Bitboards::line;
@@ -258,15 +256,6 @@ void Bitboards::initialize()
     {
         pawnAttack[Color::White][sq] = ((bits[sq] << 9) & 0xFEFEFEFEFEFEFEFE) | ((bits[sq] << 7) & 0x7F7F7F7F7F7F7F7F);
         pawnAttack[Color::Black][sq] = ((bits[sq] >> 9) & 0x7F7F7F7F7F7F7F7F) | ((bits[sq] >> 7) & 0xFEFEFEFEFEFEFEFE);
-    }
-
-    // Pawn moves
-    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
-    {
-        pawnSingleMove[Color::White][sq] = (sq <= Square::H7 ? bits[sq + 8] : 0);
-        pawnSingleMove[Color::Black][sq] = (sq >= Square::A2 ? bits[sq - 8] : 0);
-        pawnDoubleMove[Color::White][sq] = ((sq >= Square::A2 && sq <= Square::H2) ? bits[sq + 16] : 0);
-        pawnDoubleMove[Color::Black][sq] = ((sq >= Square::A7 && sq <= Square::H7) ? bits[sq - 16] : 0);
     }
 
     // Rays to all directions

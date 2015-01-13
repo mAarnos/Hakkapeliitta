@@ -18,9 +18,9 @@ int main()
 
     sync_cout << sizeof(Position) << std::endl;
 
-    Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+    Position pos("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -");
 
-    Benchmark::runPerft(pos, 7);
+    Benchmark::runPerft(pos, 6);
 
     return 0;
 }

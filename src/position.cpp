@@ -338,9 +338,9 @@ void Position::makeMove(const Move& m)
     pinned = pinnedPieces(sideToMove);
     dcCandidates = discoveredCheckCandidates();
 
-    //assert(verifyHashKeysAndPhase());
-    //assert(verifyPieceCounts());
-    //assert(verifyBoardAndBitboards());
+    assert(verifyHashKeysAndPhase());
+    assert(verifyPieceCounts());
+    assert(verifyBoardAndBitboards());
 }
 
 template void Position::makeMove<false>(const Move& m);

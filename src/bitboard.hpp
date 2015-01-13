@@ -36,8 +36,6 @@ public:
     static Bitboard kingAttacks(Square sq) { return kingAttack[sq]; }
     static Bitboard knightAttacks(Square sq) { return knightAttack[sq]; }
     static Bitboard pawnAttacks(Color c, Square sq) { return pawnAttack[c][sq]; }
-    static Bitboard pawnSingleMoves(Color c, Square sq) { return pawnSingleMove[c][sq]; }
-    static Bitboard pawnDoubleMoves(Color c, Square sq) { return pawnDoubleMove[c][sq]; }
     static Bitboard squaresBetween(Square from, Square to) { return between[from][to]; }
     static Bitboard lineFormedBySquares(Square from, Square to) { return line[from][to]; }
     static Bitboard ray(int direction, Square sq) { return rays[direction][sq]; }
@@ -200,8 +198,6 @@ private:
     static std::array<Bitboard, 64> kingAttack;
     static std::array<Bitboard, 64> knightAttack;
     static std::array<std::array<Bitboard, 64>, 2> pawnAttack;
-    static std::array<std::array<Bitboard, 64>, 2> pawnSingleMove;
-    static std::array<std::array<Bitboard, 64>, 2> pawnDoubleMove;
     static std::array<std::array<Bitboard, 64>, 64> line;
     static std::array<std::array<Bitboard, 64>, 64> between;
     static std::array<std::array<Bitboard, 64>, 8> rays;
