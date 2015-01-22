@@ -9,7 +9,7 @@
 class MoveList
 {
 public:
-    MoveList() : numberOfMoves(0) {};
+    MoveList();
 
     Move& operator[](int index);
     const Move& operator[](int index) const;
@@ -23,6 +23,10 @@ public:
 private:
     int32_t moveList[sizeof(Move[218]) / sizeof(int32_t)];
     int32_t numberOfMoves;
+};
+
+inline MoveList::MoveList() : numberOfMoves(0) 
+{
 };
 
 inline Move& MoveList::operator[](const int index)

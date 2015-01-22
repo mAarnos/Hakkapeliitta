@@ -59,14 +59,6 @@ void TranspositionTable::save(const HashKey hk, const int ply, const Move& move,
     auto hashEntry = table[hk & (tableSize - 1)].entries;
     auto replace = hashEntry;
 
-    // We only store pure mate scores so that we can use them in other parts of the search tree too.
-    /*
-    if (isMateScore(score))
-    {
-        score += (score > 0 ? ply : -ply);
-    }
-    */
-
     for (auto i = 0; i < 4; ++i, ++hashEntry)
     {
         if ((hashEntry->getHash() ^ hashEntry->getData()) == hk)

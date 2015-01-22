@@ -4,13 +4,12 @@
 #include "utils/stopwatch.hpp"
 #include "utils/synchronized_ostream.hpp"
 
-void Benchmark::runPerft(const Position& root, const int depth)
+void Benchmark::runPerft(const Position root, const int depth)
 {
-    Position pos(root);
     Stopwatch sw;
 
     sw.start();
-    const auto perftResult = perft(pos, depth);
+    const auto perftResult = perft(root, depth);
     sw.stop();
 
     sync_cout << "Perft result: " << perftResult << std::endl;

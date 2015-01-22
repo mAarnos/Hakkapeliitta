@@ -19,8 +19,8 @@ int main()
     sync_cout << sizeof(Position) << std::endl;
 
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-    Benchmark::runPerft(pos, 6);
+    Benchmark benchmark;
+    benchmark.runPerft(pos, 6);
 
     return 0;
 }

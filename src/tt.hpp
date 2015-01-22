@@ -18,6 +18,7 @@ enum TTFlags
 };
 
 // A single entry in the transposition table. 
+// Contains the best move, score, generation, depth and flags for a single position encountered in the search.
 class TranspositionTableEntry
 {
 public:
@@ -43,13 +44,18 @@ public:
     TranspositionTable();
     ~TranspositionTable();
 
+    // Save some information to the transposition table.
     void save(HashKey hk, int ply, const Move& move, int score, int depth, int flags);
+    // Get the entry for the given hash key.
     const TranspositionTableEntry* probe(HashKey hk) const;
+    // Load a part of the transposition table into L1/L2 cache. Used as a speed optimization.
     void prefetch(HashKey hk);
 
 	void setSize(size_t sizeInMegaBytes);
     void clear();
     void startNewSearch() { ++generation; }
+
+    // This function is used for extracting the PV of the search out of the TT starting from the given position.
     std::vector<Move> extractPv(Position root) const;
 private:
     // A bucket containing four hash entries.

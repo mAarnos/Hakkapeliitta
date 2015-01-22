@@ -41,7 +41,7 @@ public:
     int8_t getTotalPieceCount() const { return totalPieceCount; }
 
     // Makes the move on the board.
-    // We use copy-make so no unmake is necessary.
+    // We use copy-make so unmake is unnecessary.
     void makeMove(const Move& move);
 
     bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
