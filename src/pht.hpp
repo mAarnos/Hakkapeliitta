@@ -5,15 +5,21 @@
 #include <vector>
 #include "position.hpp"
 
+// Hash table for speeding up pawn evaluation.
+// Default size of the pawn hash table is 4MB.
 class PawnHashTable
 {
 public:
     PawnHashTable();
 
+    // Sets the size of the pawn hash table.
 	void setSize(size_t sizeInMegaBytes);
+    // Clears the pawn hash table. Can potentially be an expensive operation.
     void clear();
-    void save(const Position& pos, int scoreOp, int scoreEd);
-    bool probe(const Position& pos, int& scoreOp, int& scoreEd) const;
+    // Save some information to the pawn hash table.
+    void save(HashKey hk, int scoreOp, int scoreEd);
+    // Get some information from the hash table. Returns true on a successful probe.
+    bool probe(HashKey hk, int& scoreOp, int& scoreEd) const;
 private:
     // A single entry in the pawn hash table. Unlike with the tt, we have no need for buckets here.
     // Notice that the size of the hash is smaller than with TTEntry. 

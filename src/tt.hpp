@@ -38,6 +38,8 @@ private:
     uint64_t data;
 };
 
+// Transposition table used for storing previous results of the search function.
+// Default size is 32MB.
 class TranspositionTable
 {
 public:
@@ -51,7 +53,9 @@ public:
     // Load a part of the transposition table into L1/L2 cache. Used as a speed optimization.
     void prefetch(HashKey hk);
 
+    // Changes the size of the transposition table.
 	void setSize(size_t sizeInMegaBytes);
+    // Clears the transposition table. Can potentially be an expensive operation.
     void clear();
     void startNewSearch() { ++generation; }
 

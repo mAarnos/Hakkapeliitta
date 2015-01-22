@@ -36,7 +36,7 @@ inline bool squareIsOkLoose(const Square sq)
     return (sq >= Square::A1 && sq <= Square::NoSquare);
 }
 
-// Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
+// Checks if the square is on the board, i.e. >= A1 and <= H8. 
 inline bool squareIsOkStrict(const Square sq)
 {
     return (sq >= Square::A1 && sq <= Square::H8);

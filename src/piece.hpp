@@ -29,14 +29,8 @@ private:
     int8_t piece;
 };
 
-// Checks if the piece is in the specified limits, i.e. >= WhitePawn and <= NoPiece. 
-inline bool pieceIsOkLoose(const Piece p)
-{
-    return (p >= Piece::WhitePawn && p <= Piece::NoPiece);
-}
-
-// Checks if the piece is ok for playing, i.e. >= WhitePawn and <= Empty. 
-inline bool pieceIsOkStrict(const Piece p)
+// Checks if the piece is ok, i.e. >= WhitePawn and <= Empty. 
+inline bool pieceIsOk(const Piece p)
 {
     return (p >= Piece::WhitePawn && p <= Piece::Empty);
 }
@@ -50,7 +44,7 @@ inline bool pieceTypeIsOk(const Piece p)
 // Gets the piece type of the given piece. We assume that p is representing a piece at the moment.
 inline Piece getPieceType(const Piece p)
 {
-    assert(pieceIsOkStrict(p) && p != Piece::Empty);
+    assert(pieceIsOk(p) && p != Piece::Empty);
     return (p % 6);
 }
 

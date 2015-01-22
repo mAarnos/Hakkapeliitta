@@ -419,7 +419,7 @@ HashKey Position::calculateMaterialHash() const
 
 Bitboard Position::checkBlockers(const Color c, const Color kingColor) const
 {
-    assert(colorIsOkStrict(c) && colorIsOkStrict(kingColor));
+    assert(colorIsOk(c) && colorIsOk(kingColor));
 
     auto result = 0ull;
     const auto kingSquare = Bitboards::lsb(getBitboard(kingColor, Piece::King));

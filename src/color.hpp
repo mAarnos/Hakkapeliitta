@@ -20,16 +20,10 @@ public:
     Color operator!() const { return color ^ 1; } // ! has a branch normally, in our case we can eliminate it by just using a xor.
 private:
     int8_t color;
-};
+}; 
 
-// Checks if the color is in the specified limits, i.e. Black, White, or NoColor. 
-inline bool colorIsOkLoose(const Color c)
-{
-    return (c >= Color::Black && c <= Color::NoColor);
-}
-
-// Checks if the color is okay for playing, i.e. black or white. 
-inline bool colorIsOkStrict(const Color c)
+// Checks if the color is okay, i.e. black or white. 
+inline bool colorIsOk(const Color c)
 {
     return (c == Color::Black || c == Color::White);
 }
