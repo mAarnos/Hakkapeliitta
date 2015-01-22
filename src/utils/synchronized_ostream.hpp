@@ -19,7 +19,7 @@ public:
         return *this;
     }
 
-    locked_ostream& operator<<(manip_t m)
+    locked_ostream& operator<<(const manip_t m)
     {
         os << m;
         return *this;
@@ -44,7 +44,7 @@ public:
         return locked_ostream(oStream, mutex);
     }
 
-    locked_ostream operator<<(manip_t m)
+    locked_ostream operator<<(const manip_t m)
     {
         mutex.lock();
         oStream << m;

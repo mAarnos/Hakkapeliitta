@@ -15,12 +15,12 @@ void HistoryTable::clear()
     }
 }
 
-void HistoryTable::addCutoff(const Position& pos, const Move& move, int depth)
+void HistoryTable::addCutoff(const Position& pos, const Move& move, const int depth)
 {
     history[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
 }
 
-void HistoryTable::addNotCutoff(const Position& pos, const Move& move, int depth)
+void HistoryTable::addNotCutoff(const Position& pos, const Move& move, const int depth)
 {
     butterfly[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
 }

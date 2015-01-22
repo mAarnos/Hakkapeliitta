@@ -144,11 +144,11 @@ void Evaluation::initializeDrawnEndgames()
 {
     drawnEndgames.clear();
 
-    // King vs king: draw
-    auto matHash = Zobrist::materialHashKey(Piece::WhiteKing, 0) ^ Zobrist::materialHashKey(Piece::BlackKing, 0);
+    // King vs king
+    const auto matHash = Zobrist::materialHashKey(Piece::WhiteKing, 0) ^ Zobrist::materialHashKey(Piece::BlackKing, 0);
     drawnEndgames.insert(matHash);
 
-    // King and a minor piece vs king: draw
+    // King and a minor piece vs king
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
@@ -157,14 +157,14 @@ void Evaluation::initializeDrawnEndgames()
         }
     }
 
-    // King and two knights vs king: draw
+    // King and two knights vs king
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
             Zobrist::materialHashKey(Piece::Knight + i * 6, 1));
     }
 
-    // King and a minor piece vs king and a minor piece: draw
+    // King and a minor piece vs king and a minor piece
     for (Piece i = Piece::Knight; i <= Piece::Bishop; ++i)
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
@@ -174,7 +174,7 @@ void Evaluation::initializeDrawnEndgames()
         }
     }
 
-    // King and two bishops vs king and a bishop: draw
+    // King and two bishops vs king and a bishop
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Bishop + i * 6, 0) ^
@@ -182,7 +182,7 @@ void Evaluation::initializeDrawnEndgames()
             Zobrist::materialHashKey(Piece::Bishop + !i * 6, 0));
     }
 
-    // King and either two knights or a knight and a bishop vs king and a minor piece: draw
+    // King and either two knights or a knight and a bishop vs king and a minor piece
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
@@ -202,7 +202,7 @@ int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
     return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos, zugzwangLikely) : evaluate<false>(pos, zugzwangLikely));
 }
 
-int interpolateScore(int scoreOp, int scoreEd, int phase)
+int interpolateScore(const int scoreOp, const int scoreEd, const int phase)
 {
     return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
 }
@@ -216,8 +216,7 @@ int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
     }
 
     std::array<int, 2> kingSafetyScore;
-    auto phase = static_cast<int>(pos.getGamePhase());
-    phase = clamp(phase, 0, 64); // The phase can be negative in some weird cases, guard against that.
+    const auto phase = clamp(static_cast<int>(pos.getGamePhase()), 0, 64); // The phase can be negative in some weird cases, guard against that.
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase, zugzwangLikely);
     score += pawnStructureEval(pos, phase);
@@ -229,7 +228,7 @@ int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
     {
         if (pos.getPieceCount(c, Piece::Bishop) == 2)
         {
-            auto bishopPairBonus = interpolateScore(bishopPairBonusOpening, bishopPairBonusEnding, phase);
+            const auto bishopPairBonus = interpolateScore(bishopPairBonusOpening, bishopPairBonusEnding, phase);
             score += (c ? -bishopPairBonus : bishopPairBonus);
         }
     }
@@ -240,26 +239,26 @@ int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely)
+int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, const int phase, bool& zugzwangLikely)
 {
+    const auto occupied = pos.getOccupiedSquares();
     auto scoreOp = 0, scoreEd = 0;
-    auto occupied = pos.getOccupiedSquares();
     std::array<uint64_t, 2> attacks = { 0, 0 };
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
-        auto targetBitboard = ~pos.getPieces(c);
+        const auto targetBitboard = ~pos.getPieces(c);
+        const auto opponentKingZone = Bitboards::kingSafetyZone(!c, Bitboards::lsb(pos.getBitboard(!c, Piece::King)));
         auto scoreOpForColor = 0, scoreEdForColor = 0;
-        auto opponentKingZone = Bitboards::kingSafetyZone(!c, Bitboards::lsb(pos.getBitboard(!c, Piece::King)));
         auto attackUnits = 0;
 
         auto tempPiece = pos.getBitboard(c, Piece::Knight);
         while (tempPiece)
         {
-            auto from = Bitboards::popLsb(tempPiece);
+            const auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::knightAttacks(from) & targetBitboard;
             attacks[c] |= tempMove;
-            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
             tempMove &= opponentKingZone;
@@ -269,10 +268,10 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         tempPiece = pos.getBitboard(c, Piece::Bishop);
         while (tempPiece)
         {
-            auto from = Bitboards::popLsb(tempPiece);
+            const auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
             attacks[c] |= tempMove;
-            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
 			tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
@@ -283,10 +282,10 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         tempPiece = pos.getBitboard(c, Piece::Rook);
         while (tempPiece)
         {
-            auto from = Bitboards::popLsb(tempPiece);
+            const auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
             attacks[c] |= tempMove;
-            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
             tempMove = Bitboards::rookAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen) ^ pos.getBitboard(c, Piece::Rook)) & targetBitboard;
@@ -309,10 +308,10 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         tempPiece = pos.getBitboard(c, Piece::Queen);
         while (tempPiece)
         {
-            auto from = Bitboards::popLsb(tempPiece);
+            const auto from = Bitboards::popLsb(tempPiece);
             auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
             attacks[c] |= tempMove;
-            auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
             tempMove &= opponentKingZone;
@@ -332,7 +331,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int Evaluation::pawnStructureEval(const Position& pos, int phase)
+int Evaluation::pawnStructureEval(const Position& pos, const int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
@@ -345,25 +344,25 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
-        auto scoreOpForColor = 0, scoreEdForColor = 0;
-        auto ownPawns = pos.getBitboard(c, Piece::Pawn);
+        const auto ownPawns = pos.getBitboard(c, Piece::Pawn);
+        const auto opponentPawns = pos.getBitboard(!c, Piece::Pawn);
         auto tempPawns = ownPawns;
-        auto opponentPawns = pos.getBitboard(!c, Piece::Pawn);
+        auto scoreOpForColor = 0, scoreEdForColor = 0;
 
         while (tempPawns)
         {
-            auto from = Bitboards::popLsb(tempPawns);
-            auto pawnFile = file(from);
-            auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
+            const auto from = Bitboards::popLsb(tempPawns);
+            const auto pawnFile = file(from);
+            const auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
 
-            auto passed = !(opponentPawns & Bitboards::passedPawn(c, from));
-            auto doubled = (ownPawns & (c ? Bitboards::ray(1, from) : Bitboards::ray(6, from))) != 0;
-            auto isolated = !(ownPawns & Bitboards::isolatedPawn(from));
+            const auto passed = !(opponentPawns & Bitboards::passedPawn(c, from));
+            const auto doubled = (ownPawns & (c ? Bitboards::ray(1, from) : Bitboards::ray(6, from))) != 0;
+            const auto isolated = !(ownPawns & Bitboards::isolatedPawn(from));
             // 1. The pawn must be able to move forward.
             // 2. The stop square must be controlled by an enemy pawn.
             // 3. There musn't be any own pawns capable of defending the pawn. 
             // TODO: Check that this is correct.
-            auto backward = ((pos.getBoard(from + 8 - 16 * c) == Piece::Empty) 
+            const auto backward = ((pos.getBoard(from + 8 - 16 * c) == Piece::Empty) 
                           && (Bitboards::pawnAttacks(c, from + 8 - 16 * c) & opponentPawns)
                           && !(ownPawns & Bitboards::backwardPawn(c, from)));
 
@@ -401,17 +400,16 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int evaluatePawnShelter(const Position& pos, Color side)
+int evaluatePawnShelter(const Position& pos, const Color side)
 {
     static const auto openFilePenalty = 6;
     static const auto halfOpenFilePenalty = 4;
     auto penalty = 0;
-    auto ownPawns = pos.getBitboard(side, Piece::Pawn);
-    auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
-    auto kingFile = file(Bitboards::lsb(pos.getBitboard(side, Piece::King)));
+    const auto ownPawns = pos.getBitboard(side, Piece::Pawn);
+    const auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
     // If the king is at the edge assume that it is a bit closer to the center.
     // This prevents all bugs related to the next loop and going off the board.
-    kingFile = clamp(kingFile, 1, 6);
+    const auto kingFile = clamp(file(Bitboards::lsb(pos.getBitboard(side, Piece::King))), 1, 6);
 
     for (auto f = kingFile - 1; f <= kingFile + 1; ++f)
     {
@@ -431,10 +429,10 @@ int evaluatePawnShelter(const Position& pos, Color side)
     return penalty;
 }
 
-int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore)
+int Evaluation::kingSafetyEval(const Position& pos, const int phase, std::array<int, 2>& kingSafetyScore)
 {
     kingSafetyScore[Color::Black] += evaluatePawnShelter(pos, Color::White);
     kingSafetyScore[Color::White] += evaluatePawnShelter(pos, Color::Black);
-    auto score = kingSafetyTable[kingSafetyScore[Color::White]] - kingSafetyTable[kingSafetyScore[Color::Black]];
+    const auto score = kingSafetyTable[kingSafetyScore[Color::White]] - kingSafetyTable[kingSafetyScore[Color::Black]];
     return ((score * (64 - phase)) / 64);
 }

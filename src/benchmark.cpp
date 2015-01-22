@@ -4,14 +4,13 @@
 #include "utils/stopwatch.hpp"
 #include "utils/synchronized_ostream.hpp"
 
-// No further improvement necessary.
-
-void Benchmark::runPerft(Position& pos, int depth)
+void Benchmark::runPerft(const Position& root, const int depth)
 {
+    Position pos(root);
     Stopwatch sw;
 
     sw.start();
-    auto perftResult = perft(pos, depth);
+    const auto perftResult = perft(pos, depth);
     sw.stop();
 
     sync_cout << "Perft result: " << perftResult << std::endl;
@@ -19,11 +18,11 @@ void Benchmark::runPerft(Position& pos, int depth)
     sync_cout << "NPS: " << (perftResult / (sw.elapsed<std::chrono::milliseconds>() + 1)) * 1000 << std::endl;
 }
 
-uint64_t Benchmark::perft(const Position& pos, int depth)
+uint64_t Benchmark::perft(const Position& pos, const int depth)
 {
     MoveList moves;
     auto nodes = 0ull; 
-    auto inCheck = pos.inCheck();
+    const auto inCheck = pos.inCheck();
 
     inCheck ? MoveGen::generateLegalEvasions(pos, moves) : MoveGen::generatePseudoLegalMoves(pos, moves); 
     for (auto i = 0; i < moves.size(); ++i)
@@ -42,7 +41,7 @@ uint64_t Benchmark::perft(const Position& pos, int depth)
         }
         */
 
-        auto newPos = pos;
+        Position newPos(pos);
         newPos.makeMove(move);
         nodes += depth == 1 ? 1 : perft(newPos, depth - 1);
     }

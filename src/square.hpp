@@ -9,7 +9,7 @@ class Square
 {
 public:
     Square() : square(NoSquare) {};
-    Square(int newSquare) { assert(newSquare >= A1 && newSquare <= NoSquare); square = static_cast<int8_t>(newSquare); };
+    Square(const int newSquare) { assert(newSquare >= A1 && newSquare <= NoSquare); square = static_cast<int8_t>(newSquare); };
 
     enum : int8_t
     {
@@ -31,26 +31,26 @@ private:
 };
 
 // Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
-inline bool squareIsOkLoose(Square sq)
+inline bool squareIsOkLoose(const Square sq)
 {
     return (sq >= Square::A1 && sq <= Square::NoSquare);
 }
 
 // Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
-inline bool squareIsOkStrict(Square sq)
+inline bool squareIsOkStrict(const Square sq)
 {
     return (sq >= Square::A1 && sq <= Square::H8);
 }
 
 // Returns the number of the file the square is on.
-inline int file(Square sq)
+inline int file(const Square sq)
 {
     assert(squareIsOkStrict(sq));
     return (sq % 8);
 }
 
 // Returns the number of the rank the square is on.
-inline int rank(Square sq)
+inline int rank(const Square sq)
 {
     assert(squareIsOkStrict(sq));
     return (sq / 8);

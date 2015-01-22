@@ -8,7 +8,7 @@ class Color
 {
 public:
     Color() : color(NoColor) {};
-    Color(int8_t newColor) : color(newColor) {};
+    Color(const int8_t newColor) : color(newColor) {};
 
     enum : int8_t
     {
@@ -23,13 +23,13 @@ private:
 };
 
 // Checks if the color is in the specified limits, i.e. Black, White, or NoColor. 
-inline bool colorIsOkLoose(Color c)
+inline bool colorIsOkLoose(const Color c)
 {
     return (c >= Color::Black && c <= Color::NoColor);
 }
 
 // Checks if the color is okay for playing, i.e. black or white. 
-inline bool colorIsOkStrict(Color c)
+inline bool colorIsOkStrict(const Color c)
 {
     return (c == Color::Black || c == Color::White);
 }

@@ -8,9 +8,7 @@
 class Stopwatch
 {
 public:
-    // If autoStart is true the Stopwatch is constructed so that it starts running immediately.
-	// Otherwise it has to be explicitly commanded to start.
-    Stopwatch(bool autoStart = false);
+    Stopwatch();
 
     void start();
     void stop();
@@ -27,13 +25,9 @@ private:
     bool running;
 };
 
-inline Stopwatch::Stopwatch(bool autoStart)
+inline Stopwatch::Stopwatch()
 {
     reset();
-    if (autoStart)
-    {
-        start();
-    }
 }
 
 inline void Stopwatch::start()
@@ -62,8 +56,8 @@ inline bool Stopwatch::isRunning() const
 template <typename Resolution> 
 uint64_t Stopwatch::elapsed() const
 {
-    auto elapsed = (running ? std::chrono::high_resolution_clock::now() : stopTime)  - startTime;
-    auto time = std::chrono::duration_cast<Resolution>(elapsed).count();
+    const auto elapsed = (running ? std::chrono::high_resolution_clock::now() : stopTime)  - startTime;
+    const auto time = std::chrono::duration_cast<Resolution>(elapsed).count();
     return time;
 }
 

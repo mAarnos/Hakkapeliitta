@@ -19,7 +19,7 @@ public:
     static std::array<std::array<int, 64>, 12> pieceSquareTableEnding;
     // static PawnHashTable pawnHashTable;
 
-    static bool drawnEndgame(HashKey mhk) { return drawnEndgames.count(mhk) > 0; }
+    static bool drawnEndgame(const HashKey mhk) { return drawnEndgames.count(mhk) > 0; }
 private:
     // Things related to endgame knowledge.
     static void initializeDrawnEndgames();
@@ -30,10 +30,10 @@ private:
     static int evaluate(const Position& pos, bool& zugzwangLikely);
 
     template <bool hardwarePopcnt> 
-    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
+    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, const int phase, bool& zugzwangLikely);
 
-    static int pawnStructureEval(const Position& pos, int phase);
-    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
+    static int pawnStructureEval(const Position& pos, const int phase);
+    static int kingSafetyEval(const Position& pos, const int phase, std::array<int, 2>& kingSafetyScore);
 };
 
 #endif

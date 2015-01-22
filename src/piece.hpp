@@ -9,7 +9,7 @@ class Piece
 {
 public:
     Piece() : piece(NoPiece) {};
-    Piece(int8_t newPiece) : piece(newPiece) {};
+    Piece(const int8_t newPiece) : piece(newPiece) {};
 
     enum : int8_t
     {
@@ -30,25 +30,25 @@ private:
 };
 
 // Checks if the piece is in the specified limits, i.e. >= WhitePawn and <= NoPiece. 
-inline bool pieceIsOkLoose(Piece p)
+inline bool pieceIsOkLoose(const Piece p)
 {
     return (p >= Piece::WhitePawn && p <= Piece::NoPiece);
 }
 
 // Checks if the piece is ok for playing, i.e. >= WhitePawn and <= Empty. 
-inline bool pieceIsOkStrict(Piece p)
+inline bool pieceIsOkStrict(const Piece p)
 {
     return (p >= Piece::WhitePawn && p <= Piece::Empty);
 }
 
 // Checks if the piece type is ok. Should only be called if the given piece represents a piecetype.
-inline bool pieceTypeIsOk(Piece p)
+inline bool pieceTypeIsOk(const Piece p)
 {
     return (p >= Piece::Pawn && p <= Piece::King);
 }
 
 // Gets the piece type of the given piece. We assume that p is representing a piece at the moment.
-inline Piece getPieceType(Piece p)
+inline Piece getPieceType(const Piece p)
 {
     assert(pieceIsOkStrict(p) && p != Piece::Empty);
     return (p % 6);

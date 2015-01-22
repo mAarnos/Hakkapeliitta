@@ -62,10 +62,10 @@ Position::Position(const std::string& fen)
 	// Translate the FEN string into piece locations on the board.
 	while ((j <= 64) && (i <= static_cast<int>(strList[0].length()))) 
 	{
-        auto letter = strList[0][i++];
-		auto f = 1 + file(j - 1);
-        auto r = 8 - rank(j - 1);
-		auto sq = (((r - 1) * 8) + (f - 1));
+        const auto letter = strList[0][i++];
+		const auto f = 1 + file(j - 1);
+        const auto r = 8 - rank(j - 1);
+		const auto sq = (((r - 1) * 8) + (f - 1));
 		switch (letter)
 		{
             case 'p': board[sq] = Piece::BlackPawn; break;
@@ -141,8 +141,8 @@ Position::Position(const std::string& fen)
 	{
 		if ((strList[3].at(0) >= 'a') && (strList[3].at(0) <= 'h') && ((strList[3].at(1) == '3') || (strList[3].at(1) == '6')))
 		{
-			auto f = strList[3][0] - 96; // ASCII 'a' = 97 
-			auto r = strList[3][1] - 48; // ASCII '1' = 49 
+			const auto f = strList[3][0] - 96; // ASCII 'a' = 97 
+			const auto r = strList[3][1] - 48; // ASCII '1' = 49 
 			enPassant = ((r - 1) * 8 + f - 1);
 		}
         else
@@ -228,7 +228,7 @@ void Position::makeMove(const Move& m)
     sideToMove ? makeMove<true>(m) : makeMove<false>(m);
 }
 
-bool Position::isAttacked(Square sq, Color side) const
+bool Position::isAttacked(const Square sq, const Color side) const
 {
     return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
 }
@@ -238,12 +238,12 @@ void Position::makeMove(const Move& m)
 {
     assert(!m.empty());
 
-    auto from = m.getFrom();
-    auto to = m.getTo();
-    auto promotion = m.getPromotion();
-    auto piece = board[from];
-    auto captured = board[to];
-    auto fromToBB = Bitboards::bit(from) | Bitboards::bit(to);
+    const auto from = m.getFrom();
+    const auto to = m.getTo();
+    const auto promotion = m.getPromotion();
+    const auto piece = board[from];
+    const auto captured = board[to];
+    const auto fromToBB = Bitboards::bit(from) | Bitboards::bit(to);
 
     if (enPassant != Square::NoSquare)
     {
@@ -267,7 +267,7 @@ void Position::makeMove(const Move& m)
         hashKey ^= Zobrist::pieceHashKey(captured, to);
         materialHashKey ^= Zobrist::materialHashKey(captured, --pieceCount[captured]);
 
-        auto pieceType = getPieceType(captured);
+        const auto pieceType = getPieceType(captured);
         gamePhase += piecePhase[pieceType];
         if (pieceType == Piece::Pawn)
         {
@@ -287,7 +287,7 @@ void Position::makeMove(const Move& m)
         }
         else if (promotion == Piece::Pawn) // En passant
         {
-            auto enPassantSquare = to ^ 8;
+            const auto enPassantSquare = to ^ 8;
             --totalPieceCount;
             Bitboards::clearBit(bitboards[Piece::Pawn + !side * 6], enPassantSquare);
             Bitboards::clearBit(bitboards[12 + !side], enPassantSquare);
@@ -311,9 +311,9 @@ void Position::makeMove(const Move& m)
     }
     else if (promotion == Piece::King)
     {
-        auto fromRook = (from > to ? (to - 2) : (to + 1));
-        auto toRook = (from + to) / 2;
-        auto fromToBBCastling = Bitboards::bit(fromRook) | Bitboards::bit(toRook);
+        const auto fromRook = (from > to ? (to - 2) : (to + 1));
+        const auto toRook = (from + to) / 2;
+        const auto fromToBBCastling = Bitboards::bit(fromRook) | Bitboards::bit(toRook);
 
         bitboards[Piece::Rook + side * 6] ^= fromToBBCastling;
         bitboards[12 + side] ^= fromToBBCastling;
@@ -330,7 +330,7 @@ void Position::makeMove(const Move& m)
     // Update castling rights if needed
     if (castlingRights && (castlingMask[from] | castlingMask[to]))
     {
-        auto cf = castlingMask[from] | castlingMask[to];
+        const auto cf = castlingMask[from] | castlingMask[to];
         hashKey ^= Zobrist::castlingRightsHashKey(castlingRights & cf);
         castlingRights &= ~cf;
     }
@@ -347,7 +347,7 @@ template void Position::makeMove<false>(const Move& m);
 template void Position::makeMove<true>(const Move& m);
 
 template <bool side> 
-bool Position::isAttacked(Square sq) const
+bool Position::isAttacked(const Square sq) const
 {
     return (Bitboards::knightAttacks(sq) & getBitboard(side, Piece::Knight)
         || Bitboards::pawnAttacks(!side, sq) & getBitboard(side, Piece::Pawn)
@@ -356,8 +356,8 @@ bool Position::isAttacked(Square sq) const
         || Bitboards::kingAttacks(sq) & getBitboard(side, Piece::King));
 }
 
-template bool Position::isAttacked<false>(Square sq) const;
-template bool Position::isAttacked<true>(Square sq) const;
+template bool Position::isAttacked<false>(const Square sq) const;
+template bool Position::isAttacked<true>(const Square sq) const;
 
 HashKey Position::calculateHash() const
 {
@@ -417,20 +417,20 @@ HashKey Position::calculateMaterialHash() const
     return m;
 }
 
-Bitboard Position::checkBlockers(Color c, Color kingColor) const
+Bitboard Position::checkBlockers(const Color c, const Color kingColor) const
 {
     assert(colorIsOkStrict(c) && colorIsOkStrict(kingColor));
 
     auto result = 0ull;
-    auto kingSquare = Bitboards::lsb(getBitboard(kingColor, Piece::King));
-    auto rq = getBitboard(!kingColor, Piece::Rook) | getBitboard(!kingColor, Piece::Queen);
-    auto bq = getBitboard(!kingColor, Piece::Bishop) | getBitboard(!kingColor, Piece::Queen);
+    const auto kingSquare = Bitboards::lsb(getBitboard(kingColor, Piece::King));
+    const auto rq = getBitboard(!kingColor, Piece::Rook) | getBitboard(!kingColor, Piece::Queen);
+    const auto bq = getBitboard(!kingColor, Piece::Bishop) | getBitboard(!kingColor, Piece::Queen);
     auto pinners = (rq & Bitboards::rookAttacks(kingSquare, 0)) | (bq & Bitboards::bishopAttacks(kingSquare, 0));
 
     while (pinners)
     {
-        auto sq = Bitboards::popLsb(pinners);
-        auto skewered = Bitboards::squaresBetween(kingSquare, sq) & getOccupiedSquares();
+        const auto sq = Bitboards::popLsb(pinners);
+        const auto skewered = Bitboards::squaresBetween(kingSquare, sq) & getOccupiedSquares();
         if (!Bitboards::moreThanOneBitSet(skewered) && (skewered & getPieces(c)))
         {
             result |= skewered;
@@ -440,20 +440,20 @@ Bitboard Position::checkBlockers(Color c, Color kingColor) const
     return result;
 }
 
-bool Position::legal(const Move& move, bool inCheck) const
+bool Position::legal(const Move& move, const bool inCheck) const
 {
     if (inCheck) return true; // As said before, we assume that when in check we generate legal evasions so legality checking is useless.
 
-    auto from = move.getFrom();
-    auto to = move.getTo();
+    const auto from = move.getFrom();
+    const auto to = move.getTo();
 
     if (move.getPromotion() == Piece::Pawn)
     {
-        auto kingSquare = Bitboards::lsb(getBitboard(sideToMove, Piece::King));
-        auto captureSquare = to ^ 8;
-        auto occupied = (getOccupiedSquares() ^ Bitboards::bit(from) ^ Bitboards::bit(captureSquare)) | Bitboards::bit(to);
-        auto rq = getBitboard(!sideToMove, Piece::Rook) | getBitboard(!sideToMove, Piece::Queen);
-        auto bq = getBitboard(!sideToMove, Piece::Bishop) | getBitboard(!sideToMove, Piece::Queen);
+        const auto kingSquare = Bitboards::lsb(getBitboard(sideToMove, Piece::King));
+        const auto captureSquare = to ^ 8;
+        const auto occupied = (getOccupiedSquares() ^ Bitboards::bit(from) ^ Bitboards::bit(captureSquare)) | Bitboards::bit(to);
+        const auto rq = getBitboard(!sideToMove, Piece::Rook) | getBitboard(!sideToMove, Piece::Queen);
+        const auto bq = getBitboard(!sideToMove, Piece::Bishop) | getBitboard(!sideToMove, Piece::Queen);
         return !(Bitboards::bishopAttacks(kingSquare, occupied) & bq) && !(Bitboards::rookAttacks(kingSquare, occupied) & rq);
     }
 
@@ -471,10 +471,10 @@ bool Position::legal(const Move& move, bool inCheck) const
 
 int Position::givesCheck(const Move& move) const
 {
-    auto from = move.getFrom();
-    auto to = move.getTo();
-    auto promotion = move.getPromotion();
-    auto kingSquare = Bitboards::lsb(getBitboard(!sideToMove, Piece::King)); 
+    const auto from = move.getFrom();
+    const auto to = move.getTo();
+    const auto promotion = move.getPromotion();
+    const auto kingSquare = Bitboards::lsb(getBitboard(!sideToMove, Piece::King)); 
     auto occupied = getOccupiedSquares();
 
     // Test for discovered check.
@@ -487,15 +487,15 @@ int Position::givesCheck(const Move& move) const
     // There's no need to check for promotion == Piece::King as kings can't give checks.
     if (promotion == Piece::Empty || promotion == Piece::Pawn)
     {
-        auto piece = getPieceType(board[from]);
-        auto attacks = Bitboards::pieceAttacks(sideToMove, piece, to, occupied);
+        const auto piece = getPieceType(board[from]);
+        const auto attacks = Bitboards::pieceAttacks(sideToMove, piece, to, occupied);
         if (Bitboards::testBit(attacks, kingSquare))
             return 1; 
     }
 
     if (promotion == Piece::King)
     {
-        auto rookTo = (from + to) / 2;
+        const auto rookTo = (from + to) / 2;
         auto rq = getBitboard(sideToMove, Piece::Rook) | getBitboard(sideToMove, Piece::Queen);
         Bitboards::clearBit(occupied, from);
         Bitboards::setBit(rq, rookTo);
@@ -504,8 +504,8 @@ int Position::givesCheck(const Move& move) const
     }
     else if (promotion == Piece::Pawn) 
     {
-        auto rq = getBitboard(sideToMove, Piece::Rook) | getBitboard(sideToMove, Piece::Queen);
-        auto bq = getBitboard(sideToMove, Piece::Bishop) | getBitboard(sideToMove, Piece::Queen);
+        const auto rq = getBitboard(sideToMove, Piece::Rook) | getBitboard(sideToMove, Piece::Queen);
+        const auto bq = getBitboard(sideToMove, Piece::Bishop) | getBitboard(sideToMove, Piece::Queen);
         Bitboards::clearBit(occupied, from); 
         Bitboards::clearBit(occupied, to ^ 8);
         Bitboards::setBit(occupied, to);

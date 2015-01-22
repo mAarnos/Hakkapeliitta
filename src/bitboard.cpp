@@ -61,7 +61,7 @@ std::array<Bitboards::Magic, 64> Bitboards::rookMagic;
 
 std::array<Bitboard, 97264> Bitboards::lookupTable;
 
-std::array<Bitboards::MagicInit, 64> Bitboards::bishopInit = { {
+const std::array<Bitboards::MagicInit, 64> Bitboards::bishopInit = { {
         { 0x007bfeffbfeffbffull, 16530 },
         { 0x003effbfeffbfe08ull, 9162 },
         { 0x0000401020200000ull, 9674 },
@@ -129,7 +129,7 @@ std::array<Bitboards::MagicInit, 64> Bitboards::bishopInit = { {
         }
 };
 
-std::array<Bitboards::MagicInit, 64> Bitboards::rookInit = { {
+const std::array<Bitboards::MagicInit, 64> Bitboards::rookInit = { {
         { 0x00a801f7fbfeffffull, 85487 },
         { 0x00180012000bffffull, 43101 },
         { 0x0040080010004004ull, 0 },
@@ -199,10 +199,10 @@ std::array<Bitboards::MagicInit, 64> Bitboards::rookInit = { {
 
 void Bitboards::initialize()
 {
-    static std::array<int, 8> rankDirection = {
+    static const std::array<int, 8> rankDirection = {
         -1, -1, -1, 0, 0, 1, 1, 1
     };
-    static std::array<int, 8> fileDirection = {
+    static const std::array<int, 8> fileDirection = {
         -1, 0, 1, -1, 1, -1, 0, 1
     };
 
@@ -215,7 +215,7 @@ void Bitboards::initialize()
     };
 
 	// Avoid excessive stack usage warnings by moving heading to heap.
-    std::vector<int> heading[64];
+    std::array<std::vector<int>, 64> heading;
 	for (auto i = 0; i < 64; ++i)
 	{
 		heading[i].resize(64, -1);
@@ -261,16 +261,16 @@ void Bitboards::initialize()
     // Rays to all directions
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        auto r = rank(sq);
-        auto f = file(sq);
+        const auto r = rank(sq);
+        const auto f = file(sq);
 
         for (auto i = 0; i < 8; ++i)
         {
             rays[i][sq] = 0;
             for (auto j = 1; j < 8; ++j)
             {
-                auto toRank = rankDirection[i] * j + r;
-                auto toFile = fileDirection[i] * j + f;
+                const auto toRank = rankDirection[i] * j + r;
+                const auto toFile = fileDirection[i] * j + f;
                 if (toRank < 0 || toRank > 7 || toFile < 0 || toFile > 7) // Check if we went over the side of the board.
                     break;
                 heading[sq][toRank * 8 + toFile] = i;
@@ -284,7 +284,7 @@ void Bitboards::initialize()
     {
         for (Square j = Square::A1; j <= Square::H8; ++j)
         {
-            auto h = heading[i][j];
+            const auto h = heading[i][j];
             between[i][j] = (h != -1 ? rays[h][i] & rays[7 - h][j] : 0);
             line[i][j] = (h != -1 ? rays[h][i] | rays[7 - h][j] : 0);
         }
@@ -305,7 +305,7 @@ void Bitboards::initialize()
         passed[Color::White][sq] = rays[6][sq];
         passed[Color::Black][sq] = rays[1][sq];
 
-        auto f = file(sq);
+        const auto f = file(sq);
         if (f != 7)
         {
             passed[Color::White][sq] |= rays[6][sq + 1];
@@ -358,14 +358,14 @@ void Bitboards::initialize()
     }
 }
 
-void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift)
+void Bitboards::initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift)
 {
     std::vector<int> squares;
 
-    auto rookMask = [](int sq) 
+    const auto rookMask = [](const int sq) 
     {
         auto result = 0ull;
-        auto rk = rank(sq), fl = file(sq);
+        const auto rk = rank(sq), fl = file(sq);
         for (auto r = rk + 1; r <= 6; r++) result |= (bits[fl + r * 8]);
         for (auto r = rk - 1; r >= 1; r--) result |= (bits[fl + r * 8]);
         for (auto f = fl + 1; f <= 6; f++) result |= (bits[f + rk * 8]);
@@ -373,10 +373,10 @@ void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magi
         return result;
     };
 
-    auto bishopMask = [](int sq) 
+    const auto bishopMask = [](const int sq) 
     {
         auto result = 0ull;
-        auto rk = rank(sq), fl = file(sq);
+        const auto rk = rank(sq), fl = file(sq);
         for (auto r = rk + 1, f = fl + 1; r <= 6 && f <= 6; r++, f++) result |= (bits[f + r * 8]);
         for (auto r = rk + 1, f = fl - 1; r <= 6 && f >= 1; r++, f--) result |= (bits[f + r * 8]);
         for (auto r = rk - 1, f = fl + 1; r >= 1 && f <= 6; r--, f++) result |= (bits[f + r * 8]);
@@ -389,7 +389,7 @@ void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magi
         magic[sq].magic = magicInit[sq].magic;
         magic[sq].data = &lookupTable[magicInit[sq].index];
         auto bb = magic[sq].mask = ((shift == 64 - 12) ? rookMask(sq) : bishopMask(sq));
-        auto sq88 = sq + (sq & ~7);
+        const auto sq88 = sq + (sq & ~7);
 
         squares.clear();
         while (bb)
@@ -416,7 +416,7 @@ void Bitboards::initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magi
                         break;
                 }
             }
-            auto j = ((bb * magic[sq].magic) >> shift);
+            const auto j = ((bb * magic[sq].magic) >> shift);
             magic[sq].data[j] = bb2;
         }
     }

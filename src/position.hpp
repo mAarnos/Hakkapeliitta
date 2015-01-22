@@ -13,13 +13,14 @@ class Position
 {
 public:
     Position();
+    // Will throw an exception if the FEN-string is corrupted.
     Position(const std::string& fen);
 
     std::string displayPositionAsString() const;
 
-    Piece getBoard(Square sq) const { return board[sq]; }
-    Bitboard getBitboard(Color colour, Piece piece) const { return bitboards[piece + colour * 6]; }
-    Bitboard getPieces(Color colour) const { return bitboards[12 + colour]; }
+    Piece getBoard(const Square sq) const { return board[sq]; }
+    Bitboard getBitboard(const Color colour, const Piece piece) const { return bitboards[piece + colour * 6]; }
+    Bitboard getPieces(const Color colour) const { return bitboards[12 + colour]; }
     Bitboard getOccupiedSquares() const { return bitboards[12] | bitboards[13]; }
     Bitboard getFreeSquares() const { return ~getOccupiedSquares(); }
     Color getSideToMove() const { return sideToMove; }
@@ -36,7 +37,7 @@ public:
     HashKey getMaterialHashKey() const { return materialHashKey; }
 
     // Getting information on the amounts of pieces.
-    int8_t getPieceCount(Color color, Piece piece) const { return pieceCount[piece + color * 6]; }
+    int8_t getPieceCount(const Color color, const Piece piece) const { return pieceCount[piece + color * 6]; }
     int8_t getTotalPieceCount() const { return totalPieceCount; }
 
     // Makes the move on the board.
@@ -44,11 +45,11 @@ public:
     void makeMove(const Move& move);
 
     bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
-    bool isAttacked(Square sq, Color side) const;
+    bool isAttacked(const Square sq, const Color side) const;
 
     // Checks if a move is legal with one caveat, doesn't work when in check and reports all moves as legal when in check.
     // This behaviour is dealt with the legal evasion generator.
-    bool legal(const Move& move, bool inCheck) const;
+    bool legal(const Move& move, const bool inCheck) const;
 
     // Checks if a move gives check. 
     // Returns 0 if it isn't, 2 if the move is a discovered check and 1 if it is a normal check.
@@ -85,11 +86,11 @@ private:
     void makeMove(const Move& move);
 
     template <bool side> 
-    bool isAttacked(Square sq) const;
+    bool isAttacked(const Square sq) const;
 
     Bitboard discoveredCheckCandidates() const { return checkBlockers(sideToMove, !sideToMove); }
-    Bitboard pinnedPieces(Color c) const { return checkBlockers(c, c); }
-    Bitboard checkBlockers(Color c, Color kingColor) const;
+    Bitboard pinnedPieces(const Color c) const { return checkBlockers(c, c); }
+    Bitboard checkBlockers(const Color c, const Color kingColor) const;
 
     // Testing functions.
     bool verifyHashKeysAndPhase() const;

@@ -15,34 +15,34 @@ class Bitboards
 public:
     static void initialize();
 
-    static Bitboard bishopAttacks(Square sq, Bitboard occupied)
+    static Bitboard bishopAttacks(const Square sq, const Bitboard occupied)
     {
         const auto& mag = bishopMagic[sq];
         return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 9)];
     }
 
-    static Bitboard rookAttacks(Square sq, Bitboard occupied)
+    static Bitboard rookAttacks(const Square sq, const Bitboard occupied)
     {
         const auto& mag = rookMagic[sq];
         return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 12)];
     }
 
-    static Bitboard queenAttacks(Square sq, Bitboard occupied)
+    static Bitboard queenAttacks(const Square sq, const Bitboard occupied)
     {
         return (bishopAttacks(sq, occupied) | rookAttacks(sq, occupied));
     }
 
-    static Bitboard bit(Square sq) { return bits[sq]; }
-    static Bitboard kingAttacks(Square sq) { return kingAttack[sq]; }
-    static Bitboard knightAttacks(Square sq) { return knightAttack[sq]; }
-    static Bitboard pawnAttacks(Color c, Square sq) { return pawnAttack[c][sq]; }
-    static Bitboard squaresBetween(Square from, Square to) { return between[from][to]; }
-    static Bitboard lineFormedBySquares(Square from, Square to) { return line[from][to]; }
-    static Bitboard ray(int direction, Square sq) { return rays[direction][sq]; }
-    static Bitboard passedPawn(Color c, Square sq) { return passed[c][sq]; }
-    static Bitboard backwardPawn(Color c, Square sq) { return backward[c][sq]; }
-    static Bitboard isolatedPawn(Square sq) { return isolated[sq]; }
-    static Bitboard kingSafetyZone(Color c, Square sq) { return kingZone[c][sq]; }
+    static Bitboard bit(const Square sq) { return bits[sq]; }
+    static Bitboard kingAttacks(const Square sq) { return kingAttack[sq]; }
+    static Bitboard knightAttacks(const Square sq) { return knightAttack[sq]; }
+    static Bitboard pawnAttacks(const Color c, const Square sq) { return pawnAttack[c][sq]; }
+    static Bitboard squaresBetween(const Square from, const Square to) { return between[from][to]; }
+    static Bitboard lineFormedBySquares(const Square from, const Square to) { return line[from][to]; }
+    static Bitboard ray(const int direction, const Square sq) { return rays[direction][sq]; }
+    static Bitboard passedPawn(const Color c, const Square sq) { return passed[c][sq]; }
+    static Bitboard backwardPawn(const Color c, const Square sq) { return backward[c][sq]; }
+    static Bitboard isolatedPawn(const Square sq) { return isolated[sq]; }
+    static Bitboard kingSafetyZone(const Color c, const Square sq) { return kingZone[c][sq]; }
 
     static const std::array<Bitboard, 8> ranks;
     static const std::array<Bitboard, 8> files;
@@ -51,13 +51,13 @@ public:
     // We have two versions, one using hardware and the other using sofware.
     // We automatically detect which one to use.
     template <bool hardwarePopcntEnabled>
-    static inline int popcnt(Bitboard bb)
+    static inline int popcnt(const Bitboard bb)
     {
         return (hardwarePopcntEnabled ? hardwarePopcnt(bb) : softwarePopcnt(bb));
     }
 
     // Returns the least significant set bit in the mask.
-    static unsigned long lsb(Bitboard bb)
+    static unsigned long lsb(const Bitboard bb)
     {
 #if (defined _WIN64 || defined __x86_64__)
         assert(bb);
@@ -75,7 +75,7 @@ public:
     }
 
     // Returns the most significant set bit in the mask.
-    static unsigned long msb(Bitboard bb)
+    static unsigned long msb(const Bitboard bb)
     {
 #if (defined _WIN64 || defined __x86_64__)
         assert(bb);
@@ -106,32 +106,32 @@ public:
     }
 
     // Tests whether the input bitboard has more than one bit set.
-    static bool moreThanOneBitSet(Bitboard bb)
+    static bool moreThanOneBitSet(const Bitboard bb)
     {
         return (bb & (bb - 1)) != 0;
     }
 
     // Tests whether the bitboard has a particular bit set.
-    static bool testBit(Bitboard bb, int b)
+    static bool testBit(const Bitboard bb, const int b)
     {
         return (bb & bits[b]) != 0;
     }
 
     // Sets the specified bit to 1.
-    static void setBit(Bitboard& bb, int b)
+    static void setBit(Bitboard& bb, const int b)
     {
         bb |= bits[b];
     }
 
     // Sets the specified bit to 0. 
     // We assume that the bit is already 1, otherwise this doesn't work.
-    static void clearBit(Bitboard& bb, int b)
+    static void clearBit(Bitboard& bb, const int b)
     {
         assert(testBit(bb, b));
         bb ^= bits[b];
     }
 
-    static Bitboard pieceAttacks(Color sideToMove, Piece piece, Square sq, Bitboard occupied)
+    static Bitboard pieceAttacks(const Color sideToMove, const Piece piece, const Square sq, const Bitboard occupied)
     {
         assert(pieceTypeIsOk(piece));
 
@@ -163,7 +163,7 @@ private:
         int32_t index;
     };
 
-    static int hardwarePopcnt(Bitboard bb)
+    static int hardwarePopcnt(const Bitboard bb)
     {
 #if (defined _WIN64 || defined __x86_64__)
  #if (defined __clang__ || defined __GNUC__)
@@ -189,10 +189,10 @@ private:
     static std::array<Magic, 64> bishopMagic;
     static std::array<Magic, 64> rookMagic;
     static std::array<Bitboard, 97264> lookupTable;
-    static std::array<MagicInit, 64> rookInit;
-    static std::array<MagicInit, 64> bishopInit;
+    const static std::array<MagicInit, 64> rookInit;
+    const static std::array<MagicInit, 64> bishopInit;
 
-    static void initMagics(std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift);
+    static void initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift);
 
     static std::array<Bitboard, 64> bits;
     static std::array<Bitboard, 64> kingAttack;

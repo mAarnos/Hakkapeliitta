@@ -15,9 +15,9 @@ void KillerTable::clear()
     }
 }
 
-void KillerTable::addKiller(const Move& move, int ply)
+void KillerTable::addKiller(const Move& move, const int ply)
 {
-    auto candidateKiller = move.getMove();
+    const auto candidateKiller = move.getMove();
     // Only replace if we won't have two same killers if we replace.
     if (candidateKiller != killers[ply][0])
     {
@@ -26,9 +26,9 @@ void KillerTable::addKiller(const Move& move, int ply)
     }
 }
 
-int KillerTable::isKiller(const Move& move, int ply) const
+int KillerTable::isKiller(const Move& move, const int ply) const
 {
-    auto possibleKiller = move.getMove();
+    const auto possibleKiller = move.getMove();
     if (possibleKiller == killers[ply][0])
     {
         return 1;

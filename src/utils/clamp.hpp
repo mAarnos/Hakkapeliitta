@@ -5,7 +5,7 @@
 
 // Forces the input value between the lower and upper bound specified.
 template<class T>
-T clamp(T value, T lowerBound, T upperBound)
+T clamp(const T value, const T lowerBound, const T upperBound)
 {
     return std::max(lowerBound, std::min(value, upperBound));
 }

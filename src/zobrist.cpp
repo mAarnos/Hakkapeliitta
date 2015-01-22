@@ -4,8 +4,6 @@
 #include "piece.hpp"
 #include "bitboard.hpp"
 
-// No further improvement necessary.
-
 std::array<std::array<HashKey, 64>, 12> Zobrist::piece;
 std::array<std::array<HashKey, 8>, 12> Zobrist::material;
 std::array<HashKey, 16> Zobrist::castling;
@@ -39,7 +37,7 @@ void Zobrist::initialize()
         Bitboard castlingRight = cr;
         while (castlingRight)
         {
-            auto key = castling[1ull << Bitboards::popLsb(castlingRight)];
+            const auto key = castling[1ull << Bitboards::popLsb(castlingRight)];
             castling[cr] ^= key ? key : rng(); 
         }
     }

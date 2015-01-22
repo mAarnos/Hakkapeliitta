@@ -6,8 +6,6 @@
 #include "piece.hpp"
 #include "square.hpp"
 
-// No further improvement necessary.
-
 using HashKey = uint64_t;
 
 class Zobrist
@@ -15,10 +13,10 @@ class Zobrist
 public:
     static void initialize();
 
-    static HashKey pieceHashKey(Piece p, Square sq) { return piece[p][sq]; }
-    static HashKey materialHashKey(Piece p, int amount) { return material[p][amount]; }
-    static HashKey castlingRightsHashKey(int castlingRight) { return castling[castlingRight]; }
-    static HashKey enPassantHashKey(Square enPassant) { return ep[enPassant]; }
+    static HashKey pieceHashKey(const Piece p, const Square sq) { return piece[p][sq]; }
+    static HashKey materialHashKey(const Piece p, const int amount) { return material[p][amount]; }
+    static HashKey castlingRightsHashKey(const int castlingRight) { return castling[castlingRight]; }
+    static HashKey enPassantHashKey(const Square enPassant) { return ep[enPassant]; }
     static HashKey turnHashKey() { return turn; }
     static HashKey mangleHashKey() { return mangle; }
 private:
