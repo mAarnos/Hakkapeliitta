@@ -51,7 +51,7 @@ public:
     // Get the entry for the given hash key.
     const TranspositionTableEntry* probe(HashKey hk) const;
     // Load a part of the transposition table into L1/L2 cache. Used as a speed optimization.
-    void prefetch(HashKey hk);
+    void prefetch(HashKey hk) const;
 
     // Changes the size of the transposition table.
 	void setSize(size_t sizeInMegaBytes);

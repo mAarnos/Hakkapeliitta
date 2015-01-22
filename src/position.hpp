@@ -9,42 +9,43 @@
 #include "color.hpp"
 #include "piece.hpp"
 
+// Represents a single board position. 
 class Position
 {
 public:
+    // Constructs an invalid position, not the starting position.
     Position();
     // Will throw an exception if the FEN-string is corrupted.
-    Position(const std::string& fen);
+    Position(const std::string& fen); 
 
+    // For displaying the position in console.
     std::string displayPositionAsString() const;
 
-    Piece getBoard(const Square sq) const { return board[sq]; }
-    Bitboard getBitboard(const Color colour, const Piece piece) const { return bitboards[piece + colour * 6]; }
-    Bitboard getPieces(const Color colour) const { return bitboards[12 + colour]; }
-    Bitboard getOccupiedSquares() const { return bitboards[12] | bitboards[13]; }
-    Bitboard getFreeSquares() const { return ~getOccupiedSquares(); }
-    Color getSideToMove() const { return sideToMove; }
-    Square getEnPassantSquare() const { return enPassant; }
-    int8_t getCastlingRights() const { return castlingRights; }
-    int8_t getFiftyMoveDistance() const { return fiftyMoveDistance; }
-    int8_t getGamePhase() const { return gamePhase; }
-    Bitboard getPinnedPieces() const { return pinned; }
-    Bitboard getDiscoveredCheckCandidates() const { return dcCandidates; }
-
-    // Accesing hash keys.
-    HashKey getHashKey() const { return hashKey; }
-    HashKey getPawnHashKey() const { return pawnHashKey; }
-    HashKey getMaterialHashKey() const { return materialHashKey; }
-
-    // Getting information on the amounts of pieces.
-    int8_t getPieceCount(const Color color, const Piece piece) const { return pieceCount[piece + color * 6]; }
-    int8_t getTotalPieceCount() const { return totalPieceCount; }
+    // Accessing different kinds of board data.
+    Piece getBoard(Square sq) const;
+    Bitboard getBitboard(Color colour, Piece piece) const;
+    Bitboard getPieces(Color colour) const;
+    Bitboard getOccupiedSquares() const;
+    Bitboard getFreeSquares() const;
+    Color getSideToMove() const;
+    Square getEnPassantSquare() const;
+    int8_t getCastlingRights() const;
+    int8_t getFiftyMoveDistance() const;
+    int8_t getGamePhase() const;
+    Bitboard getPinnedPieces() const;
+    Bitboard getDiscoveredCheckCandidates() const;
+    HashKey getHashKey() const;
+    HashKey getPawnHashKey() const;
+    HashKey getMaterialHashKey() const;
+    int8_t getPieceCount(Color color, Piece piece) const;
+    int8_t getTotalPieceCount() const;
 
     // Makes the move on the board.
     // We use copy-make so unmake is unnecessary.
     void makeMove(const Move& move);
 
-    bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
+    // Used for calculating stuff which changes from turn to turn.
+    bool inCheck() const;
     bool isAttacked(Square sq, Color side) const;
 
     // Checks if a move is legal with one caveat, doesn't work when in check and reports all moves as legal when in check.
@@ -88,8 +89,8 @@ private:
     template <bool side> 
     bool isAttacked(Square sq) const;
 
-    Bitboard discoveredCheckCandidates() const { return checkBlockers(sideToMove, !sideToMove); }
-    Bitboard pinnedPieces(const Color c) const { return checkBlockers(c, c); }
+    Bitboard discoveredCheckCandidates() const;
+    Bitboard pinnedPieces(const Color c) const;
     Bitboard checkBlockers(Color c, Color kingColor) const;
 
     // Testing functions.
@@ -102,5 +103,105 @@ private:
     static const std::array<int8_t, 6> piecePhase;
     static const int8_t totalPhase;
 };
+
+inline Piece Position::getBoard(const Square sq) const 
+{ 
+    return board[sq]; 
+}
+
+inline Bitboard Position::getBitboard(const Color colour, const Piece piece) const 
+{ 
+    return bitboards[piece + colour * 6]; 
+}
+
+inline Bitboard Position::getPieces(const Color colour) const 
+{ 
+    return bitboards[12 + colour]; 
+}
+
+inline Bitboard Position::getOccupiedSquares() const
+{ 
+    return bitboards[12] | bitboards[13]; 
+}
+
+inline Bitboard Position::getFreeSquares() const 
+{ 
+    return ~getOccupiedSquares();
+}
+
+inline Color Position::getSideToMove() const 
+{ 
+    return sideToMove; 
+}
+
+inline Square Position::getEnPassantSquare() const
+{ 
+    return enPassant; 
+}
+
+inline int8_t Position::getCastlingRights() const 
+{ 
+    return castlingRights; 
+}
+
+inline int8_t Position::getFiftyMoveDistance() const 
+{ 
+    return fiftyMoveDistance; 
+}
+
+inline int8_t Position::getGamePhase() const 
+{ 
+    return gamePhase; 
+}
+
+inline Bitboard Position::getPinnedPieces() const 
+{ 
+    return pinned; 
+}
+
+inline Bitboard Position::getDiscoveredCheckCandidates() const 
+{ 
+    return dcCandidates; 
+}
+
+inline HashKey Position::getHashKey() const 
+{ 
+    return hashKey; 
+}
+
+inline HashKey Position::getPawnHashKey() const 
+{ 
+    return pawnHashKey; 
+}
+
+inline HashKey Position::getMaterialHashKey() const 
+{ 
+    return materialHashKey; 
+}
+
+inline int8_t Position::getPieceCount(const Color color, const Piece piece) const
+{ 
+    return pieceCount[piece + color * 6]; 
+}
+
+inline int8_t Position::getTotalPieceCount() const
+{
+    return totalPieceCount; 
+}
+
+inline bool Position::inCheck() const 
+{ 
+    return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); 
+}
+
+inline Bitboard Position::discoveredCheckCandidates() const 
+{ 
+    return checkBlockers(sideToMove, !sideToMove); 
+}
+
+inline Bitboard Position::pinnedPieces(const Color c) const 
+{
+    return checkBlockers(c, c); 
+}
 
 #endif

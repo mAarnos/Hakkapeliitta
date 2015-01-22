@@ -38,9 +38,9 @@ void TranspositionTable::clear()
     generation = 1;
 }
 
-void TranspositionTable::prefetch(const HashKey hk)
+void TranspositionTable::prefetch(const HashKey hk) const
 {
-    auto address = reinterpret_cast<char*>(&table[hk & (tableSize - 1)]);
+    const auto* address = reinterpret_cast<char*>(&table[hk & (tableSize - 1)]);
 #if defined (_MSC_VER) || defined(__INTEL_COMPILER)
     _mm_prefetch(address, _MM_HINT_T0);
 #else
