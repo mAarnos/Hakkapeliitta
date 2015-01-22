@@ -30,10 +30,10 @@ private:
     static int evaluate(const Position& pos, bool& zugzwangLikely);
 
     template <bool hardwarePopcnt> 
-    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, const int phase, bool& zugzwangLikely);
+    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
 
-    static int pawnStructureEval(const Position& pos, const int phase);
-    static int kingSafetyEval(const Position& pos, const int phase, std::array<int, 2>& kingSafetyScore);
+    static int pawnStructureEval(const Position& pos, int phase);
+    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
 };
 
 #endif

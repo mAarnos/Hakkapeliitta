@@ -45,11 +45,11 @@ public:
     void makeMove(const Move& move);
 
     bool inCheck() const { return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); };
-    bool isAttacked(const Square sq, const Color side) const;
+    bool isAttacked(Square sq, Color side) const;
 
     // Checks if a move is legal with one caveat, doesn't work when in check and reports all moves as legal when in check.
     // This behaviour is dealt with the legal evasion generator.
-    bool legal(const Move& move, const bool inCheck) const;
+    bool legal(const Move& move, bool inCheck) const;
 
     // Checks if a move gives check. 
     // Returns 0 if it isn't, 2 if the move is a discovered check and 1 if it is a normal check.
@@ -86,11 +86,11 @@ private:
     void makeMove(const Move& move);
 
     template <bool side> 
-    bool isAttacked(const Square sq) const;
+    bool isAttacked(Square sq) const;
 
     Bitboard discoveredCheckCandidates() const { return checkBlockers(sideToMove, !sideToMove); }
     Bitboard pinnedPieces(const Color c) const { return checkBlockers(c, c); }
-    Bitboard checkBlockers(const Color c, const Color kingColor) const;
+    Bitboard checkBlockers(Color c, Color kingColor) const;
 
     // Testing functions.
     bool verifyHashKeysAndPhase() const;

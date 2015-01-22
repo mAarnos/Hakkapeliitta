@@ -11,8 +11,8 @@ class MoveList
 public:
     MoveList() : numberOfMoves(0) {};
 
-    Move& operator[](const int index);
-    const Move& operator[](const int index) const;
+    Move& operator[](int index);
+    const Move& operator[](int index) const;
 
     template<class... T>
     void emplace_back(T&&... args);
