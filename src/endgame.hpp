@@ -11,33 +11,31 @@ class EndgameModule
 public:
     EndgameModule();
 
-    bool drawnEndgame(HashKey materialHashKey) const { return drawnEndgames.count(materialHashKey) > 0; }
+    bool drawnEndgame(HashKey materialHashKey) const;
 private:
-    std::unordered_set<HashKey> drawnEndgames;
+    std::unordered_set<HashKey> fideDrawnEndgames;
+    std::unordered_set<HashKey> otherDrawnEndgames;
 };
 
 inline EndgameModule::EndgameModule()
 {
     // KK
-    // FIDE draw
     const auto matHash = Zobrist::materialHashKey(Piece::WhiteKing, 0) ^ Zobrist::materialHashKey(Piece::BlackKing, 0);
-    drawnEndgames.insert(matHash);
+    fideDrawnEndgames.insert(matHash);
 
     // KBK, KNK, KKB, KKN
-    // FIDE draw
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
         {
-            drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(j + i * 6, 0));
+            fideDrawnEndgames.insert(matHash ^ Zobrist::materialHashKey(j + i * 6, 0));
         }
     }
 
     // KNNK, KKNN
-    // FIDE draw
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
-        drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
+        fideDrawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
             Zobrist::materialHashKey(Piece::Knight + i * 6, 1));
     }
 
@@ -46,7 +44,7 @@ inline EndgameModule::EndgameModule()
     {
         for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
         {
-            drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Color::White + i, 0) ^
+            otherDrawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Color::White + i, 0) ^
                 Zobrist::materialHashKey(Color::Black * 6 + j, 0));
         }
     }
@@ -54,7 +52,7 @@ inline EndgameModule::EndgameModule()
     // KBBKB, KBKBB
     for (Color i = Color::White; i <= Color::Black; ++i)
     {
-        drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Bishop + i * 6, 0) ^
+        otherDrawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Bishop + i * 6, 0) ^
             Zobrist::materialHashKey(Piece::Bishop + i * 6, 1) ^
             Zobrist::materialHashKey(Piece::Bishop + !i * 6, 0));
     }
@@ -66,12 +64,17 @@ inline EndgameModule::EndgameModule()
         {
             for (Piece k = Piece::Knight; k <= Piece::Bishop; ++k)
             {
-                drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
+                otherDrawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
                     Zobrist::materialHashKey(j + i * 6, j == Piece::Knight) ^
                     Zobrist::materialHashKey(k + !i * 6, 0));
             }
         }
     }
+}
+
+inline bool EndgameModule::drawnEndgame(const HashKey materialHashKey) const
+{
+    return fideDrawnEndgames.count(materialHashKey) > 0 || otherDrawnEndgames.count(materialHashKey) > 0;
 }
 
 #endif
