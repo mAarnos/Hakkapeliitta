@@ -26,6 +26,7 @@ public:
     Square getEnPassantSquare() const { return enPassant; }
     int8_t getCastlingRights() const { return castlingRights; }
     int8_t getFiftyMoveDistance() const { return fiftyMoveDistance; }
+    int8_t getGamePhase() const { return gamePhase; }
     Bitboard getPinnedPieces() const { return pinned; }
     Bitboard getDiscoveredCheckCandidates() const { return dcCandidates; }
 

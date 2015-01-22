@@ -214,7 +214,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     m = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares & interpose;
     addPawnDoubleMovesFromMask<side>(moves, m);
 
-    auto ep = (pos.getEnPassantSquare() != Square::NoSquare && checkerLocation == (pos.getEnPassantSquare() - 8 + side * 16)) ? Bitboards::bit(pos.getEnPassantSquare()) : 0;
+    auto ep = (pos.getEnPassantSquare() != Square::NoSquare && checkerLocation == static_cast<uint64_t>(pos.getEnPassantSquare() - 8 + side * 16)) ? Bitboards::bit(pos.getEnPassantSquare()) : 0;
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (checkers | ep);
     addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare());
 

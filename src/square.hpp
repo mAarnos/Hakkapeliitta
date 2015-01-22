@@ -11,7 +11,7 @@ public:
     Square() : square(NoSquare) {};
     Square(int newSquare) { assert(newSquare >= A1 && newSquare <= NoSquare); square = static_cast<int8_t>(newSquare); };
 
-    enum 
+    enum : int8_t
     {
         A1, B1, C1, D1, E1, F1, G1, H1,
         A2, B2, C2, D2, E2, F2, G2, H2,

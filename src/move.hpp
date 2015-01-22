@@ -13,7 +13,7 @@ class Move
 {
 public:
     Move();
-    Move(Square from, Square to, Piece promotion, int16_t score);
+    Move(Square from, Square to, Piece promotion, int32_t score);
 
     Square getFrom() const;
     Square getTo() const;
@@ -32,9 +32,10 @@ inline Move::Move() : move(0), score(0)
 {
 }
 
-inline Move::Move(Square from, Square to, Piece promotion, int16_t score) : score(score)
+inline Move::Move(Square from, Square to, Piece promotion, int32_t iScore)
 {
     assert(squareIsOkStrict(from) && squareIsOkStrict(to) && pieceIsOkStrict(promotion));
+    score = static_cast<int16_t>(iScore);
     move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
 }
 

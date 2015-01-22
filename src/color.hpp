@@ -10,7 +10,7 @@ public:
     Color() : color(NoColor) {};
     Color(int8_t newColor) : color(newColor) {};
 
-    enum 
+    enum : int8_t
     {
         White = 0, Black = 1, NoColor = 2
     };
