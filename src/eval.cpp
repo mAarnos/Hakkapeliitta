@@ -121,12 +121,10 @@ const std::array<int, 100> kingSafetyTable = {
     13, 0, 8, -13, 4, 2, 8, 2, 15, 8, 11, 15, 15, 19, 24, 20, 29, 35, 51, 39, 43, 58, 57, 70, 72, 74, 78, 112, 103, 100, 119, 109, 130, 149, 144, 151, 178, 180, 202, 199, 221, 223, 252, 258, 268, 260, 287, 283, 289, 291, 338, 326, 366, 377, 373, 335, 319, 404, 354, 334, 501, 377, 501, 365, 501, 501, 427, 501, 421, 501, 321, 501, 321, 501, 321, 501, 500, 501, 335, 500, 500, 500, 501, 501, 500, 501, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 
-std::unordered_set<HashKey> Evaluation::drawnEndgames;
+EndgameModule Evaluation::endgameModule;
 
 void Evaluation::initialize()
 {
-    initializeDrawnEndgames();
-
     for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
     {
         for (Square sq = Square::A1; sq <= Square::H8; ++sq)
@@ -136,63 +134,6 @@ void Evaluation::initialize()
 
             pieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
             pieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
-        }
-    }
-}
-
-void Evaluation::initializeDrawnEndgames()
-{
-    drawnEndgames.clear();
-
-    // King vs king
-    const auto matHash = Zobrist::materialHashKey(Piece::WhiteKing, 0) ^ Zobrist::materialHashKey(Piece::BlackKing, 0);
-    drawnEndgames.insert(matHash);
-
-    // King and a minor piece vs king
-    for (Color i = Color::White; i <= Color::Black; ++i)
-    {
-        for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
-        {
-            drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(j + i * 6, 0));
-        }
-    }
-
-    // King and two knights vs king
-    for (Color i = Color::White; i <= Color::Black; ++i)
-    {
-        drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
-            Zobrist::materialHashKey(Piece::Knight + i * 6, 1));
-    }
-
-    // King and a minor piece vs king and a minor piece
-    for (Piece i = Piece::Knight; i <= Piece::Bishop; ++i)
-    {
-        for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
-        {
-            drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Color::White + i, 0) ^
-                Zobrist::materialHashKey(Color::Black * 6 + j, 0));
-        }
-    }
-
-    // King and two bishops vs king and a bishop
-    for (Color i = Color::White; i <= Color::Black; ++i)
-    {
-        drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Bishop + i * 6, 0) ^
-            Zobrist::materialHashKey(Piece::Bishop + i * 6, 1) ^
-            Zobrist::materialHashKey(Piece::Bishop + !i * 6, 0));
-    }
-
-    // King and either two knights or a knight and a bishop vs king and a minor piece
-    for (Color i = Color::White; i <= Color::Black; ++i)
-    {
-        for (Piece j = Piece::Knight; j <= Piece::Bishop; ++j)
-        {
-            for (Piece k = Piece::Knight; k <= Piece::Bishop; ++k)
-            {
-                drawnEndgames.insert(matHash ^ Zobrist::materialHashKey(Piece::Knight + i * 6, 0) ^
-                    Zobrist::materialHashKey(j + i * 6, j == Piece::Knight) ^
-                    Zobrist::materialHashKey(k + !i * 6, 0));
-            }
         }
     }
 }
@@ -210,7 +151,7 @@ int interpolateScore(const int scoreOp, const int scoreEd, const int phase)
 template <bool hardwarePopcnt> 
 int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
 {
-    if (drawnEndgame(pos.getMaterialHashKey()))
+    if (endgameModule.drawnEndgame(pos.getMaterialHashKey()))
     {
         return 0;
     }

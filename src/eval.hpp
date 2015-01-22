@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include "position.hpp"
 #include "zobrist.hpp"
+#include "endgame.hpp"
 // #include "pht.hpp"
 
 class Evaluation
@@ -19,11 +20,9 @@ public:
     static std::array<std::array<int, 64>, 12> pieceSquareTableEnding;
     // static PawnHashTable pawnHashTable;
 
-    static bool drawnEndgame(const HashKey mhk) { return drawnEndgames.count(mhk) > 0; }
 private:
-    // Things related to endgame knowledge.
-    static void initializeDrawnEndgames();
-    static std::unordered_set<HashKey> drawnEndgames;
+    // Contains information on some endgames.
+    static EndgameModule endgameModule;
 
     // Evaluation function in parts.
     template <bool hardwarePopcnt> 
