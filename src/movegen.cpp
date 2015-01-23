@@ -107,7 +107,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
     addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare(), true);
 
-    // Since pinned pieces do not have legal moves we can remove them.
+    // Since pinned knights do not have legal moves we can remove them.
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pos.getPinnedPieces();
     while (tempPiece)
     {
@@ -144,22 +144,20 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     tempMove = Bitboards::kingAttacks(from) & targetBB;
     addPieceMovesFromMask(moves, tempMove, from);
 
-    // TODO: fix this absurdity
-    if (!pos.isAttacked(Square::E1 + 56 * side, !side))
+    auto shortCastlingPossible = pos.getCastlingRights() & (1 << (2 * side)) && !(occupiedSquares & (0x0000000000000060ull << (56 * side)));
+    auto longCastlingPossible = pos.getCastlingRights() & (2 << (2 * side)) && !(occupiedSquares & (0x000000000000000Eull << (56 * side)));
+    if (shortCastlingPossible || longCastlingPossible)
     {
-        if (pos.getCastlingRights() & (1 << (2 * side))) // Short castling.
+        if (!pos.isAttacked(Square::E1 + 56 * side, !side))
         {
-            if (!(occupiedSquares & (0x0000000000000060ull << (56 * side))))
+            if (shortCastlingPossible) 
             {
                 if (!(pos.isAttacked(Square::F1 + 56 * side, !side)) && !(pos.isAttacked(Square::G1 + 56 * side, !side)))
                 {
                     moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0);
                 }
             }
-        }
-        if (pos.getCastlingRights() & (2 << (2 * side))) // Long castling.
-        {
-            if (!(occupiedSquares & (0x000000000000000Eull << (56 * side))))
+            if (longCastlingPossible)
             {
                 if (!(pos.isAttacked(Square::D1 + 56 * side, !side)) && !(pos.isAttacked(Square::C1 + 56 * side, !side)))
                 {
