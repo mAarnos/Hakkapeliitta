@@ -30,7 +30,7 @@ void PawnHashTable::clear()
     table.resize(tableSize);
 }
 
-void PawnHashTable::save(HashKey hk, const int scoreOp, const int scoreEd)
+void PawnHashTable::save(const HashKey hk, const int scoreOp, const int scoreEd)
 {
     auto& hashEntry = table[hk & (table.size() - 1)];
 
@@ -41,7 +41,7 @@ void PawnHashTable::save(HashKey hk, const int scoreOp, const int scoreEd)
     assert(static_cast<int16_t>(hashEntry.getData() >> 16) == scoreEd);
 }
 
-bool PawnHashTable::probe(HashKey hk, int& scoreOp, int& scoreEd) const
+bool PawnHashTable::probe(const HashKey hk, int& scoreOp, int& scoreEd) const
 {
     const auto& hashEntry = table[hk & (table.size() - 1)];
 

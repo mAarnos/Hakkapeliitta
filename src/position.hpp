@@ -90,7 +90,7 @@ private:
     bool isAttacked(Square sq) const;
 
     Bitboard discoveredCheckCandidates() const;
-    Bitboard pinnedPieces(const Color c) const;
+    Bitboard pinnedPieces(Color c) const;
     Bitboard checkBlockers(Color c, Color kingColor) const;
 
     // Testing functions.
