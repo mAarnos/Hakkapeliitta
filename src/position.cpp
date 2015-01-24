@@ -9,7 +9,7 @@
 #include "square.hpp"
 #include "utils/synchronized_ostream.hpp"
 
-const std::array<int, 64> Position::castlingMask = {
+const std::array<int, 64> castlingMask = {
 	2, 0, 0, 0, 3, 0, 0, 1,
 	0, 0, 0, 0, 0, 0, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0,
@@ -20,15 +20,15 @@ const std::array<int, 64> Position::castlingMask = {
 	8, 0, 0, 0, 12, 0, 0, 4
 };
 
-const std::array<int8_t, 6> Position::piecePhase = {
+const std::array<int8_t, 6> piecePhase = {
     0, 3, 3, 5, 10, 0
 };
 
-const int8_t Position::totalPhase = piecePhase[Piece::Pawn] * 16 
-                                  + piecePhase[Piece::Knight] * 4 
-                                  + piecePhase[Piece::Bishop] * 4 
-                                  + piecePhase[Piece::Rook] * 4 
-                                  + piecePhase[Piece::Queen] * 2;
+const int8_t totalPhase = piecePhase[Piece::Pawn] * 16 
+                        + piecePhase[Piece::Knight] * 4 
+                        + piecePhase[Piece::Bishop] * 4 
+                        + piecePhase[Piece::Rook] * 4 
+                        + piecePhase[Piece::Queen] * 2;
 
 Position::Position()
 {

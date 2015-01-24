@@ -19,13 +19,13 @@ int main()
 
     sync_cout << sizeof(Position) << std::endl;
 
-    UCI uci;
+    // UCI uci;
 
-    uci.mainLoop();
+    // uci.mainLoop();
 
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     Benchmark benchmark;
-    benchmark.runPerft(pos, 6);
+    benchmark.runPerft(pos, 7);
 
     return 0;
 }

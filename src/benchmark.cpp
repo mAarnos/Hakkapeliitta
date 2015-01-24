@@ -23,7 +23,7 @@ uint64_t Benchmark::perft(const Position& pos, const int depth)
     auto nodes = 0ull; 
     const auto inCheck = pos.inCheck();
 
-    inCheck ? MoveGen::generateLegalEvasions(pos, moves) : MoveGen::generatePseudoLegalMoves(pos, moves); 
+    inCheck ? moveGen.generateLegalEvasions(pos, moves) : moveGen.generatePseudoLegalMoves(pos, moves);
     for (auto i = 0; i < moves.size(); ++i)
     {
         const auto& move = moves[i];

@@ -97,11 +97,6 @@ private:
     bool verifyHashKeysAndPhase() const;
     bool verifyPieceCounts() const;
     bool verifyBoardAndBitboards() const;
-
-    // Some stuff needed for making moves.
-    static const std::array<int, 64> castlingMask;
-    static const std::array<int8_t, 6> piecePhase;
-    static const int8_t totalPhase;
 };
 
 inline Piece Position::getBoard(const Square sq) const 

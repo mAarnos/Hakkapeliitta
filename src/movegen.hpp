@@ -9,18 +9,18 @@
 class MoveGen
 {
 public:
-    static void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
-    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
-    static void generateLegalEvasions(const Position& pos, MoveList& moves);
+    void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
+    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
+    void generateLegalEvasions(const Position& pos, MoveList& moves);
 private:
     template <bool side> 
-    static void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
+    void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
 
     template <bool side>
-    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
+    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
 
     template <bool side>
-    static void generateLegalEvasions(const Position& pos, MoveList& moves);
+    void generateLegalEvasions(const Position& pos, MoveList& moves);
 };
 
 #endif
