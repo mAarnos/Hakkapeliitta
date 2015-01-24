@@ -7,6 +7,7 @@
 #include "position.hpp"
 #include "benchmark.hpp"
 #include "movelist.hpp"
+#include "uci.hpp"
 
 int main() 
 {
@@ -17,6 +18,10 @@ int main()
     Zobrist::initialize();
 
     sync_cout << sizeof(Position) << std::endl;
+
+    UCI uci;
+
+    uci.mainLoop();
 
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     Benchmark benchmark;
