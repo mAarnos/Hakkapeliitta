@@ -34,9 +34,10 @@ void UCI::mainLoop()
         // Using string stream makes parsing a lot easier than regexes.
         // Note to self: Lucas Braesch is always right.
         std::istringstream iss(cmd);
+        iss >> commandName;
         
         // Ignore empty lines.
-        if (!(iss >> commandName))
+        if (commandName.empty())
             continue;
 
         // If we are currently searching only the commands stop, quit, and isready are legal.
@@ -75,7 +76,7 @@ void UCI::sendInformation(Position&, std::istringstream&)
 
     // Send all possible options the engine has that can be modified.
     sync_cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
-    sync_cout << "option name PawnHash type spin default 4 min 1 max 8192" << std::endl;
+    sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
     // sync_cout << "option name Ponder type check default false" << std::endl;
@@ -115,8 +116,44 @@ void UCI::quit(Position&, std::istringstream&)
     exit(0);
 }
 
-void UCI::setOption(Position&, std::istringstream&)
+void UCI::setOption(Position&, std::istringstream& iss) 
 {
+    std::string name, value, s;
+    
+    // Read the name of the option. 
+    // Since the name can contains spaces we have this loop.
+    while (iss >> s && s != "value")
+    {
+        name += std::string(" ", !name.empty()) + s;
+    }
+
+    // Read the value of the option.
+    // The loop has the same reason as the previous one.
+    while (iss >> s)
+    {
+        name += std::string(" ", !name.empty()) + s;
+    }
+
+    if (name == "Contempt")
+    {
+
+    }
+    else if (name == "Hash")
+    {
+
+    }
+    else if (name == "Pawn Hash")
+    {
+
+    }
+    else if (name == "Clear Hash")
+    {
+
+    }
+    else
+    {
+        sync_cout << "info string no such option exists" << std::endl;
+    }
 }
 
 void UCI::newGame(Position&, std::istringstream&)
@@ -165,14 +202,15 @@ void UCI::perft(Position& pos, std::istringstream& iss)
 {
     int depth;
 
-    if (!(iss >> depth))
+    if (iss >> depth)
+    {
+        const auto result = benchMark.runPerft(pos, depth);
+        sync_cout << "info string nodes " << result.first
+                  << " time " << result.second
+                  << " nps " << (result.first / (result.second + 1)) * 1000 << std::endl;
+    }
+    else
     {
         sync_cout << "info string argument invalid" << std::endl;
-        return;
     }
-
-    const auto result = benchMark.runPerft(pos, depth);
-    sync_cout << "info string nodes " << result.first 
-              << " time " << result.second 
-              << " nps " << (result.first / (result.second + 1)) * 1000 << std::endl;
 }
