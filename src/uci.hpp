@@ -5,11 +5,15 @@
 #include <map>
 #include "utils/threadpool.hpp"
 #include "benchmark.hpp"
+#include "tt.hpp"
+#include "pht.hpp"
+#include "history.hpp"
+#include "killer.hpp"
 
 class UCI
 {
 public:
-    UCI();// GameState& gameState);
+    UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
 
     void mainLoop();
 private:
@@ -18,7 +22,6 @@ private:
     void addCommand(const std::string& name, FunctionPointer fp);
     std::map<std::string, FunctionPointer> commands;
 
-    // GameState& gameState;
     ThreadPool tp;
     Benchmark benchMark;
 
@@ -35,6 +38,13 @@ private:
     void ponderhit(Position& pos, std::istringstream& iss);
     void displayBoard(Position& pos, std::istringstream& iss);
     void perft(Position& pos, std::istringstream& iss);
+
+    // References to transposition, pawn hash, killer and history tables.
+    // Used when a command comes which instructs to clear them, or when we start a new game (in which case we clear them).
+    TranspositionTable& transpositionTable;
+    PawnHashTable& pawnHashTable;
+    KillerTable& killerTable;
+    HistoryTable& historyTable;
 };
 
 

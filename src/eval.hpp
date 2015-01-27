@@ -12,7 +12,7 @@
 class Evaluation
 {
 public:
-    Evaluation();
+    Evaluation(PawnHashTable& pawnHashTable);
 
     int evaluate(const Position& pos, bool& zugzwangLikely);
 
@@ -23,7 +23,7 @@ private:
     // Contains information on some endgames.
     EndgameModule endgameModule;
     // Used for hashing pawn eval scores.
-    PawnHashTable pawnHashTable;
+    PawnHashTable& pawnHashTable;
 
     // Evaluation function in parts.
     template <bool hardwarePopcnt> 
@@ -34,6 +34,8 @@ private:
 
     int pawnStructureEval(const Position& pos, int phase);
     int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
+
+    Evaluation& operator=(const Evaluation&) = delete;
 };
 
 #endif

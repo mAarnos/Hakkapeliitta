@@ -4,8 +4,8 @@
 #include "utils/synchronized_ostream.hpp"
 #include "benchmark.hpp"
 
-UCI::UCI() :
-tp(1)
+UCI::UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
+tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable)
 {
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
@@ -148,7 +148,10 @@ void UCI::setOption(Position&, std::istringstream& iss)
     }
     else if (name == "Clear Hash")
     {
-
+        transpositionTable.clear();
+        pawnHashTable.clear();
+        historyTable.clear();
+        killerTable.clear();
     }
     else
     {
@@ -158,6 +161,10 @@ void UCI::setOption(Position&, std::istringstream& iss)
 
 void UCI::newGame(Position&, std::istringstream&)
 {
+    transpositionTable.clear();
+    pawnHashTable.clear();
+    historyTable.clear();
+    killerTable.clear();
 }
 
 void UCI::go(Position&, std::istringstream& iss)

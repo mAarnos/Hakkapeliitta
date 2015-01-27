@@ -1,13 +1,15 @@
 #include <iostream>
 #include <thread>
 #include <algorithm>
+#include "utils/synchronized_ostream.hpp"
 #include "zobrist.hpp"
 #include "bitboard.hpp"
-#include "utils/synchronized_ostream.hpp"
-#include "position.hpp"
-#include "benchmark.hpp"
-#include "movelist.hpp"
 #include "uci.hpp"
+#include "killer.hpp"
+#include "history.hpp"
+#include "pht.hpp"
+#include "tt.hpp"
+#include "search.hpp"
 
 int main() 
 {
@@ -16,7 +18,12 @@ int main()
 
     Bitboards::initialize();
     Zobrist::initialize();
-    UCI uci;
+    KillerTable killerTable;
+    HistoryTable historyTable;
+    PawnHashTable pawnHashTable;
+    TranspositionTable transpositionTable;
+    Search search(transpositionTable, pawnHashTable, killerTable, historyTable);
+    UCI uci(transpositionTable, pawnHashTable, killerTable, historyTable);
 
     if (Bitboards::isHardwarePopcntSupported())
     {
