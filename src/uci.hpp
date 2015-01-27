@@ -5,7 +5,6 @@
 #include <map>
 #include "utils/threadpool.hpp"
 #include "benchmark.hpp"
-// #include "gamestate.hpp"
 
 class UCI
 {
@@ -14,7 +13,7 @@ public:
 
     void mainLoop();
 private:
-    using FunctionPointer = void(UCI::*)(std::istringstream& iss);
+    using FunctionPointer = void(UCI::*)(Position& pos, std::istringstream& iss);
 
     void addCommand(const std::string& name, FunctionPointer fp);
     std::map<std::string, FunctionPointer> commands;
@@ -25,17 +24,17 @@ private:
 
     // UCI commands.
 
-    void sendInformation(std::istringstream& iss);
-    void isReady(std::istringstream& iss);
-    void stop(std::istringstream& iss);
-    void quit(std::istringstream& iss);
-    void setOption(std::istringstream& iss);
-    void newGame(std::istringstream& iss);
-    void position(std::istringstream& iss);
-    void go(std::istringstream& iss);
-    void ponderhit(std::istringstream& iss);
-    void displayBoard(std::istringstream& iss);
-    void perft(std::istringstream& iss);
+    void sendInformation(Position& pos, std::istringstream& iss);
+    void isReady(Position& pos, std::istringstream& iss);
+    void stop(Position& pos, std::istringstream& iss);
+    void quit(Position& pos, std::istringstream& iss);
+    void setOption(Position& pos, std::istringstream& iss);
+    void newGame(Position& pos, std::istringstream& iss);
+    void position(Position& pos, std::istringstream& iss);
+    void go(Position& pos, std::istringstream& iss);
+    void ponderhit(Position& pos, std::istringstream& iss);
+    void displayBoard(Position& pos, std::istringstream& iss);
+    void perft(Position& pos, std::istringstream& iss);
 };
 
 

@@ -3,7 +3,6 @@
 #include <cmath>
 #include <unordered_set>
 #include "utils/clamp.hpp"
-// #include "search.hpp"
 
 TranspositionTable::TranspositionTable():
 table(nullptr), tableSize(0)
@@ -73,8 +72,8 @@ void TranspositionTable::save(const HashKey hk, const int ply, const Move& move,
 
         // Here we check if we have found an entry which is worse than the current worse entry.
         // If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-        auto c1 = (replace->getGeneration() > hashEntry->getGeneration());
-        auto c2 = (replace->getDepth() > hashEntry->getDepth());
+        const auto c1 = (replace->getGeneration() > hashEntry->getGeneration());
+        const auto c2 = (replace->getDepth() > hashEntry->getDepth());
 
         if (c1 || c2)
         {
@@ -119,7 +118,7 @@ std::vector<Move> TranspositionTable::extractPv(Position root) const
 
     for (auto ply = 0; ply < 128; ++ply)
     {
-        auto entry = probe(root.getHashKey());
+        const auto entry = probe(root.getHashKey());
 
         // No entry found -> end of PV
         if (!entry) 

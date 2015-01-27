@@ -4,11 +4,6 @@
 #include "square.hpp"
 #include "utils/clamp.hpp"
 
-// PawnHashTable Evaluation::pawnHashTable;
-
-std::array<std::array<int, 64>, 12> Evaluation::pieceSquareTableOpening;
-std::array<std::array<int, 64>, 12> Evaluation::pieceSquareTableEnding;
-
 const std::array<int, 6> pieceValuesOpening = {
     75, 228, 242, 301, 713, 0
 };
@@ -121,21 +116,8 @@ const std::array<int, 100> kingSafetyTable = {
     13, 0, 8, -13, 4, 2, 8, 2, 15, 8, 11, 15, 15, 19, 24, 20, 29, 35, 51, 39, 43, 58, 57, 70, 72, 74, 78, 112, 103, 100, 119, 109, 130, 149, 144, 151, 178, 180, 202, 199, 221, 223, 252, 258, 268, 260, 287, 283, 289, 291, 338, 326, 366, 377, 373, 335, 319, 404, 354, 334, 501, 377, 501, 365, 501, 501, 427, 501, 421, 501, 321, 501, 321, 501, 321, 501, 500, 501, 335, 500, 500, 500, 501, 501, 500, 501, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 
-EndgameModule Evaluation::endgameModule;
-
-void Evaluation::initialize()
+Evaluation::Evaluation()
 {
-    for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
-    {
-        for (Square sq = Square::A1; sq <= Square::H8; ++sq)
-        {
-            pieceSquareTableOpening[p][sq] = openingPST[p][sq] + pieceValuesOpening[p];
-            pieceSquareTableEnding[p][sq] = endingPST[p][sq] + pieceValuesEnding[p];
-
-            pieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
-            pieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
-        }
-    }
 }
 
 int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
@@ -341,10 +323,16 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
+const std::array<int, 8> openFilePenalty = {
+    6, 6, 6, 6, 6, 6, 6, 6
+};
+
+const std::array<int, 8> halfOpenFilePenalty = {
+    4, 4, 4, 4, 4, 4, 4, 4
+};
+
 int evaluatePawnShelter(const Position& pos, const Color side)
 {
-    static const auto openFilePenalty = 6;
-    static const auto halfOpenFilePenalty = 4;
     auto penalty = 0;
     const auto ownPawns = pos.getBitboard(side, Piece::Pawn);
     const auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
@@ -356,13 +344,13 @@ int evaluatePawnShelter(const Position& pos, const Color side)
     {
         if (!(Bitboards::files[f] & (ownPawns | enemyPawns))) // Open file.
         {
-            penalty += openFilePenalty;
+            penalty += openFilePenalty[f];
         }
         else
         {
             if (!(Bitboards::files[f] & ownPawns)) // Half-open file (our)
             {
-                penalty += halfOpenFilePenalty;
+                penalty += halfOpenFilePenalty[f];
             }
         }
     }
@@ -374,6 +362,9 @@ int Evaluation::kingSafetyEval(const Position& pos, const int phase, std::array<
 {
     kingSafetyScore[Color::Black] += evaluatePawnShelter(pos, Color::White);
     kingSafetyScore[Color::White] += evaluatePawnShelter(pos, Color::Black);
+    kingSafetyScore[Color::White] = std::min(kingSafetyScore[Color::White], 99);
+    kingSafetyScore[Color::Black] = std::min(kingSafetyScore[Color::Black], 99);
+
     const auto score = kingSafetyTable[kingSafetyScore[Color::White]] - kingSafetyTable[kingSafetyScore[Color::Black]];
     return ((score * (64 - phase)) / 64);
 }

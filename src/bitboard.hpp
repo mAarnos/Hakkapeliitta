@@ -192,7 +192,8 @@ private:
     const static std::array<MagicInit, 64> rookInit;
     const static std::array<MagicInit, 64> bishopInit;
 
-    static void initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift);
+    static void initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, 
+                           const std::array<std::array<int, 2>, 4>& dir, int shift);
 
     static std::array<Bitboard, 64> bits;
     static std::array<Bitboard, 64> kingAttack;

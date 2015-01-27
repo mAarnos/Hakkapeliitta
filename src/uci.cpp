@@ -22,6 +22,7 @@ tp(1)
 
 void UCI::mainLoop()
 {
+    Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     std::string cmd, commandName;
 
     for (;;)
@@ -48,7 +49,7 @@ void UCI::mainLoop()
         // If the command is unknown report that.
         if (commands.count(commandName))
         {
-            (this->*commands[commandName])(iss);
+            (this->*commands[commandName])(pos, iss);
         }
         else
         {
@@ -64,7 +65,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 
 // UCI commands.
 
-void UCI::sendInformation(std::istringstream&)
+void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
     sync_cout << "id name Hakkapeliitta 2.5" << std::endl;
@@ -84,12 +85,12 @@ void UCI::sendInformation(std::istringstream&)
     sync_cout << "uciok" << std::endl;
 }
 
-void UCI::isReady(std::istringstream&)
+void UCI::isReady(Position&, std::istringstream&)
 {
     sync_cout << "readyok" << std::endl;
 }
 
-void UCI::stop(std::istringstream&)
+void UCI::stop(Position&, std::istringstream&)
 {
     /*
     gameState.searching = false;
@@ -98,7 +99,7 @@ void UCI::stop(std::istringstream&)
     */
 }
 
-void UCI::quit(std::istringstream&)
+void UCI::quit(Position&, std::istringstream&)
 {
     // First shut down the possible search.
     /*
@@ -112,32 +113,53 @@ void UCI::quit(std::istringstream&)
     exit(0);
 }
 
-void UCI::setOption(std::istringstream&)
+void UCI::setOption(Position&, std::istringstream&)
 {
 }
 
-void UCI::newGame(std::istringstream&)
+void UCI::newGame(Position&, std::istringstream&)
 {
 }
 
-void UCI::go(std::istringstream&)
+void UCI::go(Position&, std::istringstream& iss)
+{
+    auto movesToGo = 25;
+    auto moveTime = 0;
+    std::array<int, 2> timeLimits = { 0, 0 };
+    std::array<int, 2> incrementAmount = { 0, 0 };
+    std::string token;
+
+    // Search::searching = true;
+    // Search::pondering = false;
+    // Search::infinite = false;
+
+    // Parse the string to get the time limits.
+    while (iss >> token)
+    {
+        if (token == "movetime") iss >> moveTime;
+        else if (token == "infinite") {} //Search::infinite = true;
+        else if (token == "wtime") iss >> timeLimits[Color::White];
+        else if (token == "btime") iss >> timeLimits[Color::Black];
+        else if (token == "winc") iss >> incrementAmount[Color::White];
+        else if (token == "binc") iss >> incrementAmount[Color::Black];
+        else if (token == "movestogo") { iss >> movesToGo; movesToGo += 2; }
+    }
+}
+
+void UCI::position(Position&, std::istringstream&)
 {
 }
 
-void UCI::position(std::istringstream&)
+void UCI::ponderhit(Position&, std::istringstream&)
 {
 }
 
-void UCI::ponderhit(std::istringstream&)
+void UCI::displayBoard(Position& pos, std::istringstream&)
 {
+    sync_cout << pos.displayPositionAsString() << std::endl;
 }
 
-void UCI::displayBoard(std::istringstream&)
-{
-    // sync_cout << gameState.root.displayPositionAsString() << std::endl;
-}
-
-void UCI::perft(std::istringstream& iss)
+void UCI::perft(Position& pos, std::istringstream& iss)
 {
     int depth;
 
@@ -145,4 +167,6 @@ void UCI::perft(std::istringstream& iss)
     {
         sync_cout << "info string argument is invalid" << std::endl;
     }
+
+    benchMark.runPerft(pos, depth);
 }

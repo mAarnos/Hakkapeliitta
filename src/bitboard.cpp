@@ -199,20 +199,20 @@ const std::array<Bitboards::MagicInit, 64> Bitboards::rookInit = { {
 
 void Bitboards::initialize()
 {
-    static const std::array<int, 8> rankDirection = {
+    const std::array<int, 8> rankDirection = {
         -1, -1, -1, 0, 0, 1, 1, 1
     };
-    static const std::array<int, 8> fileDirection = {
+    const std::array<int, 8> fileDirection = {
         -1, 0, 1, -1, 1, -1, 0, 1
     };
 
-    static std::array<int, 2> bishopDirections[4] = {
+    const std::array<std::array<int, 2>, 4> bishopDirections = {{
         { -9, -17 }, { -7, -15 }, { 7, 15 }, { 9, 17 }
-    };
+    }};
 
-    static std::array<int, 2> rookDirections[4] = {
+    const std::array<std::array<int, 2>, 4> rookDirections = { {
         { -8, -16 }, { -1, -1 }, { 1, 1 }, { 8, 16 }
-    };
+    }};
 
 	// Avoid excessive stack usage warnings by moving heading to heap.
     std::array<std::vector<int>, 64> heading;
@@ -358,7 +358,8 @@ void Bitboards::initialize()
     }
 }
 
-void Bitboards::initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, std::array<int, 2> dir[], int shift)
+void Bitboards::initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, 
+                           const std::array<std::array<int, 2>, 4>& dir, const int shift)
 {
     std::vector<int> squares;
 

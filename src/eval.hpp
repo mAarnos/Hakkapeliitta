@@ -7,32 +7,29 @@
 #include "position.hpp"
 #include "zobrist.hpp"
 #include "endgame.hpp"
-// #include "pht.hpp"
+#include "pht.hpp"
 
 class Evaluation
 {
 public:
-    static void initialize();
+    Evaluation();
 
-    static int evaluate(const Position& pos, bool& zugzwangLikely);
-
-    static std::array<std::array<int, 64>, 12> pieceSquareTableOpening;
-    static std::array<std::array<int, 64>, 12> pieceSquareTableEnding;
-    // static PawnHashTable pawnHashTable;
-
+    int evaluate(const Position& pos, bool& zugzwangLikely);
 private:
     // Contains information on some endgames.
-    static EndgameModule endgameModule;
+    EndgameModule endgameModule;
+    // Used for hashing pawn eval scores.
+    PawnHashTable pawnHashTable;
 
     // Evaluation function in parts.
     template <bool hardwarePopcnt> 
-    static int evaluate(const Position& pos, bool& zugzwangLikely);
+    int evaluate(const Position& pos, bool& zugzwangLikely);
 
     template <bool hardwarePopcnt> 
-    static int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
+    int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
 
-    static int pawnStructureEval(const Position& pos, int phase);
-    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
+    int pawnStructureEval(const Position& pos, int phase);
+    int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
 };
 
 #endif

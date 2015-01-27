@@ -205,7 +205,7 @@ Position::Position(const std::string& fen)
 
 std::string Position::displayPositionAsString() const
 {
-    static const auto pieceToMark = "PNBRQKpnbrqk.";
+    const auto pieceToMark = "PNBRQKpnbrqk.";
     std::stringstream ss;
 
     ss << "  +-----------------------+" << std::endl;
