@@ -2,9 +2,8 @@
 #include "move.hpp"
 #include "movegen.hpp"
 #include "utils/stopwatch.hpp"
-#include "utils/synchronized_ostream.hpp"
 
-void Benchmark::runPerft(const Position root, const int depth)
+std::pair<uint64_t, uint64_t> Benchmark::runPerft(const Position root, const int depth)
 {
     Stopwatch sw;
 
@@ -12,9 +11,7 @@ void Benchmark::runPerft(const Position root, const int depth)
     const auto perftResult = perft(root, depth);
     sw.stop();
 
-    sync_cout << "Perft result: " << perftResult << std::endl;
-    sync_cout << "Time (in ms): " << sw.elapsed<std::chrono::milliseconds>() << std::endl;
-    sync_cout << "NPS: " << (perftResult / (sw.elapsed<std::chrono::milliseconds>() + 1)) * 1000 << std::endl;
+    return std::make_pair(perftResult, sw.elapsed<std::chrono::milliseconds>());
 }
 
 uint64_t Benchmark::perft(const Position& pos, const int depth)

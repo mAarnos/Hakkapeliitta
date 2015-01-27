@@ -40,10 +40,12 @@ void UCI::mainLoop()
             continue;
 
         // If we are currently searching only the commands stop, quit, and isready are legal.
+        /*
         if (commandName != "stop" && commandName != "quit" && commandName != "isready")
         {
             continue;
         }
+        */
 
         // Go through the list of commands and call the correct function if the command entered is known.
         // If the command is unknown report that.
@@ -165,8 +167,12 @@ void UCI::perft(Position& pos, std::istringstream& iss)
 
     if (!(iss >> depth))
     {
-        sync_cout << "info string argument is invalid" << std::endl;
+        sync_cout << "info string argument invalid" << std::endl;
+        return;
     }
 
-    benchMark.runPerft(pos, depth);
+    const auto result = benchMark.runPerft(pos, depth);
+    sync_cout << "info string nodes " << result.first 
+              << " time " << result.second 
+              << " nps " << (result.first / (result.second + 1)) * 1000 << std::endl;
 }

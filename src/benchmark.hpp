@@ -8,11 +8,12 @@
 class Benchmark
 {
 public:
-    void runPerft(Position root, int depth);
+    // Run perft to depth given on the position given.
+    // Returns a pair of the perft result and the time it took to calculate it, in ms.
+    std::pair<uint64_t, uint64_t> runPerft(Position root, int depth);
 private:
-    uint64_t perft(const Position& pos, int depth);
-
     MoveGen moveGen;
+    uint64_t perft(const Position& pos, int depth);
 };
 
 #endif

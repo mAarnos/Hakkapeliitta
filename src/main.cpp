@@ -16,16 +16,14 @@ int main()
 
     Bitboards::initialize();
     Zobrist::initialize();
+    UCI uci;
 
-    sync_cout << sizeof(Position) << std::endl;
+    if (Bitboards::isHardwarePopcntSupported())
+    {
+        sync_cout << "Detected hardware POPCNT" << std::endl;
+    }
 
-    // UCI uci;
-
-    // uci.mainLoop();
-
-    Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    Benchmark benchmark;
-    benchmark.runPerft(pos, 7);
+    uci.mainLoop();
 
     return 0;
 }

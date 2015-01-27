@@ -76,6 +76,8 @@ private:
     std::array<int8_t, 12> pieceCount;
     int8_t gamePhase;
     short gamePly;
+    short pstScoreOp;
+    short pstScoreEd;
 
 	// These functions can be used to calculate different hash keys for the current position.
 	// They are slow so they are only used when initializing, instead we update them incrementally.
@@ -94,6 +96,7 @@ private:
     Bitboard checkBlockers(Color c, Color kingColor) const;
 
     // Testing functions.
+    bool verifyPsts() const;
     bool verifyHashKeysAndPhase() const;
     bool verifyPieceCounts() const;
     bool verifyBoardAndBitboards() const;

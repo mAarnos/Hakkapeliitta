@@ -4,15 +4,18 @@
 #include "square.hpp"
 #include "utils/clamp.hpp"
 
-const std::array<int, 6> pieceValuesOpening = {
+std::array<std::array<short, 64>, 12> Evaluation::pieceSquareTableOpening;
+std::array<std::array<short, 64>, 12> Evaluation::pieceSquareTableEnding;
+
+const std::array<short, 6> pieceValuesOpening = {
     75, 228, 242, 301, 713, 0
 };
 
-const std::array<int, 6> pieceValuesEnding = {
+const std::array<short, 6> pieceValuesEnding = {
     131, 269, 281, 530, 933, 0
 };
 
-const std::array<std::array<int, 64>, 6> openingPST = {{
+const std::array<std::array<short, 64>, 6> openingPST = {{
     {
         0, 0, 0, 0, 0, 0, 0, 0, -34, -25, -26, -35, -11, -4, -7, -36, -33, -22, -26, -16, -8, -4, -16, -25, -30, -15, -12, -5, 1, -8, -23, -20, -17, -6, -7, 10, 20, 11, 0, -9, 12, -5, 26, 33, 53, 78, 55, 26, 51, 49, 97, 107, 89, 39, -33, -47, 0, 0, 0, 0, 0, 0, 0, 0
     },
@@ -33,7 +36,7 @@ const std::array<std::array<int, 64>, 6> openingPST = {{
     }
 }};
 
-const std::array<std::array<int, 64>, 6> endingPST = {{
+const std::array<std::array<short, 64>, 6> endingPST = {{
     {
         0, 0, 0, 0, 0, 0, 0, 0, -11, -1, -13, -9, 5, -7, -13, -19, -18, -4, -20, -22, -14, -20, -12, -24, -11, 1, -23, -33, -23, -15, -11, -21, 10, 4, -8, -28, -18, -14, 4, -4, 29, 39, 11, -3, -13, -7, 21, 11, 45, 61, 55, 21, 35, 19, 27, 47, 0, 0, 0, 0, 0, 0, 0, 0
     },
@@ -112,12 +115,31 @@ const std::array<int, 6> attackWeight = {
     0, 2, 2, 3, 5, 0
 };
 
+const std::array<int, 8> openFilePenalty = {
+    6, 6, 6, 6, 6, 6, 6, 6
+};
+
+const std::array<int, 8> halfOpenFilePenalty = {
+    4, 4, 4, 4, 4, 4, 4, 4
+};
+
 const std::array<int, 100> kingSafetyTable = {
     13, 0, 8, -13, 4, 2, 8, 2, 15, 8, 11, 15, 15, 19, 24, 20, 29, 35, 51, 39, 43, 58, 57, 70, 72, 74, 78, 112, 103, 100, 119, 109, 130, 149, 144, 151, 178, 180, 202, 199, 221, 223, 252, 258, 268, 260, 287, 283, 289, 291, 338, 326, 366, 377, 373, 335, 319, 404, 354, 334, 501, 377, 501, 365, 501, 501, 427, 501, 421, 501, 321, 501, 321, 501, 321, 501, 500, 501, 335, 500, 500, 500, 501, 501, 500, 501, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 
 Evaluation::Evaluation()
 {
+    for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
+    {
+        for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+        {
+            pieceSquareTableOpening[p][sq] = openingPST[p][sq] + pieceValuesOpening[p];
+            pieceSquareTableEnding[p][sq] = endingPST[p][sq] + pieceValuesEnding[p];
+
+            pieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
+            pieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
+        }
+    }
 }
 
 int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
@@ -258,12 +280,10 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
-    /*
-    if (pawnHashTable.probe(pos, scoreOp, scoreEd))
+    if (pawnHashTable.probe(pos.getHashKey(), scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
-    */
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
@@ -318,18 +338,10 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
         scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-   //  pawnHashTable.save(pos, scoreOp, scoreEd);
+    pawnHashTable.save(pos.getHashKey(), scoreOp, scoreEd);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }
-
-const std::array<int, 8> openFilePenalty = {
-    6, 6, 6, 6, 6, 6, 6, 6
-};
-
-const std::array<int, 8> halfOpenFilePenalty = {
-    4, 4, 4, 4, 4, 4, 4, 4
-};
 
 int evaluatePawnShelter(const Position& pos, const Color side)
 {

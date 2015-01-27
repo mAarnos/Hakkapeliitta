@@ -6,6 +6,7 @@
 #include "bitboard.hpp"
 #include "zobrist.hpp"
 #include "color.hpp"
+#include "eval.hpp"
 #include "square.hpp"
 #include "utils/synchronized_ostream.hpp"
 
@@ -172,11 +173,14 @@ Position::Position(const std::string& fen)
 	bitboards.fill(0);
     pieceCount.fill(0);
     totalPieceCount = 0;
+    pstScoreOp = pstScoreEd = 0;
 	for (Square sq = Square::A1; sq <= Square::H8; ++sq) 
 	{
 		if (board[sq] != Piece::Empty)
 		{
             Bitboards::setBit(bitboards[board[sq]], sq);
+            pstScoreOp += Evaluation::pieceSquareTableOpening[board[sq]][sq];
+            pstScoreEd += Evaluation::pieceSquareTableEnding[board[sq]][sq];
             ++pieceCount[board[sq]];
             ++totalPieceCount;
 		}
@@ -245,6 +249,13 @@ void Position::makeMove(const Move& m)
     const auto captured = board[to];
     const auto fromToBB = Bitboards::bit(from) | Bitboards::bit(to);
 
+    // First update the PST score for the piece moving.
+    pstScoreOp += Evaluation::pieceSquareTableOpening[piece][to]
+                - Evaluation::pieceSquareTableOpening[piece][from];
+    pstScoreEd += Evaluation::pieceSquareTableEnding[piece][to]
+                - Evaluation::pieceSquareTableEnding[piece][from];
+
+    // If there was an en passant move get rid of it and its hash key.
     if (enPassant != Square::NoSquare)
     {
         hashKey ^= Zobrist::enPassantHashKey(enPassant);
@@ -264,6 +275,8 @@ void Position::makeMove(const Move& m)
         Bitboards::clearBit(bitboards[captured], to);
         Bitboards::clearBit(bitboards[12 + !side], to);
         fiftyMoveDistance = 0;
+        pstScoreOp -= Evaluation::pieceSquareTableOpening[captured][to];
+        pstScoreEd -= Evaluation::pieceSquareTableEnding[captured][to];
         hashKey ^= Zobrist::pieceHashKey(captured, to);
         materialHashKey ^= Zobrist::materialHashKey(captured, --pieceCount[captured]);
 
@@ -295,6 +308,8 @@ void Position::makeMove(const Move& m)
             hashKey ^= Zobrist::pieceHashKey(Piece::Pawn + !side * 6, enPassantSquare);
             pawnHashKey ^= Zobrist::pieceHashKey(Piece::Pawn + !side * 6, enPassantSquare);
             materialHashKey ^= Zobrist::materialHashKey(Piece::Pawn + !side * 6, --pieceCount[Piece::Pawn + !side * 6]);
+            pstScoreOp -= Evaluation::pieceSquareTableOpening[Piece::Pawn + !side * 6][enPassantSquare];
+            pstScoreEd -= Evaluation::pieceSquareTableEnding[Piece::Pawn + !side * 6][enPassantSquare];
         }
         else if (promotion != Piece::Empty) // Promotion
         {
@@ -307,6 +322,10 @@ void Position::makeMove(const Move& m)
             pawnHashKey ^= Zobrist::pieceHashKey(Piece::Pawn + side * 6, to);
             materialHashKey ^= Zobrist::materialHashKey(Piece::Pawn + side * 6, --pieceCount[Piece::Pawn + side * 6]);
             gamePhase -= piecePhase[promotion];
+            pstScoreOp += Evaluation::pieceSquareTableOpening[promotion + side * 6][to]
+                        - Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][to];
+            pstScoreEd += Evaluation::pieceSquareTableEnding[promotion + side * 6][to]
+                        - Evaluation::pieceSquareTableEnding[Piece::Pawn + side * 6][to];
         }
     }
     else if (promotion == Piece::King)
@@ -321,6 +340,10 @@ void Position::makeMove(const Move& m)
         board[fromRook] = Piece::Empty;
         hashKey ^= Zobrist::pieceHashKey(Piece::Rook + side * 6, fromRook) 
                  ^ Zobrist::pieceHashKey(Piece::Rook + side * 6, toRook);
+        pstScoreOp += Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][toRook]
+                    - Evaluation::pieceSquareTableOpening[Piece::Rook + side * 6][fromRook];
+        pstScoreEd += Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][toRook]
+                    - Evaluation::pieceSquareTableEnding[Piece::Rook + side * 6][fromRook];
     }
 
     sideToMove = !sideToMove;
@@ -338,6 +361,7 @@ void Position::makeMove(const Move& m)
     pinned = pinnedPieces(sideToMove);
     dcCandidates = discoveredCheckCandidates();
 
+    assert(verifyPsts());
     assert(verifyHashKeysAndPhase());
     assert(verifyPieceCounts());
     assert(verifyBoardAndBitboards());
@@ -520,6 +544,22 @@ int Position::givesCheck(const Move& move) const
     }
 
     return 0;
+}
+
+bool Position::verifyPsts() const
+{
+    auto correctPstScoreOp = 0, correctPstScoreEd = 0;
+
+    for (Square sq = Square::A1; sq <= Square::H8; ++sq)
+    {
+        if (board[sq] != Piece::Empty)
+        {
+            correctPstScoreOp += Evaluation::pieceSquareTableOpening[board[sq]][sq];
+            correctPstScoreEd += Evaluation::pieceSquareTableEnding[board[sq]][sq];
+        }
+    }
+
+    return ((pstScoreOp == correctPstScoreOp) && (pstScoreEd == correctPstScoreEd));
 }
 
 bool Position::verifyHashKeysAndPhase() const

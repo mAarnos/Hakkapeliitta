@@ -3,7 +3,6 @@
 #include <iostream>
 #include <cstring>
 #include "color.hpp"
-#include "utils/synchronized_ostream.hpp"
 
 std::array<Bitboard, 64> Bitboards::bits;
 std::array<Bitboard, 64> Bitboards::kingAttack;
@@ -352,10 +351,6 @@ void Bitboards::initialize()
  #endif
     hardwarePopcntSupported = (regs[2] & (1 << 23)) != 0;
 #endif
-    if (hardwarePopcntSupported)
-    {
-        sync_cout << "Detected hardware POPCNT" << std::endl;
-    }
 }
 
 void Bitboards::initMagics(const std::array<MagicInit, 64>& magicInit, std::array<Magic, 64>& magic, 
