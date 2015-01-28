@@ -75,6 +75,7 @@ void TranspositionTable::save(const HashKey hk, const int ply, const Move& move,
     auto hashEntry = table[hk & (tableSize - 1)].entries;
     auto replace = hashEntry;
 
+    // Determine the least valuable entry to replace
     for (auto i = 0; i < 4; ++i, ++hashEntry)
     {
         if ((hashEntry->getHash() ^ hashEntry->getData()) == hk)
@@ -87,12 +88,10 @@ void TranspositionTable::save(const HashKey hk, const int ply, const Move& move,
             break;
         }
 
-        // Here we check if we have found an entry which is worse than the current worse entry.
-        // If the entry is from a earlier search or has a smaller depth it is worse and is made the new worst entry.
-        const auto c1 = (replace->getGeneration() > hashEntry->getGeneration());
-        const auto c2 = (replace->getDepth() > hashEntry->getDepth());
-
-        if (c1 || c2)
+        // First replace entries which are from an older search, if that doesn't work consider depth.
+        if ((hashEntry->getGeneration() == generation)
+          - (replace->getGeneration() == generation)
+          - (hashEntry->getDepth() < replace->getDepth()) < 0)
         {
             replace = hashEntry;
         }
