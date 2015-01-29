@@ -107,6 +107,48 @@ void selectMove(MoveList& moveList, const int currentMove)
     }
 }
 
+// Move ordering goes like this:
+// 1. Hash move (which can also be the PV-move)
+// 2. Good captures and promotions
+// 3. Equal captures and promotions
+// 4. Killer moves
+// 5. Quiet moves sorted by the history heuristic
+// 6. Bad captures
+void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, const int ply)
+{
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        auto& move = moveList[i];
+
+        if (move.getMove() == ttMove.getMove()) // Move from transposition table
+        {
+            move.setScore(hashMoveScore);
+        }
+        else if (pos.getBoard(move.getTo()) != Piece::Empty
+            || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+        {
+            auto score = 0; // pos.SEE(move);
+            if (score >= 0) // Order good captures and promotions after ttMove
+            {
+                score += captureMoveScore;
+            }
+            move.setScore(score);
+        }
+        else
+        {
+            const auto killerScore = killerTable.isKiller(move, ply);
+            if (killerScore > 0)
+            {
+                move.setScore(killerMoveScore[killerScore]);
+            }
+            else
+            {
+                move.setScore(historyTable.getScore(pos, move));
+            }
+        }
+    }
+}
+
 int Search::quiescenceSearch(const Position& pos, const int depth, const int ply, int alpha, int beta, const bool inCheck)
 {
     int bestScore, delta;
@@ -118,7 +160,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
         bestScore = matedInPly(ply);
         delta = -infinity;
         moveGen.generateLegalEvasions(pos, moveList);
-        // orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
+        orderMoves(pos, moveList, Move(0, 0, 0, 0), ply); // TODO: some replacement for constructing a move.
     }
     else
     {
@@ -147,7 +189,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
         // This kind of pruning is too dangerous when in check so we don't use it then.
         if (!inCheck && move.getScore() < 0)
         {
-            continue;
+            break;
         }
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
@@ -155,7 +197,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
         if (!inCheck && delta + move.getScore() <= alpha)
         {
             bestScore = std::max(bestScore, delta + move.getScore());
-            continue;
+            break;
         }
 
         if (!pos.legal(move, inCheck))
