@@ -22,7 +22,8 @@
 #include "benchmark.hpp"
 
 UCI::UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
-tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable)
+tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
+pawnHashTableSize(4), transpositionTableSize(32), contempt(0)
 {
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
@@ -137,6 +138,7 @@ void UCI::setOption(Position&, std::istringstream& iss)
 {
     std::string name, value, s;
     
+    iss >> s; // Get rid of the "value" in front.
     // Read the name of the option. 
     // Since the name can contains spaces we have this loop.
     while (iss >> s && s != "value")
@@ -144,24 +146,20 @@ void UCI::setOption(Position&, std::istringstream& iss)
         name += std::string(" ", !name.empty()) + s;
     }
 
-    // Read the value of the option.
-    // The loop has the same reason as the previous one.
-    while (iss >> s)
-    {
-        name += std::string(" ", !name.empty()) + s;
-    }
-
     if (name == "Contempt")
     {
-
+        iss >> contempt;
+        contempt = clamp(contempt, -75, 75);
     }
     else if (name == "Hash")
     {
-
+        iss >> transpositionTableSize;
+        transpositionTable.setSize(transpositionTableSize);
     }
     else if (name == "Pawn Hash")
     {
-
+        iss >> pawnHashTableSize;
+        pawnHashTable.setSize(pawnHashTableSize);
     }
     else if (name == "Clear Hash")
     {
@@ -169,6 +167,10 @@ void UCI::setOption(Position&, std::istringstream& iss)
         pawnHashTable.clear();
         historyTable.clear();
         killerTable.clear();
+    }
+    else if (name == "Ponder")
+    {
+        iss >> ponder;
     }
     else
     {
@@ -209,8 +211,62 @@ void UCI::go(Position&, std::istringstream& iss)
     }
 }
 
-void UCI::position(Position&, std::istringstream&)
+void UCI::position(Position& pos, std::istringstream& iss)
 {
+    std::string s, fen;
+    // Fix rootply here
+
+    iss >> s;
+    
+    if (s == "startpos")
+    {
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        iss >> s; // Get rid of "moves" which should follow this
+    }
+    else if (s == "fen")
+    {
+        while (iss >> s && s != "moves")
+        {
+            fen += s + " ";
+        }
+    }
+    else
+    {
+        return;
+    }
+
+    pos = Position(fen);
+
+    // Parse the moves.
+    while (iss >> s)
+    {
+        Piece promotion = Piece::Empty;
+        auto from = (s[0] - 'a') + 8 * (s[1] - '1');
+        auto to = (s[2] - 'a') + 8 * (s[3] - '1');
+
+        if (s.size() == 5)
+        {
+            switch (s[4])
+            {
+                case 'q': promotion = Piece::Queen; break;
+                case 'r':promotion = Piece::Rook; break;
+                case 'b': promotion = Piece::Bishop; break;
+                case 'n': promotion = Piece::Knight; break;
+                default:;
+            }
+        }
+        else if (getPieceType(pos.getBoard(from)) == Piece::King && std::abs(from - to) == 2)
+        {
+            promotion = Piece::King;
+        }
+        else if (getPieceType(pos.getBoard(from)) == Piece::Pawn && to == pos.getEnPassantSquare())
+        {
+            promotion = Piece::Pawn;
+        }
+
+        // Add repetition hash here
+        pos.makeMove(Move(from, to, promotion, 0));
+    }
 }
 
 void UCI::ponderhit(Position&, std::istringstream&)

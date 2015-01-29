@@ -62,6 +62,11 @@ private:
     PawnHashTable& pawnHashTable;
     KillerTable& killerTable;
     HistoryTable& historyTable;
+
+    bool ponder;
+    int contempt;
+    size_t pawnHashTableSize;
+    size_t transpositionTableSize;
 };
 
 
