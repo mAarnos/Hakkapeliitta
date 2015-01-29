@@ -23,7 +23,7 @@
 
 UCI::UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
 tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
-pawnHashTableSize(4), transpositionTableSize(32), contempt(0)
+contempt(0), pawnHashTableSize(4), transpositionTableSize(32)
 {
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
@@ -97,10 +97,9 @@ void UCI::sendInformation(Position&, std::istringstream&)
     sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
-    // sync_cout << "option name Ponder type check default false" << std::endl;
+    sync_cout << "option name Ponder type check default false" << std::endl;
     // sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
     // sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
-    // sync_cout << "option name LargePages type check default false" << std::endl;
 
     // Send a response telling the listener that we are ready in UCI-mode.
     sync_cout << "uciok" << std::endl;
@@ -136,9 +135,10 @@ void UCI::quit(Position&, std::istringstream&)
 
 void UCI::setOption(Position&, std::istringstream& iss) 
 {
-    std::string name, value, s;
+    std::string name, s;
     
     iss >> s; // Get rid of the "value" in front.
+
     // Read the name of the option. 
     // Since the name can contains spaces we have this loop.
     while (iss >> s && s != "value")

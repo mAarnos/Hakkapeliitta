@@ -61,6 +61,7 @@ Position::Position()
     gamePly = 0;
     gamePhase = 0;
     pieceCount.fill(0);
+    pstScoreOp = pstScoreEd = 0;
 }
 
 Position::Position(const std::string& fen)
