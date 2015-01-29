@@ -36,6 +36,8 @@ private:
     Evaluation evaluation;
     MoveGen moveGen;
 
+    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
+
     Search& operator=(const Search&) = delete;
 };
 
