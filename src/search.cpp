@@ -83,7 +83,7 @@ void orderCaptures(const Position& pos, MoveList& moveList)
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        // moveList[i].setScore(pos.SEE(moveList[i]));
+        moveList[i].setScore(pos.SEE(moveList[i]));
     }
 }
 
@@ -127,7 +127,7 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
         else if (pos.getBoard(move.getTo()) != Piece::Empty
             || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
         {
-            auto score = 0; // pos.SEE(move);
+            auto score = pos.SEE(move);
             if (score >= 0) // Order good captures and promotions after ttMove
             {
                 score += captureMoveScore;
@@ -210,7 +210,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
         // ++nodeCount;
         // --nodesToTimeCheck;
 
-        const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, pos.inCheck());
+        const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
 
         if (score > bestScore)
         {
