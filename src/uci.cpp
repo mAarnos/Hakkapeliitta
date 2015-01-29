@@ -20,6 +20,7 @@
 #include "utils/clamp.hpp"
 #include "utils/synchronized_ostream.hpp"
 #include "benchmark.hpp"
+#include "search_parameters.hpp"
 
 UCI::UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
 tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
@@ -60,7 +61,7 @@ void UCI::mainLoop()
 
         // If we are currently searching only the commands stop, quit, and isready are legal.
         /*
-        if (commandName != "stop" && commandName != "quit" && commandName != "isready")
+        if (commandName != "stop" && commandName != "quit" && commandName != "isready" && commandName != "ponderhit")
         {
             continue;
         }
@@ -112,21 +113,14 @@ void UCI::isReady(Position&, std::istringstream&)
 
 void UCI::stop(Position&, std::istringstream&)
 {
-    /*
-    gameState.searching = false;
-    gameState.pondering = false;
-    gameState.infiniteSearch = false;
-    */
+    // TODO: add this here
 }
 
 void UCI::quit(Position&, std::istringstream&)
 {
     // First shut down the possible search.
-    /*
-    gameState.searching = false;
-    gameState.pondering = false;
-    gameState.infiniteSearch = false;
-    */
+    // TODO: add it here
+
     // Then shut down the thread pool. This part is only here due to a bug in VS.
     tp.terminate();
     // Finally exit.
@@ -188,26 +182,24 @@ void UCI::newGame(Position&, std::istringstream&)
 
 void UCI::go(Position&, std::istringstream& iss)
 {
-    auto movesToGo = 25;
-    auto moveTime = 0;
-    std::array<int, 2> timeLimits = { 0, 0 };
-    std::array<int, 2> incrementAmount = { 0, 0 };
-    std::string token;
+    SearchParameters searchParameters;
+    std::string s;
 
-    // Search::searching = true;
-    // Search::pondering = false;
-    // Search::infinite = false;
-
-    // Parse the string to get the time limits.
-    while (iss >> token)
+    // Parse the string to get the parameters for the search.
+    while (iss >> s)
     {
-        if (token == "movetime") iss >> moveTime;
-        else if (token == "infinite") {} //Search::infinite = true;
-        else if (token == "wtime") iss >> timeLimits[Color::White];
-        else if (token == "btime") iss >> timeLimits[Color::Black];
-        else if (token == "winc") iss >> incrementAmount[Color::White];
-        else if (token == "binc") iss >> incrementAmount[Color::Black];
-        else if (token == "movestogo") { iss >> movesToGo; movesToGo += 2; }
+        if (s == "searchmoves") {}
+        else if (s == "ponder") { searchParameters.ponder = true; }
+        else if (s == "wtime") { iss >> searchParameters.time[Color::White]; }
+        else if (s == "btime") { iss >> searchParameters.time[Color::Black]; }
+        else if (s == "winc") { iss >> searchParameters.increment[Color::White]; }
+        else if (s == "binc") { iss >> searchParameters.increment[Color::Black]; }
+        else if (s == "movestogo") { iss >> searchParameters.movesToGo; searchParameters.movesToGo += 2; }
+        else if (s == "depth") { iss >> searchParameters.depth; }
+        else if (s == "nodes") { iss >> searchParameters.nodes; }
+        else if (s == "mate") { searchParameters.mate = true; }
+        else if (s == "movetime") { iss >> searchParameters.moveTime; }
+        else if (s == "infinite") { searchParameters.infinite = true; }
     }
 }
 
