@@ -590,7 +590,7 @@ int16_t Position::SEE(const Move& move) const
     {
         materialGains[0] = pieceValues[Piece::Pawn];
         lastAttackerValue = pieceValues[Piece::Pawn];
-        Bitboards::clearBit(occupied, enPassant);
+        Bitboards::clearBit(occupied, enPassant ^ 8);
     }
     else
     {

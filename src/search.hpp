@@ -29,6 +29,8 @@ class Search
 {
 public:
     Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
+
+    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 private:
     TranspositionTable& transpositionTable;
     KillerTable& killerTable;
@@ -37,7 +39,6 @@ private:
     MoveGen moveGen;
 
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);
-    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 
     Search& operator=(const Search&) = delete;
 };

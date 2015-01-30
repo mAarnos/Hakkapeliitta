@@ -202,6 +202,7 @@ void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves)
 
     const auto ep = (pos.getEnPassantSquare() != Square::NoSquare ? Bitboards::bit(pos.getEnPassantSquare()) : 0);
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
+    addPawnSingleMovesFromMask<side>(moves, (side ? (tempPiece & Bitboards::ranks[1]) >> 8 : (tempPiece & Bitboards::ranks[6]) << 8) & pos.getFreeSquares());
     auto tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
     addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare(), false);
 

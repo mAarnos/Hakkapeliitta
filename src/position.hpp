@@ -56,6 +56,8 @@ public:
     HashKey getMaterialHashKey() const;
     int8_t getPieceCount(Color color, Piece piece) const;
     int8_t getTotalPieceCount() const;
+    int16_t getPstScoreOp() const;
+    int16_t getPstScoreEd() const;
 
     // Makes the move on the board.
     // We use copy-make so unmake is unnecessary.
@@ -95,9 +97,9 @@ private:
     int8_t totalPieceCount;
     std::array<int8_t, 12> pieceCount;
     int8_t gamePhase;
-    short gamePly;
-    short pstScoreOp;
-    short pstScoreEd;
+    int16_t gamePly;
+    int16_t pstScoreOp;
+    int16_t pstScoreEd;
 
 	// These functions can be used to calculate different hash keys for the current position.
 	// They are slow so they are only used when initializing, instead we update them incrementally.
@@ -205,6 +207,16 @@ inline int8_t Position::getPieceCount(const Color color, const Piece piece) cons
 inline int8_t Position::getTotalPieceCount() const
 {
     return totalPieceCount; 
+}
+
+inline int16_t Position::getPstScoreOp() const
+{
+    return pstScoreOp;
+}
+
+inline int16_t Position::getPstScoreEd() const
+{
+    return pstScoreEd;
 }
 
 inline bool Position::inCheck() const 

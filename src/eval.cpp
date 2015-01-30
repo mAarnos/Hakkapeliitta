@@ -183,7 +183,7 @@ int Evaluation::evaluate(const Position& pos, bool& zugzwangLikely)
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase, zugzwangLikely);
     score += pawnStructureEval(pos, phase);
     score += kingSafetyEval(pos, phase, kingSafetyScore);
-    // score += interpolateScore(pos.getPstMaterialScoreOpening(), pos.getPstMaterialScoreEnding(), phase);
+    score += interpolateScore(pos.getPstScoreOp(), pos.getPstScoreEd(), phase);
 
     // Bishop pair bonus.
     for (Color c = Color::White; c <= Color::Black; ++c)
