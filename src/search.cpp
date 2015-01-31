@@ -16,6 +16,7 @@
 */
 
 #include "search.hpp"
+#include "utils\synchronized_ostream.hpp"
 
 const int mateScore = 32767; // mate in 0
 const int minMateScore = 32767 - 1000; // mate in 500
@@ -194,11 +195,13 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
         // This too is too dangerous when we are in check.
+        /*
         if (!inCheck && delta + move.getScore() <= alpha)
         {
             bestScore = std::max(bestScore, delta + move.getScore());
             break;
         }
+        */
 
         if (!pos.legal(move, inCheck))
         {

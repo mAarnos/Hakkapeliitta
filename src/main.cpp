@@ -49,7 +49,7 @@ int main()
     }
 
     Position pos;
-    std::ifstream ifs("C:\\GMdraw.txt");
+    std::ifstream ifs("C:\\GMblackwin.txt");
     std::ofstream res("results.txt");
     std::string s;
 
@@ -57,7 +57,7 @@ int main()
     while (std::getline(ifs, s))
     {
         pos = Position(s);
-        if (count == 53)
+        if (count == 24337)
             std::cout << pos.displayPositionAsString() << std::endl;
         auto score = search.quiescenceSearch(pos, 0, 0, -100000, 100000, pos.inCheck());
         res << score << std::endl;

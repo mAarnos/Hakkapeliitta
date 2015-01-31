@@ -297,10 +297,12 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
+    /*
     if (pawnHashTable.probe(pos.getHashKey(), scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
+    */
 
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
