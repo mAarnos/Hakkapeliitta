@@ -78,6 +78,14 @@ int isMateScore(const int score)
 Search::Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
 transpositionTable(transpositionTable), killerTable(killerTable), historyTable(historyTable), evaluation(pawnHashTable)
 {
+    contempt = {{ 0, 0 }};
+    targetTime = 0;
+    maxTime = 0;
+    tbHits = 0;
+    nodeCount = 0;
+    nodesToTimeCheck = 10000;
+    selDepth = 0;
+    infinite = false;
 }
 
 void orderCaptures(const Position& pos, MoveList& moveList)
@@ -150,6 +158,21 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
     }
 }
 
+bool Search::repetitionDraw(const Position& pos, int ply)
+{
+    auto temp = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
+
+    for (auto i = rootPly + ply - 2; i >= temp; i -= 2)
+    {
+        if (repetitionHashes[i] == pos.getHashKey())
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 int Search::quiescenceSearch(const Position& pos, const int depth, const int ply, int alpha, int beta, const bool inCheck)
 {
     int bestScore, delta;
@@ -184,6 +207,8 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
         selectMove(moveList, i);
         const auto& move = moveList[i];
         const auto givesCheck = pos.givesCheck(move);
+        ++nodeCount;
+        --nodesToTimeCheck;
 
         // Add givesCheck != 2 condition here.
         // SEE pruning. If the move seems to lose material prune it.
@@ -210,8 +235,6 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-        // ++nodeCount;
-        // --nodesToTimeCheck;
 
         const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
 

@@ -24,6 +24,7 @@
 #include "killer.hpp"
 #include "eval.hpp"
 #include "pht.hpp"
+#include "utils\stopwatch.hpp"
 
 class Search
 {
@@ -41,6 +42,31 @@ private:
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);
 
     Search& operator=(const Search&) = delete;
+
+    std::array<int, 2> contempt;
+    int targetTime;
+    int maxTime;
+
+    // Search statistics
+    int tbHits;
+    size_t nodeCount;
+    int nodesToTimeCheck;
+    int selDepth;
+
+    bool infinite;
+
+    Stopwatch sw;
+
+    // These two are used to detect repetitions.
+    // Note that the repetitions can include positions which happened during position set-up.
+    // If this were not the case we would not require rootPly.
+    int rootPly;
+    std::array<HashKey, 1024> repetitionHashes;
+
+    // And here is the way to check repetitions, obviously.
+    // Actually, this checks for 2-fold repetitions instead of 3-fold repetitions like FIDE-rules require.
+    // If you think about it for a while, you notice that 2-fold is all we need.
+    bool repetitionDraw(const Position& pos, int ply);
 };
 
 #endif

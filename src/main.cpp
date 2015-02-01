@@ -48,6 +48,7 @@ int main()
         sync_cout << "Detected hardware POPCNT" << std::endl;
     }
 
+    /*
     Position pos;
     std::ifstream ifs("C:\\GMblackwin.txt");
     std::ofstream res("results.txt");
@@ -63,6 +64,7 @@ int main()
         res << score << std::endl;
         std::cout << count++ << "\n";
     }
+    */
 
     // uci.mainLoop();
 
