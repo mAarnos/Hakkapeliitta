@@ -25,11 +25,14 @@
 #include "eval.hpp"
 #include "pht.hpp"
 #include "utils\stopwatch.hpp"
+#include "search_parameters.hpp"
 
 class Search
 {
 public:
     Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
+
+    void think(const Position& root, SearchParameters searchParameters);
 
     int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 private:
@@ -39,9 +42,10 @@ private:
     Evaluation evaluation;
     MoveGen moveGen;
 
-    void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply);
+    template <bool pvNode>
+    int search(const Position& pos, int depth, int ply, int alpha, int beta, bool allowNullMove, bool inCheck);
 
-    Search& operator=(const Search&) = delete;
+    void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
 
     std::array<int, 2> contempt;
     int targetTime;
@@ -53,6 +57,12 @@ private:
     int nodesToTimeCheck;
     int selDepth;
 
+    // Keep track of the root score of the previous iteration and the current iteration.
+    // Both are -mateScore if not defined.
+    int lastRootScore;
+    int currentRootScore;
+
+    // Is this search infinite or not?
     bool infinite;
 
     Stopwatch sw;
@@ -66,7 +76,12 @@ private:
     // And here is the way to check repetitions, obviously.
     // Actually, this checks for 2-fold repetitions instead of 3-fold repetitions like FIDE-rules require.
     // If you think about it for a while, you notice that 2-fold is all we need.
-    bool repetitionDraw(const Position& pos, int ply);
+    bool repetitionDraw(const Position& pos, int ply) const;
+
+    void infoCurrMove(const Move& move, int depth, int nr);
+    void infoPv(const std::vector<Move>& moves, int depth, int score, int flags);
+
+    Search& operator=(const Search&) = delete;
 };
 
 #endif

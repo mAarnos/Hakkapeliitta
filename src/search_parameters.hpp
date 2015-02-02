@@ -27,7 +27,7 @@ class SearchParameters
 public:
     SearchParameters() : 
         ponder(false), time({{ 0, 0 }}), increment({{ 0, 0 }}), 
-        movesToGo(0), depth(0), nodes(0), mate(0), moveTime(0), infinite(false) 
+        movesToGo(25), depth(0), nodes(0), mate(0), moveTime(0), infinite(false) 
     {
     };
 

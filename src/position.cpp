@@ -388,6 +388,17 @@ void Position::makeMove(const Move& m)
 template void Position::makeMove<false>(const Move& m);
 template void Position::makeMove<true>(const Move& m);
 
+void Position::makeNullMove()
+{
+    sideToMove = !sideToMove;
+    hashKey ^= Zobrist::turnHashKey();
+    if (enPassant != Square::NoSquare)
+    {
+        hashKey ^= Zobrist::enPassantHashKey(enPassant);
+        enPassant = Square::NoSquare;
+    }
+}
+
 template <bool side> 
 bool Position::isAttacked(const Square sq) const
 {

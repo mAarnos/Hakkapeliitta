@@ -63,6 +63,10 @@ public:
     // We use copy-make so unmake is unnecessary.
     void makeMove(const Move& move);
 
+    // Makes a null move.
+    // Unmake is unnecessary due to copy-make.
+    void makeNullMove();
+
     // Used for calculating stuff which changes from turn to turn.
     bool inCheck() const;
     bool isAttacked(Square sq, Color side) const;

@@ -41,7 +41,7 @@ int main()
     PawnHashTable pawnHashTable;
     TranspositionTable transpositionTable;
     Search search(transpositionTable, pawnHashTable, killerTable, historyTable);
-    // UCI uci(transpositionTable, pawnHashTable, killerTable, historyTable);
+    UCI uci(transpositionTable, pawnHashTable, killerTable, historyTable);
 
     if (Bitboards::isHardwarePopcntSupported())
     {
@@ -66,7 +66,7 @@ int main()
     }
     */
 
-    // uci.mainLoop();
+    uci.mainLoop();
 
     return 0;
 }
