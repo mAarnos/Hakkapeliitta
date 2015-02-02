@@ -36,7 +36,6 @@ const std::array<int, 1 + 3> reverseFutilityMargins = {
 };
 const int lmrFullDepthMoves = 4;
 const int lmrReductionLimit = 3;
-std::array<int, 256> lmrReductions;
 const int lmpDepth = 4;
 const std::array<int, 1 + 4> lmpMoveCount = {
     0, 4, 8, 16, 32
@@ -312,35 +311,6 @@ void Search::think(const Position& root, SearchParameters searchParameters)
             : moveGen.generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList, inCheck);
 
-    /*
-    if (pos.getTotalPieceCount() <= syzygyProbeLimit)
-    {
-        tbHits = rootMoveList.size();
-
-        // If the current root position is in the tablebases then RootMoves
-        // contains only moves that preserve the draw or win.
-        auto rootInTb = Syzygy::rootProbe(pos, rootMoveList, score);
-
-        if (rootInTb)
-        {
-            probeTb = false;
-        }
-        else // If DTZ tables are missing, use WDL tables as a fallback
-        {
-            // Filter out moves that do not preserve a draw or win.
-            rootInTb = Syzygy::rootProbeWdl(pos, rootMoveList, score);
-            if (rootInTb)
-            {
-                probeTb = false;
-            }
-            else
-            {
-                tbHits = 0;
-            }
-        }
-    }
-    */
-
     // Get the tt move from a possible previous search.
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
@@ -428,7 +398,7 @@ void Search::think(const Position& root, SearchParameters searchParameters)
                             }
                             break;
                         }
-                        transpositionTable.save(pos.getHashKey(), 0, bestMove, currentRootScore, depth, UpperBoundScore);
+                        transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, UpperBoundScore);
                         auto pv = transpositionTable.extractPv(pos);
                         infoPv(pv, depth, currentRootScore, ExactScore);
                     }
@@ -440,7 +410,7 @@ void Search::think(const Position& root, SearchParameters searchParameters)
             pos = root; // Exception messes up the position, fix it.
         }
 
-        transpositionTable.save(pos.getHashKey(), 0, bestMove, currentRootScore, depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
+        transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
         auto pv = transpositionTable.extractPv(pos);
 
         // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
@@ -730,23 +700,6 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         }
     }
 
-    // Probe the endgame tablebases.
-    /*
-    if (probeTb && pos.getTotalPieceCount() <= syzygyProbeLimit)
-    {
-        int success;
-        score = Syzygy::probeWdl(pos, success);
-        if (success)
-        {
-            ++tbHits;
-            if (score < -1) score = matedInPly(ply + 200);
-            else if (score > 1) score = mateInPly(ply + 200);
-            else score += contempt[pos.getSideToMove()];
-            return score;
-        }
-    }
-    */
-
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
     auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos, zugzwangLikely));
 
@@ -832,7 +785,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         ++nodeCount;
         --nodesToTimeCheck;
 
-        // Futility pruning and late move pruning / move count based pruning.
+        // Futility pruning and late move pruning.
         if (nonCriticalMove && !isLoseScore(bestScore))
         {
             if (futileNode)

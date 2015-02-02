@@ -73,6 +73,9 @@ private:
     int rootPly;
     std::array<HashKey, 1024> repetitionHashes;
 
+    // Array of LMR reduction which have to be initialized at run time.
+    std::array<int, 256> lmrReductions;
+
     // And here is the way to check repetitions, obviously.
     // Actually, this checks for 2-fold repetitions instead of 3-fold repetitions like FIDE-rules require.
     // If you think about it for a while, you notice that 2-fold is all we need.
