@@ -22,8 +22,8 @@
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
 
-UCI::UCI(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
-tp(1), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
+UCI::UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
+tp(1), search(search), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
 contempt(0), pawnHashTableSize(4), transpositionTableSize(32)
 {
     addCommand("uci", &UCI::sendInformation);
@@ -60,12 +60,10 @@ void UCI::mainLoop()
             continue;
 
         // If we are currently searching only the commands stop, quit, and isready are legal.
-        /*
-        if (commandName != "stop" && commandName != "quit" && commandName != "isready" && commandName != "ponderhit")
+        if (search.isSearching() && commandName != "stop" && commandName != "quit" && commandName != "isready" && commandName != "ponderhit")
         {
             continue;
         }
-        */
 
         // Go through the list of commands and call the correct function if the command entered is known.
         // If the command is unknown report that.
@@ -113,17 +111,17 @@ void UCI::isReady(Position&, std::istringstream&)
 
 void UCI::stop(Position&, std::istringstream&)
 {
-    // TODO: add this here
+    search.stopPondering();
+    search.stopSearching();
 }
 
 void UCI::quit(Position&, std::istringstream&)
 {
-    // First shut down the possible search.
-    // TODO: add it here
+    search.stopPondering();
+    search.stopSearching();
 
-    // Then shut down the thread pool. This part is only here due to a bug in VS.
+    // Shut down the thread pool. This part is only here due to a bug in VS.
     tp.terminate();
-    // Finally exit.
     exit(0);
 }
 

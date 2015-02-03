@@ -35,6 +35,11 @@ public:
     void think(const Position& root, SearchParameters searchParameters);
 
     int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
+
+    void stopSearching() { searching = false; }
+    void stopPondering() { pondering = false; }
+    bool isSearching() const { return searching; }
+    bool isPondering() const { return pondering; }
 private:
     TranspositionTable& transpositionTable;
     KillerTable& killerTable;
@@ -62,7 +67,8 @@ private:
     int lastRootScore;
     int currentRootScore;
 
-    // Is this search infinite or not?
+    bool searching;
+    bool pondering;
     bool infinite;
 
     Stopwatch sw;

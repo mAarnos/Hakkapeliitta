@@ -115,6 +115,8 @@ transpositionTable(transpositionTable), killerTable(killerTable), historyTable(h
     contempt = {{ 0, 0 }};
     rootPly = 0;
     contempt.fill(0);
+    searching = false;
+    pondering = false;
     infinite = false;
     targetTime = maxTime = 0;
     nodeCount = 0;
@@ -286,6 +288,8 @@ void Search::think(const Position& root, SearchParameters searchParameters)
     contempt[!root.getSideToMove()] = 0; // contemptValue;
     lastRootScore = -mateScore;
     selDepth = 1;
+    searching = true;
+    pondering = searchParameters.ponder;
     infinite = searchParameters.infinite;
     transpositionTable.startNewSearch();
     historyTable.age();
@@ -609,7 +613,6 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        auto searching = true;
         if (!infinite) // Can't stop search if ordered to run indefinitely
         {
             // Casting works around a few warnings.
