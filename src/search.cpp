@@ -260,7 +260,7 @@ void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
 
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        if (!pos.legal(moveList[i], inCheck))
+        if (pos.legal(moveList[i], inCheck))
         {
             moveList[marker++] = moveList[i];
         }
@@ -325,7 +325,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     }
 
     repetitionHashes[rootPly] = pos.getHashKey();
-    for (auto depth = 1;;)
+    for (auto depth = 1; depth < 128;)
     {
         auto previousAlpha = alpha;
         auto previousBeta = beta;
@@ -417,7 +417,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         }
 
         transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
-        auto pv = transpositionTable.extractPv(pos);
+        pv = transpositionTable.extractPv(pos);
 
         // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
         if (!infinite && isMateScore(currentRootScore) && isMateScore(lastRootScore) && depth > 6)
@@ -425,8 +425,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             break;
         }
 
-        // If we have reached the max depth stop searching. Should not happen during gameplay, only analysis.
-        if (depth >= 127 && currentRootScore > previousAlpha && currentRootScore < previousBeta)
+        if (!searching)
         {
             break;
         }
@@ -551,13 +550,11 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
         // This too is too dangerous when we are in check.
-        /*
         if (!inCheck && delta + move.getScore() <= alpha)
         {
             bestScore = std::max(bestScore, delta + move.getScore());
             break;
         }
-        */
 
         if (!pos.legal(move, inCheck))
         {
@@ -598,6 +595,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     auto bestScore = matedInPly(ply), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = UpperBoundScore;
     auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
+    auto mateThreat = false;
     MoveList moveList;
     Move ttMove, bestMove;
     int score;
@@ -749,6 +747,10 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
                 transpositionTable.save(pos.getHashKey(), ply, ttMove, realScoreToTtScore(score, ply), depth, LowerBoundScore);
                 return score;
             }
+            else if (score == matedInPly(ply + 2))
+            {
+                mateThreat = true;
+            }
         }
     }
 
@@ -784,7 +786,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         const auto& move = moveList[i];
 
         auto givesCheck = pos.givesCheck(move);
-        auto extension = (givesCheck || oneReply) ? 1 : 0;
+        auto extension = (givesCheck || mateThreat || oneReply) ? 1 : 0;
         auto newDepth = depth - 1 + extension;
         auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
         ++nodeCount;

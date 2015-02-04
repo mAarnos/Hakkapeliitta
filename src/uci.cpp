@@ -24,7 +24,7 @@
 
 UCI::UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
 tp(1), search(search), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
-contempt(0), pawnHashTableSize(4), transpositionTableSize(32)
+contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repetitionHashKeys({})
 {
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
@@ -178,7 +178,7 @@ void UCI::newGame(Position&, std::istringstream&)
     killerTable.clear();
 }
 
-void UCI::go(Position&, std::istringstream& iss)
+void UCI::go(Position& pos, std::istringstream& iss)
 {
     SearchParameters searchParameters;
     std::string s;
@@ -200,7 +200,7 @@ void UCI::go(Position&, std::istringstream& iss)
         else if (s == "infinite") { searchParameters.infinite = true; }
     }
 
-    // TODO: start searching here.
+    tp.addJob(&Search::think, &search, pos, searchParameters, rootPly, repetitionHashKeys);
 }
 
 void UCI::position(Position& pos, std::istringstream& iss)
