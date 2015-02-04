@@ -405,7 +405,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                             break;
                         }
                         transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, UpperBoundScore);
-                        auto pv = transpositionTable.extractPv(pos);
+                        pv = transpositionTable.extractPv(pos);
                         infoPv(pv, depth, currentRootScore, ExactScore);
                     }
                 }
@@ -550,11 +550,13 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
         // This too is too dangerous when we are in check.
+        /*
         if (!inCheck && delta + move.getScore() <= alpha)
         {
             bestScore = std::max(bestScore, delta + move.getScore());
             break;
         }
+        */
 
         if (!pos.legal(move, inCheck))
         {
@@ -563,6 +565,12 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         Position newPosition(pos);
         newPosition.makeMove(move);
+
+        if (pos.getHashKey() == 473897739300882803)
+        {
+            if (newPosition.getHashKey() == 9250176414544285383)
+                sync_cout << pos.displayPositionAsString() << std::endl;
+        }
 
         const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
 
@@ -738,7 +746,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
             newPosition.makeNullMove();
             ++nodeCount;
             --nodesToTimeCheck;
-            score = -search<false>(pos, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, false, false);
+            score = -search<false>(newPosition, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, false, false);
             if (score >= beta)
             {
                 // Don't return unproven mate scores as they cause some instability.

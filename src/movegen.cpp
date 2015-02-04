@@ -336,3 +336,4 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     }
 }
 
+
