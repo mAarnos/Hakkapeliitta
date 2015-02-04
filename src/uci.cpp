@@ -199,12 +199,14 @@ void UCI::go(Position&, std::istringstream& iss)
         else if (s == "movetime") { iss >> searchParameters.moveTime; }
         else if (s == "infinite") { searchParameters.infinite = true; }
     }
+
+    // TODO: start searching here.
 }
 
 void UCI::position(Position& pos, std::istringstream& iss)
 {
     std::string s, fen;
-    // Fix rootply here
+    rootPly = 0;
 
     iss >> s;
     
@@ -254,13 +256,14 @@ void UCI::position(Position& pos, std::istringstream& iss)
             promotion = Piece::Pawn;
         }
 
-        // Add repetition hash here
+        repetitionHashKeys[rootPly++] = pos.getHashKey();
         pos.makeMove(Move(from, to, promotion, 0));
     }
 }
 
 void UCI::ponderhit(Position&, std::istringstream&)
 {
+    search.stopPondering();
 }
 
 void UCI::displayBoard(Position& pos, std::istringstream&)

@@ -70,6 +70,9 @@ private:
     int contempt;
     size_t pawnHashTableSize;
     size_t transpositionTableSize;
+
+    int rootPly;
+    std::array<HashKey, 1024> repetitionHashKeys;
 };
 
 

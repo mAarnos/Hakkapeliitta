@@ -32,7 +32,7 @@ class Search
 public:
     Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
 
-    void think(const Position& root, SearchParameters searchParameters);
+    void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys);
 
     int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 

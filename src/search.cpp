@@ -269,7 +269,7 @@ void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
     moveList.resize(marker);
 }
 
-void Search::think(const Position& root, SearchParameters searchParameters)
+void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys)
 {
     auto alpha = -infinity;
     auto beta = infinity;
@@ -291,6 +291,8 @@ void Search::think(const Position& root, SearchParameters searchParameters)
     searching = true;
     pondering = searchParameters.ponder;
     infinite = searchParameters.infinite;
+    rootPly = newRootPly;
+    repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
     historyTable.age();
     killerTable.clear();
