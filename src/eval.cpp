@@ -297,7 +297,7 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
-    if (pawnHashTable.probe(pos.getHashKey(), scoreOp, scoreEd))
+    if (pawnHashTable.probe(pos.getPawnHashKey(), scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
@@ -355,7 +355,7 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
         scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-    pawnHashTable.save(pos.getHashKey(), scoreOp, scoreEd);
+    pawnHashTable.save(pos.getPawnHashKey(), scoreOp, scoreEd);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }
