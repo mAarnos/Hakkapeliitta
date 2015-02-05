@@ -294,9 +294,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     rootPly = newRootPly;
     repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
-    transpositionTable.clear();
-    historyTable.clear();
-    // historyTable.age();
+    historyTable.age();
     killerTable.clear();
     sw.reset();
     sw.start();
@@ -568,7 +566,6 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-
         const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
 
         if (score > bestScore)
@@ -865,10 +862,9 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
                         }
                         for (auto j = 0; j < i; ++j)
                         {
-                            const auto& move2 = moveList[j];
-                            if (quietMove(pos, move2))
+                            if (quietMove(pos, moveList[j]))
                             {
-                                historyTable.addNotCutoff(pos, move2, depth);
+                                historyTable.addNotCutoff(pos, moveList[j], depth);
                             }
                         }
                     }
