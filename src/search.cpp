@@ -45,10 +45,10 @@ const std::array<int, 1 + 3> razoringMargins = {
     0, 125, 300, 300
 };
 
-const int16_t hashMoveScore = 32767;
-const int16_t captureMoveScore = hashMoveScore - 2000;
-const std::array<int16_t, 1 + 4> killerMoveScore = {
-    0, hashMoveScore - 4000, hashMoveScore - 4100, hashMoveScore - 4200, hashMoveScore - 4300
+const int32_t hashMoveScore = 2147483647;
+const int32_t captureMoveScore = hashMoveScore >> 1;
+const std::array<int32_t, 1 + 4> killerMoveScore = {
+    0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
 };
 
 int matedInPly(const int ply)
@@ -347,7 +347,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     infoCurrMove(move, depth, i);
                 }
 
-                auto givesCheck = pos.inCheck();
+                auto givesCheck = pos.givesCheck(move);
                 auto extension = givesCheck ? 1 : 0;
                 auto newDepth = depth - 1 + extension;
                 auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
@@ -565,12 +565,6 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-
-        if (pos.getHashKey() == 473897739300882803)
-        {
-            if (newPosition.getHashKey() == 9250176414544285383)
-                sync_cout << pos.displayPositionAsString() << std::endl;
-        }
 
         const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
 

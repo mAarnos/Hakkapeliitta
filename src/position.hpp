@@ -80,7 +80,7 @@ public:
     int givesCheck(const Move& move) const;
 
     // Calculate the SEE score of a move for the current position.
-    int16_t SEE(const Move& move) const;
+    int32_t SEE(const Move& move) const;
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.

@@ -134,7 +134,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
     addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare(), true);
 
     // Since pinned knights do not have legal moves we can remove them.
-    tempPiece = pos.getBitboard(side, Piece::Knight) & ~pos.getPinnedPieces();
+    tempPiece = pos.getBitboard(side, Piece::Knight); // & ~pos.getPinnedPieces();
     while (tempPiece)
     {
         from = Bitboards::popLsb(tempPiece);
