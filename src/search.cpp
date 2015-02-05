@@ -294,7 +294,9 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     rootPly = newRootPly;
     repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
-    historyTable.age();
+    transpositionTable.clear();
+    historyTable.clear();
+    // historyTable.age();
     killerTable.clear();
     sw.reset();
     sw.start();
@@ -480,6 +482,9 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     }
 
     sw.stop();
+    // Make sure that the the flag that we are searching is set to false when we quit.
+    // If we somehow reach maximum depth we might not reset the flag otherwise.
+    searching = false;
     auto searchTime = sw.elapsed<std::chrono::milliseconds>();
     sync_cout << "info time " << searchTime
               << " nodes " << nodeCount
@@ -550,13 +555,11 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
         // This too is too dangerous when we are in check.
-        /*
         if (!inCheck && delta + move.getScore() <= alpha)
         {
             bestScore = std::max(bestScore, delta + move.getScore());
             break;
         }
-        */
 
         if (!pos.legal(move, inCheck))
         {

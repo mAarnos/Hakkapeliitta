@@ -42,7 +42,7 @@ contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repet
 void UCI::mainLoop()
 {
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    std::string cmd, commandName;
+    std::string cmd;
 
     for (;;)
     {
@@ -53,6 +53,7 @@ void UCI::mainLoop()
         // Using string stream makes parsing a lot easier than regexes.
         // Note to self: Lucas Braesch is always right.
         std::istringstream iss(cmd);
+        std::string commandName;
         iss >> commandName;
         
         // Ignore empty lines.
