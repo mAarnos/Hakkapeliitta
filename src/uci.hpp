@@ -31,7 +31,7 @@
 class UCI
 {
 public:
-    UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
+    UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable);
 
     void mainLoop();
 private:
@@ -63,8 +63,6 @@ private:
     Search& search;
     TranspositionTable& transpositionTable;
     PawnHashTable& pawnHashTable;
-    KillerTable& killerTable;
-    HistoryTable& historyTable;
 
     bool ponder;
     int contempt;

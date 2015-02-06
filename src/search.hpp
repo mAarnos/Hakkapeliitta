@@ -30,7 +30,7 @@
 class Search
 {
 public:
-    Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable);
+    Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable);
 
     void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys);
 
@@ -40,10 +40,12 @@ public:
     void stopPondering() { pondering = false; }
     bool isSearching() const { return searching; }
     bool isPondering() const { return pondering; }
+
+    void clearKillerAndHistory() { killerTable.clear(); historyTable.clear(); }
 private:
     TranspositionTable& transpositionTable;
-    KillerTable& killerTable;
-    HistoryTable& historyTable;
+    KillerTable killerTable;
+    HistoryTable historyTable;
     Evaluation evaluation;
     MoveGen moveGen;
 

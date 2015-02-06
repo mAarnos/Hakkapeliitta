@@ -22,8 +22,8 @@
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
 
-UCI::UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
-tp(1), search(search), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), killerTable(killerTable), historyTable(historyTable), ponder(false),
+UCI::UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable) :
+tp(1), search(search), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), ponder(false),
 contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repetitionHashKeys({})
 {
     addCommand("uci", &UCI::sendInformation);
@@ -89,7 +89,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.5" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.51" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -158,8 +158,7 @@ void UCI::setOption(Position&, std::istringstream& iss)
     {
         transpositionTable.clear();
         pawnHashTable.clear();
-        historyTable.clear();
-        killerTable.clear();
+        search.clearKillerAndHistory();
     }
     else if (name == "Ponder")
     {
@@ -175,8 +174,7 @@ void UCI::newGame(Position&, std::istringstream&)
 {
     transpositionTable.clear();
     pawnHashTable.clear();
-    historyTable.clear();
-    killerTable.clear();
+    search.clearKillerAndHistory();
 }
 
 void UCI::go(Position& pos, std::istringstream& iss)

@@ -109,8 +109,8 @@ int realScoreToTtScore(int score, int ply)
     return score;
 }
 
-Search::Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable, KillerTable& killerTable, HistoryTable& historyTable) :
-transpositionTable(transpositionTable), killerTable(killerTable), historyTable(historyTable), evaluation(pawnHashTable)
+Search::Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable) :
+transpositionTable(transpositionTable), evaluation(pawnHashTable)
 {
     contempt = {{ 0, 0 }};
     rootPly = 0;

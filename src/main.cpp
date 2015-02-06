@@ -31,40 +31,20 @@
 
 int main() 
 {
-    sync_cout << "Hakkapeliitta 2.5, (C) 2013-2015 Mikko Aarnos" << std::endl;
+    sync_cout << "Hakkapeliitta 2.51, (C) 2013-2015 Mikko Aarnos" << std::endl;
     sync_cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::initialize();
     Zobrist::initialize();
-    KillerTable killerTable;
-    HistoryTable historyTable;
     PawnHashTable pawnHashTable;
     TranspositionTable transpositionTable;
-    Search search(transpositionTable, pawnHashTable, killerTable, historyTable);
-    UCI uci(search, transpositionTable, pawnHashTable, killerTable, historyTable);
+    Search search(transpositionTable, pawnHashTable);
+    UCI uci(search, transpositionTable, pawnHashTable);
 
     if (Bitboards::isHardwarePopcntSupported())
     {
         sync_cout << "Detected hardware POPCNT" << std::endl;
     }
-
-    /*
-    Position pos;
-    std::ifstream ifs("C:\\GMblackwin.txt");
-    std::ofstream res("results.txt");
-    std::string s;
-
-    auto count = 1;
-    while (std::getline(ifs, s))
-    {
-        pos = Position(s);
-        if (count == 24337)
-            std::cout << pos.displayPositionAsString() << std::endl;
-        auto score = search.quiescenceSearch(pos, 0, 0, -100000, 100000, pos.inCheck());
-        res << score << std::endl;
-        std::cout << count++ << "\n";
-    }
-    */
 
     uci.mainLoop();
 
