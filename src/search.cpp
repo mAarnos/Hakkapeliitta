@@ -709,7 +709,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
-    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && !isMateScore(beta) && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
     // Razoring.
