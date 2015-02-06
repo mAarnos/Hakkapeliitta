@@ -29,18 +29,21 @@
 class Evaluation
 {
 public:
-    Evaluation(PawnHashTable& pawnHashTable);
+    Evaluation();
 
     int evaluate(const Position& pos, bool& zugzwangLikely);
 
     // These two have to be annoyingly static, as we use them in position.cpp to incrementally update the pst eval.
     static std::array<std::array<short, 64>, 12> pieceSquareTableOpening;
     static std::array<std::array<short, 64>, 12> pieceSquareTableEnding;
+
+    void clearPawnHashTable() { pawnHashTable.clear(); }
+    void setPawnHashTableSize(size_t newSize) { pawnHashTable.setSize(newSize); }
 private:
     // Contains information on some endgames.
     EndgameModule endgameModule;
     // Used for hashing pawn eval scores.
-    PawnHashTable& pawnHashTable;
+    PawnHashTable pawnHashTable;
 
     // Evaluation function in parts.
     template <bool hardwarePopcnt> 

@@ -31,15 +31,13 @@
 
 int main() 
 {
-    sync_cout << "Hakkapeliitta 2.51, (C) 2013-2015 Mikko Aarnos" << std::endl;
+    sync_cout << "Hakkapeliitta 2.511, (C) 2013-2015 Mikko Aarnos" << std::endl;
     sync_cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::initialize();
     Zobrist::initialize();
-    PawnHashTable pawnHashTable;
-    TranspositionTable transpositionTable;
-    Search search(transpositionTable, pawnHashTable);
-    UCI uci(search, transpositionTable, pawnHashTable);
+    Search search;
+    UCI uci(search);
 
     if (Bitboards::isHardwarePopcntSupported())
     {

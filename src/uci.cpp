@@ -22,8 +22,8 @@
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
 
-UCI::UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable) :
-tp(1), search(search), transpositionTable(transpositionTable), pawnHashTable(pawnHashTable), ponder(false),
+UCI::UCI(Search& search) :
+tp(1), search(search), ponder(false),
 contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repetitionHashKeys({})
 {
     addCommand("uci", &UCI::sendInformation);
@@ -89,7 +89,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.51" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.511" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -147,18 +147,16 @@ void UCI::setOption(Position&, std::istringstream& iss)
     else if (name == "Hash")
     {
         iss >> transpositionTableSize;
-        transpositionTable.setSize(transpositionTableSize);
+        search.setTranspositionTableSize(transpositionTableSize);
     }
     else if (name == "Pawn Hash")
     {
         iss >> pawnHashTableSize;
-        pawnHashTable.setSize(pawnHashTableSize);
+        search.setPawnHashTableSize(pawnHashTableSize);
     }
     else if (name == "Clear Hash")
     {
-        transpositionTable.clear();
-        pawnHashTable.clear();
-        search.clearKillerAndHistory();
+        search.clearSearch();
     }
     else if (name == "Ponder")
     {
@@ -172,9 +170,7 @@ void UCI::setOption(Position&, std::istringstream& iss)
 
 void UCI::newGame(Position&, std::istringstream&)
 {
-    transpositionTable.clear();
-    pawnHashTable.clear();
-    search.clearKillerAndHistory();
+    search.clearSearch();
 }
 
 void UCI::go(Position& pos, std::istringstream& iss)

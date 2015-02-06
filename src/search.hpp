@@ -30,20 +30,20 @@
 class Search
 {
 public:
-    Search(TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable);
+    Search();
 
     void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys);
-
-    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 
     void stopSearching() { searching = false; }
     void stopPondering() { pondering = false; }
     bool isSearching() const { return searching; }
     bool isPondering() const { return pondering; }
 
-    void clearKillerAndHistory() { killerTable.clear(); historyTable.clear(); }
+    void clearSearch() { transpositionTable.clear(); evaluation.clearPawnHashTable(); killerTable.clear(); historyTable.clear(); }
+    void setTranspositionTableSize(size_t newSize) { transpositionTable.setSize(newSize); }
+    void setPawnHashTableSize(size_t newSize) { evaluation.setPawnHashTableSize(newSize); }
 private:
-    TranspositionTable& transpositionTable;
+    TranspositionTable transpositionTable;
     KillerTable killerTable;
     HistoryTable historyTable;
     Evaluation evaluation;
@@ -51,6 +51,7 @@ private:
 
     template <bool pvNode>
     int search(const Position& pos, int depth, int ply, int alpha, int beta, bool allowNullMove, bool inCheck);
+    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
 

@@ -31,7 +31,7 @@
 class UCI
 {
 public:
-    UCI(Search& search, TranspositionTable& transpositionTable, PawnHashTable& pawnHashTable);
+    UCI(Search& search);
 
     void mainLoop();
 private:
@@ -57,12 +57,7 @@ private:
     void displayBoard(Position& pos, std::istringstream& iss);
     void perft(Position& pos, std::istringstream& iss);
 
-    // References to transposition, pawn hash, killer and history tables.
-    // Also a reference to the search function.
-    // Used when a command comes which instructs to clear them, or when we start a new game (in which case we clear them).
     Search& search;
-    TranspositionTable& transpositionTable;
-    PawnHashTable& pawnHashTable;
 
     bool ponder;
     int contempt;
