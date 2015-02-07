@@ -538,7 +538,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
     {
         selectMove(moveList, i);
         const auto& move = moveList[i];
-        const auto givesCheck = pos.givesCheck(move);
+        // const auto givesCheck = pos.givesCheck(move);
         ++nodeCount;
         --nodesToTimeCheck;
 
@@ -565,7 +565,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-        const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, givesCheck != 0);
+        const auto score = -quiescenceSearch(newPosition, depth - 1, ply + 1, -beta, -alpha, newPosition.inCheck());
 
         if (score > bestScore)
         {
