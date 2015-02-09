@@ -48,14 +48,14 @@ private:
     public:
         PawnHashTableEntry() : hash(0), data(0) {}
 
-        void setHash(const uint32_t newHash) { hash = newHash; }
-        void setData(const uint32_t newData) { data = newData; }
+        void setHash(const uint64_t newHash) { hash = newHash; }
+        void setData(const uint64_t newData) { data = newData; }
 
-        uint32_t getHash() const { return hash; }
-        uint32_t getData() const { return data; }
+        uint64_t getHash() const { return hash; }
+        uint64_t getData() const { return data; }
     private:
-        uint32_t hash;
-        uint32_t data;
+        uint64_t hash;
+        uint64_t data;
     };
 
     std::vector<PawnHashTableEntry> table;
