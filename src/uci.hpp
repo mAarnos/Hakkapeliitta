@@ -31,7 +31,7 @@
 class UCI
 {
 public:
-    UCI(Search& search);
+    UCI();
 
     void mainLoop();
 private:
@@ -57,7 +57,7 @@ private:
     void displayBoard(Position& pos, std::istringstream& iss);
     void perft(Position& pos, std::istringstream& iss);
 
-    Search& search;
+    Search search;
 
     bool ponder;
     int contempt;

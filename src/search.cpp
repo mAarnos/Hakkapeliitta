@@ -323,6 +323,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         bestMove.setMove(ttEntry->getBestMove());
     }
 
+    std::vector<SearchStack> searchStacks(128 + 1);
+
     repetitionHashes[rootPly] = pos.getHashKey();
     for (auto depth = 1; depth < 128;)
     {
@@ -355,23 +357,23 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 newPosition.makeMove(move);
                 if (!movesSearched)
                 {
-                    score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, true, givesCheck != 0);
+                    score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[0]);
                 }
                 else
                 {
                     auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
                         ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
-                    score = -search<false>(newPosition, newDepth - reduction, 1, -alpha - 1, -alpha, true, givesCheck != 0);
+                    score = -search<false>(newPosition, newDepth - reduction, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[0]);
 
                     if (reduction && score > alpha)
                     {
-                        score = -search<false>(newPosition, newDepth, 1, -alpha - 1, -alpha, true, givesCheck != 0);
+                        score = -search<false>(newPosition, newDepth, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[0]);
                     }
 
                     if (score > alpha && score < beta)
                     {
-                        score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, true, givesCheck != 0);
+                        score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[0]);
                     }
                 }
                 ++movesSearched;
@@ -589,7 +591,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
 #endif
 
 template <bool pvNode>
-int Search::search(const Position& pos, int depth, int ply, int alpha, int beta, bool allowNullMove, bool inCheck)
+int Search::search(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck, SearchStack* ss)
 {
     assert(alpha < beta);
 
@@ -727,7 +729,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     // Null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
-    if (!pvNode && allowNullMove && !inCheck && staticEval >= beta && !zugzwangLikely)
+    if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && !zugzwangLikely)
     {
         if (!(ttEntry
             && ttEntry->getFlags() == UpperBoundScore
@@ -739,7 +741,9 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
             newPosition.makeNullMove();
             ++nodeCount;
             --nodesToTimeCheck;
-            score = -search<false>(newPosition, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, false, false);
+            (ss + 1)->allowNullMove = false;
+            score = -search<false>(newPosition, depth - 1 - nullReduction, ply + 1, -beta, -beta + 1, false, ss + 1);
+            (ss + 1)->allowNullMove = true;
             if (score >= beta)
             {
                 // Don't return unproven mate scores as they cause some instability.
@@ -760,7 +764,9 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
-        score = search<true>(pos, depth - 2, ply, alpha, beta, false, inCheck);
+        (ss + 1)->allowNullMove = false;
+        score = search<true>(pos, depth - 2, ply, alpha, beta, inCheck, ss + 1);
+        (ss + 1)->allowNullMove = true;
 
         // Now probe the TT and get the best move.
         auto tte = transpositionTable.probe(pos.getHashKey());
@@ -818,28 +824,28 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         newPosition.makeMove(move);
         if (!movesSearched)
         {
-            score = -search<pvNode>(newPosition, newDepth, ply + 1, -beta, -alpha, true, givesCheck != 0);
+            score = -search<pvNode>(newPosition, newDepth, ply + 1, -beta, -alpha, givesCheck != 0, ss + 1);
         }
         else
         {
             auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
                 ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
-            score = -search<false>(newPosition, newDepth - reduction, ply + 1, -alpha - 1, -alpha, true, givesCheck != 0);
+            score = -search<false>(newPosition, newDepth - reduction, ply + 1, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
             // The LMR'd move didn't fail low, drop the reduction because that most likely caused the fail high.
             // If we are in a PV-node the alternative is to open the window first. The more unstable the search the better doing that is.
             // Before the tuned evaluation opening the window was better, after the tuned eval it is worse. Why?
             if (reduction && score > alpha)
             {
-                score = -search<false>(newPosition, newDepth, ply + 1, -alpha - 1, -alpha, true, givesCheck != 0);
+                score = -search<false>(newPosition, newDepth, ply + 1, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
             }
 
             // If we are in a PV-node this is used to get the exact score for a new PV.
             // Since we used null window on the previous searches the score is only a bound, and this won't do for a PV.
             if (score > alpha && score < beta)
             {
-                score = -search<true>(newPosition, newDepth, ply + 1, -beta, -alpha, true, givesCheck != 0);
+                score = -search<true>(newPosition, newDepth, ply + 1, -beta, -alpha, givesCheck != 0, ss + 1);
             }
         }
         ++movesSearched;

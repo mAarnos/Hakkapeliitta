@@ -27,6 +27,15 @@
 #include "utils\stopwatch.hpp"
 #include "search_parameters.hpp"
 
+class SearchStack
+{
+public:
+    SearchStack() : allowNullMove(true) {}
+
+    Move move;
+    bool allowNullMove;
+};
+
 class Search
 {
 public:
@@ -50,7 +59,7 @@ private:
     MoveGen moveGen;
 
     template <bool pvNode>
-    int search(const Position& pos, int depth, int ply, int alpha, int beta, bool allowNullMove, bool inCheck);
+    int search(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck, SearchStack* ss);
     int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
 
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;

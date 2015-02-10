@@ -22,8 +22,8 @@
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
 
-UCI::UCI(Search& search) :
-tp(1), search(search), ponder(false),
+UCI::UCI() :
+tp(1), ponder(false),
 contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repetitionHashKeys({})
 {
     addCommand("uci", &UCI::sendInformation);
@@ -89,7 +89,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.52" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.53" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
