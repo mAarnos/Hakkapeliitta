@@ -764,9 +764,9 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     if (pvNode && ttMove.empty() && depth > 4)
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
-        (ss + 1)->allowNullMove = false;
-        score = search<true>(pos, depth - 2, ply, alpha, beta, inCheck, ss + 1);
-        (ss + 1)->allowNullMove = true;
+        ss->allowNullMove = false;
+        score = search<true>(pos, depth - 2, ply, alpha, beta, inCheck, ss);
+        ss->allowNullMove = true;
 
         // Now probe the TT and get the best move.
         auto tte = transpositionTable.probe(pos.getHashKey());
