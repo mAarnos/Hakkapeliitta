@@ -360,23 +360,23 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 newPosition.makeMove(move);
                 if (!movesSearched)
                 {
-                    score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[0]);
+                    score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
                 }
                 else
                 {
                     auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
                         ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
-                    score = -search<false>(newPosition, newDepth - reduction, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[0]);
+                    score = -search<false>(newPosition, newDepth - reduction, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[1]);
 
                     if (reduction && score > alpha)
                     {
-                        score = -search<false>(newPosition, newDepth, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[0]);
+                        score = -search<false>(newPosition, newDepth, 1, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[1]);
                     }
 
                     if (score > alpha && score < beta)
                     {
-                        score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[0]);
+                        score = -search<true>(newPosition, newDepth, 1, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
                     }
                 }
                 ++movesSearched;
