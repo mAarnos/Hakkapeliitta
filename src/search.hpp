@@ -41,7 +41,7 @@ class Search
 public:
     Search();
 
-    void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys);
+    void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue);
 
     void stopSearching() { searching = false; }
     void stopPondering() { pondering = false; }
@@ -65,6 +65,7 @@ private:
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
 
     std::array<int, 2> contempt;
+    int nextSendInfo;
     int targetTime;
     int maxTime;
 

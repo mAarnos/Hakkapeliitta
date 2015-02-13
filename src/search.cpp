@@ -120,6 +120,7 @@ Search::Search()
     targetTime = maxTime = 0;
     nodeCount = 0;
     tbHits = 0;
+    nextSendInfo = 1000;
     nodesToTimeCheck = 10000;
     selDepth = 1;
     lastRootScore = currentRootScore = -mateScore;
@@ -268,7 +269,7 @@ void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
     moveList.resize(marker);
 }
 
-void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys)
+void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue)
 {
     auto alpha = -infinity;
     auto beta = infinity;
@@ -283,10 +284,11 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     tbHits = 0;
     nodeCount = 0;
     nodesToTimeCheck = 10000;
-    contempt[root.getSideToMove()] = 0; // -contemptValue;
-    contempt[!root.getSideToMove()] = 0; // contemptValue;
+    contempt[root.getSideToMove()] = -contemptValue;
+    contempt[!root.getSideToMove()] = contemptValue;
     lastRootScore = -mateScore;
     selDepth = 1;
+    nextSendInfo = 1000;
     searching = true;
     pondering = searchParameters.ponder;
     infinite = searchParameters.infinite;
@@ -294,7 +296,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
     historyTable.age();
-    killerTable.clear();
+    killerTable.clear(); 
+    const auto maxDepth = (searchParameters.depth > 0 ? std::min(searchParameters.depth, 128) : 128);
     sw.reset();
     sw.start();
 
@@ -326,7 +329,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     std::vector<SearchStack> searchStacks(128 + 1);
 
     repetitionHashes[rootPly] = pos.getHashKey();
-    for (auto depth = 1; depth < 128;)
+    for (auto depth = 1; depth < maxDepth;)
     {
         auto previousAlpha = alpha;
         auto previousBeta = beta;
@@ -513,6 +516,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
     bool zugzwangLikely;
     MoveList moveList;
 
+    // Don't go over max depth.
     if (ply >= 128)
     {
         return evaluation.evaluate(pos, zugzwangLikely);
@@ -614,6 +618,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         selDepth = ply;
     }
 
+    // Don't go over max depth.
     if (ply >= 128)
     {
         return evaluation.evaluate(pos, zugzwangLikely);
@@ -626,10 +631,10 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
+        auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>()); // Casting works around a few warnings.
+
         if (!infinite) // Can't stop search if ordered to run indefinitely
         {
-            // Casting works around a few warnings.
-            auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
             if (time > maxTime) // Hard cutoff for search time, if we don't stop we risk running out of time later.
             {
                 searching = false;
@@ -657,6 +662,15 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
         if (!searching)
         {
             throw StopSearchException("allocated time has run out");
+        }
+
+        if (time >= nextSendInfo)
+        {
+            nextSendInfo += 1000;
+            sync_cout << "info nodes " << nodeCount 
+                      << " time " << time 
+                      << " nps " << (nodeCount / (time + 1)) * 1000 
+                      << " tbhits " << tbHits << std::endl;
         }
     }
 
@@ -721,7 +735,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
-    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && !isMateScore(beta) && staticEval - reverseFutilityMargins[depth] >= beta)
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
         return staticEval - reverseFutilityMargins[depth];
 
     // Razoring.
