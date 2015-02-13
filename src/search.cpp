@@ -513,6 +513,11 @@ int Search::quiescenceSearch(const Position& pos, const int depth, const int ply
     bool zugzwangLikely;
     MoveList moveList;
 
+    if (ply >= 128)
+    {
+        return evaluation.evaluate(pos, zugzwangLikely);
+    }
+
     if (inCheck)
     {
         bestScore = matedInPly(ply);
@@ -607,6 +612,11 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     if (ply > selDepth)
     {
         selDepth = ply;
+    }
+
+    if (ply >= 128)
+    {
+        return evaluation.evaluate(pos, zugzwangLikely);
     }
 
     // Small speed optimization, runs fine without it.
