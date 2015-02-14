@@ -174,7 +174,7 @@ Position::Position(const std::string& fen)
 	fiftyMoveDistance = 0;
 	if (strList.size() >= 5)
 	{
-		fiftyMoveDistance = *strList[4].c_str();
+        fiftyMoveDistance = static_cast<int8_t>(std::stoi(strList[4]));
 	}
 
 	gamePly = 0;
