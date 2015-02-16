@@ -397,7 +397,7 @@ void Position::makeNullMove()
         hashKey ^= Zobrist::enPassantHashKey(enPassant);
         enPassant = Square::NoSquare;
     }
-
+    ++fiftyMoveDistance;
     pinned = pinnedPieces(sideToMove);
     dcCandidates = discoveredCheckCandidates();
 }
