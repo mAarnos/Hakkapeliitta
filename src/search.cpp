@@ -44,6 +44,7 @@ const int razoringDepth = 3;
 const std::array<int, 1 + 3> razoringMargins = {
     0, 125, 300, 300
 };
+const int seePruningDepth = 1;
 
 const int32_t hashMoveScore = 2147483647;
 const int32_t captureMoveScore = hashMoveScore >> 1;
@@ -808,6 +809,7 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
     auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+    auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
     auto oneReply = (moveList.size() == 1);
 
     repetitionHashes[rootPly + ply] = pos.getHashKey();
@@ -833,6 +835,12 @@ int Search::search(const Position& pos, int depth, int ply, int alpha, int beta,
             }
 
             if (lmpNode && i >= lmpMoveCount[depth])
+            {
+                ++prunedMoves;
+                continue;
+            }
+
+            if (seePruningNode && pos.SEE(move) < 0)
             {
                 ++prunedMoves;
                 continue;
