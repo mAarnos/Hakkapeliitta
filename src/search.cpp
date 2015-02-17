@@ -292,13 +292,14 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     nextSendInfo = 1000;
     searching = true;
     pondering = searchParameters.ponder;
-    infinite = searchParameters.infinite;
+    infinite = (searchParameters.infinite || searchParameters.depth > 0 || searchParameters.nodes > 0);
+    const auto maxDepth = (searchParameters.depth > 0 ? std::min(searchParameters.depth + 1, 128) : 128);
+    maxNodes = (searchParameters.nodes > 0 ? searchParameters.nodes : std::numeric_limits<size_t>::max());
     rootPly = newRootPly;
     repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
     historyTable.age();
     killerTable.clear(); 
-    const auto maxDepth = (searchParameters.depth > 0 ? std::min(searchParameters.depth, 128) : 128);
     sw.reset();
     sw.start();
 
@@ -637,6 +638,11 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     {
         nodesToTimeCheck = 10000;
         auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>()); // Casting works around a few warnings.
+
+        if (nodeCount >= maxNodes)
+        {
+            searching = false;
+        }
 
         if (!infinite) // Can't stop search if ordered to run indefinitely
         {

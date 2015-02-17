@@ -75,6 +75,7 @@ private:
     int nextSendInfo;
     int targetTime;
     int maxTime;
+    size_t maxNodes;
 
     // Search statistics
     int tbHits;

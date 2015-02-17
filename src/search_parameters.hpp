@@ -37,7 +37,7 @@ public:
     std::array<int, 2> increment; // Increments for white and black.
     int movesToGo; // Moves to go until next time control.
     int depth; // Don't search deeper than this.
-    int nodes; // Don't search more nodes than this.
+    size_t nodes; // Don't search more nodes than this.
     int mate; // Try to find a mate in x.
     int moveTime; // Use exactly this much time in milliseconds.
     bool infinite; // Whether the search is infinite or not.
