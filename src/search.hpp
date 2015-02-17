@@ -30,9 +30,16 @@
 class SearchStack
 {
 public:
-    SearchStack() : allowNullMove(true) {}
+    void clear(int newPly)
+    {
+        move.setMove(0);
+        move.setScore(0);
+        allowNullMove = true;
+        ply = newPly;
+    }
 
     Move move;
+    int ply;
     bool allowNullMove;
 };
 
@@ -59,8 +66,8 @@ private:
     MoveGen moveGen;
 
     template <bool pvNode>
-    int search(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck, SearchStack* ss);
-    int quiescenceSearch(const Position& pos, int depth, int ply, int alpha, int beta, bool inCheck);
+    int search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
+    int quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
 
