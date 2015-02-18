@@ -540,13 +540,16 @@ int Position::givesCheck(const Move& move) const
     }
 
     // Test for direct checks.
-    // There's no need to check for promotion == Piece::King as kings can't give checks.
     if (promotion == Piece::Empty || promotion == Piece::Pawn)
     {
         const auto piece = getPieceType(board[from]);
-        const auto attacks = Bitboards::pieceAttacks(sideToMove, piece, to, occupied);
-        if (Bitboards::testBit(attacks, kingSquare))
-            return 1; 
+        // A king cannot give check so we can forget about that case. For the same reason the case promotion == Piece::King was unnecessary.
+        if (piece != Piece::King)
+        {
+            const auto attacks = Bitboards::pieceAttacks(sideToMove, piece, to, occupied);
+            if (Bitboards::testBit(attacks, kingSquare))
+                return 1;
+        }
     }
 
     if (promotion == Piece::King)
