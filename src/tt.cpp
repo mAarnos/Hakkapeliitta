@@ -64,13 +64,8 @@ void TranspositionTable::prefetch(const HashKey hk) const
 #endif
 }
 
-void TranspositionTable::save(const HashKey hk, const int ply, const Move& move, const int score, const int depth, const int flags)
+void TranspositionTable::save(const HashKey hk, const Move& move, const int score, const int depth, const int flags)
 {
-    assert(ply >= 0 && ply < 128);
-    assert(depth >= 0 && depth <= 255);
-    // assert(score < infinity && score > -infinity);
-    assert(flags >= 0 && flags <= 255);
-
     auto best = move.getMove();
     auto hashEntry = table[hk & (tableSize - 1)].entries;
     auto replace = hashEntry;

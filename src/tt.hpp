@@ -64,7 +64,7 @@ public:
     ~TranspositionTable();
 
     // Save some information to the transposition table.
-    void save(HashKey hk, int ply, const Move& move, int score, int depth, int flags);
+    void save(HashKey hk, const Move& move, int score, int depth, int flags);
     // Get the entry for the given hash key.
     const TranspositionTableEntry* probe(HashKey hk) const;
     // Load a part of the transposition table into L1/L2 cache. Used as a speed optimization.

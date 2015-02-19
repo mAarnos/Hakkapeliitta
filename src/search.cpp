@@ -414,7 +414,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                             }
                             break;
                         }
-                        transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, UpperBoundScore);
+                        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(currentRootScore, 0), depth, UpperBoundScore);
                         pv = transpositionTable.extractPv(pos);
                         infoPv(pv, depth, currentRootScore, ExactScore);
                     }
@@ -426,7 +426,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             pos = root; // Exception messes up the position, fix it.
         }
 
-        transpositionTable.save(pos.getHashKey(), 0, bestMove, realScoreToTtScore(currentRootScore, 0), depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
+        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(currentRootScore, 0), depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
         pv = transpositionTable.extractPv(pos);
 
         // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
@@ -784,7 +784,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 // Don't return unproven mate scores as they cause some instability.
                 if (isMateScore(score))
                     score = beta;
-                transpositionTable.save(pos.getHashKey(), ss->ply, ttMove, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
+                transpositionTable.save(pos.getHashKey(), ttMove, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
                 return score;
             }
             else if (score == matedInPly(ss->ply + 2))
@@ -898,7 +898,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), ss->ply, move, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
+                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
 
                     if (!inCheck)
                     {
@@ -935,7 +935,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
     }
 
-    transpositionTable.save(pos.getHashKey(), ss->ply, bestMove, realScoreToTtScore(bestScore, ss->ply), depth, ttFlag);
+    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), depth, ttFlag);
 
     return bestScore;
 }
