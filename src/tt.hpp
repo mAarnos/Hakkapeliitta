@@ -48,7 +48,7 @@ public:
     uint16_t getBestMove() const { return static_cast<uint16_t>(data); }
     uint16_t getGeneration() const { return static_cast<uint16_t>(data >> 16); }
     int16_t getScore() const { return static_cast<int16_t>(data >> 32); }
-    uint8_t getDepth() const { return static_cast<uint8_t>(data >> 48); }
+    int8_t getDepth() const { return static_cast<int8_t>(data >> 48); }
     uint8_t getFlags() const { return data >> 56; };
 private:
     uint64_t hash;

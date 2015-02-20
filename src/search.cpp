@@ -521,6 +521,8 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     int bestScore, delta;
     bool zugzwangLikely;
     MoveList moveList;
+    Move bestMove;
+    auto ttFlags = UpperBoundScore;
 
     // Don't go over max depth.
     if (ss->ply >= 128)
@@ -528,12 +530,24 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         return evaluation.evaluate(pos, zugzwangLikely);
     }
 
+    auto ttEntry = transpositionTable.probe(pos.getHashKey());
+    if (ttEntry)
+    {
+        if (ttEntry->getDepth() >= depth)
+        {
+            auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
+            auto ttFlags = ttEntry->getFlags();
+            if (ttFlags == ExactScore || (ttFlags == UpperBoundScore && ttScore <= alpha) || (ttFlags == LowerBoundScore && ttScore >= beta))
+                return ttScore;
+        }
+    }
+
     if (inCheck)
     {
         bestScore = matedInPly(ss->ply);
         delta = -infinity;
         moveGen.generateLegalEvasions(pos, moveList);
-        orderMoves(pos, moveList, Move(), ss->ply); // TODO: some replacement for constructing a move.
+        orderMoves(pos, moveList, bestMove, ss->ply); 
     }
     else
     {
@@ -590,13 +604,18 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             {
                 if (score >= beta)
                 {
+                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), std::max(-1, depth), LowerBoundScore);
                     return score;
                 }
+                bestMove = move;
+                ttFlags = ExactScore;
                 alpha = score;
             }
             bestScore = score;
         }
     }
+
+    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), std::max(-1, depth), ttFlags);
 
     return bestScore;
 }
