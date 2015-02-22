@@ -785,9 +785,10 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
     if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && !zugzwangLikely)
     {
+        const auto R = nullReduction + depth / 6;
         if (!(ttEntry
             && ttEntry->getFlags() == UpperBoundScore
-            && ttEntry->getDepth() >= depth - 1 - nullReduction
+            && ttEntry->getDepth() >= depth - 1 - R
             && ttEntry->getScore() <= alpha))
         {
             repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
@@ -796,7 +797,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             ++nodeCount;
             --nodesToTimeCheck;
             (ss + 1)->allowNullMove = false;
-            score = -search<false>(newPosition, depth - 1 - nullReduction, -beta, -beta + 1, false, ss + 1);
+            score = -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1);
             (ss + 1)->allowNullMove = true;
             if (score >= beta)
             {
