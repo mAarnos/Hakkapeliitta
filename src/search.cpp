@@ -745,18 +745,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         {
             auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
             auto ttFlags = ttEntry->getFlags();
-
             if (ttFlags == ExactScore || (ttFlags == UpperBoundScore && ttScore <= alpha) || (ttFlags == LowerBoundScore && ttScore >= beta))
                 return ttScore;
-
-            if (ttFlags == UpperBoundScore && ttScore < beta)
-            {
-                beta = ttScore;
-            }
-            else if (ttFlags == LowerBoundScore && ttScore > alpha)
-            {
-                alpha = ttScore;
-            }
         }
     }
 
