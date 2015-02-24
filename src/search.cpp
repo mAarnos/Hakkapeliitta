@@ -132,11 +132,18 @@ Search::Search()
     }
 }
 
-void orderCaptures(const Position& pos, MoveList& moveList)
+void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove)
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        moveList[i].setScore(pos.SEE(moveList[i]));
+        if (moveList[i].getMove() == ttMove.getMove())
+        {
+            moveList[i].setScore(hashMoveScore >> 1); // Done to avoid overflows when checking for futility
+        }
+        else
+        {
+            moveList[i].setScore(pos.SEE(moveList[i]));
+        }
     }
 }
 
@@ -533,6 +540,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
+        bestMove.setMove(ttEntry->getBestMove());
         if (ttEntry->getDepth() >= depth)
         {
             auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
@@ -562,7 +570,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         }
         delta = bestScore + futilityMargins[0];
         depth == 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
-        orderCaptures(pos, moveList);
+        orderCaptures(pos, moveList, bestMove);
     }
 
     for (auto i = 0; i < moveList.size(); ++i)
