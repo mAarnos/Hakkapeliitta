@@ -41,9 +41,6 @@ const std::array<int, 1 + 4> lmpMoveCount = {
     0, 4, 8, 16, 32
 };
 const int razoringDepth = 3;
-const std::array<int, 1 + 3> razoringMargins = {
-    0, 125, 300, 300
-};
 const int seePruningDepth = 1;
 
 const int32_t hashMoveScore = 2147483647;
@@ -108,6 +105,11 @@ int realScoreToTtScore(int score, int ply)
     }
 
     return score;
+}
+
+int razoringMargin(int depth)
+{
+    return 150 + depth * 50;
 }
 
 Search::Search()
@@ -768,9 +770,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     // Razoring.
     // Not useful in PV-nodes as this tries to search for nodes where score <= alpha but in PV-nodes score > alpha.
-    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval <= alpha - razoringMargins[depth])
+    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval + razoringMargin(depth) <= alpha)
     {
-        auto razoringAlpha = alpha - razoringMargins[depth];
+        auto razoringAlpha = alpha - razoringMargin(depth);
         score = quiescenceSearch(pos, 0, razoringAlpha, razoringAlpha + 1, false, ss);
         if (score <= razoringAlpha)
         {
@@ -818,7 +820,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         ss->allowNullMove = false;
-        score = search<true>(pos, depth - 2, alpha, beta, inCheck, ss);
+        score = search<pvNode>(pos, depth - 2, alpha, beta, inCheck, ss);
         ss->allowNullMove = true;
 
         // Now probe the TT and get the best move.
