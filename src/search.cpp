@@ -25,17 +25,15 @@ const int minMateScore = 32767 - 1000; // mate in 500
 const int infinity = mateScore + 1;
 
 const int aspirationWindow = 50;
-const int nullReduction = 3;
+const int baseNullReduction = 3;
 const int futilityDepth = 4;
+const int deltaPruningMargin = 50;
 const std::array<int, 1 + 4> futilityMargins = {
-    50, 125, 125, 300, 300
+    0, 125, 125, 300, 300
 };
 const int reverseFutilityDepth = 3;
-const std::array<int, 1 + 3> reverseFutilityMargins = {
-    0, 260, 445, 900
-};
 const int lmrFullDepthMoves = 4;
-const int lmrReductionLimit = 3;
+const int lmrDepthLimit = 3;
 const int lmpDepth = 4;
 const std::array<int, 1 + 4> lmpMoveCount = {
     0, 4, 8, 16, 32
@@ -109,7 +107,12 @@ int realScoreToTtScore(int score, int ply)
 
 int razoringMargin(int depth)
 {
-    return 150 + depth * 50;
+    return depth * 50 + 150;
+}
+
+int reverseFutilityMargin(int depth)
+{
+    return 150 * depth + 100;
 }
 
 Search::Search()
@@ -349,7 +352,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         auto previousAlpha = alpha;
         auto previousBeta = beta;
         auto movesSearched = 0;
-        auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+        auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
         currentRootScore = -mateScore;
 
         orderMoves(pos, rootMoveList, bestMove, 0);
@@ -570,7 +573,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             }
             alpha = bestScore;
         }
-        delta = bestScore + futilityMargins[0];
+        delta = bestScore + deltaPruningMargin;
         depth == 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
         orderCaptures(pos, moveList, bestMove);
     }
@@ -765,8 +768,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
-    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargins[depth] >= beta)
-        return staticEval - reverseFutilityMargins[depth];
+    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargin(depth) >= beta)
+        return staticEval - reverseFutilityMargin(depth);
 
     // Razoring.
     // Not useful in PV-nodes as this tries to search for nodes where score <= alpha but in PV-nodes score > alpha.
@@ -785,7 +788,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
     if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && !zugzwangLikely)
     {
-        const auto R = nullReduction + depth / 6;
+        const auto R = baseNullReduction + depth / 6;
         if (!(ttEntry
             && ttEntry->getFlags() == UpperBoundScore
             && ttEntry->getDepth() >= depth - 1 - R
@@ -838,7 +841,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
     auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
-    auto lmrNode = (!inCheck && depth >= lmrReductionLimit);
+    auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
     auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
     auto oneReply = (moveList.size() == 1);
 

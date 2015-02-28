@@ -22,15 +22,10 @@
 #include "zobrist.hpp"
 #include "bitboard.hpp"
 #include "uci.hpp"
-#include "killer.hpp"
-#include "history.hpp"
-#include "pht.hpp"
-#include "tt.hpp"
-#include "search.hpp"
 
 int main() 
 {
-    sync_cout << "Hakkapeliitta 2.519, (C) 2013-2015 Mikko Aarnos" << std::endl;
+    sync_cout << "Hakkapeliitta 2.520, (C) 2013-2015 Mikko Aarnos" << std::endl;
     sync_cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::initialize();
