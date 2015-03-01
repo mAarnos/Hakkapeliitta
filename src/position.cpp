@@ -622,13 +622,13 @@ int32_t Position::SEE(const Move& move) const
 
     Bitboards::clearBit(occupied, from);
     auto attackers = (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen]
-                   | bitboards[Piece::BlackQueen]
-                   | bitboards[Piece::WhiteRook]
-                   | bitboards[Piece::BlackRook]))
+                                                            | bitboards[Piece::BlackQueen]
+                                                            | bitboards[Piece::WhiteRook]
+                                                            | bitboards[Piece::BlackRook]))
                    | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen]
-                   | bitboards[Piece::BlackQueen]
-                   | bitboards[Piece::WhiteBishop]
-                   | bitboards[Piece::BlackBishop]))
+                                                              | bitboards[Piece::BlackQueen]
+                                                              | bitboards[Piece::WhiteBishop]
+                                                              | bitboards[Piece::BlackBishop]))
                    | (Bitboards::knightAttacks(to) & (bitboards[Piece::WhiteKnight] | bitboards[Piece::BlackKnight]))
                    | (Bitboards::kingAttacks(to) & (bitboards[Piece::WhiteKing] | bitboards[Piece::BlackKing]))
                    | (Bitboards::pawnAttacks(Color::Black, to) & (bitboards[Piece::WhitePawn]))
@@ -639,7 +639,7 @@ int32_t Position::SEE(const Move& move) const
 
     while (attackers & bitboards[12 + stm])
     {
-        if (!toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
+        if (bitboards[Piece::Pawn + stm * 6] & attackers)
         {
             next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
         }
@@ -654,10 +654,6 @@ int32_t Position::SEE(const Move& move) const
         else if (bitboards[Piece::Rook + stm * 6] & attackers)
         {
             next = Bitboards::lsb(bitboards[Piece::Rook + stm * 6] & attackers);
-        }
-        else if (toAtPromoRank && bitboards[Piece::Pawn + stm * 6] & attackers)
-        {
-            next = Bitboards::lsb(bitboards[Piece::Pawn + stm * 6] & attackers);
         }
         else if (bitboards[Piece::Queen + stm * 6] & attackers)
         {
@@ -681,13 +677,13 @@ int32_t Position::SEE(const Move& move) const
 
         Bitboards::clearBit(occupied, next);
         attackers |= (Bitboards::rookAttacks(to, occupied) & (bitboards[Piece::WhiteQueen]
-                   | bitboards[Piece::BlackQueen]
-                   | bitboards[Piece::WhiteRook]
-                   | bitboards[Piece::BlackRook]))
+                                                            | bitboards[Piece::BlackQueen]
+                                                            | bitboards[Piece::WhiteRook]
+                                                            | bitboards[Piece::BlackRook]))
                    | (Bitboards::bishopAttacks(to, occupied) & (bitboards[Piece::WhiteQueen]
-                   | bitboards[Piece::BlackQueen]
-                   | bitboards[Piece::WhiteBishop]
-                   | bitboards[Piece::BlackBishop]));
+                                                              | bitboards[Piece::BlackQueen]
+                                                              | bitboards[Piece::WhiteBishop]
+                                                              | bitboards[Piece::BlackBishop]));
         attackers &= occupied;
 
         stm = !stm;
