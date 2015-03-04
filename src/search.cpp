@@ -28,9 +28,6 @@ const int aspirationWindow = 50;
 const int baseNullReduction = 3;
 const int futilityDepth = 4;
 const int deltaPruningMargin = 50;
-const std::array<int, 1 + 4> futilityMargins = {
-    0, 125, 125, 300, 300
-};
 const int reverseFutilityDepth = 3;
 const int lmrFullDepthMoves = 4;
 const int lmrDepthLimit = 3;
@@ -111,6 +108,11 @@ int razoringMargin(int depth)
 int reverseFutilityMargin(int depth)
 {
     return 150 * depth + 100;
+}
+
+int futilityMargin(int depth)
+{
+    return 25 * depth + 100;
 }
 
 Search::Search()
@@ -385,8 +387,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
                 else
                 {
-                    auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
-                        ? lmrReductions[i - lmrFullDepthMoves] : 0);
+                    auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
                     score = -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[1]);
 
@@ -537,7 +538,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     bool zugzwangLikely;
     MoveList moveList;
     Move bestMove;
-    auto ttFlags = UpperBoundScore;
+    auto ttFlag = UpperBoundScore;
 
     // Don't go over max depth.
     if (ss->ply >= 128)
@@ -624,14 +625,14 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
                     return score;
                 }
                 bestMove = move;
-                ttFlags = ExactScore;
+                ttFlag = ExactScore;
                 alpha = score;
             }
             bestScore = score;
         }
     }
 
-    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), std::max(-1, depth), ttFlags);
+    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), std::max(-1, depth), ttFlag);
 
     return bestScore;
 }
@@ -842,7 +843,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     orderMoves(pos, moveList, ttMove, ss->ply);
 
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
-    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargins[depth] <= alpha);
+    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin(depth) <= alpha);
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
     auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
@@ -896,8 +897,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         }
         else
         {
-            auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove)
-                ? lmrReductions[i - lmrFullDepthMoves] : 0);
+            auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
             score = -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
