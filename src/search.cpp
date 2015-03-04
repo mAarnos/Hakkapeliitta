@@ -35,9 +35,7 @@ const int reverseFutilityDepth = 3;
 const int lmrFullDepthMoves = 4;
 const int lmrDepthLimit = 3;
 const int lmpDepth = 4;
-const std::array<int, 1 + 4> lmpMoveCount = {
-    0, 4, 8, 16, 32
-};
+std::array<int, 1 + 4> lmpMoveCounts;
 const int razoringDepth = 3;
 const int seePruningDepth = 1;
 
@@ -134,6 +132,11 @@ Search::Search()
     for (auto i = 0; i < 256; ++i)
     {
         lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+    }
+
+    for (auto i = 0; i < 5; ++i)
+    {
+        lmpMoveCounts[i] = static_cast<int>(std::round(2.8 + std::pow(i, 2.38)));
     }
 }
 
@@ -867,7 +870,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 continue;
             }
 
-            if (lmpNode && i >= lmpMoveCount[depth])
+            if (lmpNode && i >= lmpMoveCounts[depth])
             {
                 ++prunedMoves;
                 continue;
