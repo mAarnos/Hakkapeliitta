@@ -142,17 +142,44 @@ Search::Search()
     }
 }
 
-void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove)
+int mvvLva(const Position& pos, const Move& move)
+{
+    static const std::array<int, 12> attackers = {
+        5, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 0
+    };
+
+    static const std::array<int, 13> victims = {
+        1, 2, 2, 3, 4, 0, 1, 2, 2, 3, 4, 0, 0
+    };
+
+    const auto attackerValue = attackers[pos.getBoard(move.getFrom())];
+    const auto victimValue = victims[pos.getBoard(move.getTo())]
+                           + (move.getPromotion() != Piece::Empty ? victims[move.getPromotion()] -
+                                                                   (move.getPromotion() != Piece::Pawn ? victims[Piece::Pawn] : 0)
+                                                                  : 0);
+
+    return victimValue * 8 + attackerValue;
+}
+
+void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove)
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        if (moveList[i].getMove() == ttMove.getMove())
+        auto& move = moveList[i];
+
+        if (move.getMove() == ttMove.getMove())
         {
-            moveList[i].setScore(hashMoveScore >> 1); // Done to avoid overflows when checking for futility
+            move.setScore(hashMoveScore >> 1); // Done to avoid overflows when checking for futility
+        }
+        else if (!quietMove(pos, move))
+        {
+            auto score = mvvLva(pos, move);
+            score += captureMoveScore >> 1; // Has to be shifted because hashMoveScore was shifted.
+            move.setScore(score);
         }
         else
         {
-            moveList[i].setScore(pos.SEE(moveList[i]));
+            move.setScore(historyTable.getScore(pos, move));
         }
     }
 }
@@ -586,6 +613,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     {
         selectMove(moveList, i);
         const auto& move = moveList[i];
+        const auto seeScore = pos.SEE(move);
         // const auto givesCheck = pos.givesCheck(move);
         ++nodeCount;
         --nodesToTimeCheck;
@@ -593,17 +621,17 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         // Add givesCheck != 2 condition here.
         // SEE pruning. If the move seems to lose material prune it.
         // This kind of pruning is too dangerous when in check so we don't use it then.
-        if (!inCheck && move.getScore() < 0)
+        if (!inCheck && seeScore < 0)
         {
-            break;
+            continue;
         }
 
         // Delta pruning. If the move seems to have no chance of raising alpha prune it.
         // This too is too dangerous when we are in check.
-        if (!inCheck && delta + move.getScore() <= alpha)
+        if (!inCheck && delta + seeScore <= alpha)
         {
-            bestScore = std::max(bestScore, delta + move.getScore());
-            break;
+            bestScore = std::max(bestScore, delta + seeScore);
+            continue;
         }
 
         if (!pos.legal(move, inCheck))

@@ -69,6 +69,7 @@ private:
     int search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
     int quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
+    void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove);
     void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
 
     std::array<int, 2> contempt;
