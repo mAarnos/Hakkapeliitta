@@ -591,7 +591,6 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         bestScore = matedInPly(ss->ply);
         delta = -infinity;
         moveGen.generateLegalEvasions(pos, moveList);
-        orderMoves(pos, moveList, bestMove, ss->ply); 
     }
     else
     {
@@ -606,9 +605,9 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         }
         delta = bestScore + deltaPruningMargin;
         depth == 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
-        orderCaptures(pos, moveList, bestMove);
     }
 
+    orderCaptures(pos, moveList, bestMove);
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
