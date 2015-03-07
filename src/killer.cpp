@@ -54,14 +54,6 @@ int KillerTable::isKiller(const Move& move, const int ply) const
     {
         return 2;
     }
-    else if (ply > 1 && possibleKiller == killers[ply - 2][0])
-    {
-        return 3;
-    }
-    else if (ply > 1 && possibleKiller == killers[ply - 2][1])
-    {
-        return 4;
-    }
     else
     {
         return 0;
