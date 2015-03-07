@@ -676,7 +676,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     auto bestScore = matedInPly(ss->ply), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = UpperBoundScore;
     auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
-    auto mateThreat = false;
     MoveList moveList;
     Move ttMove, bestMove;
     int score;
@@ -841,10 +840,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 transpositionTable.save(pos.getHashKey(), ttMove, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
                 return score;
             }
-            else if (score == matedInPly(ss->ply + 2))
-            {
-                mateThreat = true;
-            }
         }
     }
 
@@ -883,7 +878,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         const auto& move = moveList[i];
 
         auto givesCheck = pos.givesCheck(move);
-        auto extension = (givesCheck || mateThreat || oneReply) ? 1 : 0;
+        auto extension = (givesCheck || oneReply) ? 1 : 0;
         auto newDepth = depth - 1 + extension;
         auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
         ++nodeCount;
