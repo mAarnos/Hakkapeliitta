@@ -24,7 +24,7 @@ const int mateScore = 32767; // mate in 0
 const int minMateScore = 32767 - 1000; // mate in 500
 const int infinity = mateScore + 1;
 
-const int aspirationWindow = 50;
+const int aspirationWindow = 16;
 const int baseNullReduction = 3;
 const int futilityDepth = 4;
 const int deltaPruningMargin = 50;
