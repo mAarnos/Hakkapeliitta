@@ -433,34 +433,70 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 if (score > currentRootScore)
                 {
                     currentRootScore = score;
-                    if (score > alpha)
+                }
+
+                while (score >= beta || ((movesSearched == 1) && score <= alpha))
+                {
+                    const auto lowerBound = score >= beta;
+                    if (lowerBound)
                     {
                         bestMove = move;
-                        alpha = score;
-                        if (score >= beta)
+                        if (isWinScore(score))
                         {
-                            if (!inCheck)
+                            beta = infinity;
+                        }
+                        else
+                        {
+                            beta = std::min(infinity, previousBeta + delta);
+                        }
+                        // Don't forget to update history and killer tables.
+                        if (!inCheck)
+                        {
+                            if (quietMove(pos, move))
                             {
-                                if (quietMove(pos, move))
+                                historyTable.addCutoff(pos, move, depth);
+                                killerTable.addKiller(move, 0);
+                            }
+                            for (auto j = 0; j < i; ++j)
+                            {
+                                const auto& move2 = rootMoveList[j];
+                                if (quietMove(pos, move2))
                                 {
-                                    historyTable.addCutoff(pos, move, depth);
-                                    killerTable.addKiller(move, 0);
-                                }
-                                for (auto j = 0; j < i; ++j)
-                                {
-                                    const auto& move2 = rootMoveList[j];
-                                    if (quietMove(pos, move2))
-                                    {
-                                        historyTable.addNotCutoff(pos, move2, depth);
-                                    }
+                                    historyTable.addNotCutoff(pos, move2, depth);
                                 }
                             }
-                            break;
                         }
-                        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(currentRootScore, 0), depth, UpperBoundScore);
-                        pv = transpositionTable.extractPv(pos);
-                        infoPv(pv, depth, currentRootScore, ExactScore);
                     }
+                    else
+                    {
+                        if (isLoseScore(score))
+                        {
+                            alpha = -infinity;
+                        }
+                        else
+                        {
+                            alpha = std::max(-infinity, previousAlpha - delta);
+                        }
+                    }
+                    delta *= 2;
+                    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, lowerBound ? LowerBoundScore : UpperBoundScore);
+                    pv = transpositionTable.extractPv(pos);
+                    infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
+                    lastRootScore = currentRootScore;
+                    score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
+                    if (score > currentRootScore)
+                    {
+                        currentRootScore = score;
+                    }
+                }
+
+                if (score > alpha && score < beta)
+                {
+                    bestMove = move;
+                    alpha = score;
+                    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, ExactScore);
+                    pv = transpositionTable.extractPv(pos);
+                    infoPv(pv, depth, score, ExactScore);
                 }
             }
         }
@@ -483,36 +519,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             break;
         }
 
-        lastRootScore = currentRootScore;
-
-        // The score is outside the aspiration windows, we need to loosen them up.
-        if (currentRootScore <= previousAlpha || currentRootScore >= previousBeta)
-        {
-            auto lowerBound = currentRootScore >= previousBeta;
-            if (isMateScore(currentRootScore))
-            {
-                // We apparently found a mate, in this case we remove aspiration windows completely to not miss a faster mate.
-                alpha = -infinity;
-                beta = infinity;
-            }
-            else
-            {
-                // Loosen the window we breached a bit. 
-                if (lowerBound)
-                {
-                    alpha = previousAlpha;
-                    beta = previousBeta + delta;
-                }
-                else
-                {
-                    alpha = previousAlpha - delta;
-                    beta = previousBeta;
-                }
-                delta *= 2; // Exponential increase to the amount of widening seems best.
-            }
-            infoPv(pv, depth, currentRootScore, lowerBound ? LowerBoundScore : UpperBoundScore);
-            continue;
-        }
+        lastRootScore = currentRootScore;   
         infoPv(pv, depth, currentRootScore, ExactScore);
 
         // Adjust alpha and beta based on the last score.
