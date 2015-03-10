@@ -357,7 +357,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         const auto lagBuffer = 50;
         auto time = searchParameters.time[root.getSideToMove()];
         auto increment = searchParameters.increment[root.getSideToMove()];
-        targetTime = clamp(time / searchParameters.movesToGo + increment - lagBuffer, 1, time - lagBuffer);
+        targetTime = clamp(time / std::min(searchParameters.movesToGo, 25) + increment - lagBuffer, 1, time - lagBuffer);
         maxTime = clamp(time / 2 + increment, 1, time - lagBuffer);
     }
 
