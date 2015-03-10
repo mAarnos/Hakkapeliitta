@@ -84,10 +84,7 @@ private:
     int nodesToTimeCheck;
     int selDepth;
 
-    // Keep track of the root score of the previous iteration and the current iteration.
-    // Both are -mateScore if not defined.
-    int lastRootScore;
-    int currentRootScore;
+    bool searchNeedsMoreTime;
 
     bool searching;
     bool pondering;

@@ -129,7 +129,7 @@ Search::Search()
     nextSendInfo = 1000;
     nodesToTimeCheck = 10000;
     selDepth = 1;
-    lastRootScore = currentRootScore = -mateScore;
+    searchNeedsMoreTime = false;
 
     for (auto i = 0; i < 256; ++i)
     {
@@ -331,7 +331,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     nodesToTimeCheck = 10000;
     contempt[root.getSideToMove()] = -contemptValue;
     contempt[!root.getSideToMove()] = contemptValue;
-    lastRootScore = -mateScore;
+    searchNeedsMoreTime = false;
     selDepth = 1;
     nextSendInfo = 1000;
     searching = true;
@@ -385,7 +385,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         auto previousBeta = beta;
         auto movesSearched = 0;
         auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
-        currentRootScore = -mateScore;
+        auto bestScore = -mateScore;
 
         orderMoves(pos, rootMoveList, bestMove, 0);
         try {
@@ -395,6 +395,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 const auto& move = rootMoveList[i];
                 ++nodeCount;
                 --nodesToTimeCheck;
+                searchNeedsMoreTime = i > 0;
 
                 if (depth >= 12)
                 {
@@ -430,9 +431,9 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
                 ++movesSearched;
 
-                if (score > currentRootScore)
+                if (score > bestScore)
                 {
-                    currentRootScore = score;
+                    bestScore = score;
                 }
 
                 while (score >= beta || ((movesSearched == 1) && score <= alpha))
@@ -440,6 +441,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     const auto lowerBound = score >= beta;
                     if (lowerBound)
                     {
+                        searchNeedsMoreTime = i > 0;
                         bestMove = move;
                         if (isWinScore(score))
                         {
@@ -469,6 +471,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     }
                     else
                     {
+                        searchNeedsMoreTime = true;
                         if (isLoseScore(score))
                         {
                             alpha = -infinity;
@@ -482,11 +485,10 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, lowerBound ? LowerBoundScore : UpperBoundScore);
                     pv = transpositionTable.extractPv(pos);
                     infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
-                    lastRootScore = currentRootScore;
                     score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
-                    if (score > currentRootScore)
+                    if (score > bestScore)
                     {
-                        currentRootScore = score;
+                        bestScore = score;
                     }
                 }
 
@@ -505,11 +507,11 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             pos = root; // Exception messes up the position, fix it.
         }
 
-        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(currentRootScore, 0), depth, currentRootScore >= beta ? LowerBoundScore : ExactScore);
+        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, 0), depth, bestScore >= beta ? LowerBoundScore : ExactScore);
         pv = transpositionTable.extractPv(pos);
 
         // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
-        if (!infinite && isMateScore(currentRootScore) && isMateScore(lastRootScore) && depth > 6)
+        if (!infinite && isMateScore(bestScore) && depth > 6)
         {
             break;
         }
@@ -519,16 +521,15 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             break;
         }
 
-        lastRootScore = currentRootScore;   
-        infoPv(pv, depth, currentRootScore, ExactScore);
+        infoPv(pv, depth, bestScore, ExactScore);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
         // Also don't use aspiration windows when searching for faster mate.
-        if (depth >= 4 && !isMateScore(currentRootScore))
+        if (depth >= 4 && !isMateScore(bestScore))
         {
-            alpha = currentRootScore - aspirationWindow;
-            beta = currentRootScore + aspirationWindow;
+            alpha = bestScore - aspirationWindow;
+            beta = bestScore + aspirationWindow;
         }
         else
         {
@@ -715,23 +716,10 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         if (!infinite) // Can't stop search if ordered to run indefinitely
         {
-            if (time > maxTime) // Hard cutoff for search time, if we don't stop we risk running out of time later.
+            // First check hard cutoff, then check soft cutoff which depends on the current search situation.
+            if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
             {
                 searching = false;
-            }
-            else if (time > targetTime)
-            {
-                if (currentRootScore == -mateScore) // No score for root -> new iteration -> most likely takes too long to complete -> stop
-                {
-                    searching = false;
-                }
-                else if (currentRootScore < lastRootScore) // Score dropping, extend search time up to 5x.
-                {
-                    if (time > 5 * targetTime)
-                    {
-                        searching = false;
-                    }
-                }
             }
             else
             {
