@@ -612,7 +612,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             alpha = bestScore;
         }
         delta = bestScore + deltaPruningMargin;
-        depth == 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
+        depth >= -1 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
     }
 
     orderCaptures(pos, moveList, bestMove);
@@ -656,7 +656,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), std::max(-1, depth), LowerBoundScore);
+                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), depth >= -1 ? 0 : -2, LowerBoundScore);
                     return score;
                 }
                 bestMove = move;
@@ -667,7 +667,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         }
     }
 
-    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), std::max(-1, depth), ttFlag);
+    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), depth >= -1 ? 0 : -2, ttFlag);
 
     return bestScore;
 }
