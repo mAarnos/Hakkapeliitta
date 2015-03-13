@@ -435,11 +435,6 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
                 ++movesSearched;
 
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                }
-
                 while (score >= beta || ((movesSearched == 1) && score <= alpha))
                 {
                     const auto lowerBound = score >= beta;
@@ -491,19 +486,19 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
                                          : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
-                    if (score > bestScore)
-                    {
-                        bestScore = score;
-                    }
                 }
 
-                if (score > alpha && score < beta)
+                if (score > bestScore)
                 {
-                    bestMove = move;
-                    alpha = score;
-                    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, ExactScore);
-                    pv = transpositionTable.extractPv(pos);
-                    infoPv(pv, depth, score, ExactScore);
+                    bestScore = score;
+                    if (score > alpha) // No need to handle the case score >= beta, that is done slightly above
+                    {
+                        bestMove = move;
+                        alpha = score;
+                        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, ExactScore);
+                        pv = transpositionTable.extractPv(pos);
+                        infoPv(pv, depth, score, ExactScore);
+                    }
                 }
             }
         }
