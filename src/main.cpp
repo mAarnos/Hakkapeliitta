@@ -25,7 +25,7 @@
 
 int main() 
 {
-    sync_cout << "Hakkapeliitta 2.532, (C) 2013-2015 Mikko Aarnos" << std::endl;
+    sync_cout << "Hakkapeliitta 2.533, (C) 2013-2015 Mikko Aarnos" << std::endl;
     sync_cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::initialize();

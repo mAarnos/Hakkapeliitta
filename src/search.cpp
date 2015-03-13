@@ -552,6 +552,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
               << "bestmove " << moveToUciFormat(pv[0]) << std::endl;
 }
 
+// Technically we are checking for 2 - fold repetitions instead of 3 - fold, but that is enough for game theoric correctness.
 bool Search::repetitionDraw(const Position& pos, int ply) const
 {
     auto temp = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
@@ -579,6 +580,26 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     if (ss->ply >= 128)
     {
         return evaluation.evaluate(pos, zugzwangLikely);
+    }
+
+    // Check for fifty move draws.
+    if (pos.getFiftyMoveDistance() >= 100)
+    {
+        if (inCheck)
+        {
+            moveGen.generateLegalEvasions(pos, moveList);
+            if (moveList.empty())
+            {
+                return matedInPly(ss->ply); // Can't claim draw on fifty move if mated.
+            }
+        }
+        return contempt[pos.getSideToMove()];
+    }
+
+    // Check for repetition draws. 
+    if (repetitionDraw(pos, ss->ply))
+    {
+        return contempt[pos.getSideToMove()];
     }
 
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
