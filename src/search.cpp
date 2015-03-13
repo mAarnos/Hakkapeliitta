@@ -377,6 +377,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     {
         searchStacks[i].clear(i);
     }
+    auto ss = &searchStacks[0];
 
     repetitionHashes[rootPly] = pos.getHashKey();
     for (auto depth = 1; depth < maxDepth;)
@@ -411,22 +412,25 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 newPosition.makeMove(move);
                 if (!movesSearched)
                 {
-                    score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
+                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
                 else
                 {
                     auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
-                    score = -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[1]);
+                    score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                                     : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
                     if (reduction && score > alpha)
                     {
-                        score = -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, &searchStacks[1]);
+                        score = newDepth > 0 ? -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
                     }
-
                     if (score > alpha && score < beta)
                     {
-                        score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
+                        score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                     }
                 }
                 ++movesSearched;
@@ -485,7 +489,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                     transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, lowerBound ? LowerBoundScore : UpperBoundScore);
                     pv = transpositionTable.extractPv(pos);
                     infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
-                    score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, &searchStacks[1]);
+                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                     if (score > bestScore)
                     {
                         bestScore = score;
@@ -789,12 +794,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (alpha >= beta)
         return alpha;
 
-    // If the depth is too low drop into quiescense search.
-    if (depth <= 0)
-    {
-        return quiescenceSearch(pos, 0, alpha, beta, inCheck, ss);
-    }
-
     // Probe the transposition table. 
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
@@ -846,7 +845,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             ++nodeCount;
             --nodesToTimeCheck;
             (ss + 1)->allowNullMove = false;
-            score = -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1);
+            score = depth - 1 - R > 0 ? -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
+                                      : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
             (ss + 1)->allowNullMove = true;
             if (score >= beta)
             {
@@ -931,27 +931,31 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         newPosition.makeMove(move);
         if (!movesSearched)
         {
-            score = -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1);
+            score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                 : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1) ;
         }
         else
         {
             auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
 
-            score = -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+            score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
             // The LMR'd move didn't fail low, drop the reduction because that most likely caused the fail high.
             // If we are in a PV-node the alternative is to open the window first. The more unstable the search the better doing that is.
             // Before the tuned evaluation opening the window was better, after the tuned eval it is worse. Why?
             if (reduction && score > alpha)
             {
-                score = -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+                score = newDepth > 0 ? -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                     : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
             }
 
             // If we are in a PV-node this is used to get the exact score for a new PV.
             // Since we used null window on the previous searches the score is only a bound, and this won't do for a PV.
             if (score > alpha && score < beta)
             {
-                score = -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1);
+                score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                     : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
             }
         }
         ++movesSearched;
