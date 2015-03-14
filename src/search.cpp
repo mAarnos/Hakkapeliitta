@@ -516,6 +516,12 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
             break;
         }
 
+        // If this is not an infinite search, we have reached sufficient depth and there is only one root move then stop searching.
+        if (!infinite && rootMoveList.size() == 1 && depth > 6)
+        {
+            break;
+        }
+
         if (!searching)
         {
             break;
