@@ -29,7 +29,6 @@ const int baseNullReduction = 3;
 const int futilityDepth = 4;
 const int deltaPruningMargin = 50;
 const int reverseFutilityDepth = 3;
-const int lmrFullDepthMoves = 4;
 const int lmrDepthLimit = 3;
 const int lmpDepth = 4;
 std::array<int, 1 + 4> lmpMoveCounts;
@@ -133,7 +132,7 @@ Search::Search()
 
     for (auto i = 0; i < 256; ++i)
     {
-        lmrReductions[i] = static_cast<int>(std::max(1.0, std::round(std::log(i + 1))));
+        lmrReductions[i] = static_cast<int>(std::max(1.0, std::log(i + 1) * 1.24));
     }
 
     for (auto i = 0; i < 5; ++i)
@@ -417,7 +416,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
                 else
                 {
-                    auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
+                    auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[i] : 0);
 
                     score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
                                                      : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
@@ -901,7 +900,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         ++nodeCount;
         --nodesToTimeCheck;
 
-        // Futility pruning and late move pruning.
+        // Futility pruning and late move pruning. Oh, SEE pruning as well.
         if (nonCriticalMove && !isLoseScore(bestScore))
         {
             if (futileNode)
@@ -937,7 +936,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         }
         else
         {
-            auto reduction = ((lmrNode && i >= lmrFullDepthMoves && nonCriticalMove) ? lmrReductions[i - lmrFullDepthMoves] : 0);
+            auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[i] : 0);
 
             score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
                                              : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
