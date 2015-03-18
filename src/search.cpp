@@ -137,7 +137,7 @@ Search::Search()
 
     for (auto i = 0; i < 5; ++i)
     {
-        lmpMoveCounts[i] = static_cast<int>(std::round(2.8 + std::pow(i, 2.38)));
+        lmpMoveCounts[i] = static_cast<int>(std::round(2.98484 + std::pow(i, 1.74716)));
     }
 }
 
