@@ -628,6 +628,10 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         bestScore = matedInPly(ss->ply);
         delta = -infinity;
         moveGen.generateLegalEvasions(pos, moveList);
+        if (moveList.empty())
+        {
+            return bestScore;
+        }
     }
     else
     {
