@@ -130,9 +130,12 @@ Search::Search()
     selDepth = 1;
     searchNeedsMoreTime = false;
 
-    for (auto i = 0; i < 256; ++i)
+    for (auto i = 0; i < 64; ++i)
     {
-        lmrReductions[i] = static_cast<int>(std::max(1.0, std::log(i + 1) * 1.24));
+        for (auto j = 0; j < 64; ++j)
+        {
+            lmrReductions[i][j] = static_cast<int>(std::max(1.0, (std::log(i + 1) * std::log(j + 1)) / 1.70));
+        }
     }
 
     for (auto i = 0; i < 5; ++i)
@@ -416,7 +419,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
                 else
                 {
-                    auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[i] : 0);
+                    auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
 
                     score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
                                                      : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
@@ -936,7 +939,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         }
         else
         {
-            auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[i] : 0);
+            auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
 
             score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
                                              : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
