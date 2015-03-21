@@ -16,7 +16,6 @@
 */
 
 #include "history.hpp"
-#include <cstring>
 
 HistoryTable::HistoryTable()
 {

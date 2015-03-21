@@ -22,6 +22,7 @@
 #include "tt.hpp"
 #include "history.hpp"
 #include "killer.hpp"
+#include "counter.hpp"
 #include "eval.hpp"
 #include "pht.hpp"
 #include "utils\stopwatch.hpp"
@@ -32,13 +33,13 @@ class SearchStack
 public:
     void clear(int newPly)
     {
-        move.setMove(0);
-        move.setScore(0);
+        currentMove.setMove(0);
+        currentMove.setScore(0);
         allowNullMove = true;
         ply = newPly;
     }
 
-    Move move;
+    Move currentMove;
     int ply;
     bool allowNullMove;
 };
@@ -61,6 +62,7 @@ public:
 private:
     TranspositionTable transpositionTable;
     KillerTable killerTable;
+    CounterMoveTable counterMoveTable;
     HistoryTable historyTable;
     Evaluation evaluation;
     MoveGen moveGen;
@@ -70,7 +72,7 @@ private:
     int quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
     void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove);
-    void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply) const;
+    void orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, int ply, const Move& opponentMove) const;
 
     std::array<int, 2> contempt;
     int nextSendInfo;

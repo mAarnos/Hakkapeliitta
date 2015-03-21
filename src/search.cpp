@@ -40,6 +40,7 @@ const int32_t captureMoveScore = hashMoveScore >> 1;
 const std::array<int32_t, 1 + 4> killerMoveScore = {
     0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
 };
+const int32_t counterMoveScore = hashMoveScore >> 6;
 
 int matedInPly(const int ply)
 {
@@ -213,8 +214,10 @@ void selectMove(MoveList& moveList, const int currentMove)
 // 4. Killer moves
 // 5. Quiet moves sorted by the history heuristic
 // 6. Bad captures
-void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, const int ply) const
+void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, const int ply, const Move& opponentMove) const
 {
+    const auto counterMove = counterMoveTable.getCounterMove(pos, opponentMove);
+
     for (auto i = 0; i < moveList.size(); ++i)
     {
         auto& move = moveList[i];
@@ -239,6 +242,10 @@ void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttM
             if (killerScore > 0)
             {
                 move.setScore(killerMoveScore[killerScore]);
+            }
+            else if (move.getMove() == counterMove)
+            {
+                move.setScore(counterMoveScore);
             }
             else
             {
@@ -345,6 +352,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     repetitionHashes = newRepetitionHashKeys;
     transpositionTable.startNewSearch();
     historyTable.age();
+    counterMoveTable.clear();
     killerTable.clear(); 
     sw.reset();
     sw.start();
@@ -390,7 +398,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
         auto bestScore = -mateScore;
 
-        orderMoves(pos, rootMoveList, bestMove, 0);
+        orderMoves(pos, rootMoveList, bestMove, 0, Move());
         try {
             for (auto i = 0; i < rootMoveList.size(); ++i)
             {
@@ -408,10 +416,11 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 auto givesCheck = pos.givesCheck(move);
                 auto extension = givesCheck ? 1 : 0;
                 auto newDepth = depth - 1 + extension;
-                auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+                auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < counterMoveScore;
 
                 Position newPosition(pos);
                 newPosition.makeMove(move);
+                ss->currentMove = move;
                 if (!movesSearched)
                 {
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
@@ -847,6 +856,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             && ttEntry->getScore() <= alpha))
         {
             repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
+            ss->currentMove = Move();
             Position newPosition(pos);
             newPosition.makeNullMove();
             ++nodeCount;
@@ -885,7 +895,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
     inCheck ? moveGen.generateLegalEvasions(pos, moveList) : moveGen.generatePseudoLegalMoves(pos, moveList);
-    orderMoves(pos, moveList, ttMove, ss->ply);
+    orderMoves(pos, moveList, ttMove, ss->ply, (ss - 1)->currentMove);
 
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
     auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin(depth) <= alpha);
@@ -903,7 +913,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         auto givesCheck = pos.givesCheck(move);
         auto extension = (givesCheck || oneReply) ? 1 : 0;
         auto newDepth = depth - 1 + extension;
-        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < killerMoveScore[4];
+        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < counterMoveScore;
         ++nodeCount;
         --nodesToTimeCheck;
 
@@ -936,6 +946,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         Position newPosition(pos);
         newPosition.makeMove(move);
+        ss->currentMove = move;
         if (!movesSearched)
         {
             score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
@@ -981,6 +992,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                         {
                             historyTable.addCutoff(pos, move, depth);
                             killerTable.addKiller(move, ss->ply);
+                            counterMoveTable.updateCounterMoves(pos, move, (ss - 1)->currentMove);
                         }
                         for (auto j = 0; j < i; ++j)
                         {
