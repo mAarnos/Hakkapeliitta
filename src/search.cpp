@@ -658,6 +658,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     }
 
     orderCaptures(pos, moveList, bestMove);
+    repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
