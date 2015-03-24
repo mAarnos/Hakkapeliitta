@@ -878,12 +878,11 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Internal iterative deepening.
-    // Only done at PV-nodes due to the cost involved.
-    if (pvNode && ttMove.empty() && depth > 4)
+    if (ttMove.empty() && (pvNode ? depth > 4 : depth > 7))
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         ss->allowNullMove = false;
-        score = search<pvNode>(pos, depth - 2, alpha, beta, inCheck, ss);
+        score = search<pvNode>(pos, pvNode ? depth - 2 : depth / 2, alpha, beta, inCheck, ss);
         ss->allowNullMove = true;
 
         // Now probe the TT and get the best move.
