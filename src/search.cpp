@@ -408,7 +408,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 --nodesToTimeCheck;
                 searchNeedsMoreTime = i > 0;
 
-                if (depth >= 12)
+                // Start sending currmove info only after one second has elapsed.
+                if (sw.elapsed<std::chrono::milliseconds>() > 1000)
                 {
                     infoCurrMove(move, depth, i);
                 }
