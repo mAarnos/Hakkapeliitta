@@ -522,12 +522,6 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, 0), depth, bestScore >= beta ? LowerBoundScore : ExactScore);
         pv = transpositionTable.extractPv(pos);
 
-        // If this is not an infinite search and the search has returned mate scores two times in a row stop searching.
-        if (!infinite && isMateScore(bestScore) && depth > 6)
-        {
-            break;
-        }
-
         // If this is not an infinite search, we have reached sufficient depth and there is only one root move then stop searching.
         if (!infinite && rootMoveList.size() == 1 && depth > 6)
         {
