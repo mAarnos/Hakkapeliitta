@@ -27,21 +27,25 @@ class MoveGen
 {
 public:
     void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
-    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
+    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions);
     void generateLegalEvasions(const Position& pos, MoveList& moves);
     void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moves);
+    void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves);
 private:
     template <bool side> 
     void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
 
     template <bool side>
-    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves);
+    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions);
 
     template <bool side>
     void generateLegalEvasions(const Position& pos, MoveList& moves);
 
     template <bool side>
     void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moves);
+
+    template <bool side>
+    void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves);
 };
 
 #endif

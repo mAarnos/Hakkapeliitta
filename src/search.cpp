@@ -655,7 +655,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             alpha = bestScore;
         }
         delta = bestScore + deltaPruningMargin;
-        depth >= -1 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList);
+        depth >= -1 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList, false);
     }
 
     orderCaptures(pos, moveList, bestMove);

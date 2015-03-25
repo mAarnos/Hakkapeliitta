@@ -24,10 +24,10 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
                         : generatePseudoLegalMoves<false>(pos, moves);
 }
 
-void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves)
+void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions)
 {
-    pos.getSideToMove() ? generatePseudoLegalCaptures<true>(pos, moves)
-                        : generatePseudoLegalCaptures<false>(pos, moves);
+    pos.getSideToMove() ? generatePseudoLegalCaptures<true>(pos, moves, underPromotions)
+                        : generatePseudoLegalCaptures<false>(pos, moves, underPromotions);
 }
 
 void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
@@ -40,6 +40,12 @@ void MoveGen::generatePseudoLegalCapturesAndQuietChecks(const Position& pos, Mov
 {
     pos.getSideToMove() ? generatePseudoLegalCapturesAndQuietChecks<true>(pos, moves)
                         : generatePseudoLegalCapturesAndQuietChecks<false>(pos, moves);
+}
+
+void MoveGen::generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves)
+{
+    pos.getSideToMove() ? generatePseudoLegalQuietMoves<true>(pos, moves)
+                        : generatePseudoLegalQuietMoves<false>(pos, moves);
 }
 
 void addPieceMovesFromMask(MoveList& moveList, Bitboard mask, const Square from)
@@ -201,7 +207,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 }
 
 template <bool side>
-void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves)
+void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions)
 {
     assert(moves.empty());
 
@@ -211,12 +217,12 @@ void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves)
 
     const auto ep = (pos.getEnPassantSquare() != Square::NoSquare ? Bitboards::bit(pos.getEnPassantSquare()) : 0);
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
-    addPawnSingleMovesFromMask<side>(moves, (side ? (tempPiece & Bitboards::ranks[1]) >> 8 : (tempPiece & Bitboards::ranks[6]) << 8) & pos.getFreeSquares(), false);
+    addPawnSingleMovesFromMask<side>(moves, (side ? (tempPiece & Bitboards::ranks[1]) >> 8 : (tempPiece & Bitboards::ranks[6]) << 8) & pos.getFreeSquares(), underPromotions);
     auto tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
-    addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare(), false);
+    addPawnCapturesFromMask<side, false>(moves, tempMove, pos.getEnPassantSquare(), underPromotions);
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
-    addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare(), false);
+    addPawnCapturesFromMask<side, true>(moves, tempMove, pos.getEnPassantSquare(), underPromotions);
 
     tempPiece = pos.getBitboard(side, Piece::Knight);
     while (tempPiece)
@@ -430,3 +436,78 @@ void MoveGen::generatePseudoLegalCapturesAndQuietChecks(const Position& pos, Mov
     addPieceMovesFromMask(moves, tempMove, from);
 }
 
+template <bool side>
+void MoveGen::generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves)
+{
+    int from;
+    Bitboard tempMove;
+    const auto freeSquares = pos.getFreeSquares();
+    const auto occupiedSquares = pos.getOccupiedSquares();
+
+    auto tempPiece = pos.getBitboard(side, Piece::Pawn);
+    auto m = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares & 0x00FFFFFFFFFFFF00;
+    addPawnSingleMovesFromMask<side>(moves, m, true);
+
+    m = (side ? (m & Bitboards::ranks[5]) >> 8 : (m & Bitboards::ranks[2]) << 8) & freeSquares;
+    addPawnDoubleMovesFromMask<side>(moves, m);
+
+    // Since pinned knights do not have legal moves we can remove them.
+    tempPiece = pos.getBitboard(side, Piece::Knight); // & ~pos.getPinnedPieces();
+    while (tempPiece)
+    {
+        from = Bitboards::popLsb(tempPiece);
+        tempMove = Bitboards::knightAttacks(from) & freeSquares;
+        addPieceMovesFromMask(moves, tempMove, from);
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Bishop);
+    while (tempPiece)
+    {
+        from = Bitboards::popLsb(tempPiece);
+        tempMove = Bitboards::bishopAttacks(from, occupiedSquares) & freeSquares;
+        addPieceMovesFromMask(moves, tempMove, from);
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Rook);
+    while (tempPiece)
+    {
+        from = Bitboards::popLsb(tempPiece);
+        tempMove = Bitboards::rookAttacks(from, occupiedSquares) & freeSquares;
+        addPieceMovesFromMask(moves, tempMove, from);
+    }
+
+    tempPiece = pos.getBitboard(side, Piece::Queen);
+    while (tempPiece)
+    {
+        from = Bitboards::popLsb(tempPiece);
+        tempMove = Bitboards::queenAttacks(from, occupiedSquares) & freeSquares;
+        addPieceMovesFromMask(moves, tempMove, from);
+    }
+
+    from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    tempMove = Bitboards::kingAttacks(from) & freeSquares;
+    addPieceMovesFromMask(moves, tempMove, from);
+
+    const auto shortCastlingPossible = pos.getCastlingRights() & (1 << (2 * side)) && !(occupiedSquares & (0x0000000000000060ull << (56 * side)));
+    const auto longCastlingPossible = pos.getCastlingRights() & (2 << (2 * side)) && !(occupiedSquares & (0x000000000000000Eull << (56 * side)));
+    if (shortCastlingPossible || longCastlingPossible)
+    {
+        if (!pos.isAttacked(Square::E1 + 56 * side, !side))
+        {
+            if (shortCastlingPossible)
+            {
+                if (!(pos.isAttacked(Square::F1 + 56 * side, !side)) && !(pos.isAttacked(Square::G1 + 56 * side, !side)))
+                {
+                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0);
+                }
+            }
+            if (longCastlingPossible)
+            {
+                if (!(pos.isAttacked(Square::D1 + 56 * side, !side)) && !(pos.isAttacked(Square::C1 + 56 * side, !side)))
+                {
+                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0);
+                }
+            }
+        }
+    }
+}
