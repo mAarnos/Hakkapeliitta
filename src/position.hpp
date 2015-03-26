@@ -67,9 +67,12 @@ public:
     // Unmake is unnecessary due to copy-make.
     void makeNullMove();
 
-    // Used for calculating stuff which changes from turn to turn.
     bool inCheck() const;
     bool isAttacked(Square sq, Color side) const;
+    bool isAttacked(Square sq, Color side, Bitboard occupied) const;
+
+    // Checks if a random move is pseudo-legal in the current position.
+    bool pseudoLegal(const Move& move, bool inCheck) const;
 
     // Checks if a move is legal with one caveat, doesn't work when in check and reports all moves as legal when in check.
     // This behaviour is dealt with the legal evasion generator.
@@ -115,7 +118,7 @@ private:
     void makeMove(const Move& move);
 
     template <bool side> 
-    bool isAttacked(Square sq) const;
+    bool isAttacked(Square sq, Bitboard occupied) const;
 
     Bitboard discoveredCheckCandidates() const;
     Bitboard pinnedPieces(Color c) const;

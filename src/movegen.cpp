@@ -276,11 +276,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
     while (tempMove)
     {
         const auto to = Bitboards::popLsb(tempMove);
-        if (!(Bitboards::pawnAttacks(side, to) & pos.getBitboard(!side, Piece::Pawn)
-            || Bitboards::knightAttacks(to) & pos.getBitboard(!side, Piece::Knight)
-            || Bitboards::kingAttacks(to) & pos.getBitboard(!side, Piece::King)
-            || Bitboards::bishopAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Bishop))
-            || Bitboards::rookAttacks(to, occupied) & (pos.getBitboard(!side, Piece::Queen) | pos.getBitboard(!side, Piece::Rook))))
+        if (!pos.isAttacked(to, !side, occupied))
         {
             moves.emplace_back(kingLocation, to, Piece::Empty, 0);
         }

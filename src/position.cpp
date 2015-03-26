@@ -252,7 +252,12 @@ void Position::makeMove(const Move& m)
 
 bool Position::isAttacked(const Square sq, const Color side) const
 {
-    return (side ? isAttacked<true>(sq) : isAttacked<false>(sq));
+    return (side ? isAttacked<true>(sq, getOccupiedSquares()) : isAttacked<false>(sq, getOccupiedSquares()));
+}
+
+bool Position::isAttacked(const Square sq, const Color side, Bitboard occupied) const
+{
+    return (side ? isAttacked<true>(sq, occupied) : isAttacked<false>(sq, occupied));
 }
 
 template <bool side> 
@@ -402,18 +407,18 @@ void Position::makeNullMove()
     dcCandidates = discoveredCheckCandidates();
 }
 
-template <bool side> 
-bool Position::isAttacked(const Square sq) const
+template <bool side>
+bool Position::isAttacked(const Square sq, Bitboard occupied) const
 {
     return (Bitboards::knightAttacks(sq) & getBitboard(side, Piece::Knight)
         || Bitboards::pawnAttacks(!side, sq) & getBitboard(side, Piece::Pawn)
-        || Bitboards::bishopAttacks(sq, getOccupiedSquares()) & (getBitboard(side, Piece::Bishop) | getBitboard(side, Piece::Queen))
-        || Bitboards::rookAttacks(sq, getOccupiedSquares()) & (getBitboard(side, Piece::Rook) | getBitboard(side, Piece::Queen))
+        || Bitboards::bishopAttacks(sq, occupied) & (getBitboard(side, Piece::Bishop) | getBitboard(side, Piece::Queen))
+        || Bitboards::rookAttacks(sq, occupied) & (getBitboard(side, Piece::Rook) | getBitboard(side, Piece::Queen))
         || Bitboards::kingAttacks(sq) & getBitboard(side, Piece::King));
 }
 
-template bool Position::isAttacked<false>(const Square sq) const;
-template bool Position::isAttacked<true>(const Square sq) const;
+template bool Position::isAttacked<false>(const Square sq, Bitboard occupied) const;
+template bool Position::isAttacked<true>(const Square sq, Bitboard occupied) const;
 
 HashKey Position::calculateHash() const
 {
@@ -495,6 +500,149 @@ Bitboard Position::checkBlockers(const Color c, const Color kingColor) const
 
     return result;
 }
+
+bool Position::pseudoLegal(const Move& move, bool inCheck) const
+{
+    const auto from = move.getFrom();
+    const auto to = move.getTo();
+    const auto promotion = move.getPromotion();
+
+    // Check that the piece to be moved is the same color as the side to move.
+    if (!Bitboards::testBit(getPieces(sideToMove), from))
+    {
+        return false;
+    }
+
+    // Destination square must not be occupied by a friendly piece.
+    // Note that this also catches null moves as they have the same from and to squares.
+    if (Bitboards::testBit(getPieces(sideToMove), to))
+    {
+        return false;
+    }
+
+    const auto pieceType = getPieceType(board[from]);
+    // Make sure that only pawn moves can have flags which are only for pawn moves.
+    if (pieceType != Piece::Pawn && ((promotion >= Piece::Pawn && promotion <= Piece::Queen)))
+    {
+        return false;
+    }
+
+    // Make sure that only king moves can have flags which are only for king moves.
+    if (pieceType != Piece::King && promotion == Piece::King)
+    {
+        return false;
+    }
+
+    // Make sure that the promotion flags are within the specified limits.
+    if (!(promotion >= Piece::Pawn && promotion <= Piece::King) && promotion != Piece::Empty)
+    {
+        return false;
+    }
+
+    // Check if the moving piece can actually move to the given location. Pawns need special handling.
+    if (pieceType == Piece::Pawn)
+    {
+        // Check that the possible en passant flags are set correctly.
+        if ((to == enPassant) == (promotion != Piece::Pawn))
+        {
+            return false;
+        }
+        // Check that the possible promotion flags are set correctly.
+        else if ((sideToMove ? to <= Square::H1 : to >= Square::A8) == (promotion == Piece::Pawn || promotion == Piece::Empty))
+        {
+            return false;
+        }
+
+        const auto pawnMoveUp = (sideToMove ? -8 : 8);
+        if (!(Bitboards::pawnAttacks(sideToMove, from) & Bitboards::bit(to) & (getPieces(!sideToMove) | (enPassant != Square::NoSquare ? Bitboards::bit(enPassant) : 0))) // Not a capture, ep or non-ep
+            && !(board[to] == Piece::Empty && from + pawnMoveUp == to) // Not a single pawn move
+            && !(from + 2 * pawnMoveUp == to && board[to] == Piece::Empty && board[to - pawnMoveUp] == Piece::Empty && (sideToMove ? 7 - rank(from) : rank(from)) == 1)) // Not a double pawn move.
+        {
+            return false;
+        }
+    }
+    else
+    {
+        if (pieceType == Piece::King && promotion == Piece::King)
+        {
+            // If we are in check castling is not legal.
+            if (inCheck)
+            {
+                return false;
+            }
+
+            if (to == (Square::C1 + 56 * sideToMove))
+            {
+                // Make sure that long castling is legal, disregarding checks.
+                if (!(getCastlingRights() & (2 << (2 * sideToMove)) && !(getOccupiedSquares() & (0x000000000000000Eull << (56 * sideToMove)))))
+                {
+                    return false;
+                }
+
+                // Make sure we don't move through a check or into check.
+                if (isAttacked(Square::D1 + 56 * sideToMove, !sideToMove) || isAttacked(Square::C1 + 56 * sideToMove, !sideToMove))
+                {
+                    return false;
+                }
+            }
+            else if (to == (Square::G1 + 56 * sideToMove))
+            {
+                // Make sure that short castling is legal, disregarding checks.
+                if (!(getCastlingRights() & (1 << (2 * sideToMove)) && !(getOccupiedSquares() & (0x0000000000000060ull << (56 * sideToMove)))))
+                {
+                    return false;
+                }
+
+                // Make sure we don't move through a check or into check.
+                if (isAttacked(Square::F1 + 56 * sideToMove, !sideToMove) || isAttacked(Square::G1 + 56 * sideToMove, !sideToMove))
+                {
+                    return false;
+                }
+            }
+            else // The move is not long or short castling -> it can't be legal
+            {
+                return false;
+            }
+        }
+        else if (!Bitboards::testBit(Bitboards::pieceAttacks(sideToMove, pieceType, from, getOccupiedSquares()), to))
+        {
+            return false;
+        }
+    }
+
+    // Since the function legal assumes that when in check all moves are generated by generateLegalEvasions and are thus legal,
+    // we must verify their legality here.
+    if (inCheck)
+    {
+        if (pieceType == Piece::King)
+        {
+            // Check if this king move moves the king out of check.
+            if (isAttacked(to, !sideToMove, getOccupiedSquares() ^ Bitboards::bit(from)))
+            {
+                return false;
+            }
+        }
+        else
+        {
+            const auto toFrom = Bitboards::bit(from) | Bitboards::bit(to);
+            const auto newOccupied = getOccupiedSquares() ^ toFrom ^ (board[to] != Piece::Empty ? Bitboards::bit(to) : 0);
+            const auto kingSquare = Bitboards::lsb(getBitboard(sideToMove, Piece::King));
+            const auto exclusion = ~(Bitboards::bit(to) | (promotion == Piece::Pawn ? Bitboards::bit(to + (sideToMove ? 8 : -8)) : 0));
+            // Check if the move stops our king from being in check.
+            if (((Bitboards::knightAttacks(kingSquare) & getBitboard(!sideToMove, Piece::Knight) & exclusion
+                || Bitboards::pawnAttacks(sideToMove, kingSquare) & getBitboard(!sideToMove, Piece::Pawn) & exclusion
+                || Bitboards::bishopAttacks(kingSquare, newOccupied) & (getBitboard(!sideToMove, Piece::Bishop) | getBitboard(!sideToMove, Piece::Queen)) & exclusion
+                || Bitboards::rookAttacks(kingSquare, newOccupied) & (getBitboard(!sideToMove, Piece::Rook) | getBitboard(!sideToMove, Piece::Queen)) & exclusion
+                || Bitboards::kingAttacks(kingSquare) & getBitboard(!sideToMove, Piece::King) & exclusion)))
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 
 bool Position::legal(const Move& move, const bool inCheck) const
 {
