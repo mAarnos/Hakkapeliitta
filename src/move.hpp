@@ -20,6 +20,7 @@
 
 #include <cstdint>
 #include <cassert>
+#include <array>
 #include "square.hpp"
 #include "piece.hpp"
 

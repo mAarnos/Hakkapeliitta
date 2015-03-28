@@ -897,7 +897,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
     auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
-    auto oneReply = (moveList.size() == 1);
 
     repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
@@ -906,7 +905,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         const auto& move = moveList[i];
 
         auto givesCheck = pos.givesCheck(move);
-        auto extension = (givesCheck || oneReply) ? 1 : 0;
+        auto extension = givesCheck ? 1 : 0;
         auto newDepth = depth - 1 + extension;
         auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < counterMoveScore;
         ++nodeCount;
