@@ -44,7 +44,7 @@ void HistoryTable::addNotCutoff(const Position& pos, const Move& move, const int
 int HistoryTable::getScore(const Position& pos, const Move& move) const
 {
     return ((history[pos.getBoard(move.getFrom())][move.getTo()] * 100) / 
-            (butterfly[pos.getBoard(move.getFrom())][move.getTo()] + 1));
+            (history[pos.getBoard(move.getFrom())][move.getTo()] + butterfly[pos.getBoard(move.getFrom())][move.getTo()] + 1));
 }
 
 void HistoryTable::age()
