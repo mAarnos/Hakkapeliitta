@@ -123,8 +123,6 @@ void addPawnCapturesFromMask(MoveList& moveList, Bitboard mask, const Square ep,
 template <bool side> 
 void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 {
-    assert(moves.empty());
-
     int from;
     const auto freeSquares = pos.getFreeSquares();
     const auto enemyPieces = pos.getPieces(!side);
@@ -209,8 +207,6 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
 template <bool side>
 void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions)
 {
-    assert(moves.empty());
-
     int from;
     const auto enemyPieces = pos.getPieces(!side);
     const auto occupiedSquares = pos.getOccupiedSquares();

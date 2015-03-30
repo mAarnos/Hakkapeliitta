@@ -15,30 +15,39 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef KILLER_HPP_
-#define KILLER_HPP_
+#ifndef MOVESORT_HPP_
+#define MOVESORT_HPP_
 
-#include <cstdint>
-#include <array>
-#include "move.hpp"
+#include "movelist.hpp"
+#include "movegen.hpp"
+#include "position.hpp"
+#include "history.hpp"
+#include "killer.hpp"
+#include "counter.hpp"
+#include "search.hpp"
 
-// Killer moves for the search function encapsulated.
-class KillerTable
+class MoveSort
 {
 public:
-    KillerTable();
+    MoveSort(const Position& pos, const HistoryTable& history, uint16_t ttMove, uint16_t k1, uint16_t k2, uint16_t counter, bool inCheck);
 
-    // Add a killer move for the given ply. Assumes that the move is not a capture or a promotion.
-    void addKiller(const Move& move, int ply);
-    // Checks if the given move is a killer move. Returns 0 if it is not and 1-4 in case it is (1 is best, 4 is worst). 
-    int isKiller(const Move& move, int ply) const;
-    // Clears the killer table.
-    void clear();
-
-    uint16_t getKillerA(int ply) const;
-    uint16_t getKillerB(int ply) const;
+    Move next();
 private:
-    std::array<std::array<uint16_t, 2>, 128> killers;
+    static MoveGen moveGen;
+    const Position& pos;
+    const HistoryTable& historyTable;
+    MoveList moveList;
+    Move ttMove;
+    uint16_t k1, k2, counter;
+    int phase;
+    int currentLocation;
+    int badCapturesLocation;
+
+    void generateNextPhase();
+    void scoreEvasions();
+    Move selectionSort(int startingLocation);
+
+    MoveSort& operator=(const MoveSort&) = delete;
 };
 
 #endif

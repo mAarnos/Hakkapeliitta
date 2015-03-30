@@ -850,6 +850,11 @@ int32_t Position::SEE(const Move& move) const
     return materialGains[0];
 }
 
+bool Position::captureOrPromotion(const Move& move) const
+{
+    return getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King);
+}
+
 bool Position::verifyPsts() const
 {
     auto correctPstScoreOp = 0, correctPstScoreEd = 0;

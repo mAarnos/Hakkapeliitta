@@ -31,6 +31,7 @@ class Move
 {
 public:
     Move();
+    Move(uint16_t move, int32_t score);
     Move(Square from, Square to, Piece promotion, int32_t score);
 
     Square getFrom() const;
@@ -47,6 +48,10 @@ private:
 };
 
 inline Move::Move() : move(0), score(0)
+{
+}
+
+inline Move::Move(uint16_t move, int32_t score) : move(move), score(score)
 {
 }
 

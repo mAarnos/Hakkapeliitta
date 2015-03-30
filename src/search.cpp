@@ -19,6 +19,7 @@
 #include "utils\synchronized_ostream.hpp"
 #include "utils\exception.hpp"
 #include "utils\clamp.hpp"
+#include "movesort.hpp"
 
 const int mateScore = 32767; // mate in 0
 const int minMateScore = 32767 - 1000; // mate in 500
@@ -722,8 +723,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     auto bestScore = matedInPly(ss->ply), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = UpperBoundScore;
     auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
-    MoveList moveList;
-    Move ttMove, bestMove;
+    MoveList quietsSearched;
+    Move bestMove;
+    uint16_t ttMove = 0;
     int score;
 
     // Used for sending seldepth info.
@@ -785,8 +787,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     {
         if (inCheck)
         {
-            moveGen.generateLegalEvasions(pos, moveList);
-            if (moveList.empty())
+            // Might as well use quietsSearched at this point, we are returning anyways.
+            moveGen.generateLegalEvasions(pos, quietsSearched);
+            if (quietsSearched.empty())
             {
                 return bestScore; // Can't claim draw on fifty move if mated.
             }
@@ -810,7 +813,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
-        ttMove.setMove(ttEntry->getBestMove());
+        ttMove = ttEntry->getBestMove();
         if (ttEntry->getDepth() >= depth)
         {
             auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
@@ -866,14 +869,14 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 // Don't return unproven mate scores as they cause some instability.
                 if (isMateScore(score))
                     score = beta;
-                transpositionTable.save(pos.getHashKey(), ttMove, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
+                transpositionTable.save(pos.getHashKey(), Move(ttMove, 0), realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
                 return score;
             }
         }
     }
 
     // Internal iterative deepening.
-    if (ttMove.empty() && (pvNode ? depth > 4 : depth > 7))
+    if (!ttMove && (pvNode ? depth > 4 : depth > 7))
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         ss->allowNullMove = false;
@@ -884,13 +887,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         auto tte = transpositionTable.probe(pos.getHashKey());
         if (tte)
         {
-            ttMove.setMove(tte->getBestMove());
+            ttMove = tte->getBestMove();
         }
     }
-
-    // Generate moves and order them. In nodes where we are in check we use a special evasion move generator.
-    inCheck ? moveGen.generateLegalEvasions(pos, moveList) : moveGen.generatePseudoLegalMoves(pos, moveList);
-    orderMoves(pos, moveList, ttMove, ss->ply, (ss - 1)->currentMove);
 
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
     auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin(depth) <= alpha);
@@ -898,16 +897,26 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
     auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
 
+    const auto killerA = killerTable.getKillerA(ss->ply);
+    const auto killerB = killerTable.getKillerB(ss->ply);
+    const auto counter = counterMoveTable.getCounterMove(pos, (ss - 1)->currentMove);
+    MoveSort ms(pos, historyTable, ttMove, killerA, killerB, counter, inCheck);
+
     repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
-    for (auto i = 0; i < moveList.size(); ++i)
+    for (auto i = 0;; ++i)
     {
-        selectMove(moveList, i);
-        const auto& move = moveList[i];
+        const auto move = ms.next();
+        if (move.empty()) break;
 
         auto givesCheck = pos.givesCheck(move);
         auto extension = givesCheck ? 1 : 0;
         auto newDepth = depth - 1 + extension;
-        auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < counterMoveScore;
+        auto quietMove = !pos.captureOrPromotion(move);
+        if (quietMove) quietsSearched.emplace_back(move);
+        auto nonCriticalMove = !extension && quietMove && move.getMove() != ttMove
+                                                       && move.getMove() != killerA 
+                                                       && move.getMove() != killerB 
+                                                       && move.getMove() != counter;
         ++nodeCount;
         --nodesToTimeCheck;
 
@@ -982,18 +991,15 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
                     if (!inCheck)
                     {
-                        if (quietMove(pos, move))
+                        if (quietMove)
                         {
                             historyTable.addCutoff(pos, move, depth);
                             killerTable.addKiller(move, ss->ply);
                             counterMoveTable.updateCounterMoves(pos, move, (ss - 1)->currentMove);
                         }
-                        for (auto j = 0; j < i; ++j)
+                        for (auto j = 0; j < quietsSearched.size() - 1; ++j)
                         {
-                            if (quietMove(pos, moveList[j]))
-                            {
-                                historyTable.addNotCutoff(pos, moveList[j], depth);
-                            }
+                            historyTable.addNotCutoff(pos, quietsSearched[j], depth);
                         }
                     }
 

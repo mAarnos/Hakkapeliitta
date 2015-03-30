@@ -60,4 +60,13 @@ int KillerTable::isKiller(const Move& move, const int ply) const
     }
 }
 
+uint16_t KillerTable::getKillerA(int ply) const
+{
+    return killers[ply][0];
+}
+
+uint16_t KillerTable::getKillerB(int ply) const
+{
+    return killers[ply][1];
+}
 

@@ -84,6 +84,9 @@ public:
 
     // Calculate the SEE score of a move for the current position.
     int32_t SEE(const Move& move) const;
+
+    // Check if the given move is a capture or promotion.
+    bool captureOrPromotion(const Move& move) const;
 private:
 	// All bitboards needed to represent the position.
 	// 6 bitboards for different white pieces + 1 for all white pieces.
