@@ -32,11 +32,15 @@ class Position
 public:
     // Constructs an invalid position, not the starting position.
     Position();
-    // Will throw an exception if the FEN-string is corrupted.
     Position(const std::string& fen); 
 
+    // Initializes a position from a FEN string.
+    // Will throw an exception if the FEN string is corrupted.
+    void initializePositionFromFen(const std::string& fen);
     // For displaying the position in console.
     std::string displayPositionAsString() const;
+    // For turning a position into a FEN string.
+    std::string toFen() const;
 
     // Accessing different kinds of board data.
     Piece getBoard(Square sq) const;
