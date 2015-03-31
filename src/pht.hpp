@@ -20,7 +20,7 @@
 
 #include <cstdint>
 #include <vector>
-#include "position.hpp"
+#include "zobrist.hpp"
 
 // Hash table for speeding up pawn evaluation.
 // Default size of the pawn hash table is 4MB.

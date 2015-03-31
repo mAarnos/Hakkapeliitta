@@ -173,12 +173,12 @@ void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& 
 
         if (move.getMove() == ttMove.getMove())
         {
-            move.setScore(hashMoveScore >> 1); // Done to avoid overflows when checking for futility
+            move.setScore(hashMoveScore); 
         }
         else if (!quietMove(pos, move))
         {
             auto score = mvvLva(pos, move);
-            score += captureMoveScore >> 1; // Has to be shifted because hashMoveScore was shifted.
+            score += captureMoveScore; 
             move.setScore(score);
         }
         else
