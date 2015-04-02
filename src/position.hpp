@@ -87,7 +87,7 @@ public:
     int givesCheck(const Move& move) const;
 
     // Calculate the SEE score of a move for the current position.
-    int32_t SEE(const Move& move) const;
+    int16_t SEE(const Move& move) const;
 
     // Check if the given move is a capture or promotion.
     bool captureOrPromotion(const Move& move) const;

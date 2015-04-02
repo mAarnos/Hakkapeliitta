@@ -89,7 +89,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.551" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.552" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -97,7 +97,7 @@ void UCI::sendInformation(Position&, std::istringstream&)
     sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
-    sync_cout << "option name Ponder type check default false" << std::endl;
+    // sync_cout << "option name Ponder type check default false" << std::endl;
     // sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
     // sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
 

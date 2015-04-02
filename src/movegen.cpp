@@ -53,7 +53,7 @@ void addPieceMovesFromMask(MoveList& moveList, Bitboard mask, const Square from)
     while (mask)
     {
         const auto to = Bitboards::popLsb(mask);
-        moveList.emplace_back(from, to, Piece::Empty, 0);
+        moveList.emplace_back(from, to, Piece::Empty);
     }
 }
 
@@ -66,17 +66,17 @@ void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask, bool underPro
         const auto from = to - 8 + side * 16;
         if (to >= Square::A8 || to <= Square::H1)
         {
-            moveList.emplace_back(from, to, Piece::Queen, 0);
+            moveList.emplace_back(from, to, Piece::Queen);
             if (underPromotions)
             {
-                moveList.emplace_back(from, to, Piece::Rook, 0);
-                moveList.emplace_back(from, to, Piece::Bishop, 0);
-                moveList.emplace_back(from, to, Piece::Knight, 0);
+                moveList.emplace_back(from, to, Piece::Rook);
+                moveList.emplace_back(from, to, Piece::Bishop);
+                moveList.emplace_back(from, to, Piece::Knight);
             }
         }
         else
         {
-            moveList.emplace_back(from, to, Piece::Empty, 0);
+            moveList.emplace_back(from, to, Piece::Empty);
         }
     }
 }
@@ -88,7 +88,7 @@ void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask)
     {
         const auto to = Bitboards::popLsb(mask);
         const auto from = to - 16 + side * 32;
-        moveList.emplace_back(from, to, Piece::Empty, 0);
+        moveList.emplace_back(from, to, Piece::Empty);
     }
 }
 
@@ -101,21 +101,21 @@ void addPawnCapturesFromMask(MoveList& moveList, Bitboard mask, const Square ep,
         const auto from = to - 7 - (2 * rightCaptures) + side * 16;
         if (to == ep)
         {
-            moveList.emplace_back(from, to, Piece::Pawn, 0);
+            moveList.emplace_back(from, to, Piece::Pawn);
         }
         else if (to >= Square::A8 || to <= Square::H1)
         {
-            moveList.emplace_back(from, to, Piece::Queen, 0);
+            moveList.emplace_back(from, to, Piece::Queen);
             if (underPromotions)
             {
-                moveList.emplace_back(from, to, Piece::Rook, 0);
-                moveList.emplace_back(from, to, Piece::Bishop, 0);
-                moveList.emplace_back(from, to, Piece::Knight, 0);
+                moveList.emplace_back(from, to, Piece::Rook);
+                moveList.emplace_back(from, to, Piece::Bishop);
+                moveList.emplace_back(from, to, Piece::Knight);
             }
         }
         else
         {
-            moveList.emplace_back(from, to, Piece::Empty, 0);
+            moveList.emplace_back(from, to, Piece::Empty);
         }
     }
 }
@@ -190,14 +190,14 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moves)
             {
                 if (!(pos.isAttacked(Square::F1 + 56 * side, !side)) && !(pos.isAttacked(Square::G1 + 56 * side, !side)))
                 {
-                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0);
+                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King);
                 }
             }
             if (longCastlingPossible)
             {
                 if (!(pos.isAttacked(Square::D1 + 56 * side, !side)) && !(pos.isAttacked(Square::C1 + 56 * side, !side)))
                 {
-                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0);
+                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King);
                 }
             }
         }
@@ -274,7 +274,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moves)
         const auto to = Bitboards::popLsb(tempMove);
         if (!pos.isAttacked(to, !side, occupied))
         {
-            moves.emplace_back(kingLocation, to, Piece::Empty, 0);
+            moves.emplace_back(kingLocation, to, Piece::Empty);
         }
     }
     Bitboards::setBit(occupied, kingLocation); // And now put it back.
@@ -490,14 +490,14 @@ void MoveGen::generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves
             {
                 if (!(pos.isAttacked(Square::F1 + 56 * side, !side)) && !(pos.isAttacked(Square::G1 + 56 * side, !side)))
                 {
-                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King, 0);
+                    moves.emplace_back(Square::E1 + 56 * side, Square::G1 + 56 * side, Piece::King);
                 }
             }
             if (longCastlingPossible)
             {
                 if (!(pos.isAttacked(Square::D1 + 56 * side, !side)) && !(pos.isAttacked(Square::C1 + 56 * side, !side)))
                 {
-                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King, 0);
+                    moves.emplace_back(Square::E1 + 56 * side, Square::C1 + 56 * side, Piece::King);
                 }
             }
         }

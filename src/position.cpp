@@ -828,22 +828,22 @@ int Position::givesCheck(const Move& move) const
     return 0;
 }
 
-int32_t Position::SEE(const Move& move) const
+int16_t Position::SEE(const Move& move) const
 {
     // Approximate piece values, SEE doesn't need to be as accurate as the main evaluation function.
     // Score for kings is not mateScore due to some annoying wrap-around problems. Doesn't really matter though.
-    static const std::array<int32_t, 13> pieceValues = {
+    static const std::array<int16_t, 13> pieceValues = {
         100, 300, 300, 500, 900, 10000, 100, 300, 300, 500, 900, 10000, 0
     };
 
-    static std::array<int32_t, 32> materialGains;
+    static std::array<int16_t, 32> materialGains;
     auto occupied = getOccupiedSquares();
     const auto from = move.getFrom();
     const auto to = move.getTo();
     const auto promotion = move.getPromotion();
     const auto toAtPromoRank = (to <= 7 || to >= 56);
     auto stm = sideToMove;
-    int32_t lastAttackerValue;
+    int16_t lastAttackerValue;
     int next;
 
     if (promotion == Piece::King)
@@ -943,7 +943,7 @@ int32_t Position::SEE(const Move& move) const
 
     while (--numberOfCaptures)
     {
-        materialGains[numberOfCaptures - 1] = std::min(-materialGains[numberOfCaptures], materialGains[numberOfCaptures - 1]);
+        materialGains[numberOfCaptures - 1] = std::min(static_cast<int16_t>(-materialGains[numberOfCaptures]), materialGains[numberOfCaptures - 1]);
     }
 
     return materialGains[0];

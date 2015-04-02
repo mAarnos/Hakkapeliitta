@@ -36,12 +36,12 @@ std::array<int, 1 + 4> lmpMoveCounts;
 const int razoringDepth = 3;
 const int seePruningDepth = 1;
 
-const int32_t hashMoveScore = 2147483647;
-const int32_t captureMoveScore = hashMoveScore >> 1;
-const std::array<int32_t, 1 + 4> killerMoveScore = {
+const int16_t hashMoveScore = 30000;
+const int16_t captureMoveScore = hashMoveScore >> 1;
+const std::array<int16_t, 1 + 4> killerMoveScore = {
     0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
 };
-const int32_t counterMoveScore = hashMoveScore >> 6;
+const int16_t counterMoveScore = hashMoveScore >> 6;
 
 int matedInPly(const int ply)
 {
@@ -146,21 +146,21 @@ Search::Search()
     }
 }
 
-int mvvLva(const Position& pos, const Move& move)
+int16_t mvvLva(const Position& pos, const Move& move)
 {
-    static const std::array<int, 12> attackers = {
+    static const std::array<int16_t, 12> attackers = {
         5, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 0
     };
 
-    static const std::array<int, 13> victims = {
+    static const std::array<int16_t, 13> victims = {
         1, 2, 2, 3, 4, 0, 1, 2, 2, 3, 4, 0, 0
     };
 
     const auto attackerValue = attackers[pos.getBoard(move.getFrom())];
-    const auto victimValue = victims[pos.getBoard(move.getTo())]
+    const auto victimValue = static_cast<int16_t>(victims[pos.getBoard(move.getTo())]
                            + (move.getPromotion() != Piece::Empty ? victims[move.getPromotion()] -
                                                                    (move.getPromotion() != Piece::Pawn ? victims[Piece::Pawn] : 0)
-                                                                  : 0);
+                                                                  : 0));
 
     return victimValue * 8 + attackerValue;
 }

@@ -51,11 +51,11 @@ void MoveSort::generateNextPhase()
     }
     else if (phase == Killers)
     {
-        moveList.emplace_back(k1, 0);
-        moveList.emplace_back(k2, 0);
+        moveList.emplace_back(k1);
+        moveList.emplace_back(k2);
         if (counter != k1 && counter != k2)
         {
-            moveList.emplace_back(counter, 0);
+            moveList.emplace_back(counter);
         }
     }
     else if (phase == QuietMoves)
@@ -150,12 +150,12 @@ Move MoveSort::next()
 
 void MoveSort::scoreEvasions()
 {
-    static const int32_t hashMoveScore = 2147483647;
-    static const int32_t captureMoveScore = hashMoveScore >> 1;
-    static const std::array<int32_t, 1 + 4> killerMoveScore = {
+    static const int16_t hashMoveScore = 30000;
+    static const int16_t captureMoveScore = hashMoveScore >> 1;
+    static const std::array<int16_t, 1 + 4> killerMoveScore = {
         0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
     };
-    static const int32_t counterMoveScore = hashMoveScore >> 6;
+    static const int16_t counterMoveScore = hashMoveScore >> 6;
 
     for (auto i = currentLocation; i < moveList.size(); ++i)
     {
