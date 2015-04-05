@@ -68,8 +68,8 @@ void MoveSort::generateNextPhase()
     }
     else if (phase == BadCaptures)
     {
-        currentLocation = badCapturesLocation;
-        moveList.resize(217);
+        moveList.resize(badCapturesLocation);
+        currentLocation = 217;
     }
     else if (phase == Evasions)
     {
@@ -130,7 +130,8 @@ Move MoveSort::next()
         }
         else if (phase == BadCaptures)
         {
-            return selectionSort(currentLocation++);
+            // We already sorted the bad captures above and so the last bad capture is the best.
+            return moveList[--currentLocation];
         }
         else if (phase == Evasions)
         {
