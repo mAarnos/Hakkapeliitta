@@ -343,8 +343,8 @@ void Bitboards::initialize()
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        kingZone[Color::White][sq] = sq < Square::A8 ? kingAttack[sq] | kingAttack[sq + 8] : kingAttack[sq];
-        kingZone[Color::Black][sq] = sq > Square::H1 ? kingAttack[sq] | kingAttack[sq - 8] : kingAttack[sq];
+        kingZone[Color::White][sq] = sq < Square::A8 ? (kingAttack[sq] | kingAttack[sq + 8]) : (kingAttack[sq] | bits[sq]);
+        kingZone[Color::Black][sq] = sq > Square::H1 ? (kingAttack[sq] | kingAttack[sq - 8]) : (kingAttack[sq] | bits[sq]);
     }
 
     lookupTable.fill(0);
