@@ -153,10 +153,6 @@ void MoveSort::scoreEvasions()
 {
     static const int16_t hashMoveScore = 30000;
     static const int16_t captureMoveScore = hashMoveScore >> 1;
-    static const std::array<int16_t, 1 + 4> killerMoveScore = {
-        0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
-    };
-    static const int16_t counterMoveScore = hashMoveScore >> 6;
 
     for (auto i = currentLocation; i < moveList.size(); ++i)
     {
@@ -173,22 +169,7 @@ void MoveSort::scoreEvasions()
         }
         else
         {
-            if (move.getMove() == k1)
-            {
-                move.setScore(killerMoveScore[1]);
-            }
-            else if (move.getMove() == k2)
-            {
-                move.setScore(killerMoveScore[2]);
-            }
-            else if (move.getMove() == counter)
-            {
-                move.setScore(counterMoveScore);
-            }
-            else
-            {
-                move.setScore(historyTable.getScore(pos, move));
-            }
+            move.setScore(historyTable.getScore(pos, move));
         }
     }
 }
