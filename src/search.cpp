@@ -146,25 +146,6 @@ Search::Search()
     }
 }
 
-int16_t mvvLva(const Position& pos, const Move& move)
-{
-    static const std::array<int16_t, 12> attackers = {
-        5, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 0
-    };
-
-    static const std::array<int16_t, 13> victims = {
-        1, 2, 2, 3, 4, 0, 1, 2, 2, 3, 4, 0, 0
-    };
-
-    const auto attackerValue = attackers[pos.getBoard(move.getFrom())];
-    const auto victimValue = static_cast<int16_t>(victims[pos.getBoard(move.getTo())]
-                           + (move.getPromotion() != Piece::Empty ? victims[move.getPromotion()] -
-                                                                   (move.getPromotion() != Piece::Pawn ? victims[Piece::Pawn] : 0)
-                                                                  : 0));
-
-    return victimValue * 8 + attackerValue;
-}
-
 void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove)
 {
     for (auto i = 0; i < moveList.size(); ++i)
@@ -177,7 +158,7 @@ void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& 
         }
         else if (!quietMove(pos, move))
         {
-            auto score = mvvLva(pos, move);
+            auto score = pos.mvvLva(move);
             score += captureMoveScore; 
             move.setScore(score);
         }

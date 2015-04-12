@@ -89,6 +89,9 @@ public:
     // Calculate the SEE score of a move for the current position.
     int16_t SEE(const Move& move) const;
 
+    // Calculate the MVV-LVA score of a move.
+    int16_t mvvLva(const Move& move) const;
+
     // Check if the given move is a capture or promotion.
     bool captureOrPromotion(const Move& move) const;
 private:

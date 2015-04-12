@@ -1053,4 +1053,21 @@ bool Position::verifyBoardAndBitboards() const
     return true;
 }
 
+int16_t Position::mvvLva(const Move& move) const
+{
+    static const std::array<int16_t, 12> attackers = {
+        5, 4, 3, 2, 1, 0, 5, 4, 3, 2, 1, 0
+    };
 
+    static const std::array<int16_t, 13> victims = {
+        1, 2, 2, 3, 4, 0, 1, 2, 2, 3, 4, 0, 0
+    };
+
+    const auto attackerValue = attackers[getBoard(move.getFrom())];
+    const auto victimValue = static_cast<int16_t>(victims[getBoard(move.getTo())]
+        + (move.getPromotion() != Piece::Empty ? victims[move.getPromotion()] -
+        (move.getPromotion() != Piece::Pawn ? victims[Piece::Pawn] : 0)
+        : 0));
+
+    return victimValue * 8 + attackerValue;
+}
