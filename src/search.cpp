@@ -659,25 +659,27 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     {
         selectMove(moveList, i);
         const auto& move = moveList[i];
-        const auto seeScore = pos.SEE(move);
         // const auto givesCheck = pos.givesCheck(move);
         ++nodeCount;
         --nodesToTimeCheck;
 
-        // Add givesCheck != 2 condition here.
-        // SEE pruning. If the move seems to lose material prune it.
-        // This kind of pruning is too dangerous when in check so we don't use it then.
-        if (!inCheck && seeScore < 0)
+        // Only prune moves in quiescence search if we are not in check.
+        if (!inCheck)
         {
-            continue;
-        }
+            const auto seeScore = pos.SEE(move);
 
-        // Delta pruning. If the move seems to have no chance of raising alpha prune it.
-        // This too is too dangerous when we are in check.
-        if (!inCheck && delta + seeScore <= alpha)
-        {
-            bestScore = std::max(bestScore, delta + seeScore);
-            continue;
+            // SEE pruning. If the move seems to lose material prune it.
+            if (seeScore < 0)
+            {
+                continue;
+            }
+
+            // Delta pruning. If the move seems to have no chance of raising alpha prune it.
+            if (delta + seeScore <= alpha)
+            {
+                bestScore = std::max(bestScore, delta + seeScore);
+                continue;
+            }
         }
 
         if (!pos.legal(move, inCheck))
