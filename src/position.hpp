@@ -62,6 +62,7 @@ public:
     int8_t getTotalPieceCount() const;
     int16_t getPstScoreOp() const;
     int16_t getPstScoreEd() const;
+    int8_t nonPawnMaterial(Color side) const;
 
     // Makes the move on the board.
     // We use copy-make so unmake is unnecessary.
@@ -113,6 +114,7 @@ private:
     int8_t fiftyMoveDistance;
     int8_t totalPieceCount;
     std::array<int8_t, 12> pieceCount;
+    std::array<int8_t, 2> nonPawnPieceCounts;
     int8_t gamePhase;
     int16_t gamePly;
     int16_t pstScoreOp;
@@ -234,6 +236,11 @@ inline int16_t Position::getPstScoreOp() const
 inline int16_t Position::getPstScoreEd() const
 {
     return pstScoreEd;
+}
+
+inline int8_t Position::nonPawnMaterial(Color side) const
+{
+    return nonPawnPieceCounts[side];
 }
 
 inline bool Position::inCheck() const 

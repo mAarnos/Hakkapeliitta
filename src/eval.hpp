@@ -31,7 +31,7 @@ class Evaluation
 public:
     Evaluation();
 
-    int evaluate(const Position& pos, bool& zugzwangLikely);
+    int evaluate(const Position& pos);
 
     // These two have to be annoyingly static, as we use them in position.cpp to incrementally update the pst eval.
     static std::array<std::array<short, 64>, 12> pieceSquareTableOpening;
@@ -47,10 +47,10 @@ private:
 
     // Evaluation function in parts.
     template <bool hardwarePopcnt> 
-    int evaluate(const Position& pos, bool& zugzwangLikely);
+    int evaluate(const Position& pos);
 
     template <bool hardwarePopcnt> 
-    int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase, bool& zugzwangLikely);
+    int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase);
 
     int pawnStructureEval(const Position& pos, int phase);
     int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);

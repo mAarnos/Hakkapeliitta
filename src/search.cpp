@@ -565,7 +565,6 @@ bool Search::repetitionDraw(const Position& pos, int ply) const
 int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, int beta, const bool inCheck, SearchStack* ss)
 {
     int bestScore, delta;
-    bool zugzwangLikely;
     MoveList moveList;
     Move bestMove;
     auto ttFlag = UpperBoundScore;
@@ -573,7 +572,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     // Don't go over max depth.
     if (ss->ply >= 128)
     {
-        return evaluation.evaluate(pos, zugzwangLikely);
+        return evaluation.evaluate(pos);
     }
 
     // Check for fifty move draws.
@@ -621,7 +620,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     }
     else
     {
-        bestScore = evaluation.evaluate(pos, zugzwangLikely);
+        bestScore = evaluation.evaluate(pos);
         if (bestScore > alpha)
         {
             if (bestScore >= beta)
@@ -705,7 +704,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     auto bestScore = matedInPly(ss->ply), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = UpperBoundScore;
-    auto zugzwangLikely = false; // Initialization needed only to shut up warnings.
     MoveList quietsSearched;
     Move bestMove;
     uint16_t ttMove = 0;
@@ -720,7 +718,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Don't go over max depth.
     if (ss->ply >= 128)
     {
-        return evaluation.evaluate(pos, zugzwangLikely);
+        return evaluation.evaluate(pos);
     }
 
     // Small speed optimization, runs fine without it.
@@ -807,11 +805,11 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
-    auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos, zugzwangLikely));
+    auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos));
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
-    if (!pvNode && !inCheck && !zugzwangLikely && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargin(depth) >= beta)
+    if (!pvNode && !inCheck && pos.nonPawnMaterial(pos.getSideToMove()) && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargin(depth) >= beta)
         return staticEval - reverseFutilityMargin(depth);
 
     // Razoring.
@@ -829,7 +827,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
-    if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && !zugzwangLikely)
+    if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && pos.nonPawnMaterial(pos.getSideToMove()))
     {
         const auto R = baseNullReduction + depth / 6;
         if (!(ttEntry

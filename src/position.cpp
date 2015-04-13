@@ -197,6 +197,7 @@ void Position::initializePositionFromFen(const std::string& fen)
     pieceCount.fill(0);
     totalPieceCount = 0;
     pstScoreOp = pstScoreEd = 0;
+    nonPawnPieceCounts.fill(0);
 	for (Square sq = Square::A1; sq <= Square::H8; ++sq) 
 	{
 		if (board[sq] != Piece::Empty)
@@ -206,6 +207,10 @@ void Position::initializePositionFromFen(const std::string& fen)
             pstScoreEd += Evaluation::pieceSquareTableEnding[board[sq]][sq];
             ++pieceCount[board[sq]];
             ++totalPieceCount;
+            if (getPieceType(board[sq]) != Piece::Pawn && getPieceType(board[sq]) != Piece::King)
+            {
+                ++nonPawnPieceCounts[board[sq] >= Piece::BlackPawn];
+            }
 		}
 	}
 
@@ -408,6 +413,10 @@ void Position::makeMove(const Move& m)
         {
             pawnHashKey ^= Zobrist::pieceHashKey(captured, to);
         }
+        else
+        {
+            --nonPawnPieceCounts[!side];
+        }
     }
 
     if (getPieceType(piece) == Piece::Pawn)
@@ -444,6 +453,7 @@ void Position::makeMove(const Move& m)
             pawnHashKey ^= Zobrist::pieceHashKey(Piece::Pawn + side * 6, to);
             materialHashKey ^= Zobrist::materialHashKey(Piece::Pawn + side * 6, --pieceCount[Piece::Pawn + side * 6]);
             gamePhase -= piecePhase[promotion];
+            ++nonPawnPieceCounts[side];
             pstScoreOp += Evaluation::pieceSquareTableOpening[promotion + side * 6][to]
                         - Evaluation::pieceSquareTableOpening[Piece::Pawn + side * 6][to];
             pstScoreEd += Evaluation::pieceSquareTableEnding[promotion + side * 6][to]
@@ -487,6 +497,8 @@ void Position::makeMove(const Move& m)
     assert(verifyHashKeysAndPhase());
     assert(verifyPieceCounts());
     assert(verifyBoardAndBitboards());
+    assert(pieceCount[Piece::WhiteKnight] + pieceCount[Piece::WhiteBishop] + pieceCount[Piece::WhiteRook] + pieceCount[Piece::WhiteQueen] == nonPawnPieceCounts[Color::White]);
+    assert(pieceCount[Piece::BlackKnight] + pieceCount[Piece::BlackBishop] + pieceCount[Piece::BlackRook] + pieceCount[Piece::BlackQueen] == nonPawnPieceCounts[Color::Black]);
 }
 
 template void Position::makeMove<false>(const Move& m);
