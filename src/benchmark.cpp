@@ -46,13 +46,11 @@ uint64_t Benchmark::perft(const Position& pos, const int depth)
             continue;
         }
 
-        /*
         if (depth == 1)
         {
             ++nodes;
             continue;
         }
-        */
 
         Position newPos(pos);
         newPos.makeMove(move);
