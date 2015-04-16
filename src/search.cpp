@@ -108,7 +108,7 @@ int razoringMargin(int depth)
 
 int reverseFutilityMargin(int depth)
 {
-    return 150 * depth + 100;
+    return 50 * depth + 100;
 }
 
 int futilityMargin(int depth)
