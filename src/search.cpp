@@ -595,11 +595,15 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         return contempt[pos.getSideToMove()];
     }
 
+    // We use only two depths when saving info to the TT, one for when we search captures+checks and one for when we search just captures.
+    // Since when we are in check we search all moves regardless of depth it goes to the first category as well.
+    const auto ttDepth = (inCheck || depth >= -1) ? 0 : -2;
+
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
         bestMove.setMove(ttEntry->getBestMove());
-        if (ttEntry->getDepth() >= depth)
+        if (ttEntry->getDepth() >= ttDepth)
         {
             auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
             auto ttFlags = ttEntry->getFlags();
@@ -677,7 +681,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), depth >= -1 ? 0 : -2, LowerBoundScore);
+                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), ttDepth, LowerBoundScore);
                     return score;
                 }
                 bestMove = move;
@@ -688,7 +692,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         }
     }
 
-    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), depth >= -1 ? 0 : -2, ttFlag);
+    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), ttDepth, ttFlag);
 
     return bestScore;
 }
