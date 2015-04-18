@@ -597,6 +597,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
 
     // We use only two depths when saving info to the TT, one for when we search captures+checks and one for when we search just captures.
     // Since when we are in check we search all moves regardless of depth it goes to the first category as well.
+    // It seems that when this part was broken then not pruning checks below didn't work either for some reason.
     const auto ttDepth = (inCheck || depth >= -1) ? 0 : -2;
 
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
@@ -643,7 +644,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     {
         selectMove(moveList, i);
         const auto& move = moveList[i];
-        // const auto givesCheck = pos.givesCheck(move);
+        const auto givesCheck = pos.givesCheck(move);
         ++nodeCount;
         --nodesToTimeCheck;
 
@@ -653,13 +654,15 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             const auto seeScore = pos.SEE(move);
 
             // SEE pruning. If the move seems to lose material prune it.
-            if (seeScore < 0)
+            // Since the SEE score is meaningless for discovered checks we don't prune them.
+            if (seeScore < 0 && givesCheck != 2)
             {
                 continue;
             }
 
             // Delta pruning. If the move seems to have no chance of raising alpha prune it.
-            if (delta + seeScore <= alpha)
+            // Pruning checks here is too dangerous.
+            if (delta + seeScore <= alpha && !givesCheck)
             {
                 bestScore = std::max(bestScore, delta + seeScore);
                 continue;
@@ -673,7 +676,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-        const auto score = -quiescenceSearch(newPosition, depth - 1, -beta, -alpha, newPosition.inCheck(), ss + 1);
+        const auto score = -quiescenceSearch(newPosition, depth - 1, -beta, -alpha, givesCheck != 0, ss + 1);
 
         if (score > bestScore)
         {
