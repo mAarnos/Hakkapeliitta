@@ -598,7 +598,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     // We use only two depths when saving info to the TT, one for when we search captures+checks and one for when we search just captures.
     // Since when we are in check we search all moves regardless of depth it goes to the first category as well.
     // It seems that when this part was broken then not pruning checks below didn't work either for some reason.
-    const auto ttDepth = (inCheck || depth >= -1) ? 0 : -2;
+    const auto ttDepth = (inCheck || depth >= 0) ? 0 : -1;
 
     auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
@@ -635,7 +635,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             alpha = bestScore;
         }
         delta = bestScore + deltaPruningMargin;
-        depth >= -1 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList, false);
+        depth >= 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList, false);
     }
 
     orderCaptures(pos, moveList, bestMove);
