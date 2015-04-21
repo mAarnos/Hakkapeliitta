@@ -103,7 +103,7 @@ int realScoreToTtScore(int score, int ply)
 
 int razoringMargin(int depth)
 {
-    return depth * 50 + 150;
+    return depth * 50 + 50;
 }
 
 int reverseFutilityMargin(int depth)
