@@ -30,7 +30,6 @@ pos(pos), historyTable(historyTable), ttMove(ttm, 0), k1(k1), k2(k2), counter(co
 {
     phase = inCheck ? Evasion : Normal;
     currentLocation = 0;
-    badCapturesLocation = 217;
     if (!pos.pseudoLegal(ttMove, inCheck))
     {
         ttMove.setMove(0);
@@ -41,10 +40,13 @@ pos(pos), historyTable(historyTable), ttMove(ttm, 0), k1(k1), k2(k2), counter(co
 void MoveSort::generateNextPhase()
 {
     ++phase;
+    currentLocation = 0;
+    moveList.clear();
+
     if (phase == Captures)
     {
         moveGen.generatePseudoLegalCaptures(pos, moveList, true);
-        for (auto i = currentLocation; i < moveList.size(); ++i)
+        for (auto i = 0; i < moveList.size(); ++i)
         {
             moveList[i].setScore(pos.SEE(moveList[i]));
         }
@@ -61,15 +63,14 @@ void MoveSort::generateNextPhase()
     else if (phase == QuietMoves)
     {
         moveGen.generatePseudoLegalQuietMoves(pos, moveList);
-        for (auto i = currentLocation; i < moveList.size(); ++i)
+        for (auto i = 0; i < moveList.size(); ++i)
         {
             moveList[i].setScore(historyTable.getScore(pos, moveList[i]));
         }
     }
     else if (phase == BadCaptures)
     {
-        moveList.resize(badCapturesLocation);
-        currentLocation = 217;
+        moveList = temp;
     }
     else if (phase == Evasions)
     {
@@ -106,9 +107,8 @@ Move MoveSort::next()
                 {
                     return move;
                 }
-                // A losing capture, move it to the end of the movelist.
-                // Since we have a bit of buffer at the end this should be safe.
-                moveList[--badCapturesLocation] = move;
+                // Put bad captures into a temporary movelist.
+                temp.emplace_back(move);
             }
         }
         else if (phase == Killers)
@@ -131,7 +131,7 @@ Move MoveSort::next()
         else if (phase == BadCaptures)
         {
             // We already sorted the bad captures above and so the last bad capture is the best.
-            return moveList[--currentLocation];
+            return moveList[currentLocation++];
         }
         else if (phase == Evasions)
         {
@@ -154,7 +154,7 @@ void MoveSort::scoreEvasions()
     static const int16_t hashMoveScore = 30000;
     static const int16_t captureMoveScore = hashMoveScore >> 1;
 
-    for (auto i = currentLocation; i < moveList.size(); ++i)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
         auto& move = moveList[i];
 

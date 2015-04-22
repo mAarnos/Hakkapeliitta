@@ -30,6 +30,7 @@ public:
 
     Move& operator[](int index);
     const Move& operator[](int index) const;
+    void operator=(const MoveList& ml);
 
     template<class... T>
     void emplace_back(T&&... args);
@@ -48,12 +49,23 @@ inline MoveList::MoveList() : numberOfMoves(0)
 
 inline Move& MoveList::operator[](const int index)
 {
+    assert(index >= 0 && index < numberOfMoves);
     return (reinterpret_cast<Move*>(&moveList[0]))[index];
 }
 
 inline const Move& MoveList::operator[](const int index) const
 {
+    assert(index >= 0 && index < numberOfMoves);
     return (reinterpret_cast<const Move*>(&moveList[0]))[index];
+}
+
+inline void MoveList::operator=(const MoveList& ml)
+{
+    numberOfMoves = ml.numberOfMoves;
+    for (auto i = 0; i < ml.size(); ++i)
+    {
+        (*this)[i] = ml[i];
+    }
 }
 
 template<class... T>

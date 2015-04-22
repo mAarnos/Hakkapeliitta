@@ -36,12 +36,11 @@ private:
     static MoveGen moveGen;
     const Position& pos;
     const HistoryTable& historyTable;
-    MoveList moveList;
+    MoveList moveList, temp;
     Move ttMove;
     uint16_t k1, k2, counter;
     int phase;
     int currentLocation;
-    int badCapturesLocation;
 
     void generateNextPhase();
     void scoreEvasions();
