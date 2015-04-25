@@ -34,7 +34,7 @@ const int lmrDepthLimit = 3;
 const int lmpDepth = 4;
 std::array<int, 1 + 4> lmpMoveCounts;
 const int razoringDepth = 3;
-const int seePruningDepth = 1;
+const int seePruningDepth = 3;
 
 const int16_t hashMoveScore = 30000;
 const int16_t captureMoveScore = hashMoveScore >> 1;
