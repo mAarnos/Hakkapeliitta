@@ -31,8 +31,8 @@ const int futilityDepth = 7;
 const int deltaPruningMargin = 50;
 const int reverseFutilityDepth = 3;
 const int lmrDepthLimit = 3;
-const int lmpDepth = 4;
-std::array<int, 1 + 4> lmpMoveCounts;
+const int lmpDepth = 6;
+std::array<int, 1 + lmpDepth> lmpMoveCounts;
 const int razoringDepth = 3;
 const int seePruningDepth = 3;
 
@@ -140,7 +140,7 @@ Search::Search()
         }
     }
 
-    for (auto i = 0; i < 5; ++i)
+    for (auto i = 0; i < 1 + lmpDepth; ++i)
     {
         lmpMoveCounts[i] = static_cast<int>(std::round(2.98484 + std::pow(i, 1.74716)));
     }
