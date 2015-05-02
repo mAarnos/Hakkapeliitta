@@ -834,7 +834,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
-    if (!pvNode && ss->allowNullMove && !inCheck && staticEval >= beta && pos.nonPawnMaterial(pos.getSideToMove()))
+    if (!pvNode && ss->allowNullMove && !inCheck && depth > 1 && staticEval >= beta && pos.nonPawnMaterial(pos.getSideToMove()))
     {
         const auto R = baseNullReduction + depth / 6;
         if (!(ttEntry
