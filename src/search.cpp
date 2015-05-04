@@ -29,7 +29,7 @@ const int aspirationWindow = 16;
 const int baseNullReduction = 3;
 const int futilityDepth = 7;
 const int deltaPruningMargin = 50;
-const int reverseFutilityDepth = 3;
+const int reverseFutilityDepth = 5;
 const int lmrDepthLimit = 3;
 const int lmpDepth = 6;
 std::array<int, 1 + lmpDepth> lmpMoveCounts;
