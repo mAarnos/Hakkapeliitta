@@ -543,7 +543,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
               << " nodes " << nodeCount
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
               << " tbhits " << tbHits << std::endl
-              << "bestmove " << moveToUciFormat(pv[0]) << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
+              << "bestmove " << moveToUciFormat(pv[0]) << std::endl;
 }
 
 // Technically we are checking for 2 - fold repetitions instead of 3 - fold, but that is enough for game theoric correctness.
@@ -742,7 +742,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             searching = false;
         }
 
-        if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely or ponder.
+        if (!infinite) // Can't stop search if ordered to run indefinitely
         {
             // First check hard cutoff, then check soft cutoff which depends on the current search situation.
             if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
