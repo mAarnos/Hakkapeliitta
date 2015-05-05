@@ -49,7 +49,7 @@ class Search
 public:
     Search();
 
-    void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue);
+    void think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue, bool ponderingOption);
 
     void stopSearching() { searching = false; }
     void stopPondering() { pondering = false; }
