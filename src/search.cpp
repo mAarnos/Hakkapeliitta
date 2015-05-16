@@ -397,9 +397,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
                 }
 
                 auto givesCheck = pos.givesCheck(move);
-                auto extension = givesCheck ? 1 : 0;
-                auto newDepth = depth - 1 + extension;
-                auto nonCriticalMove = !extension && move.getScore() >= 0 && move.getScore() < counterMoveScore;
+                auto newDepth = depth - 1;
+                auto nonCriticalMove = !givesCheck && move.getScore() >= 0 && move.getScore() < counterMoveScore;
 
                 Position newPosition(pos);
                 newPosition.makeMove(move);
@@ -897,14 +896,13 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (move.empty()) break;
 
         auto givesCheck = pos.givesCheck(move);
-        auto extension = givesCheck ? 1 : 0;
-        auto newDepth = depth - 1 + extension;
+        auto newDepth = depth - 1;
         auto quietMove = !pos.captureOrPromotion(move);
         if (quietMove) quietsSearched.emplace_back(move);
-        auto nonCriticalMove = !extension && quietMove && move.getMove() != ttMove
-                                                       && move.getMove() != killerA 
-                                                       && move.getMove() != killerB 
-                                                       && move.getMove() != counter;
+        auto nonCriticalMove = !givesCheck && quietMove && move.getMove() != ttMove
+                                                        && move.getMove() != killerA 
+                                                        && move.getMove() != killerB 
+                                                        && move.getMove() != counter;
         ++nodeCount;
         --nodesToTimeCheck;
 
