@@ -43,8 +43,15 @@ void HistoryTable::addNotCutoff(const Position& pos, const Move& move, const int
 
 int16_t HistoryTable::getScore(const Position& pos, const Move& move) const
 {
-    return static_cast<int16_t>(((history[pos.getBoard(move.getFrom())][move.getTo()] * 100) / 
-            (history[pos.getBoard(move.getFrom())][move.getTo()] + butterfly[pos.getBoard(move.getFrom())][move.getTo()] + 1)));
+    const auto hScore = history[pos.getBoard(move.getFrom())][move.getTo()];
+    const auto bScore = butterfly[pos.getBoard(move.getFrom())][move.getTo()];
+
+    if (hScore + bScore == 0)
+    {
+        return 50; // no information means that the move could be good or bad, so give a neutral score.
+    }
+
+    return static_cast<int16_t>((hScore * 100) / (hScore + bScore));
 }
 
 void HistoryTable::age()
