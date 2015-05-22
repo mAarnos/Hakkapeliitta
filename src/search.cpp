@@ -594,6 +594,12 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
         return contempt[pos.getSideToMove()];
     }
 
+    // Mate distance pruning, safe at all types of nodes.
+    alpha = std::max(matedInPly(ss->ply), alpha);
+    beta = std::min(mateInPly(ss->ply + 1), beta);
+    if (alpha >= beta)
+        return alpha;
+
     // We use only two depths when saving info to the TT, one for when we search captures+checks and one for when we search just captures.
     // Since when we are in check we search all moves regardless of depth it goes to the first category as well.
     // It seems that when this part was broken then not pruning checks below didn't work either for some reason.
