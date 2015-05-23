@@ -542,7 +542,8 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
               << " nodes " << nodeCount
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
               << " tbhits " << tbHits << std::endl
-              << "bestmove " << moveToUciFormat(pv[0]) << std::endl;
+              << "bestmove " << moveToUciFormat(pv[0]) 
+              << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
 }
 
 // Technically we are checking for 2 - fold repetitions instead of 3 - fold, but that is enough for game theoric correctness.
