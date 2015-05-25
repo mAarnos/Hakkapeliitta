@@ -573,10 +573,17 @@ bool Search::repetitionDraw(const Position& pos, int ply) const
 
 int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, int beta, const bool inCheck, SearchStack* ss)
 {
+    assert(alpha < beta);
+    assert(depth <= 0);
+    assert(inCheck == pos.inCheck());
+
     int bestScore, delta;
     MoveList moveList;
     Move bestMove;
     auto ttFlag = UpperBoundScore;
+
+    // Small speed optimization, runs fine without it.
+    transpositionTable.prefetch(pos.getHashKey());
 
     // Don't go over max depth.
     if (ss->ply >= 128)
@@ -723,6 +730,8 @@ template <bool pvNode>
 int Search::search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
 {
     assert(alpha < beta);
+    assert(depth > 0);
+    assert(inCheck == pos.inCheck());
 
     auto bestScore = matedInPly(ss->ply), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = UpperBoundScore;
@@ -730,6 +739,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     Move bestMove;
     uint16_t ttMove = 0;
     int score;
+
+    // Small speed optimization, runs fine without it.
+    transpositionTable.prefetch(pos.getHashKey());
 
     // Used for sending seldepth info.
     if (ss->ply > selDepth)
@@ -742,9 +754,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     {
         return evaluation.evaluate(pos);
     }
-
-    // Small speed optimization, runs fine without it.
-    transpositionTable.prefetch(pos.getHashKey());
 
     // Time check things.
     if (nodesToTimeCheck <= 0)
