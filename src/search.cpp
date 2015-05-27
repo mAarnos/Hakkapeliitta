@@ -536,10 +536,10 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         ++depth;
     }
 
-    // If we are in an infinite search and we reach the max amount of iterations possible loop here until stopped.
+    // If we are in an infinite search (or pondering) and we reach the max amount of iterations possible loop here until stopped.
     // This is done because returning is against the UCI-protocol.
     std::chrono::milliseconds dura(5);
-    while (searching && infinite)
+    while (searching && (infinite || pondering))
     {
         std::this_thread::sleep_for(dura);
     }
