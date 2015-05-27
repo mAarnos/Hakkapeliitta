@@ -504,8 +504,10 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, 0), depth, bestScore >= beta ? LowerBoundScore : ExactScore);
         pv = transpositionTable.extractPv(pos);
 
-        // If this is not an infinite search, we have reached sufficient depth and there is only one root move then stop searching.
-        if (!infinite && rootMoveList.size() == 1 && depth > 6)
+        // If there is only one root move then stop searching.
+        // Not done if we are in an infinite search or pondering, since we must search for ever in those cases.
+        // depth > 6 is there to make sure we have something to ponder on.
+        if (!infinite && !pondering && rootMoveList.size() == 1 && depth > 6)
         {
             break;
         }
@@ -759,15 +761,16 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>()); // Casting works around a few warnings.
+        const auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
 
-        if (nodeCount >= maxNodes)
+        if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
         {
-            searching = false;
-        }
+            // Check if we have gone over the node limit.
+            if (nodeCount >= maxNodes)
+            {
+                searching = false;
+            }
 
-        if (!infinite) // Can't stop search if ordered to run indefinitely
-        {
             // First check hard cutoff, then check soft cutoff which depends on the current search situation.
             if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
             {
