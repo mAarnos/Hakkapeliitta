@@ -539,7 +539,7 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
     // If we are in an infinite search (or pondering) and we reach the max amount of iterations possible loop here until stopped.
     // This is done because returning is against the UCI-protocol.
     std::chrono::milliseconds dura(5);
-    while (searching && (infinite || pondering))
+    while (searching && (searchParameters.infinite || pondering))
     {
         std::this_thread::sleep_for(dura);
     }
@@ -763,14 +763,14 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         nodesToTimeCheck = 10000;
         const auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
 
+        // Check if we have gone over the node limit.
+        if (nodeCount >= maxNodes)
+        {
+            searching = false;
+        }
+
         if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
         {
-            // Check if we have gone over the node limit.
-            if (nodeCount >= maxNodes)
-            {
-                searching = false;
-            }
-
             // First check hard cutoff, then check soft cutoff which depends on the current search situation.
             if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
             {
