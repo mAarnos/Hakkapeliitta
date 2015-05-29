@@ -935,7 +935,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         --nodesToTimeCheck;
 
         // Futility pruning and late move pruning. Oh, SEE pruning as well.
-        if (nonCriticalMove && !isLoseScore(bestScore))
+        if (nonCriticalMove)
         {
             if (futileNode)
             {
