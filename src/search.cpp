@@ -306,7 +306,7 @@ void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
     moveList.resize(marker);
 }
 
-void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue)
+void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue, bool ponderingEnabled)
 {
     auto alpha = -infinity;
     auto beta = infinity;
@@ -352,6 +352,11 @@ void Search::think(const Position& root, SearchParameters searchParameters, int 
         auto increment = searchParameters.increment[root.getSideToMove()];
         targetTime = clamp(time / std::min(searchParameters.movesToGo, 25) + increment - lagBuffer, 1, time - lagBuffer);
         maxTime = clamp(time / 2 + increment, 1, time - lagBuffer);
+        if (ponderingEnabled)
+        {
+            targetTime += targetTime / 3;
+            targetTime = clamp(targetTime, 1, maxTime);
+        }
     }
 
     inCheck ? moveGen.generateLegalEvasions(pos, rootMoveList)

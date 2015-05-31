@@ -23,7 +23,7 @@
 #include "search_parameters.hpp"
 
 UCI::UCI() :
-tp(1), ponder(false),
+tp(1), ponder(true),
 contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0), repetitionHashKeys({})
 {
     addCommand("uci", &UCI::sendInformation);
@@ -89,7 +89,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 2.575" << std::endl;
+    sync_cout << "id name Hakkapeliitta 2.576" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -97,7 +97,7 @@ void UCI::sendInformation(Position&, std::istringstream&)
     sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
-    // sync_cout << "option name Ponder type check default false" << std::endl;
+    sync_cout << "option name Ponder type check default true" << std::endl;
     // sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
     // sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
 
@@ -195,7 +195,7 @@ void UCI::go(Position& pos, std::istringstream& iss)
         else if (s == "infinite") { searchParameters.infinite = true; }
     }
 
-    tp.addJob(&Search::think, &search, pos, searchParameters, rootPly, repetitionHashKeys, contempt);
+    tp.addJob(&Search::think, &search, pos, searchParameters, rootPly, repetitionHashKeys, contempt, ponder);
 }
 
 void UCI::position(Position& pos, std::istringstream& iss)
