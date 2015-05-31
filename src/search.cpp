@@ -939,6 +939,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         {
             if (futileNode)
             {
+                bestScore = std::max(bestScore, staticEval + futilityMargin(depth));
                 ++prunedMoves;
                 continue;
             }
