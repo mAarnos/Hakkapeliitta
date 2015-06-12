@@ -402,9 +402,9 @@ void Bitboards::initializeMagics(const std::array<MagicInit, 64>& magicInit, std
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        magic[sq].magic = magicInit[sq].magic;
-        magic[sq].data = &mLookupTable[magicInit[sq].index];
-        auto bb = magic[sq].mask = ((shift == 64 - 12) ? rookMask(sq) : bishopMask(sq));
+        magic[sq].mMagic = magicInit[sq].mMagic;
+        magic[sq].mData = &mLookupTable[magicInit[sq].mIndex];
+        auto bb = magic[sq].mMask = ((shift == 64 - 12) ? rookMask(sq) : bishopMask(sq));
         const auto sq88 = sq + (sq & ~7);
 
         squares.clear();
@@ -435,8 +435,8 @@ void Bitboards::initializeMagics(const std::array<MagicInit, 64>& magicInit, std
                     }
                 }
             }
-            const auto j = ((bb * magic[sq].magic) >> shift);
-            magic[sq].data[j] = bb2;
+            const auto j = ((bb * magic[sq].mMagic) >> shift);
+            magic[sq].mData[j] = bb2;
         }
     }
 }

@@ -71,11 +71,11 @@ BOOST_AUTO_TEST_CASE(SEE_AND_MVVLVA)
 {
     struct Test
     {
-        std::string fen;
-        Move move;
-        int seeScore;
-        int mvvLvaScore;
-        bool captureOrPromotion;
+        std::string mFen;
+        Move mMove;
+        int mSeeScore;
+        int mMvvLvaScore;
+        bool mCaptureOrPromotion;
     };
 
     const std::array<Test, 3> tests = {{
@@ -86,10 +86,10 @@ BOOST_AUTO_TEST_CASE(SEE_AND_MVVLVA)
 
     for (auto& test : tests)
     {
-        Position pos(test.fen);
-        BOOST_CHECK(pos.captureOrPromotion(test.move) == test.captureOrPromotion);
-        BOOST_CHECK(pos.SEE(test.move) == test.seeScore);
-        BOOST_CHECK(pos.mvvLva(test.move) == test.mvvLvaScore);
+        Position pos(test.mFen);
+        BOOST_CHECK(pos.captureOrPromotion(test.mMove) == test.mCaptureOrPromotion);
+        BOOST_CHECK(pos.SEE(test.mMove) == test.mSeeScore);
+        BOOST_CHECK(pos.mvvLva(test.mMove) == test.mMvvLvaScore);
     }
 }
 

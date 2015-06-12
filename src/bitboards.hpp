@@ -184,15 +184,15 @@ public:
 private:
     struct Magic
     {
-        Bitboard* data;
-        Bitboard mask;
-        Bitboard magic;
+        Bitboard* mData;
+        Bitboard mMask;
+        Bitboard mMagic;
     };
 
     struct MagicInit
     {
-        Bitboard magic;
-        int32_t index;
+        Bitboard mMagic;
+        int32_t mIndex;
     };
 
     static int hardwarePopcnt(Bitboard bb) noexcept;
@@ -229,13 +229,13 @@ private:
 inline Bitboard Bitboards::bishopAttacks(Square sq, Bitboard occupied)
 {
     const auto& mag = mBishopMagics[sq];
-    return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 9)];
+    return mag.mData[((occupied & mag.mMask) * mag.mMagic) >> (64 - 9)];
 }
 
 inline Bitboard Bitboards::rookAttacks(Square sq, Bitboard occupied)
 {
     const auto& mag = mRookMagics[sq];
-    return mag.data[((occupied & mag.mask) * mag.magic) >> (64 - 12)];
+    return mag.mData[((occupied & mag.mMask) * mag.mMagic) >> (64 - 12)];
 }
 
 inline Bitboard Bitboards::queenAttacks(Square sq, Bitboard occupied)

@@ -42,7 +42,7 @@ public:
     /// @param root The root position.
     /// @param searchParameters Different kinds of parameters given to the search function.
     /// @return The move that the search function thinks is the best one.
-    Move think(const Position& root, SearchParameters searchParameters);
+    void think(const Position& root, SearchParameters searchParameters);
 
     /// @brief Clears the TT, PHT, killer table, history table and the counter move table. 
     ///
@@ -67,13 +67,13 @@ private:
     {
         SearchStack(int newPly)
         {
-            allowNullMove = true;
-            ply = newPly;
+            mAllowNullMove = true;
+            mPly = newPly;
         }
 
-        Move currentMove;
-        int ply;
-        bool allowNullMove;
+        Move mCurrentMove;
+        int mPly;
+        bool mAllowNullMove;
     };
     
     // Different classes used by the search function.

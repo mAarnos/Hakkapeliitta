@@ -34,9 +34,9 @@ std::pair<uint64_t, uint64_t> Benchmark::runPerftTestSuite()
 {
     struct PerftTest
     {
-        std::string fen;
-        int depth;
-        uint64_t result;
+        std::string mFen;
+        int mDepth;
+        uint64_t mResult;
     };
 
     static const std::array<PerftTest, 7> tests = { {
@@ -56,13 +56,13 @@ std::pair<uint64_t, uint64_t> Benchmark::runPerftTestSuite()
     for (auto i = 0; i < 7; ++i)
     {
         auto& test = tests[i];
-        Position pos(test.fen);
-        const auto result = perft(pos, test.depth, pos.inCheck());
+        Position pos(test.mFen);
+        const auto result = perft(pos, test.mDepth, pos.inCheck());
         total += result;
-        if (result != test.result)
+        if (result != test.mResult)
         {
             std::stringstream ss;
-            ss << "Test " << i + 1 << " failed: should have been " << test.result << " but was " << result;
+            ss << "Test " << i + 1 << " failed: should have been " << test.mResult << " but was " << result;
             throw std::exception(ss.str().c_str());
         }
     }
