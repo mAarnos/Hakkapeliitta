@@ -16,71 +16,71 @@
 */
 
 #include "movesort.hpp"
+#include "movegen.hpp"
 
-MoveGen MoveSort::moveGen;
-
+// In all cases, search the TT-move first.
+// In a normal search, then search good captures, then killers, then quiet moves and finally bad captures.
 enum Phase {
-    Normal, Captures, Killers, QuietMoves, BadCaptures,
+    Normal, GoodCaptures, Killers, QuietMoves, BadCaptures,
     Evasion, Evasions,
     Stop
 };
 
-MoveSort::MoveSort(const Position& pos, const HistoryTable& historyTable, uint16_t ttm, uint16_t k1, uint16_t k2, uint16_t counter, bool inCheck) :
-pos(pos), historyTable(historyTable), ttMove(ttm, 0), k1(k1), k2(k2), counter(counter)
+MoveSort::MoveSort(const Position& pos, const HistoryTable& historyTable, Move ttMove, Move k1, Move k2, Move counter, bool inCheck) :
+mPos(pos), mHistoryTable(historyTable), mTtMove(ttMove), mKiller1(k1), mKiller2(k2), mCounter(counter)
 {
-    phase = inCheck ? Evasion : Normal;
-    currentLocation = 0;
-    if (!pos.pseudoLegal(ttMove, inCheck))
+    mPhase = inCheck ? Evasion : Normal;
+    mCurrentLocation = 0;
+    if (pos.pseudoLegal(ttMove, inCheck))
     {
-        ttMove.setMove(0);
+        mMoveList.resize(1);
     }
-    if (!ttMove.empty()) moveList.resize(1);
 }
 
 void MoveSort::generateNextPhase()
 {
-    ++phase;
-    currentLocation = 0;
-    moveList.clear();
+    ++mPhase;
+    mCurrentLocation = 0;
+    mMoveList.clear();
 
-    if (phase == Captures)
+    if (mPhase == GoodCaptures)
     {
-        moveGen.generatePseudoLegalCaptures(pos, moveList, true);
-        for (auto i = 0; i < moveList.size(); ++i)
+        MoveGen::generatePseudoLegalCaptures(mPos, mMoveList, true);
+        for (auto i = 0; i < mMoveList.size(); ++i)
         {
-            moveList[i].setScore(pos.SEE(moveList[i]));
+            mMoveList.setScore(i, mPos.SEE(mMoveList.getMove(i)));
         }
     }
-    else if (phase == Killers)
+    else if (mPhase == Killers)
     {
-        moveList.emplace_back(k1);
-        moveList.emplace_back(k2);
-        if (counter != k1 && counter != k2)
+        mMoveList.emplace_back(mKiller1);
+        mMoveList.emplace_back(mKiller2);
+        if (mCounter != mKiller1 && mCounter != mKiller2)
         {
-            moveList.emplace_back(counter);
+            mMoveList.emplace_back(mCounter);
         }
     }
-    else if (phase == QuietMoves)
+    else if (mPhase == QuietMoves)
     {
-        moveGen.generatePseudoLegalQuietMoves(pos, moveList);
-        for (auto i = 0; i < moveList.size(); ++i)
+        MoveGen::generatePseudoLegalQuietMoves(mPos, mMoveList);
+        for (auto i = 0; i < mMoveList.size(); ++i)
         {
-            moveList[i].setScore(historyTable.getScore(pos, moveList[i]));
+            mMoveList.setScore(i, mHistoryTable.getScore(mPos, mMoveList.getMove(i)));
         }
     }
-    else if (phase == BadCaptures)
+    else if (mPhase == BadCaptures)
     {
-        moveList = temp;
+        mMoveList = mTemp;
     }
-    else if (phase == Evasions)
+    else if (mPhase == Evasions)
     {
-        moveGen.generateLegalEvasions(pos, moveList);
-        if (moveList.size() > 1) scoreEvasions();
+        MoveGen::generateLegalEvasions(mPos, mMoveList);
+        if (mMoveList.size() > 1) scoreEvasions();
     }
-    else if (phase == Normal || phase == Evasion || phase == Stop)
+    else if (mPhase == Normal || mPhase == Evasion || mPhase == Stop)
     {
-        phase = Stop;
-        moveList.resize(currentLocation + 1);
+        mPhase = Stop;
+        mMoveList.resize(mCurrentLocation + 1);
     }
 }
 
@@ -88,61 +88,65 @@ Move MoveSort::next()
 {
     for (;;)
     {
-        while (currentLocation == moveList.size())
+        while (mCurrentLocation == mMoveList.size())
         {
             generateNextPhase();
         }
 
-        if (phase == Normal || phase == Evasion)
+        if (mPhase == Normal || mPhase == Evasion)
         {
-            ++currentLocation;
-            return ttMove;
+            ++mCurrentLocation;
+            return mTtMove;
         }
-        else if (phase == Captures)
+        else if (mPhase == GoodCaptures)
         {
-            const auto move = selectionSort(currentLocation++);
-            if (move.getMove() != ttMove.getMove())
+            selectionSort(mCurrentLocation);
+            const auto move = mMoveList.getMove(mCurrentLocation);
+            const auto score = mMoveList.getScore(mCurrentLocation++);
+            if (move != mTtMove)
             {
-                if (move.getScore() >= 0)
+                if (score >= 0)
                 {
                     return move;
                 }
                 // Put bad captures into a temporary movelist.
-                temp.emplace_back(move);
+                mTemp.emplace_back(move);
             }
         }
-        else if (phase == Killers)
+        else if (mPhase == Killers)
         {
-            const auto& move = moveList[currentLocation++];
-            if (!move.empty() && move.getMove() != ttMove.getMove() && !pos.captureOrPromotion(move) && pos.pseudoLegal(move, false))
+            const auto move = mMoveList.getMove(mCurrentLocation++);
+            if (!move.empty() && move != mTtMove && !mPos.captureOrPromotion(move) && mPos.pseudoLegal(move, false))
             {
                 return move;
             }
         }
-        else if (phase == QuietMoves)
+        else if (mPhase == QuietMoves)
         {
-            const auto move = selectionSort(currentLocation++);
+            selectionSort(mCurrentLocation);
+            const auto move = mMoveList.getMove(mCurrentLocation++);
             // Filter out TT-move, killer moves and countermoves as those have already been tried.
-            if (move.getMove() != ttMove.getMove() && move.getMove() != k1 && move.getMove() != k2 && move.getMove() != counter)
+            if (move != mTtMove && move != mKiller1 && move != mKiller2 && move != mCounter)
             {
                 return move;
             }
         }
-        else if (phase == BadCaptures)
+        else if (mPhase == BadCaptures)
         {
-            // We already sorted the bad captures above and so the last bad capture is the best.
-            return moveList[currentLocation++];
+            // We already sorted the bad captures above and checked that they do not equal the TT-move.
+            return mMoveList.getMove(mCurrentLocation++);
         }
-        else if (phase == Evasions)
+        else if (mPhase == Evasions)
         {
-            const auto move = selectionSort(currentLocation++);
+            selectionSort(mCurrentLocation);
+            const auto move = mMoveList.getMove(mCurrentLocation++);
             // Filter out TT-move as it has been tried already.
-            if (move.getMove() != ttMove.getMove())
+            if (move != mTtMove)
             {
                 return move;
             }
         }
-        else if (phase == Stop)
+        else if (mPhase == Stop)
         {
             return Move();
         }
@@ -154,46 +158,50 @@ void MoveSort::scoreEvasions()
     static const int16_t hashMoveScore = 30000;
     static const int16_t captureMoveScore = hashMoveScore >> 1;
 
-    for (auto i = 0; i < moveList.size(); ++i)
+    for (auto i = 0; i < mMoveList.size(); ++i)
     {
-        auto& move = moveList[i];
+        const auto move = mMoveList.getMove(i);
 
-        if (pos.getBoard(move.getTo()) != Piece::Empty || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
+        if (mPos.captureOrPromotion(move))
         {
-            auto score = pos.SEE(move);
+            auto score = mPos.SEE(move);
             if (score >= 0) // Order good captures and promotions after ttMove
             {
                 score += captureMoveScore;
             }
-            move.setScore(score);
+            mMoveList.setScore(i, score);
         }
         else
         {
-            move.setScore(historyTable.getScore(pos, move));
+            mMoveList.setScore(i, mHistoryTable.getScore(mPos, move));
         }
     }
 }
 
-Move MoveSort::selectionSort(int startingLocation)
+void MoveSort::selectionSort(int startingLocation)
 {
-    auto bestMove = startingLocation;
-    auto bestScore = moveList[startingLocation].getScore();
+    auto bestLocation = startingLocation;
+    auto bestScore = mMoveList.getScore(startingLocation);
 
-    for (auto i = startingLocation + 1; i < moveList.size(); ++i)
+    for (auto i = startingLocation + 1; i < mMoveList.size(); ++i)
     {
-        if (moveList[i].getScore() > bestScore)
+        if (mMoveList.getScore(i) > bestScore)
         {
-            bestScore = moveList[i].getScore();
-            bestMove = i;
+            bestScore = mMoveList.getScore(i);
+            bestLocation = i;
         }
     }
 
-    if (bestMove > startingLocation)
+    if (bestLocation > startingLocation)
     {
-        std::swap(moveList[startingLocation], moveList[bestMove]);
+        // Swap the values at bestLocation and startingLocation.
+        const auto m = mMoveList.getMove(startingLocation);
+        const auto s = mMoveList.getScore(startingLocation);
+        mMoveList.setMove(startingLocation, mMoveList.getMove(bestLocation));
+        mMoveList.setScore(startingLocation, mMoveList.getScore(bestLocation));
+        mMoveList.setMove(bestLocation, m);
+        mMoveList.setScore(bestLocation, s);
     }
-
-    return moveList[startingLocation];
 }
 
 

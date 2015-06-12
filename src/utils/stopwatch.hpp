@@ -15,65 +15,79 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file stopwatch.hpp
+/// @author Mikko Aarnos
+
 #ifndef STOPWATCH_HPP_
 #define STOPWATCH_HPP_
 
 #include <cstdint>
 #include <chrono>
 
-// A high-resolution stopwatch-type timer.
+/// @brief A high-resolution stopwatch-type timer.
 class Stopwatch
 {
 public:
-    Stopwatch();
+    /// @brief Default constructor.
+    Stopwatch() noexcept;
 
-    void start();
-    void stop();
-    void reset();
-    bool isRunning() const;
-	
-	// If Stopwatch is running this returns the amount of time between now and starting the clock.
-	// If Stopwatch is not running it returns the amount of time between the starting and stopping points.
+    /// @brief Starts the stopwatch.
+    void start() noexcept;
+
+    /// @brief Stops the stopwatch.
+    void stop() noexcept;
+
+    /// @brief Resets the stopwatch.
+    void reset() noexcept;
+
+    /// @brief Used for checking if the stopwatch is currently running.
+    /// @return True if it is, false otherwise.
+    bool isRunning() const noexcept;
+    
+    /// @brief Returns the elapsed time between the starting and stopping (or current if not stopped) points. 
+    /// @tparam Resolution The resolution to report the elapsed time in.
+    /// @return The elapsed time.
     template <typename Resolution> 
-	uint64_t elapsed() const;
+    uint64_t elapsed() const;
+
 private:
-    std::chrono::high_resolution_clock::time_point startTime;
-    std::chrono::high_resolution_clock::time_point stopTime;
-    bool running;
+    std::chrono::high_resolution_clock::time_point mStartTime;
+    std::chrono::high_resolution_clock::time_point mStopTime;
+    bool mRunning;
 };
 
-inline Stopwatch::Stopwatch()
+inline Stopwatch::Stopwatch() noexcept
 {
     reset();
 }
 
-inline void Stopwatch::start()
+inline void Stopwatch::start() noexcept
 {
-    startTime = std::chrono::high_resolution_clock::now();
-    running = true;
+    mStartTime = std::chrono::high_resolution_clock::now();
+    mRunning = true;
 }
 
-inline void Stopwatch::stop()
+inline void Stopwatch::stop() noexcept
 {
-    stopTime = std::chrono::high_resolution_clock::now();
-    running = false;
+    mStopTime = std::chrono::high_resolution_clock::now();
+    mRunning = false;
 }
 
-inline void Stopwatch::reset()
+inline void Stopwatch::reset() noexcept
 {
-    startTime = stopTime = std::chrono::high_resolution_clock::now();
-    running = false;
+    mStartTime = mStopTime = std::chrono::high_resolution_clock::now();
+    mRunning = false;
 }
 
-inline bool Stopwatch::isRunning() const
+inline bool Stopwatch::isRunning() const noexcept
 {
-    return running;
+    return mRunning;
 }
 
 template <typename Resolution> 
 uint64_t Stopwatch::elapsed() const
 {
-    const auto elapsed = (running ? std::chrono::high_resolution_clock::now() : stopTime)  - startTime;
+    const auto elapsed = (mRunning ? std::chrono::high_resolution_clock::now() : mStopTime)  - mStartTime;
     const auto time = std::chrono::duration_cast<Resolution>(elapsed).count();
     return time;
 }

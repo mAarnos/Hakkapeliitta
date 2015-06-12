@@ -15,6 +15,9 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file pht.hpp
+/// @author Mikko Aarnos
+
 #ifndef PHT_HPP_
 #define PHT_HPP_
 
@@ -22,43 +25,80 @@
 #include <vector>
 #include "zobrist.hpp"
 
-// Hash table for speeding up pawn evaluation.
-// Default size of the pawn hash table is 4MB.
+/// @brief Hash table for speeding up pawn evaluation.
+///
+/// Default size of the pawn hash table is 4MB.
 class PawnHashTable
 {
 public:
+    /// @brief Default constructor.
     PawnHashTable();
 
-    // Sets the size of the pawn hash table.
-	void setSize(size_t sizeInMegaBytes);
-    // Clears the pawn hash table. Can potentially be an expensive operation.
+    /// @brief Sets the size of the pawn hash table.
+    /// @param sizeInMegaBytes Obviously, the new size of the hash table in megabytes.
+    void setSize(size_t sizeInMegaBytes);
+
+    /// @brief Clears the pawn hash table. Can potentially be an expensive operation.
     void clear();
-    // Save some information to the pawn hash table.
-    void save(HashKey hk, int scoreOp, int scoreEd);
-    // Get some information from the hash table. Returns true on a successful probe.
-    bool probe(HashKey hk, int& scoreOp, int& scoreEd) const;
+
+    /// @brief Save some information to the pawn hash table.
+    /// @param phk The pawn hash key of the position the information is for.
+    /// @param scoreOp The opening pawn score of the position.
+    /// @param scoreEd The ending pawn score of the position.
+    void save(HashKey phk, int scoreOp, int scoreEd);
+
+    /// @brief Get some information from the hash table. 
+    /// @param phk The pawn hash key of the position we are probing information for.
+    /// @param scoreOp On a succesful probe the opening pawn score is put here.
+    /// @param scoreEd On a succesful probe the ending pawn score is put here.
+    /// @return True on a succesful probe, false otherwise.
+    bool probe(HashKey phk, int& scoreOp, int& scoreEd) const;
+
 private:
-    // A single entry in the pawn hash table. Unlike with the tt, we have no need for buckets here.
-    // Notice that the size of the hash is smaller than with TTEntry. 
-    // This is simply because pawn hash collisions are very rare even with 32 bits so we don't need to have a long hash.
-    // Also, here collisions are far less dangerous than when with tt. 
-    // With the pawn hash table if something happens we just get a false score. With the tt we might get an illegal move which crashes the engine.
+    // A single entry in the pawn hash table.
     class PawnHashTableEntry
     {
     public:
-        PawnHashTableEntry() : hash(0), data(0) {}
+        PawnHashTableEntry() noexcept : mHash(0), mData(0) 
+        {
+        }
 
-        void setHash(const uint64_t newHash) { hash = newHash; }
-        void setData(const uint64_t newData) { data = newData; }
+        void setHash(uint64_t newHash) noexcept 
+        {
+            mHash = newHash; 
+        }
 
-        uint64_t getHash() const { return hash; }
-        uint64_t getData() const { return data; }
+        void setData(uint64_t newData) noexcept 
+        { 
+            mData = newData; 
+        }
+
+        uint64_t getHash() const noexcept 
+        { 
+            return mHash; 
+        }
+
+        uint64_t getData() const noexcept 
+        { 
+            return mData; 
+        }
+
+        int16_t getScoreOp() const noexcept 
+        {
+            return static_cast<int16_t>(mData);
+        }
+
+        int16_t getScoreEd() const noexcept
+        { 
+            return static_cast<int16_t>(mData >> 16); 
+        }
+
     private:
-        uint64_t hash;
-        uint64_t data;
+        uint64_t mHash;
+        uint64_t mData;
     };
 
-    std::vector<PawnHashTableEntry> table;
+    std::vector<PawnHashTableEntry> mTable;
 };
 
 #endif

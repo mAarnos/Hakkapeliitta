@@ -26,25 +26,25 @@ void HistoryTable::clear()
 {
     for (auto i = 0; i < 12; ++i)
     {
-        history[i].fill(0);
-        butterfly[i].fill(0);
+        mHistory[i].fill(0);
+        mButterfly[i].fill(0);
     }
 }
 
 void HistoryTable::addCutoff(const Position& pos, const Move& move, const int depth)
 {
-    history[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
+    mHistory[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
 }
 
 void HistoryTable::addNotCutoff(const Position& pos, const Move& move, const int depth)
 {
-    butterfly[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
+    mButterfly[pos.getBoard(move.getFrom())][move.getTo()] += depth * depth;
 }
 
 int16_t HistoryTable::getScore(const Position& pos, const Move& move) const
 {
-    const auto hScore = history[pos.getBoard(move.getFrom())][move.getTo()];
-    const auto bScore = butterfly[pos.getBoard(move.getFrom())][move.getTo()];
+    const auto hScore = mHistory[pos.getBoard(move.getFrom())][move.getTo()];
+    const auto bScore = mButterfly[pos.getBoard(move.getFrom())][move.getTo()];
 
     if (hScore + bScore == 0)
     {
@@ -60,8 +60,8 @@ void HistoryTable::age()
     {
         for (auto j = 0; j < 64; ++j)
         {
-            history[i][j] /= 2;
-            butterfly[i][j] /= 2;
+            mHistory[i][j] /= 2;
+            mButterfly[i][j] /= 2;
         }
     }
 }

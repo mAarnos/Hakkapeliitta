@@ -16,9 +16,9 @@
 */
 
 #include "pht.hpp"
+#include "bitboards.hpp"
 #include <cassert>
 #include <cmath>
-#include "utils/clamp.hpp"
 
 PawnHashTable::PawnHashTable()
 {
@@ -27,45 +27,45 @@ PawnHashTable::PawnHashTable()
 
 void PawnHashTable::setSize(size_t sizeInMegaBytes)
 {
-    // Clear the tt completely to avoid any funny business.
-    table.clear();
+    // Clear the PHT completely to avoid any funny business.
+    mTable.clear();
 
     // If size is not a power of two make it the biggest power of two smaller than size.
-    if (sizeInMegaBytes & (sizeInMegaBytes - 1))
+    if (Bitboards::moreThanOneBitSet(sizeInMegaBytes))
     {
-        sizeInMegaBytes = static_cast<int>(std::pow(2, std::floor(std::log2(sizeInMegaBytes))));
+        sizeInMegaBytes = static_cast<size_t>(std::pow(2, std::floor(log2(sizeInMegaBytes))));
     }
 
     const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
-    table.resize(tableSize);
+    mTable.resize(tableSize);
 }
 
 void PawnHashTable::clear()
 {
-    const auto tableSize = table.size();
-    table.clear();
-    table.resize(tableSize);
+    const auto tableSize = mTable.size();
+    mTable.clear();
+    mTable.resize(tableSize);
 }
 
-void PawnHashTable::save(const HashKey hk, const int scoreOp, const int scoreEd)
+void PawnHashTable::save(HashKey phk, int scoreOp, int scoreEd)
 {
-    auto& hashEntry = table[hk & (table.size() - 1)];
+    auto& hashEntry = mTable[phk & (mTable.size() - 1)];
 
     hashEntry.setData((scoreOp & 0xffff) | (scoreEd << 16));
-    hashEntry.setHash(hk ^ hashEntry.getData());
+    hashEntry.setHash(phk ^ hashEntry.getData());
 
-    assert(static_cast<int16_t>(hashEntry.getData()) == scoreOp);
-    assert(static_cast<int16_t>(hashEntry.getData() >> 16) == scoreEd);
+    assert(hashEntry.getScoreOp() == scoreOp);
+    assert(hashEntry.getScoreEd() == scoreEd);
 }
 
-bool PawnHashTable::probe(const HashKey hk, int& scoreOp, int& scoreEd) const
+bool PawnHashTable::probe(HashKey phk, int& scoreOp, int& scoreEd) const
 {
-    const auto& hashEntry = table[hk & (table.size() - 1)];
+    const auto& hashEntry = mTable[phk & (mTable.size() - 1)];
 
-    if ((hashEntry.getHash() ^ hashEntry.getData()) == hk)
+    if ((hashEntry.getHash() ^ hashEntry.getData()) == phk)
     {
-        scoreOp = static_cast<int16_t>(hashEntry.getData());
-        scoreEd = static_cast<int16_t>(hashEntry.getData() >> 16);
+        scoreOp = hashEntry.getScoreOp();
+        scoreEd = hashEntry.getScoreEd();
         return true;
     }
 

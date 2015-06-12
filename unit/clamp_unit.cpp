@@ -15,25 +15,15 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#include "..\src\utils\clamp.hpp"
+#include <boost\test\unit_test.hpp>
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+BOOST_AUTO_TEST_CASE(CLAMP_NORMAL)
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
+    BOOST_CHECK(clamp(0, -50, 50) == 0);
+    BOOST_CHECK(clamp(-90, -63, 9) == -63);
+    BOOST_CHECK(clamp(76, 19, 75) == 75);
 }
 
-#endif
+
+

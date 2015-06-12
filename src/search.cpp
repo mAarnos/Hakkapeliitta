@@ -16,64 +16,41 @@
 */
 
 #include "search.hpp"
-#include <thread>
-#include "utils\synchronized_ostream.hpp"
-#include "utils\exception.hpp"
-#include "utils\clamp.hpp"
+#include "movelist.hpp"
+#include "movegen.hpp"
 #include "movesort.hpp"
 
-const int mateScore = 32767; // mate in 0
-const int minMateScore = 32767 - 1000; // mate in 500
-const int infinity = mateScore + 1;
-
-const int aspirationWindow = 16;
-const int baseNullReduction = 3;
-const int futilityDepth = 7;
-const int deltaPruningMargin = 50;
-const int reverseFutilityDepth = 5;
-const int lmrDepthLimit = 3;
-const int lmpDepth = 6;
-std::array<int, 1 + lmpDepth> lmpMoveCounts;
-const int razoringDepth = 3;
-const int seePruningDepth = 3;
-
-const int16_t hashMoveScore = 30000;
-const int16_t captureMoveScore = hashMoveScore >> 1;
-const std::array<int16_t, 1 + 4> killerMoveScore = {
-    0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
-};
-const int16_t counterMoveScore = hashMoveScore >> 6;
-
-int matedInPly(const int ply)
+// Returns a score corresponding to getting mated in a given number of plies.
+int matedInPly(int ply)
 {
     return (-mateScore + ply);
 }
 
-int mateInPly(const int ply)
+// Returns a score corresponding to a mate in a given number of plies.
+int mateInPly(int ply)
 {
     return (mateScore - ply);
 }
 
-int isWinScore(const int score)
+// Returns true if a given score is "mate in X".
+bool isWinScore(int score)
 {
     return score >= minMateScore;
 }
 
-int isLoseScore(const int score)
+// Returns true if a given score is "mated in X".
+bool isLoseScore(int score)
 {
     return score <= -minMateScore;
 }
 
-int isMateScore(const int score)
+// Returns true if the score is some kind of a mate score.
+bool isMateScore(int score)
 {
     return isWinScore(score) || isLoseScore(score);
 }
 
-bool quietMove(const Position& pos, const Move& move)
-{
-    return pos.getBoard(move.getTo()) == Piece::Empty && (move.getPromotion() == Piece::Empty || move.getPromotion() == Piece::King);
-}
-
+// TT-scores are adjusted to avoid some well-known problems. This adjusts a score back to normal.
 int ttScoreToRealScore(int score, int ply)
 {
     if (isLoseScore(score))
@@ -88,6 +65,7 @@ int ttScoreToRealScore(int score, int ply)
     return score;
 }
 
+// Converse of the previous function.
 int realScoreToTtScore(int score, int ply)
 {
     if (isLoseScore(score))
@@ -102,472 +80,101 @@ int realScoreToTtScore(int score, int ply)
     return score;
 }
 
-int razoringMargin(int depth)
-{
-    return depth * 50 + 50;
-}
-
-int reverseFutilityMargin(int depth)
-{
-    return 50 * depth + 100;
-}
-
-int futilityMargin(int depth)
-{
-    return 25 * depth + 100;
-}
-
-Search::Search()
-{
-    contempt = {{ 0, 0 }};
-    rootPly = 0;
-    contempt.fill(0);
-    searching = false;
-    pondering = false;
-    infinite = false;
-    targetTime = maxTime = 0;
-    nodeCount = 0;
-    tbHits = 0;
-    nextSendInfo = 1000;
-    nodesToTimeCheck = 10000;
-    selDepth = 1;
-    searchNeedsMoreTime = false;
-
-    for (auto i = 0; i < 64; ++i)
-    {
-        for (auto j = 0; j < 64; ++j)
-        {
-            lmrReductions[i][j] = static_cast<int>(std::max(1.0, (std::log(i + 1) * std::log(j + 1)) / 1.70));
-        }
-    }
-
-    for (auto i = 0; i < 1 + lmpDepth; ++i)
-    {
-        lmpMoveCounts[i] = static_cast<int>(std::round(2.98484 + std::pow(i, 1.74716)));
-    }
-}
-
-void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove)
+// Used for ordering moves during the quiescence search.
+// Delete as soon as MoveSort works everywhere.
+void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
-        auto& move = moveList[i];
+        const auto move = moveList.getMove(i);
 
-        if (move.getMove() == ttMove.getMove())
+        if (move == ttMove)
         {
-            move.setScore(hashMoveScore); 
+            moveList.setScore(i, hashMoveScore);
         }
-        else if (!quietMove(pos, move))
+        else if (pos.captureOrPromotion(move))
         {
-            auto score = pos.mvvLva(move);
-            score += captureMoveScore; 
-            move.setScore(score);
+            moveList.setScore(i, pos.mvvLva(move) + captureMoveScore);
         }
         else
         {
-            move.setScore(historyTable.getScore(pos, move));
+            moveList.setScore(i, historyTable.getScore(pos, move));
         }
     }
 }
 
-void selectMove(MoveList& moveList, const int currentMove)
+// Select the best move from a move list with selection sort.
+// Delete as soon as MoveSort works everywhere.
+Move selectMove(MoveList& moveList, int currentMove)
 {
     auto bestMove = currentMove;
-    auto bestScore = moveList[currentMove].getScore();
+    auto bestScore = moveList.getScore(currentMove);
 
     for (auto i = currentMove + 1; i < moveList.size(); ++i)
     {
-        if (moveList[i].getScore() > bestScore)
+        if (moveList.getScore(i) > bestScore)
         {
-            bestScore = moveList[i].getScore();
+            bestScore = moveList.getScore(i);
             bestMove = i;
         }
     }
 
     if (bestMove > currentMove)
     {
-        std::swap(moveList[currentMove], moveList[bestMove]);
+        // Swap the values at bestLocation and currentMove.
+        const auto m = moveList.getMove(currentMove);
+        const auto s = moveList.getScore(currentMove);
+        moveList.setMove(currentMove, moveList.getMove(bestMove));
+        moveList.setScore(currentMove, moveList.getScore(bestMove));
+        moveList.setMove(bestMove, m);
+        moveList.setScore(bestMove, s);
+    }
+
+    return moveList.getMove(currentMove);
+}
+
+// Calculates the razoring margin for a given depth.
+int razoringMargin(int depth)
+{
+    return 50 * depth + 50;
+}
+
+// Calculates the reverse futility margin for a given depth.
+int reverseFutilityMargin(int depth)
+{
+    return 50 * depth + 100;
+}
+
+// Calculates the futility margin for a given depth.
+int futilityMargin(int depth)
+{
+    return 25 * depth + 100;
+}
+
+Search::Search():
+    searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
+    targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
+    tbHits(0), nodeCount(0), selDepth(0), rootPly(0), repetitionHashes({}), contempt({})
+{
+    for (auto i = 0; i < 64; ++i)
+    {
+        for (auto j = 0; j < 64; ++j)
+        {
+            lmrReductions[i][j] = static_cast<int>(std::max(1.0, (std::log1p(i) * std::log1p(j)) / 1.70));
+        }
+    }
+
+    for (auto d = 0; d < 1 + lmpDepth; ++d)
+    {
+        lmpMoveCounts[d] = static_cast<int>(std::round(2.98484 + std::pow(d, 1.74716)));
     }
 }
 
-// Move ordering goes like this:
-// 1. Hash move (which can also be the PV-move)
-// 2. Good captures and promotions
-// 3. Equal captures and promotions
-// 4. Killer moves
-// 5. Quiet moves sorted by the history heuristic
-// 6. Bad captures
-void Search::orderMoves(const Position& pos, MoveList& moveList, const Move& ttMove, const int ply, const Move& opponentMove) const
-{
-    const auto counterMove = counterMoveTable.getCounterMove(pos, opponentMove);
-
-    for (auto i = 0; i < moveList.size(); ++i)
-    {
-        auto& move = moveList[i];
-
-        if (move.getMove() == ttMove.getMove()) // Move from transposition table
-        {
-            move.setScore(hashMoveScore);
-        }
-        else if (pos.getBoard(move.getTo()) != Piece::Empty
-            || (move.getPromotion() != Piece::Empty && move.getPromotion() != Piece::King))
-        {
-            auto score = pos.SEE(move);
-            if (score >= 0) // Order good captures and promotions after ttMove
-            {
-                score += captureMoveScore;
-            }
-            move.setScore(score);
-        }
-        else
-        {
-            const auto killerScore = killerTable.isKiller(move, ply);
-            if (killerScore > 0)
-            {
-                move.setScore(killerMoveScore[killerScore]);
-            }
-            else if (move.getMove() == counterMove)
-            {
-                move.setScore(counterMoveScore);
-            }
-            else
-            {
-                move.setScore(historyTable.getScore(pos, move));
-            }
-        }
-    }
-}
-
-void Search::infoCurrMove(const Move& move, int depth, int nr)
-{
-    sync_cout << "info depth " << depth
-              << " currmove " << moveToUciFormat(move)
-              << " currmovenumber " << nr + 1 << std::endl;
-} 
-
-std::string movesToUciFormat(const std::vector<Move>& moves)
-{
-    std::string s;
-
-    for (auto& move : moves)
-    {
-        s += moveToUciFormat(move) + " ";
-    }
-
-    return s;
-}
-
-void Search::infoPv(const std::vector<Move>& moves, int depth, int score, int flags)
-{
-    std::stringstream ss;
-
-    ss << "info depth " << depth << " seldepth " << selDepth;
-    if (isMateScore(score))
-    {
-        score = (score > 0 ? ((mateScore - score + 1) >> 1) : ((-score - mateScore) >> 1));
-        ss << " score mate " << score;
-    }
-    else
-    {
-        ss << " score cp " << score;
-    }
-
-    if (flags == LowerBoundScore)
-    {
-        ss << " lowerbound ";
-    }
-    else if (flags == UpperBoundScore)
-    {
-        ss << " upperbound ";
-    }
-
-    auto searchTime = sw.elapsed<std::chrono::milliseconds>();
-    ss << " time " << searchTime
-        << " nodes " << nodeCount
-        << " nps " << (nodeCount / (searchTime + 1)) * 1000
-        << " tbhits " << tbHits
-        << " pv " << movesToUciFormat(moves) << std::endl;
-
-    sync_cout << ss.str();
-}
-
-void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
-{
-    auto marker = 0;
-
-    for (auto i = 0; i < moveList.size(); ++i)
-    {
-        if (pos.legal(moveList[i], inCheck))
-        {
-            moveList[marker++] = moveList[i];
-        }
-    }
-
-    moveList.resize(marker);
-}
-
-void Search::think(const Position& root, SearchParameters searchParameters, int newRootPly, std::array<HashKey, 1024> newRepetitionHashKeys, int contemptValue, bool ponderingEnabled)
-{
-    auto alpha = -infinity;
-    auto beta = infinity;
-    auto delta = aspirationWindow;
-    auto score = matedInPly(0);
-    auto inCheck = root.inCheck();
-    Position pos(root);
-    MoveList rootMoveList;
-    std::vector<Move> pv;
-    Move bestMove;
-
-    tbHits = 0;
-    nodeCount = 0;
-    nodesToTimeCheck = 10000;
-    contempt[root.getSideToMove()] = -contemptValue;
-    contempt[!root.getSideToMove()] = contemptValue;
-    searchNeedsMoreTime = false;
-    selDepth = 1;
-    nextSendInfo = 1000;
-    searching = true;
-    pondering = searchParameters.ponder;
-    infinite = (searchParameters.infinite || searchParameters.depth > 0 || searchParameters.nodes > 0);
-    const auto maxDepth = (searchParameters.depth > 0 ? std::min(searchParameters.depth + 1, 128) : 128);
-    maxNodes = (searchParameters.nodes > 0 ? searchParameters.nodes : std::numeric_limits<size_t>::max());
-    rootPly = newRootPly;
-    repetitionHashes = newRepetitionHashKeys;
-    transpositionTable.startNewSearch();
-    historyTable.age();
-    counterMoveTable.clear();
-    killerTable.clear(); 
-    sw.reset();
-    sw.start();
-
-    // Allocate the time limits.
-    if (searchParameters.moveTime)
-    {
-        targetTime = maxTime = searchParameters.moveTime;
-    }
-    else
-    {
-        const auto lagBuffer = 50;
-        auto time = searchParameters.time[root.getSideToMove()];
-        auto increment = searchParameters.increment[root.getSideToMove()];
-        targetTime = clamp(time / std::min(searchParameters.movesToGo, 25) + increment - lagBuffer, 1, time - lagBuffer);
-        maxTime = clamp(time / 2 + increment, 1, time - lagBuffer);
-        if (ponderingEnabled)
-        {
-            targetTime += targetTime / 3;
-            targetTime = clamp(targetTime, 1, maxTime);
-        }
-    }
-
-    inCheck ? moveGen.generateLegalEvasions(pos, rootMoveList)
-            : moveGen.generatePseudoLegalMoves(pos, rootMoveList);
-    removeIllegalMoves(pos, rootMoveList, inCheck);
-
-    // Get the tt move from a possible previous search.
-    auto ttEntry = transpositionTable.probe(pos.getHashKey());
-    if (ttEntry)
-    {
-        bestMove.setMove(ttEntry->getBestMove());
-    }
-
-    std::array<SearchStack, 128 + 1> searchStacks;
-    for (auto i = 0; i < 128 + 1; ++i)
-    {
-        searchStacks[i].clear(i);
-    }
-    auto ss = &searchStacks[0];
-
-    repetitionHashes[rootPly] = pos.getHashKey();
-    for (auto depth = 1; depth < maxDepth;)
-    {
-        auto previousAlpha = alpha;
-        auto previousBeta = beta;
-        auto movesSearched = 0;
-        auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
-        auto bestScore = -mateScore;
-
-        orderMoves(pos, rootMoveList, bestMove, 0, Move());
-        try {
-            for (auto i = 0; i < rootMoveList.size(); ++i)
-            {
-                selectMove(rootMoveList, i);
-                const auto& move = rootMoveList[i];
-                ++nodeCount;
-                --nodesToTimeCheck;
-                searchNeedsMoreTime = i > 0;
-
-                // Start sending currmove info only after one second has elapsed.
-                if (sw.elapsed<std::chrono::milliseconds>() > 1000)
-                {
-                    infoCurrMove(move, depth, i);
-                }
-
-                auto givesCheck = pos.givesCheck(move);
-                auto newDepth = depth - 1;
-                auto nonCriticalMove = !givesCheck && move.getScore() >= 0 && move.getScore() < counterMoveScore;
-
-                Position newPosition(pos);
-                newPosition.makeMove(move);
-                ss->currentMove = move;
-                if (!movesSearched)
-                {
-                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
-                }
-                else
-                {
-                    auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
-
-                    score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                                     : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
-
-                    if (reduction && score > alpha)
-                    {
-                        score = newDepth > 0 ? -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                             : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
-                    }
-                    if (score > alpha && score < beta)
-                    {
-                        score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                             : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
-                    }
-                }
-                ++movesSearched;
-
-                while (score >= beta || ((movesSearched == 1) && score <= alpha))
-                {
-                    const auto lowerBound = score >= beta;
-                    if (lowerBound)
-                    {
-                        searchNeedsMoreTime = i > 0;
-                        bestMove = move;
-                        if (isWinScore(score))
-                        {
-                            beta = infinity;
-                        }
-                        else
-                        {
-                            beta = std::min(infinity, previousBeta + delta);
-                        }
-                        // Don't forget to update history and killer tables.
-                        if (!inCheck)
-                        {
-                            if (quietMove(pos, move))
-                            {
-                                historyTable.addCutoff(pos, move, depth);
-                                killerTable.addKiller(move, 0);
-                            }
-                            for (auto j = 0; j < i; ++j)
-                            {
-                                const auto& move2 = rootMoveList[j];
-                                if (quietMove(pos, move2))
-                                {
-                                    historyTable.addNotCutoff(pos, move2, depth);
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        searchNeedsMoreTime = true;
-                        if (isLoseScore(score))
-                        {
-                            alpha = -infinity;
-                        }
-                        else
-                        {
-                            alpha = std::max(-infinity, previousAlpha - delta);
-                        }
-                    }
-                    delta *= 2;
-                    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, lowerBound ? LowerBoundScore : UpperBoundScore);
-                    pv = transpositionTable.extractPv(pos);
-                    infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
-                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
-                }
-
-                if (score > bestScore)
-                {
-                    bestScore = score;
-                    if (score > alpha) // No need to handle the case score >= beta, that is done slightly above
-                    {
-                        bestMove = move;
-                        alpha = score;
-                        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(score, 0), depth, ExactScore);
-                        pv = transpositionTable.extractPv(pos);
-                        infoPv(pv, depth, score, ExactScore);
-                    }
-                }
-            }
-        }
-        catch (const StopSearchException&)
-        {
-            pos = root; // Exception messes up the position, fix it.
-        }
-
-        transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, 0), depth, bestScore >= beta ? LowerBoundScore : ExactScore);
-        pv = transpositionTable.extractPv(pos);
-
-        // If there is only one root move then stop searching.
-        // Not done if we are in an infinite search or pondering, since we must search for ever in those cases.
-        // depth > 6 is there to make sure we have something to ponder on.
-        if (!infinite && !pondering && rootMoveList.size() == 1 && depth > 6)
-        {
-            break;
-        }
-
-        if (!searching)
-        {
-            break;
-        }
-
-        infoPv(pv, depth, bestScore, ExactScore);
-
-        // Adjust alpha and beta based on the last score.
-        // Don't adjust if depth is low - it's a waste of time.
-        // Also don't use aspiration windows when searching for faster mate.
-        if (depth >= 4 && !isMateScore(bestScore))
-        {
-            alpha = bestScore - aspirationWindow;
-            beta = bestScore + aspirationWindow;
-        }
-        else
-        {
-            alpha = -infinity;
-            beta = infinity;
-        }
-        delta = aspirationWindow;
-        ++depth;
-    }
-
-    // If we are in an infinite search (or pondering) and we reach the max amount of iterations possible loop here until stopped.
-    // This is done because returning is against the UCI-protocol.
-    std::chrono::milliseconds dura(5);
-    while (searching && (searchParameters.infinite || pondering))
-    {
-        std::this_thread::sleep_for(dura);
-    }
-
-    sw.stop();
-    // Make sure that the the flag that we are searching is set to false when we quit.
-    // If we somehow reach maximum depth we might not reset the flag otherwise.
-    searching = false;
-    auto searchTime = sw.elapsed<std::chrono::milliseconds>();
-    sync_cout << "info time " << searchTime
-              << " nodes " << nodeCount
-              << " nps " << (nodeCount / (searchTime + 1)) * 1000
-              << " tbhits " << tbHits << std::endl
-              << "bestmove " << moveToUciFormat(pv[0]) 
-              << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
-}
-
-// Technically we are checking for 2 - fold repetitions instead of 3 - fold, but that is enough for game theoric correctness.
 bool Search::repetitionDraw(const Position& pos, int ply) const
 {
-    auto temp = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
+    const auto limit = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
 
-    for (auto i = rootPly + ply - 2; i >= temp; i -= 2)
+    for (auto i = rootPly + ply - 2; i >= limit; i -= 2)
     {
         if (repetitionHashes[i] == pos.getHashKey())
         {
@@ -578,21 +185,23 @@ bool Search::repetitionDraw(const Position& pos, int ply) const
     return false;
 }
 
-int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, int beta, const bool inCheck, SearchStack* ss)
+int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
 {
     assert(alpha < beta);
     assert(depth <= 0);
     assert(inCheck == pos.inCheck());
 
+    search<true>(pos, depth, alpha, beta, inCheck, ss);
+
     int bestScore, delta;
     MoveList moveList;
     Move bestMove;
-    auto ttFlag = UpperBoundScore;
+    auto ttFlag = TranspositionTable::Flags::UpperBoundScore;
 
     // Small speed optimization, runs fine without it.
     transpositionTable.prefetch(pos.getHashKey());
 
-    // Don't go over max depth.
+    // Don't go over max ply.
     if (ss->ply >= 128)
     {
         return evaluation.evaluate(pos);
@@ -603,7 +212,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     {
         if (inCheck)
         {
-            moveGen.generateLegalEvasions(pos, moveList);
+            MoveGen::generateLegalEvasions(pos, moveList);
             if (moveList.empty())
             {
                 return matedInPly(ss->ply); // Can't claim draw on fifty move if mated.
@@ -629,16 +238,20 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     // It seems that when this part was broken then not pruning checks below didn't work either for some reason.
     const auto ttDepth = (inCheck || depth >= 0) ? 0 : -1;
 
-    auto ttEntry = transpositionTable.probe(pos.getHashKey());
+    const auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
-        bestMove.setMove(ttEntry->getBestMove());
+        bestMove = ttEntry->getBestMove();
         if (ttEntry->getDepth() >= ttDepth)
         {
-            auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
-            auto ttFlags = ttEntry->getFlags();
-            if (ttFlags == ExactScore || (ttFlags == UpperBoundScore && ttScore <= alpha) || (ttFlags == LowerBoundScore && ttScore >= beta))
+            const auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
+            const auto ttFlags = ttEntry->getFlags();
+            if (ttFlags == TranspositionTable::Flags::ExactScore
+            || (ttFlags == TranspositionTable::Flags::UpperBoundScore && ttScore <= alpha)
+            || (ttFlags == TranspositionTable::Flags::LowerBoundScore && ttScore >= beta))
+            {
                 return ttScore;
+            }
         }
     }
 
@@ -646,7 +259,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     {
         bestScore = matedInPly(ss->ply);
         delta = -infinity;
-        moveGen.generateLegalEvasions(pos, moveList);
+        MoveGen::generateLegalEvasions(pos, moveList);
         if (moveList.empty())
         {
             return bestScore;
@@ -664,7 +277,8 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             alpha = bestScore;
         }
         delta = bestScore + deltaPruningMargin;
-        depth >= 0 ? moveGen.generatePseudoLegalCapturesAndQuietChecks(pos, moveList) : moveGen.generatePseudoLegalCaptures(pos, moveList, false);
+        depth >= 0 ? MoveGen::generatePseudoLegalCapturesAndQuietChecks(pos, moveList) 
+                   : MoveGen::generatePseudoLegalCaptures(pos, moveList, false);
     }
 
     orderCaptures(pos, moveList, bestMove);
@@ -672,7 +286,7 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
     for (auto i = 0; i < moveList.size(); ++i)
     {
         selectMove(moveList, i);
-        const auto& move = moveList[i];
+        const auto move = moveList.getMove(i);
         const auto givesCheck = pos.givesCheck(move);
         ++nodeCount;
         --nodesToTimeCheck;
@@ -713,11 +327,15 @@ int Search::quiescenceSearch(const Position& pos, const int depth, int alpha, in
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), ttDepth, LowerBoundScore);
+                    transpositionTable.save(pos.getHashKey(), 
+                                            move, 
+                                            realScoreToTtScore(score, ss->ply), 
+                                            ttDepth, 
+                                            TranspositionTable::Flags::LowerBoundScore);
                     return score;
                 }
                 bestMove = move;
-                ttFlag = ExactScore;
+                ttFlag = TranspositionTable::Flags::ExactScore;
                 alpha = score;
             }
             bestScore = score;
@@ -741,10 +359,9 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     assert(inCheck == pos.inCheck());
 
     auto bestScore = matedInPly(ss->ply), movesSearched = 0, prunedMoves = 0;
-    auto ttFlag = UpperBoundScore;
+    auto ttFlag = TranspositionTable::Flags::UpperBoundScore;
     MoveList quietsSearched;
-    Move bestMove;
-    uint16_t ttMove = 0;
+    Move bestMove, ttMove;
     int score;
 
     // Small speed optimization, runs fine without it.
@@ -763,6 +380,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Time check things.
+    // TODO: finish this
+    /*
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
@@ -789,18 +408,21 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         if (!searching)
         {
-            throw StopSearchException("allocated time has run out");
+            // TODO: custom exception
+            throw std::exception("allocated time has run out");
         }
 
         if (time >= nextSendInfo)
         {
             nextSendInfo += 1000;
-            sync_cout << "info nodes " << nodeCount 
-                      << " time " << time 
-                      << " nps " << (nodeCount / (time + 1)) * 1000 
+            
+            sync_cout << "info nodes " << nodeCount
+                      << " time " << time
+                      << " nps " << (nodeCount / (time + 1)) * 1000
                       << " tbhits " << tbHits << std::endl;
         }
     }
+    */
 
     // Check for fifty move draws.
     if (pos.getFiftyMoveDistance() >= 100)
@@ -808,7 +430,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (inCheck)
         {
             // Might as well use quietsSearched at this point, we are returning anyways.
-            moveGen.generateLegalEvasions(pos, quietsSearched);
+            MoveGen::generateLegalEvasions(pos, quietsSearched);
             if (quietsSearched.empty())
             {
                 return bestScore; // Can't claim draw on fifty move if mated.
@@ -830,26 +452,32 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         return alpha;
 
     // Probe the transposition table. 
-    auto ttEntry = transpositionTable.probe(pos.getHashKey());
+    const auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
         ttMove = ttEntry->getBestMove();
         if (ttEntry->getDepth() >= depth)
         {
-            auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
-            auto ttFlags = ttEntry->getFlags();
-            if (ttFlags == ExactScore || (ttFlags == UpperBoundScore && ttScore <= alpha) || (ttFlags == LowerBoundScore && ttScore >= beta))
+            const auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->ply);
+            const auto ttFlags = ttEntry->getFlags();
+            if (ttFlags == TranspositionTable::Flags::ExactScore
+            || (ttFlags == TranspositionTable::Flags::UpperBoundScore && ttScore <= alpha)
+            || (ttFlags == TranspositionTable::Flags::LowerBoundScore && ttScore >= beta))
+            {
                 return ttScore;
+            }
         }
     }
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
-    auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos));
+    const auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos));
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
-    if (!pvNode && !inCheck && pos.nonPawnMaterial(pos.getSideToMove()) && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargin(depth) >= beta)
+    if (!pvNode && !inCheck && pos.getNonPawnPieceCount(pos.getSideToMove()) && depth <= reverseFutilityDepth && staticEval - reverseFutilityMargin(depth) >= beta)
+    {
         return staticEval - reverseFutilityMargin(depth);
+    }
 
     // Razoring.
     // Not useful in PV-nodes as this tries to search for nodes where score <= alpha but in PV-nodes score > alpha.
@@ -866,11 +494,11 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Null move pruning.
     // Not used when in a PV-node because we should _never_ fail high at a PV-node so doing this is a waste of time.
     // I don't really like the staticEval >= beta condition but the gain in elo is significant so...
-    if (!pvNode && ss->allowNullMove && !inCheck && depth > 1 && staticEval >= beta && pos.nonPawnMaterial(pos.getSideToMove()))
+    if (!pvNode && ss->allowNullMove && !inCheck && depth > 1 && staticEval >= beta && pos.getNonPawnPieceCount(pos.getSideToMove()))
     {
         const auto R = baseNullReduction + depth / 6;
         if (!(ttEntry
-            && ttEntry->getFlags() == UpperBoundScore
+            && ttEntry->getFlags() == TranspositionTable::Flags::UpperBoundScore
             && ttEntry->getDepth() >= depth - 1 - R
             && ttEntry->getScore() <= alpha))
         {
@@ -882,21 +510,25 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             --nodesToTimeCheck;
             (ss + 1)->allowNullMove = false;
             score = depth - 1 - R > 0 ? -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
-                                      : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
+                : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
             (ss + 1)->allowNullMove = true;
             if (score >= beta)
             {
                 // Don't return unproven mate scores as they cause some instability.
                 if (isMateScore(score))
                     score = beta;
-                transpositionTable.save(pos.getHashKey(), Move(ttMove, 0), realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
+                transpositionTable.save(pos.getHashKey(), 
+                                        ttMove, 
+                                        realScoreToTtScore(score, ss->ply), 
+                                        depth, 
+                                        TranspositionTable::Flags::LowerBoundScore);
                 return score;
             }
         }
     }
 
     // Internal iterative deepening.
-    if (!ttMove && (pvNode ? depth > 4 : depth > 7))
+    if (ttMove.empty() && (pvNode ? depth > 4 : depth > 7))
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         ss->allowNullMove = false;
@@ -904,7 +536,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         ss->allowNullMove = true;
 
         // Now probe the TT and get the best move.
-        auto tte = transpositionTable.probe(pos.getHashKey());
+        const auto tte = transpositionTable.probe(pos.getHashKey());
         if (tte)
         {
             ttMove = tte->getBestMove();
@@ -912,15 +544,14 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Futility pruning is useless at PV-nodes for the same reason as razoring.
-    auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin(depth) <= alpha);
-    auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
-    auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
-    auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
-
-    const auto killerA = killerTable.getKillerA(ss->ply);
-    const auto killerB = killerTable.getKillerB(ss->ply);
+    const auto futileNode = (!pvNode && !inCheck && depth <= futilityDepth && staticEval + futilityMargin(depth) <= alpha);
+    const auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
+    const auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
+    const auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
+    const auto killers = killerTable.getKillers(ss->ply);
     const auto counter = counterMoveTable.getCounterMove(pos, (ss - 1)->currentMove);
-    MoveSort ms(pos, historyTable, ttMove, killerA, killerB, counter, inCheck);
+
+    MoveSort ms(pos, historyTable, ttMove, killers.first, killers.second, counter, inCheck);
 
     repetitionHashes[rootPly + ss->ply] = pos.getHashKey();
     for (auto i = 0;; ++i)
@@ -928,14 +559,14 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         const auto move = ms.next();
         if (move.empty()) break;
 
-        auto givesCheck = pos.givesCheck(move);
-        auto newDepth = depth - 1;
-        auto quietMove = !pos.captureOrPromotion(move);
+        const auto givesCheck = pos.givesCheck(move);
+        const auto newDepth = depth - 1;
+        const auto quietMove = !pos.captureOrPromotion(move);
         if (quietMove) quietsSearched.emplace_back(move);
-        auto nonCriticalMove = !givesCheck && quietMove && move.getMove() != ttMove
-                                                        && move.getMove() != killerA 
-                                                        && move.getMove() != killerB 
-                                                        && move.getMove() != counter;
+        const auto nonCriticalMove = !givesCheck && quietMove && move != ttMove
+                                                              && move != killers.first
+                                                              && move != killers.second
+                                                              && move != counter;
         ++nodeCount;
         --nodesToTimeCheck;
 
@@ -973,11 +604,11 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (!movesSearched)
         {
             score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                 : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1) ;
+                : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
         }
         else
         {
-            auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
+            const auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
 
             score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
                                              : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
@@ -1007,19 +638,24 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), move, realScoreToTtScore(score, ss->ply), depth, LowerBoundScore);
+                    transpositionTable.save(pos.getHashKey(), 
+                                            move, 
+                                            realScoreToTtScore(score, ss->ply), 
+                                            depth, 
+                                            TranspositionTable::Flags::LowerBoundScore);
 
+                    // Updating move ordering heuristics while in check is not good, pollutes tables.
                     if (!inCheck)
                     {
                         if (quietMove)
                         {
                             historyTable.addCutoff(pos, move, depth);
-                            killerTable.addKiller(move, ss->ply);
-                            counterMoveTable.updateCounterMoves(pos, move, (ss - 1)->currentMove);
+                            killerTable.update(move, ss->ply);
+                            counterMoveTable.update(pos, move, (ss - 1)->currentMove);
                         }
                         for (auto j = 0; j < quietsSearched.size() - 1; ++j)
                         {
-                            historyTable.addNotCutoff(pos, quietsSearched[j], depth);
+                            historyTable.addNotCutoff(pos, quietsSearched.getMove(j), depth);
                         }
                     }
 
@@ -1027,7 +663,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 }
                 bestMove = move;
                 alpha = score;
-                ttFlag = ExactScore;
+                ttFlag = TranspositionTable::Flags::ExactScore;
             }
             bestScore = score;
         }
@@ -1039,10 +675,13 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         {
             return (inCheck ? bestScore : contempt[pos.getSideToMove()]);
         }
-        return staticEval; // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
+        // Looks like we pruned all moves away. Return some approximation of the score. Just alpha is fine too.
+        // Not used currently.
+        return staticEval; 
     }
 
     transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->ply), depth, ttFlag);
 
     return bestScore;
 }
+

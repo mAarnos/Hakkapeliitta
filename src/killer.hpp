@@ -15,30 +15,39 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file killer.hpp
+/// @author Mikko Aarnos
+
 #ifndef KILLER_HPP_
 #define KILLER_HPP_
 
 #include <cstdint>
 #include <array>
 #include "move.hpp"
+#include "constants.hpp"
 
-// Killer moves for the search function encapsulated.
+/// @brief A table for storing killer moves.
 class KillerTable
 {
 public:
+    /// @brief Default constructor.
     KillerTable();
 
-    // Add a killer move for the given ply. Assumes that the move is not a capture or a promotion.
-    void addKiller(const Move& move, int ply);
-    // Checks if the given move is a killer move. Returns 0 if it is not and 1-4 in case it is (1 is best, 4 is worst). 
-    int isKiller(const Move& move, int ply) const;
-    // Clears the killer table.
+    /// @brief Updates the killer moves for the given ply. Assumes that the new killer move is not a capture or a promotion.
+    /// @param move The new killer move.
+    /// @param ply The ply.
+    void update(const Move& move, int ply);
+
+    /// @brief Get the killer moves for the given ply.
+    /// @param ply The ply.
+    /// @return A pair of killer moves, the first one being the more recent one.
+    std::pair<Move, Move> getKillers(int ply) const;
+
+    /// @brief Clears the entire killer table.
     void clear();
 
-    uint16_t getKillerA(int ply) const;
-    uint16_t getKillerB(int ply) const;
 private:
-    std::array<std::array<uint16_t, 2>, 128> killers;
+    std::array<std::array<Move, 2>, maxPly> mKillers;
 };
 
 #endif

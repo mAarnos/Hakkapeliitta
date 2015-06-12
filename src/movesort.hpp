@@ -15,36 +15,47 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file movesort.hpp
+/// @author Mikko Aarnos
+
 #ifndef MOVESORT_HPP_
 #define MOVESORT_HPP_
 
 #include "movelist.hpp"
-#include "movegen.hpp"
 #include "position.hpp"
 #include "history.hpp"
-#include "killer.hpp"
-#include "counter.hpp"
-#include "search.hpp"
 
+/// @brief Used for generating and sorting moves incrementally.
+///
+/// Only supports generating moves for the main search currently. Should be extended to quiescence search but that loses elo currently.
 class MoveSort
 {
 public:
-    MoveSort(const Position& pos, const HistoryTable& history, uint16_t ttMove, uint16_t k1, uint16_t k2, uint16_t counter, bool inCheck);
+    /// @brief Constructs a MoveSort object for use during the main search.
+    /// @param pos The current position.
+    /// @param history A reference to the history heuristic table. 
+    /// @param ttMove The current transposition table move.
+    /// @param k1 The first killer move.
+    /// @param k2 The second killer move.
+    /// @param counter The counter move.
+    /// @param inCheck Whether the position is in check or not.
+    MoveSort(const Position& pos, const HistoryTable& history, Move ttMove, Move k1, Move k2, Move counter, bool inCheck);
 
+    /// @brief Generates the next best (according to heuristics) move.
+    /// @return A move. If there are no more moves, the move is empty.
     Move next();
+
 private:
-    static MoveGen moveGen;
-    const Position& pos;
-    const HistoryTable& historyTable;
-    MoveList moveList, temp;
-    Move ttMove;
-    uint16_t k1, k2, counter;
-    int phase;
-    int currentLocation;
+    const Position& mPos;
+    const HistoryTable& mHistoryTable;
+    MoveList mMoveList, mTemp;
+    Move mTtMove, mKiller1, mKiller2, mCounter;
+    int mPhase;
+    int mCurrentLocation;
 
     void generateNextPhase();
     void scoreEvasions();
-    Move selectionSort(int startingLocation);
+    void selectionSort(int startingLocation);
 
     MoveSort& operator=(const MoveSort&) = delete;
 };

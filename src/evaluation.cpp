@@ -15,14 +15,14 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "eval.hpp"
+#include "evaluation.hpp"
 #include "piece.hpp"
 #include "color.hpp"
 #include "square.hpp"
 #include "utils/clamp.hpp"
 
-std::array<std::array<short, 64>, 12> Evaluation::pieceSquareTableOpening;
-std::array<std::array<short, 64>, 12> Evaluation::pieceSquareTableEnding;
+std::array<std::array<short, 64>, 12> Evaluation::mPieceSquareTableOpening;
+std::array<std::array<short, 64>, 12> Evaluation::mPieceSquareTableEnding;
 
 const std::array<short, 6> pieceValuesOpening = {
     79, 248, 253, 355, 847, 0
@@ -136,27 +136,27 @@ const std::array<int, 100> kingSafetyTable = {
     21, 7, 11, 7, 7, 9, 5, 7, 10, 14, 15, 20, 19, 20, 25, 22, 28, 40, 45, 47, 46, 60, 56, 82, 86, 102, 98, 109, 107, 117, 125, 132, 159, 168, 181, 188, 211, 213, 234, 216, 265, 276, 288, 272, 308, 339, 351, 355, 374, 354, 370, 412, 420, 481, 439, 457, 478, 478, 441, 509, 494, 431, 517, 569, 562, 499, 500, 531, 523, 500, 500, 500, 522, 517, 500, 500, 500, 508, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500, 500
 };
 
-Evaluation::Evaluation()
+void Evaluation::staticInitialize()
 {
     for (Piece p = Piece::Pawn; p <= Piece::King; ++p)
     {
         for (Square sq = Square::A1; sq <= Square::H8; ++sq)
         {
-            pieceSquareTableOpening[p][sq] = openingPST[p][sq] + pieceValuesOpening[p];
-            pieceSquareTableEnding[p][sq] = endingPST[p][sq] + pieceValuesEnding[p];
+            mPieceSquareTableOpening[p][sq] = openingPST[p][sq] + pieceValuesOpening[p];
+            mPieceSquareTableEnding[p][sq] = endingPST[p][sq] + pieceValuesEnding[p];
 
-            pieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
-            pieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
+            mPieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
+            mPieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
         }
     }
 }
 
 int Evaluation::evaluate(const Position& pos)
 {
-    return (Bitboards::isHardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
+    return (Bitboards::hardwarePopcntSupported() ? evaluate<true>(pos) : evaluate<false>(pos));
 }
 
-int interpolateScore(const int scoreOp, const int scoreEd, const int phase)
+int interpolateScore(int scoreOp, int scoreEd, int phase)
 {
     return ((scoreOp * (64 - phase)) + (scoreEd * phase)) / 64;
 }
@@ -164,7 +164,7 @@ int interpolateScore(const int scoreOp, const int scoreEd, const int phase)
 template <bool hardwarePopcnt> 
 int Evaluation::evaluate(const Position& pos)
 {
-    if (endgameModule.drawnEndgame(pos.getMaterialHashKey()))
+    if (mEndgameModule.drawnEndgame(pos.getMaterialHashKey()))
     {
         return 0;
     }
@@ -193,7 +193,7 @@ int Evaluation::evaluate(const Position& pos)
 }
 
 template <bool hardwarePopcnt> 
-int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, const int phase)
+int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase)
 {
     const auto occupied = pos.getOccupiedSquares();
     auto scoreOp = 0, scoreEd = 0;
@@ -209,12 +209,11 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         while (tempPiece)
         {
             const auto from = Bitboards::popLsb(tempPiece);
-            auto tempMove = Bitboards::knightAttacks(from) & targetBitboard;
+            const auto tempMove = Bitboards::knightAttacks(from) & targetBitboard;
             const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Knight][count];
             scoreEdForColor += mobilityEnding[Piece::Knight][count];
-            tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Knight] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            attackUnits += attackWeight[Piece::Knight] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
         }
 
         tempPiece = pos.getBitboard(c, Piece::Bishop);
@@ -225,9 +224,8 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
-			tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
-            tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Bishop] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
+            attackUnits += attackWeight[Piece::Bishop] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
         }
 
         tempPiece = pos.getBitboard(c, Piece::Rook);
@@ -239,8 +237,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
             tempMove = Bitboards::rookAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen) ^ pos.getBitboard(c, Piece::Rook)) & targetBitboard;
-            tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Rook] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            attackUnits += attackWeight[Piece::Rook] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
 
             if (!(Bitboards::files[file(from)] & pos.getBitboard(c, Piece::Pawn)))
             {
@@ -259,12 +256,11 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         while (tempPiece)
         {
             const auto from = Bitboards::popLsb(tempPiece);
-            auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
+            const auto tempMove = Bitboards::queenAttacks(from, occupied) & targetBitboard;
             const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Queen][count];
             scoreEdForColor += mobilityEnding[Piece::Queen][count];
-            tempMove &= opponentKingZone;
-            attackUnits += attackWeight[Piece::Queen] * Bitboards::popcnt<hardwarePopcnt>(tempMove);
+            attackUnits += attackWeight[Piece::Queen] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
         }
         
         kingSafetyScore[c] = attackUnits;
@@ -275,11 +271,11 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int Evaluation::pawnStructureEval(const Position& pos, const int phase)
+int Evaluation::pawnStructureEval(const Position& pos, int phase)
 {
     auto scoreOp = 0, scoreEd = 0;
 
-    if (pawnHashTable.probe(pos.getPawnHashKey(), scoreOp, scoreEd))
+    if (mPawnHashTable.probe(pos.getPawnHashKey(), scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
@@ -336,7 +332,7 @@ int Evaluation::pawnStructureEval(const Position& pos, const int phase)
         scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-    pawnHashTable.save(pos.getPawnHashKey(), scoreOp, scoreEd);
+    mPawnHashTable.save(pos.getPawnHashKey(), scoreOp, scoreEd);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }
@@ -367,7 +363,7 @@ int evaluatePawnShelter(const Position& pos, Color side)
     return penalty;
 }
 
-int Evaluation::kingSafetyEval(const Position& pos, const int phase, std::array<int, 2>& kingSafetyScore)
+int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore)
 {
     kingSafetyScore[Color::Black] += evaluatePawnShelter(pos, Color::White);
     kingSafetyScore[Color::White] += evaluatePawnShelter(pos, Color::Black);

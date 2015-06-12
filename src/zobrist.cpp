@@ -19,34 +19,34 @@
 #include <random>
 #include "square.hpp"
 #include "piece.hpp"
-#include "bitboard.hpp"
+#include "bitboards.hpp"
 
-std::array<std::array<HashKey, 64>, 12> Zobrist::piece;
-std::array<std::array<HashKey, 8>, 12> Zobrist::material;
-std::array<HashKey, 16> Zobrist::castling;
-std::array<HashKey, 64> Zobrist::ep;
-HashKey Zobrist::turn;
-HashKey Zobrist::mangle;
+std::array<std::array<HashKey, 64>, 12> Zobrist::mPieceHashKeys;
+std::array<std::array<HashKey, 8>, 12> Zobrist::mMaterialHashKeys;
+std::array<HashKey, 16> Zobrist::mCastlingHashKeys;
+std::array<HashKey, 64> Zobrist::mEnPassantHashKeys;
+HashKey Zobrist::mTurnHashKey;
+HashKey Zobrist::mManglingHashKey;
 
-void Zobrist::initialize()
+void Zobrist::staticInitialize()
 {
-    std::mt19937_64 rng(123456789);
+    std::mt19937_64 rng(123456789); // TODO: use std::random_device?
 
     for (Piece p = Piece::WhitePawn; p <= Piece::BlackKing; ++p)
     {
         for (Square sq = Square::A1; sq <= Square::H8; ++sq)
         {
-            piece[p][sq] = rng(); 
+            mPieceHashKeys[p][sq] = rng();
         }
         for (auto j = 0; j < 8; ++j)
         {
-            material[p][j] = rng(); 
+            mMaterialHashKeys[p][j] = rng();
         }
     }
 
     for (Square sq = Square::A1; sq <= Square::H8; ++sq)
     {
-        ep[sq] = rng(); 
+        mEnPassantHashKeys[sq] = rng();
     }
 
     for (auto cr = 0; cr <= 15; ++cr)
@@ -54,11 +54,11 @@ void Zobrist::initialize()
         Bitboard castlingRight = cr;
         while (castlingRight)
         {
-            const auto key = castling[1ull << Bitboards::popLsb(castlingRight)];
-            castling[cr] ^= key ? key : rng(); 
+            const auto key = mCastlingHashKeys[1ULL << Bitboards::popLsb(castlingRight)];
+            mCastlingHashKeys[cr] ^= key ? key : rng();
         }
     }
 
-    turn = rng(); 
-    mangle = rng();
+    mTurnHashKey = rng();
+    mManglingHashKey = rng();
 }

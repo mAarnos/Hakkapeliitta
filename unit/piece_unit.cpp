@@ -15,25 +15,33 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#include "..\src\piece.hpp"
+#include <boost\test\unit_test.hpp>
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+BOOST_AUTO_TEST_CASE(RandomNormalPiece)
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
+    const Piece p(Piece::WhiteRook);
+
+    BOOST_CHECK(p.isOk());
+    BOOST_CHECK(p.canRepresentPieceType());
+    BOOST_CHECK(p.getPieceType() == Piece::Rook);
+    BOOST_CHECK(p.getPieceType().pieceTypeIsOk());
 }
 
-#endif
+BOOST_AUTO_TEST_CASE(Empty)
+{
+    const Piece p(Piece::Empty);
+
+    BOOST_CHECK(p.isOk());
+    BOOST_CHECK(!p.canRepresentPieceType());
+}
+
+BOOST_AUTO_TEST_CASE(NoPiece)
+{
+    const Piece p;
+
+    BOOST_CHECK(!p.isOk());
+}
+
+
+

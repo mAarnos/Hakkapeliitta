@@ -23,30 +23,27 @@ CounterMoveTable::CounterMoveTable()
     clear();
 }
 
-void CounterMoveTable::updateCounterMoves(const Position& pos, const Move& move, const Move& opponentMove)
+void CounterMoveTable::update(const Position& pos, const Move& move, const Move& opponentMove)
 {
     if (opponentMove.empty()) // Last move was a null move
         return;
 
     const auto prevToSquare = opponentMove.getTo();
-    counterMoves[pos.getBoard(prevToSquare)][prevToSquare] = move.getMove();
+    mCounterMoves[pos.getBoard(prevToSquare)][prevToSquare] = move;
 }
 
-uint16_t CounterMoveTable::getCounterMove(const Position& pos, const Move& opponentMove) const
+Move CounterMoveTable::getCounterMove(const Position& pos, const Move& move) const
 {
-    if (opponentMove.empty()) // Same here
+    if (move.empty()) // Same here
         return 0;
 
-    const auto prevToSquare = opponentMove.getTo();
-    return counterMoves[pos.getBoard(prevToSquare)][prevToSquare];
+    const auto prevToSquare = move.getTo();
+    return mCounterMoves[pos.getBoard(prevToSquare)][prevToSquare];
 }
 
 void CounterMoveTable::clear()
 {
-    for (auto i = 0; i < 12; ++i)
-    {
-        counterMoves[i].fill(0);
-    }
+    mCounterMoves.fill({});
 }
 
 

@@ -15,6 +15,9 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file counter.hpp
+/// @author Mikko Aarnos
+
 #ifndef COUNTER_HPP_
 #define COUNTER_HPP_
 
@@ -23,20 +26,30 @@
 #include "position.hpp"
 #include "move.hpp"
 
-// Counter moves (last move which refuted the previous move of the opponent) for the search function encapsulated.
+/// @brief A table for storing counter moves.
 class CounterMoveTable
 {
 public:
+    /// @brief Default constructor.
     CounterMoveTable();
 
-    // Updates the countermove of opponentMove to be move.
-    void updateCounterMoves(const Position& pos, const Move& move, const Move& opponentMove);
-    // Checks if a move is a counter move given the last move of the opponent.
-    uint16_t getCounterMove(const Position& pos, const Move& opponentMove) const;
-    // Clears the countermove table.
+    /// @brief Set move to be the counter move of opponentMove.
+    /// @param pos The position.
+    /// @param move The new counter move.
+    /// @param opponentMove The opponent move which was countered.
+    void update(const Position& pos, const Move& move, const Move& opponentMove);
+
+    /// @brief Get the counter move of a given move.
+    /// @param pos The position.
+    /// @param move The move.
+    /// @return The countermove.
+    Move getCounterMove(const Position& pos, const Move& move) const;
+
+    /// @brief Clears the counter move table.
     void clear();
+
 private:
-    std::array<std::array<uint16_t, 64>, 12> counterMoves;
+    std::array<std::array<Move, 64>, 12> mCounterMoves;
 };
 
 #endif

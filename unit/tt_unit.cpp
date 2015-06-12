@@ -15,25 +15,27 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#include "..\src\tt.hpp"
+#include <boost\test\unit_test.hpp>
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+BOOST_AUTO_TEST_CASE(AllCasesTT)
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
+    TranspositionTable tt;
+    Move m(Square::H4, Square::F5, Piece::Empty);
+
+    tt.save(5770153743293125963, m, -23, 7, TranspositionTable::Flags::ExactScore);
+
+    auto ttEntry = tt.probe(5770153743293125963);
+    BOOST_CHECK(ttEntry);
+    BOOST_CHECK(ttEntry->getBestMove() == m);
+    BOOST_CHECK(ttEntry->getScore() == -23);
+    BOOST_CHECK(ttEntry->getDepth() == 7);
+    BOOST_CHECK(ttEntry->getFlags() == TranspositionTable::Flags::ExactScore);
+
+    tt.clear();
+    ttEntry = tt.probe(5770153743293125963);
+    BOOST_CHECK(!ttEntry);
 }
 
-#endif
+
+

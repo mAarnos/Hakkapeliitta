@@ -15,6 +15,9 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file search_parameters.hpp
+/// @author Mikko Aarnos
+
 #ifndef SEARCH_PARAMETERS_HPP_
 #define SEARCH_PARAMETERS_HPP_
 
@@ -22,25 +25,59 @@
 #include <vector>
 #include "move.hpp"
 
-class SearchParameters 
+/// @brief Contains options for the search function.
+struct SearchParameters 
 {
-public:
-    SearchParameters() : 
-        ponder(false), time({{ 0, 0 }}), increment({{ 0, 0 }}), 
-        movesToGo(25), depth(0), nodes(0), mate(0), moveTime(0), infinite(false) 
-    {
-    };
+    /// @brief Default constructor.
+    SearchParameters() noexcept;
 
-    std::vector<Move> searchMoves; // Search only these moves. If empty search all.
-    bool ponder; // Whether to ponder or not.
-    std::array<int, 2> time; // Absolute time limits for white and black.
-    std::array<int, 2> increment; // Increments for white and black.
-    int movesToGo; // Moves to go until next time control.
-    int depth; // Don't search deeper than this.
-    size_t nodes; // Don't search more nodes than this.
-    int mate; // Try to find a mate in x.
-    int moveTime; // Use exactly this much time in milliseconds.
-    bool infinite; // Whether the search is infinite or not.
+    /// @brief Only search these moves. If empty search all.
+    std::vector<Move> searchMoves; 
+
+    /// @brief Whether this search is for pondering or not.
+    bool ponder; 
+
+    /// @brief Whether the "Ponder" UCI option is set or not.
+    bool ponderOption;
+
+    /// @brief The value for the "Contempt" UCI option.
+    int contempt;
+
+    /// @brief Absolute time limits for white and black in milliseconds.
+    std::array<int, 2> time; 
+
+    /// @brief Increments for white and black in milliseconds.
+    std::array<int, 2> increment; 
+    
+    /// @brief Moves to go until next time control.
+    int movesToGo; 
+
+    /// @brief Don't search deeper than this depth.
+    int depth; 
+
+    /// @brief Don't search more nodes than this.
+    size_t nodes; 
+
+    /// @brief Try to find a mate in x.
+    int mate; 
+
+    /// @brief Use exactly this much time in milliseconds for the search.
+    int moveTime; 
+
+    /// @brief Whether the search is infinite or not.
+    bool infinite; 
+
+    /// @brief The amount of plies from the position depicted by the initial FEN string received.
+    int rootPly;
+
+    /// @brief The hash keys of all positions encountered during the game so far, in order.
+    std::vector<HashKey> hashKeys;
+};
+
+inline SearchParameters::SearchParameters() noexcept :
+    ponder(false), ponderOption(false), contempt(0), time({ { 0, 0 } }), increment({ { 0, 0 } }),
+    movesToGo(0), depth(0), nodes(0), mate(0), moveTime(0), infinite(false), rootPly(0)
+{
 };
 
 #endif

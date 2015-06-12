@@ -15,122 +15,116 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file move.hpp
+/// @author Mikko Aarnos
+
 #ifndef MOVE_HPP_
 #define MOVE_HPP_
 
 #include <cstdint>
 #include <cassert>
-#include <array>
 #include "square.hpp"
 #include "piece.hpp"
 
-// Represents a single move.
-// Contains not only the move but also the score for the move. 
-// This score is used to order moves in the search function.
+/// @brief Represents a single move. 
+/// 
+/// The move is packed into 16 bits for easy use of the TT. This raw value is sometimes manipulated as is, without using this class.
 class Move
 {
 public:
-    Move();
-    Move(uint16_t move, int16_t score);
-    Move(Square from, Square to, Piece promotion, int16_t score);
+    /// @brief Default constructor.
+    Move() noexcept;
 
-    Square getFrom() const;
-    Square getTo() const;
-    Piece getPromotion() const;
-    uint16_t getMove() const;
-    int16_t getScore() const;
-    void setMove(uint16_t newMove);
-    void setScore(int16_t newScore);
-    bool empty() const; 
+    /// @brief Constructs a move from a given raw move.
+    /// @param rawMove The raw move.
+    Move(uint16_t rawMove) noexcept;
+
+    /// @brief Constructs a move from a given square to a given square with the given flags.
+    /// @param from The from-square.
+    /// @param to The to-square.
+    /// @param flags The flags.
+    Move(Square from, Square to, Piece flags) noexcept;
+
+    /// @brief Gets the from-square of this move.
+    /// @return The from-square.
+    Square getFrom() const noexcept;
+
+    /// @brief Gets the to-square of this move.
+    /// @return The to-square.
+    Square getTo() const noexcept;
+
+    /// @brief Gets the flags of this move. Promotion, castling and en passant are notified with this.
+    /// @return The flags.
+    Piece getFlags() const noexcept;
+
+    /// @brief Gets the raw move which is packed into 16 bits as stated previously.
+    /// @return The raw move.
+    uint16_t getRawMove() const noexcept;
+
+    /// @brief Checks if the move contains no information (i.e. there is no raw move).
+    /// @return True if the move is a dummy, false otherwise.
+    bool empty() const noexcept;
+
+    /// @brief Comparison operator for equality.
+    /// @return True if the moves are the same, false otherwise.
+    bool operator==(const Move& m) const noexcept;
+
+    /// @brief Comparison operator for inequality.
+    /// @return True if the moves are not the same, false otherwise.
+    bool operator!= (const Move& m) const noexcept;
+
 private:
-    uint16_t move;
-    int16_t score;
+    // 16 bits: 6 are used for the from-square, 6 are used for the to-square and 4 are used for different flags.
+    uint16_t mRawMove;
 };
 
-inline Move::Move() : move(0), score(0)
+inline Move::Move() noexcept : mRawMove(0)
 {
 }
 
-inline Move::Move(uint16_t move, int16_t score = 0) : move(move), score(score)
+inline Move::Move(uint16_t rawMove) noexcept : mRawMove(rawMove)
 {
 }
 
-inline Move::Move(const Square from, const Square to, const Piece promotion, const int16_t iScore = 0)
+inline Move::Move(Square from, Square to, Piece flags) noexcept
 {
-    assert(squareIsOkStrict(from) && squareIsOkStrict(to) && pieceIsOk(promotion));
-    score = iScore;
-    move = static_cast<uint16_t>(from) | static_cast<uint16_t>(to << 6) | static_cast<uint16_t>(promotion << 12);
+    assert(from.isOk() && to.isOk() && flags.isOk());
+    mRawMove = static_cast<uint16_t>(from) | (static_cast<uint16_t>(to) << 6) | (static_cast<uint16_t>(flags) << 12);
 }
 
-inline Square Move::getFrom() const 
+inline Square Move::getFrom() const noexcept
 { 
-    return (move & 0x3f); 
+    return (mRawMove & 0x3f);
 }
 
-inline Square Move::getTo() const 
+inline Square Move::getTo() const noexcept
 { 
-    return ((move >> 6) & 0x3f); 
+    return ((mRawMove >> 6) & 0x3f);
 }
 
-inline Piece Move::getPromotion() const 
+inline Piece Move::getFlags() const noexcept
 { 
-    return (move >> 12); 
+    return (mRawMove >> 12);
 }
 
-inline uint16_t Move::getMove() const
+inline uint16_t Move::getRawMove() const noexcept
 { 
-    return move; 
+    return mRawMove;
 }
 
-inline int16_t Move::getScore() const 
+inline bool Move::empty() const noexcept
 { 
-    return score; 
+    return !mRawMove;
 }
 
-inline void Move::setMove(const uint16_t newMove) 
-{ 
-    move = newMove; 
-}
-
-inline void Move::setScore(const int16_t newScore) 
-{ 
-    score = newScore; 
-}
-
-inline bool Move::empty() const 
-{ 
-    return !move; 
-}
-
-inline std::string moveToUciFormat(const Move& move)
+inline bool Move::operator==(const Move& m) const noexcept
 {
-    const static std::array<std::string, 64> squareToNotation = {
-        "a1", "b1", "c1", "d1", "e1", "f1", "g1", "h1",
-        "a2", "b2", "c2", "d2", "e2", "f2", "g2", "h2",
-        "a3", "b3", "c3", "d3", "e3", "f3", "g3", "h3",
-        "a4", "b4", "c4", "d4", "e4", "f4", "g4", "h4",
-        "a5", "b5", "c5", "d5", "e5", "f5", "g5", "h5",
-        "a6", "b6", "c6", "d6", "e6", "f6", "g6", "h6",
-        "a7", "b7", "c7", "d7", "e7", "f7", "g7", "h7",
-        "a8", "b8", "c8", "d8", "e8", "f8", "g8", "h8",
-    };
+    return m.getRawMove() == mRawMove;
+}
 
-    const static std::array<std::string, 64> promotionToNotation = {
-        "p", "n", "b", "r", "q", "k"
-    };
-
-    std::string s;
-    const auto from = move.getFrom();
-    const auto to = move.getTo();
-    const auto promotion = move.getPromotion();
-
-    s += squareToNotation[from] + squareToNotation[to];
-    if (promotion != Piece::Empty && promotion != Piece::King && promotion != Piece::Pawn)
-    {
-        s += promotionToNotation[promotion];
-    }
-
-    return s;
+inline bool Move::operator!=(const Move& m) const noexcept
+{
+    return m.getRawMove() != mRawMove;
 }
 
 #endif

@@ -15,6 +15,9 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file history.hpp
+/// @author Mikko Aarnos
+
 #ifndef HISTORY_HPP_
 #define HISTORY_HPP_
 
@@ -22,25 +25,40 @@
 #include "move.hpp"
 #include "position.hpp"
 
-// History heuristic for the search function encapsulated.
+/// @brief A table for storing history heuristic information.
 class HistoryTable
 {
 public:
+    /// @brief Default constructor.
     HistoryTable();
 
-    // Change the score of a move which caused a beta-cutoff at the given depth.
+    /// @brief Update the score of a move which SUCCEEDED in causing a beta cutoff in a confirmed CUT-node.
+    /// @param pos The position.
+    /// @param move The move.
+    /// @param depth The depth.
     void addCutoff(const Position& pos, const Move& move, int depth);
-    // Change the score of a move which failed to cause a beta-cutoff at the given depth when some other move did cause one.
+
+    /// @brief Update the score of a move which FAILED to cause a beta cutoff in a confirmed CUT-node.
+    /// @param pos The position.
+    /// @param move The move.
+    /// @param depth The depth.
     void addNotCutoff(const Position& pos, const Move& move, int depth);
-    // Get the history score for the given move.
+
+    /// @brief Get the history score for a given move in a given position.
+    /// @param pos The position.
+    /// @param move The move.
+    /// @return The score. We use 16 bits because a move is encoded as 16 bits and so we have a nice pair of 32 bits.
     int16_t getScore(const Position& pos, const Move& move) const;
-    // Clears the table.
+
+    /// @brief Clears the history table.
     void clear();
-    // From time to time we should age the table to make sure that scores for previous positions won't dominate the scores.
+
+    /// @brief Ages the history table so that scores for previous positions won't dominate.
     void age();
+
 private:
-    std::array<std::array<int, 64>, 12> history;
-    std::array<std::array<int, 64>, 12> butterfly;
+    std::array<std::array<int, 64>, 12> mHistory;
+    std::array<std::array<int, 64>, 12> mButterfly;
 };
 
 #endif

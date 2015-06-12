@@ -16,57 +16,29 @@
 */
 
 #include "killer.hpp"
-#include <cassert>
-#include <cstring>
 
 KillerTable::KillerTable()
 {
     clear();
 }
 
+void KillerTable::update(const Move& move, int ply)
+{
+    // Make sure that we won't have two same killers stored.
+    if (move != mKillers[ply][0])
+    {
+        mKillers[ply][1] = mKillers[ply][0];
+        mKillers[ply][0] = move;
+    }
+}
+
+std::pair<Move, Move> KillerTable::getKillers(int ply) const
+{
+    return std::make_pair(mKillers[ply][0], mKillers[ply][1]);
+}
+
 void KillerTable::clear()
 {
-    for (auto i = 0; i < 128; ++i)
-    {
-        killers[i].fill(0);
-    }
-}
-
-void KillerTable::addKiller(const Move& move, const int ply)
-{
-    const auto candidateKiller = move.getMove();
-    // Only replace if we won't have two same killers if we replace.
-    if (candidateKiller != killers[ply][0])
-    {
-        killers[ply][1] = killers[ply][0];
-        killers[ply][0] = candidateKiller;
-    }
-}
-
-int KillerTable::isKiller(const Move& move, const int ply) const
-{
-    const auto possibleKiller = move.getMove();
-    if (possibleKiller == killers[ply][0])
-    {
-        return 1;
-    }
-    else if (possibleKiller == killers[ply][1])
-    {
-        return 2;
-    }
-    else
-    {
-        return 0;
-    }
-}
-
-uint16_t KillerTable::getKillerA(int ply) const
-{
-    return killers[ply][0];
-}
-
-uint16_t KillerTable::getKillerB(int ply) const
-{
-    return killers[ply][1];
+    mKillers.fill({});
 }
 

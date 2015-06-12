@@ -15,25 +15,23 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#define BOOST_TEST_MODULE RegressionSuite
+#include <boost\test\unit_test.hpp>
+#include "..\src\bitboards.hpp"
+#include "..\src\zobrist.hpp"
+#include "..\src\evaluation.hpp"
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+// Config class for BOOST_GLOBAL_FIXTURE.
+class Config
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
-}
+public:
+    Config()
+    {
+        Bitboards::staticInitialize();
+        Zobrist::staticInitialize();
+        Evaluation::staticInitialize();
+    }
+};
 
-#endif
+BOOST_GLOBAL_FIXTURE(Config);
+

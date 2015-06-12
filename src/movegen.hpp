@@ -15,6 +15,9 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file movegen.hpp
+/// @author Mikko Aarnos
+
 #ifndef MOVEGEN_HPP_
 #define MOVEGEN_HPP_
 
@@ -23,33 +26,56 @@
 #include "move.hpp"
 #include "movelist.hpp"
 
+/// @brief Contains functions for generating moves.
+///
+/// Everything is static due to convenience.
 class MoveGen
 {
 public:
-    void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
-    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions);
-    void generateLegalEvasions(const Position& pos, MoveList& moves);
-    void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moves);
-    void generatePseudoLegalQuietChecks(const Position& pos, MoveList& moves);
-    void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves);
+    /// @brief Generates pseudo-legal moves.
+    /// @param pos The position for which to generate moves.
+    /// @param moveList The movelist into which we should put the generated moves.
+    static void generatePseudoLegalMoves(const Position& pos, MoveList& moveList);
+
+    /// @brief Generates legal evasion moves. Should NOT be called if not in check.
+    /// @param pos The position for which to generate moves.
+    /// @param moveList The movelist into which we should put the generated moves.
+    static void generateLegalEvasions(const Position& pos, MoveList& moveList);
+
+    /// @brief Generates pseudo-legal quiet (i.e. non-capture) moves.
+    /// @param pos The position for which to generate moves.
+    /// @param moveList The movelist into which we should put the generated moves.
+    static void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveList);
+
+    /// @brief Generates pseudo-legal capture moves, promotions and quiet checks.
+    /// @param pos The position for which to generate moves.
+    /// @param moveList The movelist into which we should put the generated moves.
+    static void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moveList);
+
+    /// @brief Generates pseudo-legal capture moves and promotions.
+    /// @param pos The position for which to generate moves.
+    /// @param moveList The movelist into which we should put the generated moves.
+    /// @param underPromotions Whether we should generate underpromotions or not.
+    ///
+    /// In the quiescence search generating underpromotions is a waste of time.
+    /// On the other hand, in the main search NOT generating underpromotions could potentially have disastrous effects.
+    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions);
+
 private:
     template <bool side> 
-    void generatePseudoLegalMoves(const Position& pos, MoveList& moves);
+    static void generatePseudoLegalMoves(const Position& pos, MoveList& moveList);
 
     template <bool side>
-    void generatePseudoLegalCaptures(const Position& pos, MoveList& moves, bool underPromotions);
+    static void generateLegalEvasions(const Position& pos, MoveList& moveList);
 
     template <bool side>
-    void generateLegalEvasions(const Position& pos, MoveList& moves);
+    static void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveList);
 
     template <bool side>
-    void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moves);
+    static void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moveList);
 
     template <bool side>
-    void generatePseudoLegalQuietChecks(const Position& pos, MoveList& moves);
-
-    template <bool side>
-    void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moves);
+    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions);
 };
 
 #endif

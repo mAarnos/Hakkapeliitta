@@ -15,7 +15,34 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "synchronized_ostream.hpp"
-#include <iostream>
+#include "..\src\move.hpp"
+#include <boost\test\unit_test.hpp>
 
-synchronized_ostream sync_cout(std::cout);
+BOOST_AUTO_TEST_CASE(RandomNormalMove)
+{
+    const Move m(Square::G1, Square::F3, Piece::Empty);
+
+    BOOST_CHECK(m.getFrom() == Square::G1);
+    BOOST_CHECK(m.getTo() == Square::F3);
+    BOOST_CHECK(m.getFlags() == Piece::Empty);
+    BOOST_CHECK(m.getRawMove() == 50502);
+    BOOST_CHECK(!m.empty());
+}
+
+BOOST_AUTO_TEST_CASE(EmptyMove)
+{
+    const Move m;
+
+    BOOST_CHECK(m.empty());
+}
+
+BOOST_AUTO_TEST_CASE(Comparision)
+{
+    const Move m(Square::G1, Square::F3, Piece::Empty);
+    const Move m2(50502);
+    const Move m3;
+
+    BOOST_CHECK(m == m2);
+    BOOST_CHECK(m != m3);
+}
+

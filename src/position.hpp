@@ -15,116 +15,211 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file position.hpp
+/// @author Mikko Aarnos
+
 #ifndef POSITION_HPP_
 #define POSITION_HPP_
 
 #include <array>
 #include <string>
-#include "bitboard.hpp"
+#include "bitboards.hpp"
 #include "move.hpp"
 #include "zobrist.hpp"
 #include "color.hpp"
 #include "piece.hpp"
 
-// Represents a single board position. 
+/// @brief Represents a single board position.
 class Position
 {
 public:
-    // Constructs an invalid position, not the starting position.
-    Position();
+    /// @brief Constructs a Position from a given FEN string. This WILL fail if it is called before Bitboards::staticInitialize.
+    /// @param fen The FEN string.
     Position(const std::string& fen); 
 
-    // Initializes a position from a FEN string.
-    // Will throw an exception if the FEN string is corrupted.
-    void initializePositionFromFen(const std::string& fen);
-    // For displaying the position in console.
-    std::string displayPositionAsString() const;
-    // For turning a position into a FEN string.
-    std::string toFen() const;
-
-    // Accessing different kinds of board data.
+    /// @brief Get the piece on a given square.
+    /// @param sq The square.
+    /// @return The piece. Can be empty as well.
     Piece getBoard(Square sq) const;
-    Bitboard getBitboard(Color colour, Piece piece) const;
-    Bitboard getPieces(Color colour) const;
-    Bitboard getOccupiedSquares() const;
-    Bitboard getFreeSquares() const;
-    Color getSideToMove() const;
-    Square getEnPassantSquare() const;
-    int8_t getCastlingRights() const;
-    int8_t getFiftyMoveDistance() const;
-    int8_t getGamePhase() const;
-    Bitboard getPinnedPieces() const;
-    Bitboard getDiscoveredCheckCandidates() const;
-    HashKey getHashKey() const;
-    HashKey getPawnHashKey() const;
-    HashKey getMaterialHashKey() const;
-    int8_t getPieceCount(Color color, Piece piece) const;
-    int8_t getTotalPieceCount() const;
-    int16_t getPstScoreOp() const;
-    int16_t getPstScoreEd() const;
-    int8_t nonPawnMaterial(Color side) const;
 
-    // Makes the move on the board.
-    // We use copy-make so unmake is unnecessary.
+    /// @brief Get all pieces of a given type and color.
+    /// @param color The color.
+    /// @param piece The piece type.
+    /// @return A bitboard containing all pieces of the given type and color.
+    Bitboard getBitboard(Color color, Piece piece) const;
+
+    /// @brief Get all pieces of a given color.
+    /// @param color The color.
+    /// @return A bitboard containing all pieces of a given color.
+    Bitboard getPieces(Color color) const;
+
+    /// @brief Get all squares which are occupied.
+    /// @return A bitboard with every non-empty square marked.
+    Bitboard getOccupiedSquares() const noexcept;
+
+    /// @brief Get all squares which are not occupied.
+    /// @return A bitboard with every empty square marked.
+    Bitboard getFreeSquares() const noexcept;
+
+    /// @brief Get the current side to move.
+    /// @return The side to move. Should only be Color::White or Color::Black.
+    Color getSideToMove() const noexcept;
+
+    /// @brief Get the current en passant square.
+    /// @return The en passant square. Can be Square::NoSquare in case en passant is not possible currently.
+    Square getEnPassantSquare() const noexcept;
+
+    /// @brief Get the castling rights of this position.
+    /// @return The castling rights.
+    int8_t getCastlingRights() const noexcept;
+
+    /// @brief Get the current fifty move distance.
+    /// @return The fifty move distance.
+    int8_t getFiftyMoveDistance() const noexcept;
+
+    /// @brief Get the current game phase, which is used for tapered eval.
+    /// @return The game phase. 
+    int8_t getGamePhase() const noexcept;
+
+    /// @brief Get the pinned pieces in the current position.
+    /// @return A bitboard containing all pinned pieces.
+    Bitboard getPinnedPieces() const noexcept;
+
+    /// @brief Get the pieces which could cause a discovered check if they move a certain way.
+    /// @return A bitboard containing all discovered check candidates.
+    Bitboard getDiscoveredCheckCandidates() const noexcept;
+
+    /// @brief Get the locations of all rooks and queens.
+    /// @return A bitboard with a bit marked for any rook or queen.
+    Bitboard getRooksAndQueens() const noexcept;
+
+    /// @brief Get the locations of all rooks and queens of a given color.
+    /// @param c The color.
+    /// @return A bitboard with a bit marked for any rook or queen of a given color.
+    Bitboard getRooksAndQueens(Color c) const;
+
+    /// @brief Get the locations of all bishops and queens.
+    /// @return A bitboard with a bit marked for any bishop or queen.
+    Bitboard getBishopsAndQueens() const noexcept;
+
+    /// @brief Get the locations of all bishops and queens of a given color.
+    /// @param c The color.
+    /// @return A bitboard with a bit marked for any bishop or queen of a given color.
+    Bitboard getBishopsAndQueens(Color c) const;
+
+    /// @brief Get the normal hash key for this position. That is usually used by the TT.
+    /// @return The hash key.
+    HashKey getHashKey() const noexcept;
+
+    /// @brief Get the pawn hash key for this position. That is usually used by the PHT.
+    /// @return The pawn hash key.
+    HashKey getPawnHashKey() const noexcept;
+
+    /// @brief Get the material hash key for this position. That is used by the EndgameModule and Syzygy tablebases.
+    /// @return The material hash key.
+    HashKey getMaterialHashKey() const noexcept;
+
+    /// @brief Get the count of pieces of a given type and color.
+    /// @param color The color of the piece.
+    /// @param piece The piece type.
+    /// @return The count.
+    int8_t getPieceCount(Color color, Piece piece) const;
+
+    /// @brief Get the count of non-pawn pieces (excluding kings, there are always 2 of those) for a given color.
+    /// @param color The color.
+    /// @return The count.
+    int8_t getNonPawnPieceCount(Color color) const;
+
+    /// @brief Get the PST score for the opening phase.
+    /// @return The score.
+    int16_t getPstScoreOp() const noexcept;
+
+    /// @brief Get the PST score for the ending phase.
+    /// @return The score.
+    int16_t getPstScoreEd() const noexcept;
+
+    /// @brief Get the current ply of the game since the beginning.
+    /// @return The ply.
+    int16_t getGamePly() const noexcept;
+
+    /// @brief Makes a given move on the board. We use copy-make so unmake is unnecessary.
+    /// @param move The move.
     void makeMove(const Move& move);
 
-    // Makes a null move.
-    // Unmake is unnecessary due to copy-make.
+    /// @brief Makes a null move. Unmake is unnecessary due to copy-make.
     void makeNullMove();
 
+    /// @brief Checks if the current side to move is in check.
+    /// @return True if the side to mvoe is in check, false otherwise.
     bool inCheck() const;
-    bool isAttacked(Square sq, Color side) const;
-    bool isAttacked(Square sq, Color side, Bitboard occupied) const;
 
-    // Checks if a random move is pseudo-legal in the current position.
+    /// @brief Checks if a given square is attacked by a given color.
+    /// @param sq The square.
+    /// @param color The color.
+    /// @return True if the square is attacked, false otherwise.
+    bool isAttacked(Square sq, Color color) const;
+
+    /// @brief Checks if a given square is attacked by a given color with the given occupied squares. Used sometimes in MoveGen.
+    /// @param sq The square.
+    /// @param color The color.
+    /// @param occupied The occupied squares.
+    /// @return True if the square is attacked, false otherwise.
+    bool isAttacked(Square sq, Color color, Bitboard occupied) const;
+
+    /// @brief Checks if a given move is pseudo-legal in the current position. If we are in check this checks full legality.
+    /// @param move The move.
+    /// @param inCheck Whether the current position is in check or not.
+    /// @return True if the move is pseudo-legal, false otherwise.
     bool pseudoLegal(const Move& move, bool inCheck) const;
 
-    // Checks if a move is legal with one caveat, doesn't work when in check and reports all moves as legal when in check.
-    // This behaviour is dealt with the legal evasion generator.
+    /// @brief Checks if a move is legal with one caveat: doesn't work when in check and reports all moves as legal when in check. This behaviour is dealt with the legal evasion generator.
+    /// @param move The move.
+    /// @param inCheck Whether the current position is in check or not.
+    /// @return True if the move is legal, false otherwise.
     bool legal(const Move& move, bool inCheck) const;
 
-    // Checks if a move gives check. 
-    // Returns 0 if it isn't, 2 if the move is a discovered check and 1 if it is a normal check.
+    /// @brief Checks if a given move gives check.
+    /// @param move The move.
+    /// @return 0 if the move isn't a checking move, 1 if it is and 2 if it is a discovered check.
     int givesCheck(const Move& move) const;
 
-    // Calculate the SEE score of a move for the current position.
+    /// @brief Calculates the SEE score of a given move in the current position.
+    /// @param move The move.
+    /// @return The SEE score. The higher the better.
     int16_t SEE(const Move& move) const;
 
-    // Calculate the MVV-LVA score of a move.
+    /// @brief Calculates the MVV-LVA score of a given move in the current position.
+    /// @param move The move.
+    /// @return The MVV-LVA score. The higher the better.
     int16_t mvvLva(const Move& move) const;
 
-    // Check if the given move is a capture or promotion.
+    /// @brief Check if a given move is a capture or promotion.
+    /// @param move The move.
+    /// @return True if the move is a capture or a promotion, false otherwise.
     bool captureOrPromotion(const Move& move) const;
+
 private:
-	// All bitboards needed to represent the position.
-	// 6 bitboards for different white pieces + 1 for all white pieces.
-	// 6 bitboards for different black pieces + 1 for all black pieces.
-	// 1 for all occupied squares.
-	std::array<Bitboard, 14> bitboards;
-	// The board as a one-dimensional array.
-	// We have it because often we want to know what piece is on which square or something like that.
-	std::array<Piece, 64> board;
+    // All bitboards needed to represent the position.
+    // 6 bitboards for different white pieces.
+    // 6 bitboards for different black pieces.
+    // Then 1 for all white pieces and 1 for all black pieces.
+    std::array<Bitboard, 14> mBitboards;
+    // The board as a one-dimensional array.
+    // We have it because often we want to know what piece is on which square or something like that.
+    std::array<Piece, 64> mBoard;
 
-	// Miscellaneous, everything is pretty self explanatory.
-    HashKey hashKey, pawnHashKey, materialHashKey;
-    Bitboard pinned, dcCandidates;
-	Color sideToMove;
-    int8_t castlingRights;
-    Square enPassant;
-    int8_t fiftyMoveDistance;
-    int8_t totalPieceCount;
-    std::array<int8_t, 12> pieceCount;
-    std::array<int8_t, 2> nonPawnPieceCounts;
-    int8_t gamePhase;
-    int16_t gamePly;
-    int16_t pstScoreOp;
-    int16_t pstScoreEd;
-
-	// These functions can be used to calculate different hash keys for the current position.
-	// They are slow so they are only used when initializing, instead we update them incrementally.
-    HashKey calculateHash() const;
-    HashKey calculatePawnHash() const;
-    HashKey calculateMaterialHash() const;
+    // Miscellaneous, everything is pretty self explanatory.
+    HashKey mHashKey, mPawnHashKey, mMaterialHashKey;
+    Bitboard mPinned, mDcCandidates;
+    Color mSideToMove;
+    int8_t mCastlingRights;
+    Square mEnPassant;
+    int8_t mFiftyMoveDistance;
+    std::array<int8_t, 12> mPieceCounts;
+    std::array<int8_t, 2> mNonPawnPieceCounts;
+    int8_t mGamePhase;
+    int16_t mGamePly;
+    int16_t mPstScoreOp, mPstScoreEd;
 
     template <bool side> 
     void makeMove(const Move& move);
@@ -136,124 +231,150 @@ private:
     Bitboard pinnedPieces(Color c) const;
     Bitboard checkBlockers(Color c, Color kingColor) const;
 
-    // Testing functions.
+    // These functions can be used to calculate different hash keys for the current position.
+    // They are slow so they are only used when initializing, instead we update them incrementally.
+    HashKey calculateHash() const;
+    HashKey calculatePawnHash() const;
+    HashKey calculateMaterialHash() const;
+
+    // Debugging functions.
     bool verifyPsts() const;
     bool verifyHashKeysAndPhase() const;
     bool verifyPieceCounts() const;
     bool verifyBoardAndBitboards() const;
 };
 
-inline Piece Position::getBoard(const Square sq) const 
+inline Piece Position::getBoard(Square sq) const 
 { 
-    return board[sq]; 
+    return mBoard[sq]; 
 }
 
-inline Bitboard Position::getBitboard(const Color colour, const Piece piece) const 
+inline Bitboard Position::getBitboard(Color colour, Piece piece) const 
 { 
-    return bitboards[piece + colour * 6]; 
+    return mBitboards[piece + colour * 6]; 
 }
 
-inline Bitboard Position::getPieces(const Color colour) const 
+inline Bitboard Position::getPieces(Color colour) const 
 { 
-    return bitboards[12 + colour]; 
+    return mBitboards[12 + colour]; 
 }
 
-inline Bitboard Position::getOccupiedSquares() const
+inline Bitboard Position::getOccupiedSquares() const noexcept
 { 
-    return bitboards[12] | bitboards[13]; 
+    return mBitboards[12] | mBitboards[13]; 
 }
 
-inline Bitboard Position::getFreeSquares() const 
+inline Bitboard Position::getFreeSquares() const noexcept
 { 
     return ~getOccupiedSquares();
 }
 
-inline Color Position::getSideToMove() const 
+inline Color Position::getSideToMove() const noexcept
 { 
-    return sideToMove; 
+    return mSideToMove; 
 }
 
-inline Square Position::getEnPassantSquare() const
+inline Square Position::getEnPassantSquare() const noexcept
 { 
-    return enPassant; 
+    return mEnPassant; 
 }
 
-inline int8_t Position::getCastlingRights() const 
+inline int8_t Position::getCastlingRights() const noexcept
 { 
-    return castlingRights; 
+    return mCastlingRights; 
 }
 
-inline int8_t Position::getFiftyMoveDistance() const 
+inline int8_t Position::getFiftyMoveDistance() const noexcept
 { 
-    return fiftyMoveDistance; 
+    return mFiftyMoveDistance; 
 }
 
-inline int8_t Position::getGamePhase() const 
+inline int8_t Position::getGamePhase() const noexcept
 { 
-    return gamePhase; 
+    return mGamePhase; 
 }
 
-inline Bitboard Position::getPinnedPieces() const 
+inline Bitboard Position::getPinnedPieces() const noexcept
 { 
-    return pinned; 
+    return mPinned; 
 }
 
-inline Bitboard Position::getDiscoveredCheckCandidates() const 
+inline Bitboard Position::getDiscoveredCheckCandidates() const noexcept
 { 
-    return dcCandidates; 
+    return mDcCandidates; 
 }
 
-inline HashKey Position::getHashKey() const 
+inline HashKey Position::getHashKey() const noexcept
 { 
-    return hashKey; 
+    return mHashKey;
 }
 
-inline HashKey Position::getPawnHashKey() const 
+inline HashKey Position::getPawnHashKey() const noexcept
 { 
-    return pawnHashKey; 
+    return mPawnHashKey; 
 }
 
-inline HashKey Position::getMaterialHashKey() const 
+inline HashKey Position::getMaterialHashKey() const noexcept
 { 
-    return materialHashKey; 
+    return mMaterialHashKey; 
 }
 
-inline int8_t Position::getPieceCount(const Color color, const Piece piece) const
+inline int8_t Position::getPieceCount(Color color, Piece piece) const
 { 
-    return pieceCount[piece + color * 6]; 
+    return mPieceCounts[piece + color * 6]; 
 }
 
-inline int8_t Position::getTotalPieceCount() const
+inline int8_t Position::getNonPawnPieceCount(Color side) const
 {
-    return totalPieceCount; 
+    return mNonPawnPieceCounts[side];
 }
 
-inline int16_t Position::getPstScoreOp() const
+inline int16_t Position::getPstScoreOp() const noexcept
 {
-    return pstScoreOp;
+    return mPstScoreOp;
 }
 
-inline int16_t Position::getPstScoreEd() const
+inline int16_t Position::getPstScoreEd() const noexcept
 {
-    return pstScoreEd;
+    return mPstScoreEd;
 }
 
-inline int8_t Position::nonPawnMaterial(Color side) const
+inline int16_t Position::getGamePly() const noexcept
 {
-    return nonPawnPieceCounts[side];
+    return mGamePly;
 }
 
 inline bool Position::inCheck() const 
 { 
-    return isAttacked(Bitboards::lsb(getBitboard(sideToMove, Piece::King)), !sideToMove); 
+    return isAttacked(Bitboards::lsb(getBitboard(mSideToMove, Piece::King)), !mSideToMove); 
 }
 
 inline Bitboard Position::discoveredCheckCandidates() const 
 { 
-    return checkBlockers(sideToMove, !sideToMove); 
+    return checkBlockers(mSideToMove, !mSideToMove); 
 }
 
-inline Bitboard Position::pinnedPieces(const Color c) const 
+inline Bitboard Position::getRooksAndQueens() const noexcept
+{
+    return mBitboards[Piece::WhiteQueen] | mBitboards[Piece::BlackQueen] | mBitboards[Piece::WhiteRook] | mBitboards[Piece::BlackRook];
+}
+
+inline Bitboard Position::getRooksAndQueens(Color c) const
+{
+    return getBitboard(c, Piece::Queen) | getBitboard(c, Piece::WhiteRook);
+}
+
+inline Bitboard Position::getBishopsAndQueens() const noexcept
+{
+    return mBitboards[Piece::WhiteQueen] | mBitboards[Piece::BlackQueen] | mBitboards[Piece::WhiteBishop] | mBitboards[Piece::BlackBishop];
+}
+
+inline Bitboard Position::getBishopsAndQueens(Color c) const
+{
+    return getBitboard(c, Piece::Queen) | getBitboard(c, Piece::Bishop);
+}
+
+inline Bitboard Position::pinnedPieces(Color c) const 
 {
     return checkBlockers(c, c); 
 }

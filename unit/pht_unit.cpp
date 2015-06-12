@@ -15,16 +15,23 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef EXCEPTION_HPP_
-#define EXCEPTION_HPP_
+#include "..\src\pht.hpp"
+#include <boost\test\unit_test.hpp>
 
-#include <stdexcept>
-
-// Thrown inside the search function when either the allocated time is up or we have been ordered to stop.
-class StopSearchException : public std::runtime_error
+BOOST_AUTO_TEST_CASE(AllCasesPHT)
 {
-public:
-    StopSearchException(const std::string& description) : std::runtime_error(description) {}
-};
+    PawnHashTable pht;
+    int scoreOp, scoreEd;
 
-#endif
+    pht.save(5270488176186631498, 15, 20);
+
+    BOOST_CHECK(pht.probe(5270488176186631498, scoreOp, scoreEd));
+    BOOST_CHECK(scoreOp == 15);
+    BOOST_CHECK(scoreEd == 20);
+
+    pht.clear();
+    BOOST_CHECK(!pht.probe(5270488176186631498, scoreOp, scoreEd));
+}
+
+
+

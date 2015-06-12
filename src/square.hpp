@@ -15,18 +15,27 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+/// @file square.hpp
+/// @author Mikko Aarnos
+
 #ifndef SQUARE_HPP_
 #define SQUARE_HPP_
 
 #include <cassert>
 #include <cstdint>
 
-// Represents a single square of the board.
+/// @brief Represents a single square of the board.
+///
+/// The square is encoded as an int8_t, of which values 0 to 64 are legal and 0 to 63 are well-defined.
 class Square
 {
 public:
-    Square() : square(NoSquare) {};
-    Square(const int newSquare) { assert(newSquare >= A1 && newSquare <= NoSquare); square = static_cast<int8_t>(newSquare); };
+    /// @brief Default constructor.
+    Square() noexcept;
+
+    /// @brief Constructs a Square from a given int. Should be int8_t but that causes a metric ton of warnings which require ugly fixes.
+    /// @param square The int.
+    Square(int square) noexcept;
 
     enum : int8_t
     {
@@ -41,35 +50,57 @@ public:
         NoSquare
     };
 
-    operator int8_t() const { return square; }
-    operator int8_t&() { return square; }
+    /// @return The int8_t.
+    operator int8_t() const noexcept;
+    /// @return A reference to the int8_t.
+    operator int8_t&() noexcept;
+
+    /// @brief Debugging function, used for checking if the square is well-defined.
+    /// @return True if the square is well-defined, false otherwise.
+    bool isOk() const noexcept;
+
 private:
-    int8_t square;
+    int8_t mSquare;
 };
 
-// Checks if the square is okay, i.e. >= A1 and <= NoSquare. 
-inline bool squareIsOkLoose(const Square sq)
+inline Square::Square() noexcept : mSquare(NoSquare)
 {
-    return (sq >= Square::A1 && sq <= Square::NoSquare);
 }
 
-// Checks if the square is on the board, i.e. >= A1 and <= H8. 
-inline bool squareIsOkStrict(const Square sq)
-{
-    return (sq >= Square::A1 && sq <= Square::H8);
+inline Square::Square(int square) noexcept : mSquare(static_cast<int8_t>(square))
+{ 
 }
 
-// Returns the number of the file the square is on.
-inline int file(const Square sq)
+inline Square::operator int8_t() const noexcept
 {
-    assert(squareIsOkStrict(sq));
+    return mSquare;
+}
+
+inline Square::operator int8_t&() noexcept
+{
+    return mSquare;
+}
+
+inline bool Square::isOk() const noexcept
+{
+    return (mSquare >= Square::A1 && mSquare <= Square::H8);
+}
+
+/// @brief Used for calculating the file of a given square. Not inside the class above because we always don't have an instance of Square when we want to call this.
+/// @param sq The square.
+/// @return The file as a number, 0 for A-file, 1 for B-file and so on.
+inline int file(Square sq) noexcept
+{
+    assert(sq.isOk());
     return (sq % 8);
 }
 
-// Returns the number of the rank the square is on.
-inline int rank(const Square sq)
+/// @brief Used for calculating the rank of a given square. Here for the same reason as file.
+/// @param sq The square.
+/// @return The rank as a number, 0 for 1st rank, 1 for 2nd rank and so on.
+inline int rank(Square sq) noexcept
 {
-    assert(squareIsOkStrict(sq));
+    assert(sq.isOk());
     return (sq / 8);
 }
 

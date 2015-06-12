@@ -16,31 +16,70 @@
 */
 
 #include "benchmark.hpp"
-#include "move.hpp"
-#include "movegen.hpp"
-#include "utils/stopwatch.hpp"
+#include <sstream>
+#include "utils\stopwatch.hpp"
 
-std::pair<uint64_t, uint64_t> Benchmark::runPerft(const Position root, const int depth)
+std::pair<uint64_t, uint64_t> Benchmark::runPerft(const Position& pos, int depth)
 {
     Stopwatch sw;
 
     sw.start();
-    const auto perftResult = perft(root, depth);
+    const auto perftResult = perft(pos, depth, pos.inCheck());
     sw.stop();
 
     return std::make_pair(perftResult, sw.elapsed<std::chrono::milliseconds>());
 }
 
-uint64_t Benchmark::perft(const Position& pos, const int depth)
+std::pair<uint64_t, uint64_t> Benchmark::runPerftTestSuite()
 {
-    MoveList moves;
-    auto nodes = 0ull; 
-    const auto inCheck = pos.inCheck();
-
-    inCheck ? moveGen.generateLegalEvasions(pos, moves) : moveGen.generatePseudoLegalMoves(pos, moves);
-    for (auto i = 0; i < moves.size(); ++i)
+    struct PerftTest
     {
-        const auto& move = moves[i];
+        std::string fen;
+        int depth;
+        uint64_t result;
+    };
+
+    static const std::array<PerftTest, 7> tests = { {
+        { "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", 7, 3195901860 },
+        { "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 5, 193690690 },
+        { "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 7, 178633661 },
+        { "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq -", 6, 706045033 },
+        { "rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6", 3, 53392 },
+        { "r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10", 6, 6923051137 },
+        { "rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1", 6, 8509434052 },
+    } };
+
+    auto total = 0ULL;
+    Stopwatch sw;
+
+    sw.start();
+    for (auto i = 0; i < 7; ++i)
+    {
+        auto& test = tests[i];
+        Position pos(test.fen);
+        const auto result = perft(pos, test.depth, pos.inCheck());
+        total += result;
+        if (result != test.result)
+        {
+            std::stringstream ss;
+            ss << "Test " << i + 1 << " failed: should have been " << test.result << " but was " << result;
+            throw std::exception(ss.str().c_str());
+        }
+    }
+    sw.stop();
+
+    return std::make_pair(total, sw.elapsed<std::chrono::milliseconds>());
+}
+
+uint64_t Benchmark::perft(const Position& pos, int depth, bool inCheck)
+{
+    MoveList moveList;
+    auto nodes = 0ULL; 
+
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList) : MoveGen::generatePseudoLegalMoves(pos, moveList);
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        const auto move = moveList.getMove(i);
         if (!pos.legal(move, inCheck))
         {
             continue;
@@ -54,7 +93,7 @@ uint64_t Benchmark::perft(const Position& pos, const int depth)
 
         Position newPos(pos);
         newPos.makeMove(move);
-        nodes += depth == 1 ? 1 : perft(newPos, depth - 1);
+        nodes += depth == 1 ? 1 : perft(newPos, depth - 1, newPos.inCheck());
     }
 
     return nodes;

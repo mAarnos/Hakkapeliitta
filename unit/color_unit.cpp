@@ -15,25 +15,31 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#include "..\src\color.hpp"
+#include <boost\test\unit_test.hpp>
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+BOOST_AUTO_TEST_CASE(COLOR_WHITE)
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
+    const Color c(Color::White);
+
+    BOOST_CHECK(c.isOk());
+    BOOST_CHECK(!c == Color::Black);
 }
 
-#endif
+BOOST_AUTO_TEST_CASE(COLOR_BLACK)
+{
+    const Color c(Color::Black);
+
+    BOOST_CHECK(c.isOk());
+    BOOST_CHECK(!c == Color::White);
+}
+
+BOOST_AUTO_TEST_CASE(COLOR_NOCOLOR)
+{
+    const Color c;
+
+    BOOST_CHECK(!c.isOk());
+    BOOST_CHECK(!c != Color::White);
+    BOOST_CHECK(!c != Color::Black);
+}
+

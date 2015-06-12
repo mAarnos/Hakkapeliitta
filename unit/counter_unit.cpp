@@ -15,25 +15,24 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
-/// @file clamp.hpp
-/// @author Mikko Aarnos
+#include "..\src\counter.hpp"
+#include <boost\test\unit_test.hpp>
 
-#ifndef CLAMP_HPP_
-#define CLAMP_HPP_
-
-#include <algorithm>
-#include <cassert>
-
-/// @brief Forces the input value between the given lower and upper bounds.
-/// @param value The value.
-/// @param lowerBound The lower bound.
-/// @param upperBound The upper bound.
-/// @return If value is smaller than lower bound then lower bound, if greater than upper bound then upperbound, else value.
-template <class T>
-T clamp(T value, T lowerBound, T upperBound)
+BOOST_AUTO_TEST_CASE(CounterTest)
 {
-    assert(lowerBound <= upperBound);
-    return std::max(lowerBound, std::min(value, upperBound));
+    CounterMoveTable counterMoveTable;
+    const Position pos("2r3k1/q4ppp/p3p3/pnNp4/2rP4/2P2P2/4R1PP/2R1Q1K1 b - - 0 1");
+    const Move m1(Square::H8, Square::G8, Piece::Empty); // A fictional just-made move.
+    const Move m2(Square::F3, Square::F4, Piece::Empty); // An even more fictional counter move to the previous move.
+
+    counterMoveTable.update(pos, m2, m1);
+    auto counter = counterMoveTable.getCounterMove(pos, m1);
+
+    BOOST_CHECK(counter == m2);
+
+    counterMoveTable.clear();
+    counter = counterMoveTable.getCounterMove(pos, m1);
+
+    BOOST_CHECK(counter.empty());
 }
 
-#endif
