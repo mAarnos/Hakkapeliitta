@@ -47,6 +47,17 @@ BOOST_AUTO_TEST_CASE(GENERAL_FUNCTIONS_1)
     BOOST_CHECK(pos.getPieceCount(Color::Black, Piece::King) == 1);
     BOOST_CHECK(pos.getPieceCount(Color::Black, Piece::Rook) == 2);
 
+    BOOST_CHECK(pos.getRooksAndQueens() == 0x210200000000001C);
+    BOOST_CHECK(pos.getRooksAndQueens(Color::White) == 0x000000000000001C);
+    BOOST_CHECK(pos.getRooksAndQueens(Color::Black) == 0x2102000000000000);
+
+    BOOST_CHECK(pos.getBishopsAndQueens() == 0x001A000000100408);
+    BOOST_CHECK(pos.getBishopsAndQueens(Color::White) == 0x0000000000100408);
+    BOOST_CHECK(pos.getBishopsAndQueens(Color::Black) == 0x001A000000000000);
+
+    BOOST_CHECK(pos.getPinnedPieces() == 0);
+    BOOST_CHECK(pos.getDiscoveredCheckCandidates() == 0);
+
     BOOST_CHECK(pos.getNonPawnPieceCount(Color::White) == 7);
     BOOST_CHECK(pos.getNonPawnPieceCount(Color::Black) == 7);
 
