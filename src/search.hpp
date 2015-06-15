@@ -101,6 +101,11 @@ private:
     size_t nodeCount;
     int selDepth;
 
+    // Flags related to stopping the search.
+    bool searching;
+    bool pondering;
+    bool infinite;
+
     // These three are used to detect repetitions.
     // Note that the repetitions can include positions which happened during position set-up.
     // If this were not the case we would not require rootPly.

@@ -154,7 +154,8 @@ int futilityMargin(int depth)
 Search::Search():
     searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
-    tbHits(0), nodeCount(0), selDepth(0), rootPly(0), repetitionHashes({}), contempt({})
+    tbHits(0), nodeCount(0), selDepth(0), searching(false), pondering(false), infinite(false), 
+    rootPly(0), repetitionHashes({}), contempt({})
 {
     for (auto i = 0; i < 64; ++i)
     {
@@ -380,8 +381,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Time check things.
-    // TODO: finish this
-    /*
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
@@ -415,14 +414,15 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (time >= nextSendInfo)
         {
             nextSendInfo += 1000;
-            
+            // TODO: finish this
+            /*
             sync_cout << "info nodes " << nodeCount
                       << " time " << time
                       << " nps " << (nodeCount / (time + 1)) * 1000
                       << " tbhits " << tbHits << std::endl;
+            */
         }
     }
-    */
 
     // Check for fifty move draws.
     if (pos.getFiftyMoveDistance() >= 100)
