@@ -30,6 +30,8 @@
 #include "utils\stopwatch.hpp"
 #include "search_parameters.hpp"
 #include "movelist.hpp"
+#include <thread>
+#include <condition_variable>
 
 /// @brief The core of this program, the search function.
 class Search
@@ -37,12 +39,6 @@ class Search
 public:
     /// @brief Default constructor.
     Search();
-
-    /// @brief Starts thinking what the best move in a given root position is.
-    /// @param root The root position.
-    /// @param searchParameters Different kinds of parameters given to the search function.
-    /// @return The move that the search function thinks is the best one.
-    void think(const Position& root, SearchParameters searchParameters);
 
     /// @brief Clears the TT, PHT, killer table, history table and the counter move table. 
     ///
@@ -84,8 +80,11 @@ private:
     HistoryTable historyTable;
     Stopwatch sw;
 
+    void think(const Position& root, SearchParameters searchParameters);
+
     template <bool pvNode>
     int search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
+
     int quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
     // Time allocation variables.
@@ -112,7 +111,7 @@ private:
     // Actually, we check for 2-fold repetitions instead of 3-fold repetitions like FIDE-rules require.
     // If you think about it for a while, you notice that 2-fold is all we need.
     int rootPly;
-    std::array<HashKey, 1024> repetitionHashes;
+    std::vector<HashKey> repetitionHashes;
     bool repetitionDraw(const Position& pos, int ply) const;
 
     // Used for changing the values of draws inside the search.
