@@ -21,17 +21,18 @@
 #ifndef SEARCH_HPP_
 #define SEARCH_HPP_
 
+#include <thread>
+#include <condition_variable>
 #include "tt.hpp"
 #include "history.hpp"
 #include "killer.hpp"
 #include "counter.hpp"
 #include "evaluation.hpp"
 #include "pht.hpp"
-#include "utils\stopwatch.hpp"
+#include "utils/stopwatch.hpp"
 #include "search_parameters.hpp"
 #include "movelist.hpp"
-#include <thread>
-#include <condition_variable>
+#include "utils/threadpool.hpp"
 
 /// @brief The core of this program, the search function.
 class Search
@@ -39,6 +40,15 @@ class Search
 public:
     /// @brief Default constructor.
     Search();
+
+    /// @brief Start searching a given root position with a given set of parameters.
+    /// @param root The root position.
+    /// @param sp The set of parameters given to the search function.
+    ///
+    /// Oh yeah, this function only starts the search, the actual searching is done by a different thread.
+    /// Also, this function blocks until the search has started to prevent some problems.
+    /// Usually the blocking time is very short, 5-10ms at most.
+    void go(const Position& root, SearchParameters sp);
 
     /// @brief Clears the TT, PHT, killer table, history table and the counter move table. 
     ///
@@ -73,6 +83,7 @@ private:
     };
     
     // Different classes used by the search function.
+    ThreadPool tp;
     TranspositionTable transpositionTable;
     Evaluation evaluation;
     KillerTable killerTable;
@@ -122,6 +133,10 @@ private:
 
     // A array of LMP move counts which has to be initialized at run time.
     std::array<int, 1 + lmpDepth> lmpMoveCounts;
+
+    // Used in go for making sure that commands are synchronized.
+    std::mutex waitMutex;
+    std::condition_variable waitCv;
 
     // Used for ordering captures in the quiescence search.
     void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const;

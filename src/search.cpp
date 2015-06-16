@@ -153,7 +153,7 @@ int futilityMargin(int depth)
 }
 
 Search::Search():
-    searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
+    tp(1), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
     tbHits(0), nodeCount(0), selDepth(0), searching(false), pondering(false), infinite(false), 
     rootPly(0), repetitionHashes({}), contempt({})
@@ -187,6 +187,16 @@ bool Search::repetitionDraw(const Position& pos, int ply) const
     return false;
 }
 
+void Search::go(const Position& root, SearchParameters sp)
+{
+    std::unique_lock<std::mutex> waitLock(waitMutex);
+    tp.addJob(&Search::think, this, root, sp);
+    // Wait here until the search function has started.
+    // Think of a chain of commands "go", "stop", "go", "stop" sent within 1 or 2 milliseconds.
+    // If this part isn't here, some commands could get lost.
+    waitCv.wait(waitLock);
+}
+
 void Search::think(const Position& root, SearchParameters sp)
 {
     const auto inCheck = root.inCheck();
@@ -207,6 +217,7 @@ void Search::think(const Position& root, SearchParameters sp)
     searchNeedsMoreTime = false;
     selDepth = 1;
     nextSendInfo = 1000;
+    searching = true;
     pondering = sp.mPonder;
     infinite = (sp.mInfinite || sp.mDepth > 0 || sp.mNodes > 0);
     const auto maxDepth = (sp.mDepth > 0 ? std::min(sp.mDepth + 1, 128) : 128);
@@ -217,7 +228,7 @@ void Search::think(const Position& root, SearchParameters sp)
     historyTable.age();
     counterMoveTable.clear();
     killerTable.clear();
-    // waitCv.notify_one();
+    waitCv.notify_one();
     sw.reset();
     sw.start();
 
