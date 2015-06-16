@@ -186,6 +186,43 @@ bool Search::repetitionDraw(const Position& pos, int ply) const
     return false;
 }
 
+std::vector<Move> Search::extractPv(const Position& pos) const
+{
+    Position root(pos);
+    std::vector<Move> pv;
+    std::unordered_set<HashKey> previousHashes;
+
+    for (auto ply = 0; ply < 128; ++ply)
+    {
+        const auto entry = transpositionTable.probe(root.getHashKey());
+
+        // No entry found -> end of PV
+        if (!entry)
+            break;
+
+        // No move found in the entry, so we cannot add to the PV
+        if (entry->getBestMove().empty())
+            break;
+
+        // Repetition draw -> end of PV
+        if (previousHashes.count(root.getHashKey()) > 0)
+            break;
+
+        // No exact score hash entry to use -> end of PV 
+        // If we are very near the root we accept all flags as we absolutely need the move 
+        // to be played and a ponder move is very important as well.
+        if (entry->getFlags() != TranspositionTable::Flags::ExactScore && ply >= 2)
+            break;
+
+        const auto m = entry->getBestMove();
+        pv.push_back(m);
+        previousHashes.insert(root.getHashKey());
+        root.makeMove(m);
+    }
+
+    return pv;
+}
+
 void Search::go(const Position& root, SearchParameters sp)
 {
     std::unique_lock<std::mutex> waitLock(waitMutex);
@@ -252,6 +289,7 @@ void Search::think(const Position& root, SearchParameters sp)
 
     inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList)
             : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
+    // TODO: add this back
     // removeIllegalMoves(pos, rootMoveList, inCheck);
 
     // Get the tt move from a possible previous search.
@@ -278,6 +316,7 @@ void Search::think(const Position& root, SearchParameters sp)
         auto movesSearched = 0;
         auto bestScore = -mateScore;
 
+        // TODO: add this back
         // orderMoves(pos, rootMoveList, bestMove, 0, Move());
         try {
             for (auto i = 0; i < rootMoveList.size(); ++i)
@@ -380,7 +419,7 @@ void Search::think(const Position& root, SearchParameters sp)
                                             depth, 
                                             lowerBound ? TranspositionTable::Flags::LowerBoundScore 
                                                        : TranspositionTable::Flags::UpperBoundScore);
-                    // pv = transpositionTable.extractPv(pos);
+                    pv = extractPv(pos);
                     listener.infoPv(pv, 
                                     sw.elapsed<std::chrono::milliseconds>(), 
                                     nodeCount,
@@ -405,7 +444,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                                 realScoreToTtScore(score, 0), 
                                                 depth, 
                                                 TranspositionTable::Flags::ExactScore);
-                        // pv = transpositionTable.extractPv(pos);
+
+                        pv = extractPv(pos);
                         listener.infoPv(pv,
                                         sw.elapsed<std::chrono::milliseconds>(),
                                         nodeCount,
@@ -427,7 +467,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                 realScoreToTtScore(bestScore, 0), 
                                 depth, 
                                 TranspositionTable::Flags::ExactScore);
-        // pv = transpositionTable.extractPv(pos);
+
+        pv = extractPv(pos);
 
         // If there is only one root move then stop searching.
         // Not done if we are in an infinite search or pondering, since we must search for ever in those cases.

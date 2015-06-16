@@ -178,6 +178,9 @@ private:
 
     // Used for ordering captures in the quiescence search.
     void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const;
+
+    // Used for getting the PV out of the TT:
+    std::vector<Move> extractPv(const Position& root) const;
 };
 
 inline void Search::clearSearch() 
