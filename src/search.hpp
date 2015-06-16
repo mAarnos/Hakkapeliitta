@@ -176,6 +176,9 @@ private:
     std::mutex waitMutex;
     std::condition_variable waitCv;
 
+    // Used for ordering root moves.
+    void orderRootMoves(const Position& pos, MoveList& moveList, const Move& ttMove) const;
+
     // Used for ordering captures in the quiescence search.
     void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const;
 

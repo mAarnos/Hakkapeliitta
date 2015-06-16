@@ -152,6 +152,61 @@ int futilityMargin(int depth)
     return 25 * depth + 100;
 }
 
+// Removes illegal moves from a moveList.
+// Remove after getting MoveSort working everywhere.
+void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
+{
+    auto marker = 0;
+
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        if (pos.legal(moveList.getMove(i), inCheck))
+        {
+            moveList.setMove(marker++, moveList.getMove(i));
+        }
+    }
+
+    moveList.resize(marker);
+}
+
+void Search::orderRootMoves(const Position& pos, MoveList& moveList, const Move& ttMove) const
+{
+    for (auto i = 0; i < moveList.size(); ++i)
+    {
+        const auto move = moveList.getMove(i);
+
+        if (move == ttMove) // Move from transposition table
+        {
+            moveList.setScore(i, hashMoveScore);
+        }
+        else if (pos.captureOrPromotion(move))
+        {
+            auto score = pos.SEE(move);
+            if (score >= 0) // Order good captures and promotions after ttMove
+            {
+                score += captureMoveScore;
+            }
+            moveList.setScore(i, score);
+        }
+        else
+        {
+            const auto killers = killerTable.getKillers(0);
+            if (move == killers.first)
+            {
+                moveList.setScore(i, killerMoveScore[1]);
+            }
+            else if (move == killers.second)
+            {
+                moveList.setScore(i, killerMoveScore[2]);
+            }
+            else
+            {
+                moveList.setScore(i, historyTable.getScore(pos, move));
+            }
+        }
+    }
+}
+
 Search::Search(SearchListener& sl):
     tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
@@ -290,8 +345,7 @@ void Search::think(const Position& root, SearchParameters sp)
 
     inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList)
             : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
-    // TODO: add this back
-    // removeIllegalMoves(pos, rootMoveList, inCheck);
+    removeIllegalMoves(pos, rootMoveList, inCheck);
 
     // Get the tt move from a possible previous search.
     const auto ttEntry = transpositionTable.probe(pos.getHashKey());
@@ -317,8 +371,7 @@ void Search::think(const Position& root, SearchParameters sp)
         auto movesSearched = 0;
         auto bestScore = -mateScore;
 
-        // TODO: add this back
-        // orderMoves(pos, rootMoveList, bestMove, 0, Move());
+        orderRootMoves(pos, rootMoveList, bestMove);
         try {
             for (auto i = 0; i < rootMoveList.size(); ++i)
             {
