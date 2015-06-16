@@ -16,7 +16,6 @@
 */
 
 #include "search.hpp"
-#include "movelist.hpp"
 #include "movegen.hpp"
 #include "movesort.hpp"
 #include "utils/clamp.hpp"
@@ -822,8 +821,6 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
     assert(alpha < beta);
     assert(depth <= 0);
     assert(inCheck == pos.inCheck());
-
-    search<true>(pos, depth, alpha, beta, inCheck, ss);
 
     int bestScore, delta;
     MoveList moveList;

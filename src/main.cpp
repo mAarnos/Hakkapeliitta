@@ -29,6 +29,7 @@
 #include "benchmark.hpp"
 #include "search.hpp"
 #include "evaluation.hpp"
+#include "utils/synchronized_ostream.hpp"
 
 std::string positionToFen(const Position& pos)
 {
