@@ -19,6 +19,7 @@
 #include "movegen.hpp"
 #include "movesort.hpp"
 #include "utils/clamp.hpp"
+#include "utils/exception.hpp"
 
 // Returns a score corresponding to getting mated in a given number of plies.
 int matedInPly(int ply)
@@ -457,9 +458,9 @@ void Search::think(const Position& root, SearchParameters sp)
                 }
             }
         }
-        catch (const std::exception&)
+        catch (const StopSearchException&)
         {
-            pos = root; // Exception messes up the position, fix it.
+            pos = root; // Exception might mess up the position, fix it. 
         }
 
         transpositionTable.save(pos.getHashKey(), 
@@ -586,8 +587,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         if (!searching)
         {
-            // TODO: custom exception
-            throw std::exception("allocated time has run out");
+            throw StopSearchException("allocated time has run out");
         }
 
         if (time >= nextSendInfo)
