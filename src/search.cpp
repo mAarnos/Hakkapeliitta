@@ -152,8 +152,8 @@ int futilityMargin(int depth)
     return 25 * depth + 100;
 }
 
-Search::Search():
-    tp(1), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
+Search::Search(SearchListener& sl):
+    tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
     tbHits(0), nodeCount(0), selDepth(0), searching(false), pondering(false), infinite(false), 
     rootPly(0), repetitionHashes({}), contempt({})
@@ -247,7 +247,7 @@ void Search::think(const Position& root, SearchParameters sp)
         if (sp.mPonderOption)
         {
             targetTime += targetTime / 3;
-            targetTime = clamp(targetTime, 1, maxTime);
+            targetTime = clamp(targetTime, 1ULL, maxTime);
         }
     }
 
@@ -291,7 +291,7 @@ void Search::think(const Position& root, SearchParameters sp)
                 // Start sending currmove info only after one second has elapsed.
                 if (sw.elapsed<std::chrono::milliseconds>() > 1000)
                 {
-                    // infoCurrMove(move, depth, i);
+                    listener.infoCurrMove(move, depth, i);
                 }
 
                 const auto givesCheck = pos.givesCheck(move);
@@ -382,7 +382,14 @@ void Search::think(const Position& root, SearchParameters sp)
                                             lowerBound ? TranspositionTable::Flags::LowerBoundScore 
                                                        : TranspositionTable::Flags::UpperBoundScore);
                     // pv = transpositionTable.extractPv(pos);
-                    // infoPv(pv, depth, score, lowerBound ? LowerBoundScore : UpperBoundScore);
+                    listener.infoPv(pv, 
+                                    sw.elapsed<std::chrono::milliseconds>(), 
+                                    nodeCount,
+                                    tbHits,    
+                                    depth, 
+                                    score, 
+                                    lowerBound ? TranspositionTable::Flags::LowerBoundScore
+                                               : TranspositionTable::Flags::UpperBoundScore);
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
                                          : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
@@ -400,7 +407,13 @@ void Search::think(const Position& root, SearchParameters sp)
                                                 depth, 
                                                 TranspositionTable::Flags::ExactScore);
                         // pv = transpositionTable.extractPv(pos);
-                        // infoPv(pv, depth, score, ExactScore);
+                        listener.infoPv(pv,
+                                        sw.elapsed<std::chrono::milliseconds>(),
+                                        nodeCount,
+                                        tbHits,
+                                        depth,
+                                        score,
+                                        TranspositionTable::Flags::ExactScore);
                     }
                 }
             }
@@ -430,7 +443,13 @@ void Search::think(const Position& root, SearchParameters sp)
             break;
         }
 
-        // infoPv(pv, depth, bestScore, ExactScore);
+        listener.infoPv(pv,
+                        sw.elapsed<std::chrono::milliseconds>(),
+                        nodeCount,
+                        tbHits,
+                        depth,
+                        bestScore,
+                        TranspositionTable::Flags::ExactScore);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
@@ -462,14 +481,10 @@ void Search::think(const Position& root, SearchParameters sp)
     // If we somehow reach maximum depth we might not reset the flag otherwise.
     searching = false;
     const auto searchTime = sw.elapsed<std::chrono::milliseconds>();
-    /*
-    sync_cout << "info time " << searchTime
-              << " nodes " << nodeCount
-              << " nps " << (nodeCount / (searchTime + 1)) * 1000
-              << " tbhits " << tbHits << std::endl
-              << "bestmove " << moveToUciFormat(pv[0])
-              << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
-    */
+    listener.infoBestMove(pv,
+                          sw.elapsed<std::chrono::milliseconds>(),
+                          nodeCount,
+                          tbHits);
 }
 
 #ifdef _WIN32
@@ -508,7 +523,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        const auto time = static_cast<int64_t>(sw.elapsed<std::chrono::milliseconds>());
+        const auto time = sw.elapsed<std::chrono::milliseconds>();
 
         // Check if we have gone over the node limit.
         if (nodeCount >= maxNodes)
@@ -538,13 +553,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (time >= nextSendInfo)
         {
             nextSendInfo += 1000;
-            // TODO: finish this
-            /*
-            sync_cout << "info nodes " << nodeCount
-                      << " time " << time
-                      << " nps " << (nodeCount / (time + 1)) * 1000
-                      << " tbhits " << tbHits << std::endl;
-            */
+            listener.infoRegular(nodeCount, tbHits, time);
         }
     }
 

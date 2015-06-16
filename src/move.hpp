@@ -66,10 +66,12 @@ public:
     bool empty() const noexcept;
 
     /// @brief Comparison operator for equality.
+    /// @param m The move to compare against.
     /// @return True if the moves are the same, false otherwise.
     bool operator==(const Move& m) const noexcept;
 
     /// @brief Comparison operator for inequality.
+    /// @param m The move to compare against.
     /// @return True if the moves are not the same, false otherwise.
     bool operator!= (const Move& m) const noexcept;
 

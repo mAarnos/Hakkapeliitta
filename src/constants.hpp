@@ -32,28 +32,56 @@ enum CastlingRights
 
 // Some constants defining mate values.
 // TODO: lower mateScore to 30000 or so.
-const int mateScore = 32767; // mate in 0
-const int minMateScore = 32767 - 1000; // mate in 500
+/// @brief The score given to a mate in 0 moves.
+const int mateScore = 32767; 
+
+/// @brief The score given to a mate in 500 moves. We do not recognize worse mates, hence the name.
+const int minMateScore = 32767 - 1000; 
+
+/// @brief The absolute maximum score used in the search function.
 const int infinity = mateScore + 1;
 
-// Different constants dealing with pruning and reductions.
+/// @brief The aspiration window.
 const int aspirationWindow = 16;
+
+/// @brief Always reduce at least this much when using null move.
 const int baseNullReduction = 3;
+
+/// @brief The max depth we use futility pruning at.
 const int futilityDepth = 7;
+
+/// @brief The delta pruning margin.
 const int deltaPruningMargin = 50;
+
+/// @brief The max depth we use reverse futility pruning at.
 const int reverseFutilityDepth = 5;
+
+/// @brief The min depth we use LMR at.
 const int lmrDepthLimit = 3;
+
+/// @brief The max depth we use LMP at.
 const int lmpDepth = 6;
+
+/// @brief The max depth we use razoring at.
 const int razoringDepth = 3;
+
+/// @brief The max depth we use SEE pruning at.
 const int seePruningDepth = 3;
 
 // Move ordering scores.
 // Delete as soon as MoveSort works everywhere.
+/// @brief The move ordering score given to a TT-move.
 const int16_t hashMoveScore = 30000;
+
+/// @brief The move ordering score given to a good capture move.
 const int16_t captureMoveScore = hashMoveScore >> 1;
+
+/// @brief The move ordering scores given to killer moves, ordered by killer level.
 const std::array<int16_t, 1 + 4> killerMoveScore = {
     0, hashMoveScore >> 2, hashMoveScore >> 3, hashMoveScore >> 4, hashMoveScore >> 5
 };
+
+/// @brief The move ordering score given to a counter move.
 const int16_t counterMoveScore = hashMoveScore >> 6;
 
 #endif

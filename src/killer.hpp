@@ -33,12 +33,12 @@ public:
     /// @brief Default constructor.
     KillerTable();
 
-    /// @brief Updates the killer moves for the given ply. Assumes that the new killer move is not a capture or a promotion.
+    /// @brief Updates the killer moves for a given ply. Assumes that the new killer move is not a capture or a promotion.
     /// @param move The new killer move.
     /// @param ply The ply.
     void update(const Move& move, int ply);
 
-    /// @brief Get the killer moves for the given ply.
+    /// @brief Get the killer moves for a given ply.
     /// @param ply The ply.
     /// @return A pair of killer moves, the first one being the more recent one.
     std::pair<Move, Move> getKillers(int ply) const;

@@ -35,10 +35,9 @@ public:
     /// @return A pair of the perft result and the time it took to calculate it, in ms.
     std::pair<uint64_t, uint64_t> runPerft(const Position& pos, int depth);
 
+    // TODO: should be moved somewhere else
     /// @brief Runs perft on a predetermined set of positions. Throws an exception if the perft result is incorrect at any point.
     /// @return A pair of the nodes searched and the time it took to calculate it, in ms.
-    ///
-    /// Should be moved somewhere else.
     std::pair<uint64_t, uint64_t> runPerftTestSuite();
 
 private:
