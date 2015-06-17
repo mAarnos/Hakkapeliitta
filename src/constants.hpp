@@ -41,6 +41,39 @@ const int minMateScore = 32767 - 1000;
 /// @brief The absolute maximum score used in the search function.
 const int infinity = mateScore + 1;
 
+/// @brief Returns a score corresponding to getting mated in a given number of plies.
+inline int matedInPly(int ply)
+{
+    return (-mateScore + ply);
+}
+
+/// @brief Returns a score corresponding to a mate in a given number of plies.
+inline int mateInPly(int ply)
+{
+    return (mateScore - ply);
+}
+
+/// @brief Returns true if a given score is "mate in X".
+inline bool isWinScore(int score)
+{
+    assert(score > -infinity && score < infinity);
+    return score >= minMateScore;
+}
+
+/// @brief Returns true if a given score is "mated in X".
+inline bool isLoseScore(int score)
+{
+    assert(score > -infinity && score < infinity);
+    return score <= -minMateScore;
+}
+
+/// @brief Returns true if the score is some kind of a mate score.
+inline bool isMateScore(int score)
+{
+    assert(score > -infinity && score < infinity);
+    return isWinScore(score) || isLoseScore(score);
+}
+
 /// @brief The aspiration window.
 const int aspirationWindow = 16;
 

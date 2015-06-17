@@ -26,6 +26,8 @@
 #include "movegen.hpp"
 
 /// @brief Benchmarking functions and utilities.
+///
+/// Everything is static for convenience reasons.
 class Benchmark
 {
 public:
@@ -33,15 +35,17 @@ public:
     /// @param pos The position.
     /// @param depth The depth.
     /// @return A pair of the perft result and the time it took to calculate it, in ms.
-    std::pair<uint64_t, uint64_t> runPerft(const Position& pos, int depth);
+    static std::pair<uint64_t, uint64_t> runPerft(const Position& pos, int depth);
 
     // TODO: should be moved somewhere else
-    /// @brief Runs perft on a predetermined set of positions. Throws an exception if the perft result is incorrect at any point.
+    /// @brief Runs perft on a predetermined set of positions. 
     /// @return A pair of the nodes searched and the time it took to calculate it, in ms.
-    std::pair<uint64_t, uint64_t> runPerftTestSuite();
+    ///
+    /// Throws an exception if the perft result is incorrect at any point.
+    static std::pair<uint64_t, uint64_t> runPerftTestSuite();
 
 private:
-    uint64_t perft(const Position& pos, int depth, bool inCheck);
+    static uint64_t perft(const Position& pos, int depth, bool inCheck);
 };
 
 #endif

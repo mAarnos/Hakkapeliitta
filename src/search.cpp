@@ -21,36 +21,6 @@
 #include "utils/clamp.hpp"
 #include "utils/exception.hpp"
 
-// Returns a score corresponding to getting mated in a given number of plies.
-int matedInPly(int ply)
-{
-    return (-mateScore + ply);
-}
-
-// Returns a score corresponding to a mate in a given number of plies.
-int mateInPly(int ply)
-{
-    return (mateScore - ply);
-}
-
-// Returns true if a given score is "mate in X".
-bool isWinScore(int score)
-{
-    return score >= minMateScore;
-}
-
-// Returns true if a given score is "mated in X".
-bool isLoseScore(int score)
-{
-    return score <= -minMateScore;
-}
-
-// Returns true if the score is some kind of a mate score.
-bool isMateScore(int score)
-{
-    return isWinScore(score) || isLoseScore(score);
-}
-
 // TT-scores are adjusted to avoid some well-known problems. This adjusts a score back to normal.
 int ttScoreToRealScore(int score, int ply)
 {
@@ -398,6 +368,7 @@ void Search::think(const Position& root, SearchParameters sp)
                 const auto givesCheck = pos.givesCheck(move);
                 const auto newDepth = depth - 1;
                 const auto quietMove = !pos.captureOrPromotion(move);
+                // TODO: this part was changed
                 const auto nonCriticalMove = !givesCheck && quietMove && move != bestMove
                                                                       && move != killers.first
                                                                       && move != killers.second;
@@ -490,7 +461,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                     depth, 
                                     score, 
                                     lowerBound ? TranspositionTable::Flags::LowerBoundScore
-                                               : TranspositionTable::Flags::UpperBoundScore);
+                                               : TranspositionTable::Flags::UpperBoundScore,
+                                    selDepth);
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
                                          : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
@@ -515,7 +487,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                         tbHits,
                                         depth,
                                         score,
-                                        TranspositionTable::Flags::ExactScore);
+                                        TranspositionTable::Flags::ExactScore, 
+                                        selDepth);
                     }
                 }
             }
@@ -552,7 +525,8 @@ void Search::think(const Position& root, SearchParameters sp)
                         tbHits,
                         depth,
                         bestScore,
-                        TranspositionTable::Flags::ExactScore);
+                        TranspositionTable::Flags::ExactScore,
+                        selDepth);
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
