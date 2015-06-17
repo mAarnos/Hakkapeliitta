@@ -320,7 +320,16 @@ void Search::think(const Position& root, SearchParameters sp)
     historyTable.age();
     counterMoveTable.clear();
     killerTable.clear();
-    waitCv.notify_one();
+
+    {
+        // Notify the thread which is waiting in "go" that the search has started.
+        // The lock is necessary to make sure that the thread in "go" is actually waiting on a condition variable.
+        // Without the lock in that case the thread blocks forever and we are done.
+        // No really, that actually happens relatively often. I had fun debugging it too.
+        std::unique_lock<std::mutex> waitLock(waitMutex);
+        waitCv.notify_one();
+    }
+
     sw.reset();
     sw.start();
 
