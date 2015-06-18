@@ -37,6 +37,8 @@ contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0)
     addCommand("ponderhit", &UCI::ponderhit);
     addCommand("displayboard", &UCI::displayBoard);
     addCommand("perft", &UCI::perft);
+
+    repetitionHashKeys.assign(1024, 0);
 }
 
 void UCI::mainLoop()
@@ -294,7 +296,7 @@ void UCI::infoCurrMove(const Move& move, int depth, int nr)
 void UCI::infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime)
 {
     sync_cout << "info nodes " << nodeCount
-              << " time " << time
+              << " time " << searchTime
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
               << " tbhits " << tbHits << std::endl;
 }

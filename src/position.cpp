@@ -333,8 +333,8 @@ void Position::makeMove(const Move& m)
     }
 
     mPinned = pinnedPieces(!side);
-    mDcCandidates = discoveredCheckCandidates();
     mSideToMove = !side;
+    mDcCandidates = discoveredCheckCandidates();
     mHashKey ^= Zobrist::turnHashKey();
     ++mGamePly;
 

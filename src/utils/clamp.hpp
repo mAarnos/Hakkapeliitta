@@ -32,7 +32,6 @@
 template <class T>
 T clamp(T value, T lowerBound, T upperBound)
 {
-    assert(lowerBound <= upperBound);
     return std::max(lowerBound, std::min(value, upperBound));
 }
 

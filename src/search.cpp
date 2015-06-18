@@ -21,6 +21,9 @@
 #include "utils/clamp.hpp"
 #include "utils/exception.hpp"
 
+#include <iostream>
+#include "textio.hpp"
+
 // TT-scores are adjusted to avoid some well-known problems. This adjusts a score back to normal.
 int ttScoreToRealScore(int score, int ply)
 {

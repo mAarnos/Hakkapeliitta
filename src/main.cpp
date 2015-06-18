@@ -30,6 +30,7 @@
 #include "search.hpp"
 #include "evaluation.hpp"
 #include "textio.hpp"
+#include "uci.hpp"
 
 char switchCase(unsigned char c)
 {
@@ -111,6 +112,7 @@ int main()
     }
     */
 
+    /*
     Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     std::cout << pos << std::endl;
     try
@@ -125,6 +127,12 @@ int main()
     {
         std::cout << e.what() << std::endl;
     }
+    */
+
+
+    UCI uci;
+
+    uci.mainLoop();
 
     return 0;
 }

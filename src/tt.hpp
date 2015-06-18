@@ -103,9 +103,9 @@ public:
 
         /// @brief Get the depth of this TT entry.
         /// @return The depth.
-        uint8_t getDepth() const noexcept 
+        int8_t getDepth() const noexcept 
         { 
-            return static_cast<uint8_t>(mData >> 48);
+            return static_cast<int8_t>(mData >> 48);
         }
 
         /// @brief Get the flags of this TT entry. 

@@ -50,6 +50,8 @@ struct SearchParameters
     std::array<int, 2> mIncrement; 
     
     /// @brief Moves to go until next time control.
+    ///
+    /// Has a default value of 25. When this is not given we assume the game will last around 25 moves.
     int mMovesToGo; 
 
     /// @brief Don't search deeper than this depth.
@@ -76,7 +78,7 @@ struct SearchParameters
 
 inline SearchParameters::SearchParameters():
     mPonder(false), mPonderOption(false), mContempt(0), mTime({ { 0, 0 } }), mIncrement({ { 0, 0 } }),
-    mMovesToGo(0), mDepth(0), mNodes(0), mMate(0), mMoveTime(0), mInfinite(false), mRootPly(0)
+    mMovesToGo(25), mDepth(0), mNodes(0), mMate(0), mMoveTime(0), mInfinite(false), mRootPly(0)
 {
 };
 
