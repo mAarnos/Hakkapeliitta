@@ -29,101 +29,7 @@
 #include "benchmark.hpp"
 #include "search.hpp"
 #include "evaluation.hpp"
-#include "utils/synchronized_ostream.hpp"
-
-std::string positionToFen(const Position& pos)
-{
-    std::string fen;
-
-    for (auto r = 7; r >= 0; --r)
-    {
-        auto emptySquares = 0;
-        for (auto f = 0; f < 8; ++f)
-        {
-            int piece = pos.getBoard(r * 8 + f);
-            if (piece == Piece::Empty)
-            {
-                ++emptySquares;
-            }
-            else
-            {
-                if (emptySquares > 0)
-                {
-                    fen += static_cast<char>('0' + emptySquares);
-                    emptySquares = 0;
-                }
-
-                switch (piece)
-                {
-                case Piece::BlackPawn: fen += "p"; break;
-                case Piece::BlackRook: fen += "r"; break;
-                case Piece::BlackKnight: fen += "n"; break;
-                case Piece::BlackBishop: fen += "b"; break;
-                case Piece::BlackQueen: fen += "q"; break;
-                case Piece::BlackKing: fen += "k"; break;
-                case Piece::WhitePawn: fen += "P"; break;
-                case Piece::WhiteRook: fen += "R"; break;
-                case Piece::WhiteKnight: fen += "N"; break;
-                case Piece::WhiteBishop: fen += "B"; break;
-                case Piece::WhiteQueen: fen += "Q"; break;
-                case Piece::WhiteKing: fen += "K"; break;
-                default: return "";
-                }
-            }
-        }
-
-        if (emptySquares > 0)
-        {
-            fen += static_cast<char>('0' + emptySquares);
-        }
-        if (rank > 0)
-        {
-            fen += '/';
-        }
-    }
-
-    fen += (pos.getSideToMove() ? " b " : " w ");
-
-    const auto sizeBeforeCastling = fen.size();
-    if (pos.getCastlingRights() & CastlingRights::WhiteOO)
-    {
-        fen += "K";
-    }
-    if (pos.getCastlingRights() & CastlingRights::WhiteOOO)
-    {
-        fen += "Q";
-    }
-    if (pos.getCastlingRights() & CastlingRights::BlackOO)
-    {
-        fen += "k";
-    }
-    if (pos.getCastlingRights() & CastlingRights::BlackOOO)
-    {
-        fen += "q";
-    }
-    if (sizeBeforeCastling == fen.size())
-    {
-        fen += "-";
-    }
-
-    fen += " ";
-    if (pos.getEnPassantSquare() != Square::NoSquare)
-    {
-        fen += static_cast<char>('a' + file(pos.getEnPassantSquare()));
-        fen += static_cast<char>('1' + rank(pos.getEnPassantSquare()));
-    }
-    else
-    {
-        fen += "-";
-    }
-
-    fen += " ";
-    fen += std::to_string(pos.getFiftyMoveDistance());
-    fen += " ";
-    fen += std::to_string((pos.getGamePly() + 1) / 2);
-
-    return fen;
-}
+#include "textio.hpp"
 
 char switchCase(unsigned char c)
 {
@@ -177,27 +83,6 @@ bool testReversedEval(std::ifstream& games)
     }
 
     return true;
-}
-
-std::ostream& operator<<(std::ostream &out, const Position& pos)
-{
-    static const auto pieceToMark = "PNBRQKpnbrqk.";
-    std::stringstream ss;
-
-    ss << "  +-----------------------+" << std::endl;
-    for (auto i = 7; i >= 0; --i)
-    {
-        ss << i + 1 << " ";
-        for (auto j = 0; j < 8; ++j)
-        {
-            ss << "|" << pieceToMark[pos.getBoard(i * 8 + j)] << " ";
-        }
-        ss << "|" << std::endl << "  +--+--+--+--+--+--+--+--+" << std::endl;
-    }
-    ss << "   A  B  C  D  E  F  G  H" << std::endl;
-
-    out << ss.str() << std::endl;
-    return out;
 }
 
 int main() 

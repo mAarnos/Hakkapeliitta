@@ -20,6 +20,7 @@
 #include "utils/clamp.hpp"
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
+#include "textio.hpp"
 
 UCI::UCI() :
 search(*this), sync_cout(std::cout), ponder(true),
@@ -263,7 +264,7 @@ void UCI::ponderhit(Position&, std::istringstream&)
 
 void UCI::displayBoard(Position& pos, std::istringstream&)
 {
-    sync_cout << std::endl; // pos.displayPositionAsString() <<
+    sync_cout << pos << std::endl; 
 }
 
 void UCI::perft(Position& pos, std::istringstream& iss)
@@ -286,7 +287,7 @@ void UCI::perft(Position& pos, std::istringstream& iss)
 void UCI::infoCurrMove(const Move& move, int depth, int nr)
 {
     sync_cout << "info depth " << depth
-              << " currmove " << 0 // moveToUciFormat(move)
+              << " currmove " << moveToUciFormat(move)
               << " currmovenumber " << nr + 1 << std::endl;
 }
 
@@ -328,7 +329,7 @@ void UCI::infoPv(const std::vector<Move>& pv, uint64_t searchTime,
         << " nodes " << nodeCount
         << " nps " << (nodeCount / (searchTime + 1)) * 1000
         << " tbhits " << tbHits
-        << " pv " << std::endl; //movesToUciFormat(moves) << std::endl;
+        << " pv " << movesToUciFormat(pv) << std::endl;
 
     sync_cout << ss.str();
 }
@@ -340,6 +341,6 @@ void UCI::infoBestMove(const std::vector<Move>& pv, uint64_t searchTime,
               << " nodes " << nodeCount
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
               << " tbhits " << tbHits << std::endl
-              << "bestmove " << 0// moveToUciFormat(pv[0])
-              << " ponder " << std::endl; //(pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
+              << "bestmove " << moveToUciFormat(pv[0])
+              << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
 }
