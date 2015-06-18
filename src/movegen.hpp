@@ -60,17 +60,6 @@ public:
     /// In the quiescence search generating underpromotions is a waste of time.
     /// On the other hand, in the main search NOT generating underpromotions could potentially have disastrous effects.
     static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions);
-
-private:
-    static void generatePseudoLegalMoves(const Position& pos, MoveList& moveList, bool side);
-
-    static void generateLegalEvasions(const Position& pos, MoveList& moveList, bool side);
-
-    static void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveList, bool side);
-
-    static void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moveList, bool side);
-
-    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions, bool side);
 };
 
 #endif

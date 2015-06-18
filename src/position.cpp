@@ -210,11 +210,6 @@ Position::Position(const std::string& fen)
     }
 }
 
-void Position::makeMove(const Move& m)
-{
-    makeMove(m, mSideToMove == Color::Black);
-}
-
 bool Position::isAttacked(Square sq, Color side) const
 {
     return (side ? isAttacked<true>(sq, getOccupiedSquares()) : isAttacked<false>(sq, getOccupiedSquares()));
@@ -225,10 +220,11 @@ bool Position::isAttacked(Square sq, Color side, Bitboard occupied) const
     return (side ? isAttacked<true>(sq, occupied) : isAttacked<false>(sq, occupied));
 }
 
-void Position::makeMove(const Move& m, bool side)
+void Position::makeMove(const Move& m)
 {
     assert(pseudoLegal(m, inCheck()) && legal(m, inCheck()));
 
+    const auto side = mSideToMove;
     const auto from = m.getFrom();
     const auto to = m.getTo();
     const auto flags = m.getFlags();
@@ -375,8 +371,8 @@ bool Position::isAttacked(Square sq, Bitboard occupied) const
 {
     return (Bitboards::knightAttacks(sq) & getBitboard(side, Piece::Knight)
         || Bitboards::pawnAttacks(!side, sq) & getBitboard(side, Piece::Pawn)
-        || Bitboards::bishopAttacks(sq, occupied) & getBishopsAndQueens(side)
-        || Bitboards::rookAttacks(sq, occupied) & getRooksAndQueens(side)
+        || Bitboards::bishopAttacks(sq, occupied) & (getBitboard(side, Piece::Bishop) | getBitboard(side, Piece::Queen))
+        || Bitboards::rookAttacks(sq, occupied) & (getBitboard(side, Piece::Rook) | getBitboard(side, Piece::Queen))
         || Bitboards::kingAttacks(sq) & getBitboard(side, Piece::King));
 }
 

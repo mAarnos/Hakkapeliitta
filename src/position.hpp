@@ -220,10 +220,8 @@ private:
     int8_t mGamePhase;
     int16_t mGamePly;
     int16_t mPstScoreOp, mPstScoreEd;
-
-    void makeMove(const Move& move, bool side);
-
-    template <bool side> 
+    
+    template <bool side>
     bool isAttacked(Square sq, Bitboard occupied) const;
 
     Bitboard discoveredCheckCandidates() const;
