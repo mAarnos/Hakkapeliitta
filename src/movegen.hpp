@@ -62,20 +62,15 @@ public:
     static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions);
 
 private:
-    template <bool side> 
-    static void generatePseudoLegalMoves(const Position& pos, MoveList& moveList);
+    static void generatePseudoLegalMoves(const Position& pos, MoveList& moveList, bool side);
 
-    template <bool side>
-    static void generateLegalEvasions(const Position& pos, MoveList& moveList);
+    static void generateLegalEvasions(const Position& pos, MoveList& moveList, bool side);
 
-    template <bool side>
-    static void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveList);
+    static void generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveList, bool side);
 
-    template <bool side>
-    static void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moveList);
+    static void generatePseudoLegalCapturesAndQuietChecks(const Position& pos, MoveList& moveList, bool side);
 
-    template <bool side>
-    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions);
+    static void generatePseudoLegalCaptures(const Position& pos, MoveList& moveList, bool underPromotions, bool side);
 };
 
 #endif

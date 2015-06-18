@@ -230,8 +230,8 @@ int main()
     std::cout << pos << std::endl;
     try
     {
-        // const auto res = Benchmark::runPerftTestSuite();
-        const auto res = Benchmark::runPerft(pos, 7);
+        const auto res = Benchmark::runPerftTestSuite();
+        // const auto res = Benchmark::runPerft(pos, 7);
         std::cout << "Nodes searched: " << res.first << std::endl;
         std::cout << "Time (in ms): " << res.second << std::endl;
         std::cout << "NPS: " << (res.first / res.second) * 1000 << std::endl;

@@ -221,8 +221,7 @@ private:
     int16_t mGamePly;
     int16_t mPstScoreOp, mPstScoreEd;
 
-    template <bool side> 
-    void makeMove(const Move& move);
+    void makeMove(const Move& move, bool side);
 
     template <bool side> 
     bool isAttacked(Square sq, Bitboard occupied) const;

@@ -212,7 +212,7 @@ Position::Position(const std::string& fen)
 
 void Position::makeMove(const Move& m)
 {
-    mSideToMove ? makeMove<true>(m) : makeMove<false>(m);
+    makeMove(m, mSideToMove == Color::Black);
 }
 
 bool Position::isAttacked(Square sq, Color side) const
@@ -225,8 +225,7 @@ bool Position::isAttacked(Square sq, Color side, Bitboard occupied) const
     return (side ? isAttacked<true>(sq, occupied) : isAttacked<false>(sq, occupied));
 }
 
-template <bool side> 
-void Position::makeMove(const Move& m)
+void Position::makeMove(const Move& m, bool side)
 {
     assert(pseudoLegal(m, inCheck()) && legal(m, inCheck()));
 
