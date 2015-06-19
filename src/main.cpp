@@ -18,73 +18,11 @@
 #include <iostream>
 #include <thread>
 #include <algorithm>
-#include <fstream>
-#include <sstream>
-#include <cctype>
-#include <list>
-#include <map>
 #include "bitboards.hpp"
-#include "constants.hpp"
 #include "zobrist.hpp"
-#include "benchmark.hpp"
-#include "search.hpp"
 #include "evaluation.hpp"
-#include "textio.hpp"
 #include "uci.hpp"
-
-char switchCase(unsigned char c)
-{
-    return static_cast<char>(std::isupper(c) ? std::tolower(c) : std::toupper(c));
-}
-
-std::string flipFenString(const std::string& fen)
-{
-    std::string f, token;
-    std::stringstream ss(fen);
-
-    for (auto i = 0; i < 8; i++)
-    {
-        std::getline(ss, token, i < 7 ? '/' : ' ');
-        std::transform(token.begin(), token.end(), token.begin(), switchCase);
-        f.insert(0, token + (i ? "/" : " "));
-    }
-
-    ss >> token; // Side to move
-    f += (token == "w" ? "b " : "w ");
-
-    ss >> token; // Castling flags
-    std::transform(token.begin(), token.end(), token.begin(), switchCase);
-    f += token + " ";
-
-    ss >> token; // En-passant square
-    f += (token == "-" ? token : token.replace(1, 1, token[1] == '3' ? "6" : "3"));
-
-    std::getline(ss, token); // Full and half moves
-    f += token;
-
-    return f;
-}
-
-bool testReversedEval(std::ifstream& games)
-{
-    Evaluation evaluation;
-    std::string s;
-
-    while (std::getline(games, s))
-    {
-        Position pos(s);
-        Position pos2(flipFenString(s));
-        const auto score = evaluation.evaluate(pos);
-        const auto flippedScore = evaluation.evaluate(pos2);
-
-        if (score != flippedScore)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
+// #include "test.hpp"
 
 int main() 
 {
@@ -101,34 +39,13 @@ int main()
     }
 
     /*
-    std::ifstream games("C:\\GMdraw.txt");
-    if (testReversedEval(games))
-    {
-        std::cout << "Reversed eval passes" << std::endl;
-    }
-    else
-    {
-        std::cout << "Reversed eval fails" << std::endl;
-    }
+    Testing testing("C:\\GMblackwin.txt");
+    std::cout << "Starting testing!" << std::endl;
+    std::cout << " Reversed eval: ";
+    std::cout << (testing.testReversedEval() ? "passed" : "failed") << std::endl;
+    std::cout << " Pseudo-legal: ";
+    std::cout << (testing.testPseudoLegal() ? "passed" : "failed") << std::endl;
     */
-
-    /*
-    Position pos("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-    std::cout << pos << std::endl;
-    try
-    {
-        const auto res = Benchmark::runPerftTestSuite();
-        // const auto res = Benchmark::runPerft(pos, 7);
-        std::cout << "Nodes searched: " << res.first << std::endl;
-        std::cout << "Time (in ms): " << res.second << std::endl;
-        std::cout << "NPS: " << (res.first / res.second) * 1000 << std::endl;
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << e.what() << std::endl;
-    }
-    */
-
 
     UCI uci;
 

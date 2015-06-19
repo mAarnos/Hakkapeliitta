@@ -30,7 +30,7 @@ std::pair<uint64_t, uint64_t> Benchmark::runPerft(const Position& pos, int depth
     return std::make_pair(perftResult, sw.elapsed<std::chrono::milliseconds>());
 }
 
-std::pair<uint64_t, uint64_t> Benchmark::runPerftTestSuite()
+std::pair<uint64_t, uint64_t> Benchmark::testPerft()
 {
     struct PerftTest
     {
