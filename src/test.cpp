@@ -67,7 +67,7 @@ std::string flipFenString(const std::string& fen)
     return f;
 }
 
-bool Testing::testReversedEval()
+bool Testing::testReversedEval() const
 {
     Evaluation evaluation;
 
@@ -87,7 +87,7 @@ bool Testing::testReversedEval()
     return true;
 }
 
-bool Testing::testPseudoLegal()
+bool Testing::testPseudoLegal() const
 {
     for (const auto& s : positions)
     {

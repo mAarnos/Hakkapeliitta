@@ -33,11 +33,11 @@ public:
 
     /// @brief Used for checking that the eval is okay even with colors flipped.
     /// @return True if everything is okay, false otherwise.
-    bool testReversedEval();
+    bool testReversedEval() const;
 
     /// @brief Used for checking that the function for checking if a move is pseudo legal is correct.
     /// @return True if everything is okay, false otherwise.
-    bool testPseudoLegal();
+    bool testPseudoLegal() const;
 
 private:
     std::vector<std::string> positions;
