@@ -25,6 +25,10 @@
 #include "position.hpp"
 #include "constants.hpp"
 
+/// @brief Used for printin a Position into a ostream.
+/// @param out The ostream to print to.
+/// @param pos The position to print.
+/// @return A reference to the ostream to allow chaining.
 inline std::ostream& operator<<(std::ostream &out, const Position& pos)
 {
     static const auto pieceToMark = "PNBRQKpnbrqk.";
@@ -46,6 +50,9 @@ inline std::ostream& operator<<(std::ostream &out, const Position& pos)
     return out;
 }
 
+/// @brief Used for getting the FEN-string of a position.
+/// @param pos The position.
+/// @return The FEN-string.
 inline std::string positionToFen(const Position& pos)
 {
     std::string fen;
@@ -140,6 +147,9 @@ inline std::string positionToFen(const Position& pos)
     return fen;
 }
 
+/// @brief Used for converting a move into UCI-format.
+/// @param move The move.
+/// @return The move as a string.
 inline std::string moveToUciFormat(const Move& move)
 {
     static const std::array<std::string, 64> squareToNotation = {
@@ -171,6 +181,9 @@ inline std::string moveToUciFormat(const Move& move)
     return s;
 }
 
+/// @brief Used for converting multiple moves into UCI-format.
+/// @param moves A list of moves.
+/// @return The moves as a string. 
 inline std::string movesToUciFormat(const std::vector<Move>& moves)
 {
     std::string s;
