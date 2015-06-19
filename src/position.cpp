@@ -842,7 +842,7 @@ bool Position::verifyPsts() const
 
 bool Position::verifyHashKeysAndPhase() const
 {
-    if (mHashKey != calculateHash() || mPawnHashKey != calculatePawnHash() && mMaterialHashKey != calculateMaterialHash())
+    if (mHashKey != calculateHash() || mPawnHashKey != calculatePawnHash() || mMaterialHashKey != calculateMaterialHash())
     {
         return false;
     }

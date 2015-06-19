@@ -63,7 +63,7 @@ std::pair<uint64_t, uint64_t> Benchmark::testPerft()
         {
             std::stringstream ss;
             ss << "Test " << i + 1 << " failed: should have been " << test.mResult << " but was " << result;
-            throw std::exception(ss.str().c_str());
+            throw std::runtime_error(ss.str().c_str());
         }
     }
     sw.stop();

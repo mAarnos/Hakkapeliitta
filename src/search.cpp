@@ -562,7 +562,7 @@ void Search::think(const Position& root, SearchParameters sp)
     searching = false;
     const auto searchTime = sw.elapsed<std::chrono::milliseconds>();
     listener.infoBestMove(pv,
-                          sw.elapsed<std::chrono::milliseconds>(),
+                          searchTime,
                           nodeCount,
                           tbHits);
 }
