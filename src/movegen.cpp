@@ -27,7 +27,7 @@ void addPieceMovesFromMask(MoveList& moveList, Bitboard mask, Square from)
     }
 }
 
-void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask, bool underPromotions, bool side)
+void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask, bool underPromotions, Color side)
 {
     while (mask)
     {
@@ -50,7 +50,7 @@ void addPawnSingleMovesFromMask(MoveList& moveList, Bitboard mask, bool underPro
     }
 }
 
-void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask, bool side)
+void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask, Color side)
 {
     while (mask)
     {
@@ -61,7 +61,7 @@ void addPawnDoubleMovesFromMask(MoveList& moveList, Bitboard mask, bool side)
 }
 
 template <bool rightCaptures>
-void addPawnCapturesFromMask(MoveList& moveList, Bitboard mask, Square ep, bool underPromotions, bool side)
+void addPawnCapturesFromMask(MoveList& moveList, Bitboard mask, Square ep, bool underPromotions, Color side)
 {
     while (mask)
     {
@@ -100,16 +100,16 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moveList)
     // Pawn moves.
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     auto tempMove = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
-    addPawnSingleMovesFromMask(moveList, tempMove, true, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove, true, side);
 
     tempMove = (side ? (tempMove & Bitboards::ranks[5]) >> 8 : (tempMove & Bitboards::ranks[2]) << 8) & freeSquares;
-    addPawnDoubleMovesFromMask(moveList, tempMove, side == Color::Black);
+    addPawnDoubleMovesFromMask(moveList, tempMove, side);
 
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
-    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), true, side == Color::Black);
+    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), true, side);
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
-    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), true, side == Color::Black);
+    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), true, side);
 
     // King moves (without castling which is handled later).
     auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
@@ -220,16 +220,16 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moveList)
     // Pawn moves.
     auto tempPiece = pos.getBitboard(side, Piece::Pawn) & ~pinned;
     tempMove = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares;
-    addPawnSingleMovesFromMask(moveList, tempMove & interpose, true, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove & interpose, true, side);
 
     tempMove = (side ? (tempMove & Bitboards::ranks[5]) >> 8 : (tempMove & Bitboards::ranks[2]) << 8) & freeSquares & interpose;
-    addPawnDoubleMovesFromMask(moveList, tempMove, side == Color::Black);
+    addPawnDoubleMovesFromMask(moveList, tempMove, side);
 
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (checkers | ep);
-    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), true, side == Color::Black);
+    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), true, side);
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (checkers | ep);
-    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), true, side == Color::Black);
+    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), true, side);
 
     // Knight moves.
     tempPiece = pos.getBitboard(side, Piece::Knight) & ~pinned;
@@ -277,10 +277,10 @@ void MoveGen::generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveL
     // Pawn moves.
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     auto tempMove = (side ? tempPiece >> 8 : tempPiece << 8) & freeSquares & 0x00FFFFFFFFFFFF00;
-    addPawnSingleMovesFromMask(moveList, tempMove, true, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove, true, side);
 
     tempMove = (side ? (tempMove & Bitboards::ranks[5]) >> 8 : (tempMove & Bitboards::ranks[2]) << 8) & freeSquares;
-    addPawnDoubleMovesFromMask(moveList, tempMove, side == Color::Black);
+    addPawnDoubleMovesFromMask(moveList, tempMove, side);
 
     // King moves. Castling is handled later for no reason.
     auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
@@ -364,22 +364,22 @@ void MoveGen::generatePseudoLegalCapturesAndQuietChecks(const Position& pos, Mov
     // Pawn moves.
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     auto tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (opponentPieces | ep);
-    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), false, side == Color::Black);
+    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), false, side);
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (opponentPieces | ep);
-    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), false, side == Color::Black);
+    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), false, side);
 
     // A pawn push discovered check can be generated by a pawn only when the pawn is not on the same file as the opposing king.
     const auto promotionDiscoveredMask = (dcCandidates & ~Bitboards::files[file(opponentKingSquare)])
                                        | (side ? Bitboards::ranks[1] : Bitboards::ranks[6]);
     tempMove = (side ? (tempPiece & promotionDiscoveredMask) >> 8 : (tempPiece & promotionDiscoveredMask) << 8) & ~occupied;
-    addPawnSingleMovesFromMask(moveList, tempMove, false, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove, false, side);
     tempMove = (side ? (tempMove & Bitboards::ranks[5]) >> 8 : (tempMove & Bitboards::ranks[2]) << 8) & ~occupied;
-    addPawnDoubleMovesFromMask(moveList, tempMove, side == Color::Black);
+    addPawnDoubleMovesFromMask(moveList, tempMove, side);
 
     tempMove = (side ? (tempPiece & ~promotionDiscoveredMask) >> 8 : (tempPiece & ~promotionDiscoveredMask) << 8) & ~occupied;
-    addPawnSingleMovesFromMask(moveList, tempMove & Bitboards::pawnAttacks(!side, opponentKingSquare), false, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove & Bitboards::pawnAttacks(!side, opponentKingSquare), false, side);
     tempMove = (side ? (tempMove & Bitboards::ranks[5]) >> 8 : (tempMove & Bitboards::ranks[2]) << 8) & ~occupied;
-    addPawnDoubleMovesFromMask(moveList, tempMove & Bitboards::pawnAttacks(!side, opponentKingSquare), side == Color::Black);
+    addPawnDoubleMovesFromMask(moveList, tempMove & Bitboards::pawnAttacks(!side, opponentKingSquare), side);
 
     // King moves without castling.
     auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
@@ -451,13 +451,13 @@ void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moveLis
     // Pawn moves.
     auto tempPiece = pos.getBitboard(side, Piece::Pawn);
     auto tempMove = (side ? (tempPiece & Bitboards::ranks[1]) >> 8 : (tempPiece & Bitboards::ranks[6]) << 8) & pos.getFreeSquares();
-    addPawnSingleMovesFromMask(moveList, tempMove, underPromotions, side == Color::Black);
+    addPawnSingleMovesFromMask(moveList, tempMove, underPromotions, side);
 
     tempMove = (side ? tempPiece >> 9 : tempPiece << 7) & 0x7F7F7F7F7F7F7F7F & (enemyPieces | ep);
-    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), underPromotions, side == Color::Black);
+    addPawnCapturesFromMask<false>(moveList, tempMove, pos.getEnPassantSquare(), underPromotions, side);
 
     tempMove = (side ? tempPiece >> 7 : tempPiece << 9) & 0xFEFEFEFEFEFEFEFE & (enemyPieces | ep);
-    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), underPromotions, side == Color::Black);
+    addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), underPromotions, side);
 
     // King moves.
     auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
