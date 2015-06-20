@@ -64,22 +64,22 @@ static FD open_tb(const char *str, const char *suffix)
 {
     int i;
     FD fd;
-    char file[256];
 
     for (i = 0; i < num_paths; i++)
     {
-        strcpy(file, paths[i]);
-        strcat(file, "/");
-        strcat(file, str);
-        strcat(file, suffix);
+        std::string file(paths[i]);
+        file += '/';
+        file += str;
+        file += suffix;
 #ifndef _WIN32
-        fd = open(file, O_RDONLY);
+        fd = open(file.c_str(), O_RDONLY);
 #else
-        fd = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, NULL,
+        fd = CreateFile(file.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL,
                         OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 #endif
         if (fd != FD_ERR) return fd;
     }
+
     return FD_ERR;
 }
 
@@ -168,14 +168,14 @@ static void add_to_hash(struct TBEntry *ptr, uint64_t key)
 
 static char pchr[] = {'K', 'Q', 'R', 'B', 'N', 'P'};
 
-static void init_tb(char *str)
+static void init_tb(const char *str)
 {
     FD fd;
     struct TBEntry *entry;
     int i, j, pcs[16];
     uint64_t key, key2;
     int color;
-    char *s;
+    const char *s;
 
     fd = open_tb(str, WDLSUFFIX);
     if (fd == FD_ERR) return;
@@ -213,8 +213,8 @@ static void init_tb(char *str)
         if (pcs[i] != pcs[i+8])
             break;
     // TODO: add these back
-    // key = calc_key_from_pcs(pcs, 0);
-    // key2 = calc_key_from_pcs(pcs, 1);
+    key = 0; // calc_key_from_pcs(pcs, 0);
+    key2 = 0; // calc_key_from_pcs(pcs, 1);
     if (pcs[TB_WPAWN] + pcs[TB_BPAWN] == 0)
     {
         if (TBnum_piece == TBMAX_PIECE)
@@ -278,7 +278,6 @@ static void init_tb(char *str)
 
 void Syzygy::initialize(const std::string& path)
 {
-    char str[16];
     int i, j, k, l;
 
     if (initialized)
@@ -309,7 +308,11 @@ void Syzygy::initialize(const std::string& path)
     const char *p = path.c_str();
     if (strlen(p) == 0 || !strcmp(p, "<empty>")) return;
     path_string = (char *)malloc(strlen(p) + 1);
+#ifdef _MSC_VER
+    strcpy_s(path_string, strlen(p) + 1, p);
+#else
     strcpy(path_string, p);
+#endif
     num_paths = 0;
     for (i = 0;; i++)
     {
@@ -331,6 +334,7 @@ void Syzygy::initialize(const std::string& path)
     TBnum_piece = TBnum_pawn = 0;
     maxCardinality = 0;
 
+    std::string s;
     for (i = 0; i < (1 << TBHASHBITS); i++)
         for (j = 0; j < HSHMAX; j++)
         {
@@ -343,38 +347,38 @@ void Syzygy::initialize(const std::string& path)
 
     for (i = 1; i < 6; i++)
     {
-        sprintf(str, "K%cvK", pchr[i]);
-        init_tb(str);
+        s = "K" + std::string(1, pchr[i]) + "vK";
+        init_tb(s.c_str());
     }
 
     for (i = 1; i < 6; i++)
         for (j = i; j < 6; j++)
         {
-            sprintf(str, "K%cvK%c", pchr[i], pchr[j]);
-            init_tb(str);
+            s = "K" + std::string(1, pchr[i]) + "vK" + std::string(1, pchr[j]);
+            init_tb(s.c_str());
         }
 
     for (i = 1; i < 6; i++)
         for (j = i; j < 6; j++)
         {
-            sprintf(str, "K%c%cvK", pchr[i], pchr[j]);
-            init_tb(str);
+            s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + "vK";
+            init_tb(s.c_str());
         }
 
     for (i = 1; i < 6; i++)
         for (j = i; j < 6; j++)
             for (k = 1; k < 6; k++)
             {
-                sprintf(str, "K%c%cvK%c", pchr[i], pchr[j], pchr[k]);
-                init_tb(str);
+                s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + "vK" + std::string(1, pchr[k]);
+                init_tb(s.c_str());
             }
 
     for (i = 1; i < 6; i++)
         for (j = i; j < 6; j++)
             for (k = j; k < 6; k++)
             {
-                sprintf(str, "K%c%c%cvK", pchr[i], pchr[j], pchr[k]);
-                init_tb(str);
+                s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + std::string(1, pchr[k]) + "vK";
+                init_tb(s.c_str());
             }
 
     for (i = 1; i < 6; i++)
@@ -382,8 +386,8 @@ void Syzygy::initialize(const std::string& path)
             for (k = i; k < 6; k++)
                 for (l = (i == k) ? j : k; l < 6; l++)
                 {
-                    sprintf(str, "K%c%cvK%c%c", pchr[i], pchr[j], pchr[k], pchr[l]);
-                    init_tb(str);
+                    s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + "vK" + std::string(1, pchr[k]) + std::string(1, pchr[l]);
+                    init_tb(s.c_str());
                 }
 
     for (i = 1; i < 6; i++)
@@ -391,8 +395,8 @@ void Syzygy::initialize(const std::string& path)
             for (k = j; k < 6; k++)
                 for (l = 1; l < 6; l++)
                 {
-                    sprintf(str, "K%c%c%cvK%c", pchr[i], pchr[j], pchr[k], pchr[l]);
-                    init_tb(str);
+                    s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + std::string(1, pchr[k]) + "vK" + std::string(1, pchr[l]);
+                    init_tb(s.c_str());
                 }
 
     for (i = 1; i < 6; i++)
@@ -400,11 +404,11 @@ void Syzygy::initialize(const std::string& path)
             for (k = j; k < 6; k++)
                 for (l = k; l < 6; l++)
                 {
-                    sprintf(str, "K%c%c%c%cvK", pchr[i], pchr[j], pchr[k], pchr[l]);
-                    init_tb(str);
+                    s = "K" + std::string(1, pchr[i]) + std::string(1, pchr[j]) + std::string(1, pchr[k]) + std::string(1, pchr[l]) + "vK";
+                    init_tb(s.c_str());
                 }
 
-    printf("info string Found %d tablebases.\n", TBnum_piece + TBnum_pawn);
+    printf("info string found %d tablebases.\n", TBnum_piece + TBnum_pawn);
 }
 
 static const signed char offdiag[] =
@@ -1361,7 +1365,7 @@ static int init_table_dtz(struct TBEntry *entry)
     return 1;
 }
 
-template<bool LittleEndian>
+template <bool LittleEndian>
 static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     if (!d->idxbits)
