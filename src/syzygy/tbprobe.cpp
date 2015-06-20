@@ -176,7 +176,7 @@ static int probe_wdl_table(Position& pos, int *success)
         uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.getBitboard(((pc[i] ^ (uint8_t)cmirror) >> 3), (pc[i] & 0x07));
+            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
                 p[i++] = Bitboards::popLsb(bb);
@@ -190,7 +190,7 @@ static int probe_wdl_table(Position& pos, int *success)
     {
         struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0][0] ^ cmirror;
-        Bitboard bb = pos.getBitboard((Color)((int8_t)k >> 3), (k & 0x07));
+        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07));
         i = 0;
         do
         {
@@ -201,7 +201,7 @@ static int probe_wdl_table(Position& pos, int *success)
         uint8_t *pc = entry->file[f].pieces[bside];
         for (; i < entry->num;)
         {
-            bb = pos.getBitboard((Color)((pc[i] ^ (uint8_t)cmirror) >> 3), (pc[i] & 0x07));
+            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
                 p[i++] = Bitboards::popLsb(bb) ^ mirror;
@@ -215,7 +215,6 @@ static int probe_wdl_table(Position& pos, int *success)
     return ((int)res) - 2;
 }
 
-/*
 static int probe_dtz_table(Position& pos, int wdl, int *success)
 {
     struct TBEntry *ptr;
@@ -224,7 +223,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
-    uint64_t key = pos.material_key();
+    uint64_t key = pos.getMaterialHashKey();
 
     if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key)
     {
@@ -299,11 +298,10 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         uint8_t *pc = entry->pieces;
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                                     (PieceType)(pc[i] & 0x07));
+            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb);
+                p[i++] = Bitboards::popLsb(bb);
             }
             while (bb);
         }
@@ -320,11 +318,11 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     {
         struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0] ^ cmirror;
-        Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07));
         i = 0;
         do
         {
-            p[i++] = pop_lsb(&bb) ^ mirror;
+            p[i++] = Bitboards::popLsb(bb) ^ mirror;
         }
         while (bb);
         int f = pawn_file((struct TBEntry_pawn *)entry, p);
@@ -336,11 +334,10 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         uint8_t *pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
-            bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                            (PieceType)(pc[i] & 0x07));
+            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb) ^ mirror;
+                p[i++] = Bitboards::popLsb(bb) ^ mirror;
             }
             while (bb);
         }
@@ -357,6 +354,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     return res;
 }
 
+/*
 // Add underpromotion captures to list of captures.
 static ExtMove *add_underprom_caps(Position& pos, ExtMove *stack, ExtMove *end)
 {
