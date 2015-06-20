@@ -22,6 +22,7 @@
 #include <sys/mman.h>
 #endif
 #include "tbcore.hpp"
+#include "tbprobe.hpp"
 
 #define TBMAX_PIECE 254
 #define TBMAX_PAWN 256
@@ -239,11 +240,8 @@ static void init_tb(char *str)
         entry->num += (uint8_t)pcs[i];
     entry->symmetric = (key == key2);
     entry->has_pawns = (pcs[TB_WPAWN] + pcs[TB_BPAWN] > 0);
-    // TODO: add back
-    /*
-    if (entry->num > Tablebases::MaxCardinality)
-        Tablebases::MaxCardinality = entry->num;
-    */
+    if (entry->num > Syzygy::maxCardinality)
+        Syzygy::maxCardinality = entry->num;
 
     if (entry->has_pawns)
     {
@@ -278,8 +276,7 @@ static void init_tb(char *str)
     if (key2 != key) add_to_hash(entry, key2);
 }
 
-// TODO: add Syzygy:: here
-void init(const std::string& path)
+void Syzygy::initialize(const std::string& path)
 {
     char str[16];
     int i, j, k, l;
@@ -332,8 +329,7 @@ void init(const std::string& path)
     }
 
     TBnum_piece = TBnum_pawn = 0;
-    // TODO: add back
-    // MaxCardinality = 0;
+    maxCardinality = 0;
 
     for (i = 0; i < (1 << TBHASHBITS); i++)
         for (j = 0; j < HSHMAX; j++)

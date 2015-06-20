@@ -11,24 +11,12 @@
 
 #include <algorithm>
 
-#include "../position.h"
-#include "../movegen.h"
-#include "../bitboard.h"
-#include "../search.h"
-#include "../bitcount.h"
+#include "tbprobe.hpp"
+#include "tbcore-impl.hpp"
 
-#include "tbprobe.h"
-#include "tbcore.h"
+int Syzygy::maxCardinality = 0;
 
-#include "tbcore.cpp"
-
-namespace Zobrist
-{
-    extern Key psq[COLOR_NB][PIECE_TYPE_NB][SQUARE_NB];
-}
-
-int Tablebases::MaxCardinality = 0;
-
+/*
 // Given a position with 6 or fewer pieces, produce a text string
 // of the form KQPvKRP, where "KQP" represents the white pieces if
 // mirror == 0 and the black pieces if mirror == 1.
@@ -947,3 +935,4 @@ bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoveVector& rootMoves
     return true;
 }
 
+*/
