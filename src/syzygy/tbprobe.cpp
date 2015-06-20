@@ -13,6 +13,8 @@
 
 #include "../zobrist.hpp"
 #include "../position.hpp"
+#include "../movelist.hpp"
+#include "../movegen.hpp"
 #include "tbprobe.hpp"
 #include "tbcore-impl.hpp"
 
@@ -93,7 +95,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
-static int probe_wdl_table(Position& pos, int *success)
+static int probe_wdl_table(const Position& pos, int *success)
 {
     struct TBEntry *ptr;
     struct TBHashEntry *ptr2;
@@ -215,7 +217,7 @@ static int probe_wdl_table(Position& pos, int *success)
     return ((int)res) - 2;
 }
 
-static int probe_dtz_table(Position& pos, int wdl, int *success)
+static int probe_dtz_table(const Position& pos, int wdl, int *success)
 {
     struct TBEntry *ptr;
     uint64_t idx;
@@ -354,36 +356,27 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
     return res;
 }
 
-/*
-static int probe_ab(Position& pos, int alpha, int beta, int *success)
+static int probe_ab(const Position& pos, int alpha, int beta, int *success)
 {
     int v;
-    ExtMove stack[64];
-    ExtMove *moves, *end;
-    StateInfo st;
+    const auto inCheck = pos.inCheck();
+    MoveList moveList;
 
-    // Generate (at least) all legal non-ep captures including (under)promotions.
-    // It is OK to generate more, as long as they are filtered out below.
-    if (!pos.checkers())
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList)
+            : MoveGen::generatePseudoLegalCaptures(pos, moveList, true);
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        end = generate<CAPTURES>(pos, stack);
-        // Since underpromotion captures are not included, we need to add them.
-        end = add_underprom_caps(pos, stack, end);
-    }
-    else
-        end = generate<EVASIONS>(pos, stack);
-
-    CheckInfo ci(pos);
-
-    for (moves = stack; moves < end; moves++)
-    {
-        Move capture = moves->move;
-        if (!pos.capture(capture) || type_of(capture) == ENPASSANT
-                || !pos.legal(capture, ci.pinned))
+        const auto move = moveList.getMove(i);
+        if (!pos.captureOrPromotion(move)
+            || move.getFlags() == Piece::Pawn
+            || !pos.legal(move, inCheck))
+        {
             continue;
-        pos.do_move(capture, st, pos.gives_check(capture, ci));
-        v = -probe_ab(pos, -beta, -alpha, success);
-        pos.undo_move(capture);
+        }
+
+        Position newPos(pos);
+        newPos.makeMove(move);
+        v = -probe_ab(newPos, -beta, -alpha, success);
         if (*success == 0) return 0;
         if (v > alpha)
         {
@@ -410,6 +403,7 @@ static int probe_ab(Position& pos, int alpha, int beta, int *success)
     }
 }
 
+/*
 // Probe the WDL table for a particular position.
 // If *success != 0, the probe was successful.
 // The return value is from the point of view of the side to move:
