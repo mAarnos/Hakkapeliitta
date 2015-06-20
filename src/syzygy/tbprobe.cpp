@@ -355,25 +355,6 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
 }
 
 /*
-// Add underpromotion captures to list of captures.
-static ExtMove *add_underprom_caps(Position& pos, ExtMove *stack, ExtMove *end)
-{
-    ExtMove *moves, *extra = end;
-
-    for (moves = stack; moves < end; moves++)
-    {
-        Move move = moves->move;
-        if (type_of(move) == PROMOTION && !pos.empty(to_sq(move)))
-        {
-            (*extra++).move = (Move)(move - (1 << 12));
-            (*extra++).move = (Move)(move - (2 << 12));
-            (*extra++).move = (Move)(move - (3 << 12));
-        }
-    }
-
-    return extra;
-}
-
 static int probe_ab(Position& pos, int alpha, int beta, int *success)
 {
     int v;
