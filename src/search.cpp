@@ -567,7 +567,7 @@ void Search::think(const Position& root, SearchParameters sp)
                           tbHits);
 }
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #pragma warning (disable : 4127) // Shuts up warnings about conditional branches always being true/false.
 #endif
 
