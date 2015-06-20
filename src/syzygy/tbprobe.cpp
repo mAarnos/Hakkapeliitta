@@ -92,7 +92,6 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
            : decompress_pairs<false>(d, idx);
 }
 
-/*
 // probe_wdl_table and probe_dtz_table require similar adaptations.
 static int probe_wdl_table(Position& pos, int *success)
 {
@@ -105,10 +104,10 @@ static int probe_wdl_table(Position& pos, int *success)
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
-    key = pos.material_key();
+    key = pos.getMaterialHashKey();
 
     // Test for KvK.
-    if (key == (Zobrist::psq[WHITE][KING][0] ^ Zobrist::psq[BLACK][KING][0]))
+    if (key == (Zobrist::materialHashKey(Piece::WhiteKing, 0) ^ Zobrist::materialHashKey(Piece::BlackKing, 0)))
         return 0;
 
     ptr2 = TB_hash[key >> (64 - TBHASHBITS)];
@@ -123,7 +122,7 @@ static int probe_wdl_table(Position& pos, int *success)
     ptr = ptr2[i].ptr;
     if (!ptr->ready)
     {
-        LOCK(TB_mutex);
+        TB_mutex.lock();
         if (!ptr->ready)
         {
             char str[16];
@@ -132,7 +131,7 @@ static int probe_wdl_table(Position& pos, int *success)
             {
                 ptr2[i].key = 0ULL;
                 *success = 0;
-                UNLOCK(TB_mutex);
+                TB_mutex.unlock();
                 return 0;
             }
             // Memory barrier to ensure ptr->ready = 1 is not reordered.
@@ -143,7 +142,7 @@ static int probe_wdl_table(Position& pos, int *success)
 #endif
             ptr->ready = 1;
         }
-        UNLOCK(TB_mutex);
+        TB_mutex.unlock();
     }
 
     int bside, mirror, cmirror;
@@ -153,18 +152,18 @@ static int probe_wdl_table(Position& pos, int *success)
         {
             cmirror = 8;
             mirror = 0x38;
-            bside = (pos.side_to_move() == WHITE);
+            bside = (pos.getSideToMove() == Color::White);
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !(pos.side_to_move() == WHITE);
+            bside = !(pos.getSideToMove() == Color::White);
         }
     }
     else
     {
-        cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-        mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+        cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+        mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
         bside = 0;
     }
 
@@ -177,11 +176,10 @@ static int probe_wdl_table(Position& pos, int *success)
         uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                                     (PieceType)(pc[i] & 0x07));
+            Bitboard bb = pos.getBitboard(((pc[i] ^ (uint8_t)cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb);
+                p[i++] = Bitboards::popLsb(bb);
             }
             while (bb);
         }
@@ -192,22 +190,21 @@ static int probe_wdl_table(Position& pos, int *success)
     {
         struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0][0] ^ cmirror;
-        Bitboard bb = pos.pieces((Color)(k >> 3), (PieceType)(k & 0x07));
+        Bitboard bb = pos.getBitboard((Color)((int8_t)k >> 3), (k & 0x07));
         i = 0;
         do
         {
-            p[i++] = pop_lsb(&bb) ^ mirror;
+            p[i++] = Bitboards::popLsb(bb) ^ mirror;
         }
         while (bb);
         int f = pawn_file(entry, p);
         uint8_t *pc = entry->file[f].pieces[bside];
         for (; i < entry->num;)
         {
-            bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
-                            (PieceType)(pc[i] & 0x07));
+            bb = pos.getBitboard((Color)((pc[i] ^ (uint8_t)cmirror) >> 3), (pc[i] & 0x07));
             do
             {
-                p[i++] = pop_lsb(&bb) ^ mirror;
+                p[i++] = Bitboards::popLsb(bb) ^ mirror;
             }
             while (bb);
         }
@@ -218,6 +215,7 @@ static int probe_wdl_table(Position& pos, int *success)
     return ((int)res) - 2;
 }
 
+/*
 static int probe_dtz_table(Position& pos, int wdl, int *success)
 {
     struct TBEntry *ptr;
@@ -275,18 +273,18 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
         {
             cmirror = 8;
             mirror = 0x38;
-            bside = (pos.side_to_move() == WHITE);
+            bside = (pos.getSideToMove() == Color::White);
         }
         else
         {
             cmirror = mirror = 0;
-            bside = !(pos.side_to_move() == WHITE);
+            bside = !(pos.getSideToMove() == Color::White);
         }
     }
     else
     {
-        cmirror = pos.side_to_move() == WHITE ? 0 : 8;
-        mirror = pos.side_to_move() == WHITE ? 0 : 0x38;
+        cmirror = pos.getSideToMove() == Color::White ? 0 : 8;
+        mirror = pos.getSideToMove() == Color::White ? 0 : 0x38;
         bside = 0;
     }
 
