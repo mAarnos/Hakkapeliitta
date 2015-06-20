@@ -23,6 +23,7 @@
 #include "evaluation.hpp"
 #include "uci.hpp"
 // #include "test.hpp"
+#include "syzygy/tbcore-impl.hpp"
 
 int main() 
 {
