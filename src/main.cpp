@@ -22,7 +22,6 @@
 #include "zobrist.hpp"
 #include "evaluation.hpp"
 #include "uci.hpp"
-// #include "test.hpp"
 #include "syzygy/tbprobe.hpp"
 
 int main() 
@@ -38,15 +37,6 @@ int main()
     {
         std::cout << "Detected hardware POPCNT" << std::endl;
     }
-
-    /*
-    Testing testing("C:\\GMblackwin.txt");
-    std::cout << "Starting testing!" << std::endl;
-    std::cout << " Reversed eval: ";
-    std::cout << (testing.testReversedEval() ? "passed" : "failed") << std::endl;
-    std::cout << " Pseudo-legal: ";
-    std::cout << (testing.testPseudoLegal() ? "passed" : "failed") << std::endl;
-    */
 
     UCI uci;
 

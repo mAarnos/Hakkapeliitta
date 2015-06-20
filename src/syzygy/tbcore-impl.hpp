@@ -7,7 +7,7 @@
   a particular engine, provided the engine is written in C or C++.
 */
 
-#define NOMINMAX
+// The original source code has been modified by Mikko Aarnos.
 
 #include <cstdio>
 #include <cstdint>
@@ -62,11 +62,9 @@ static void free_dtz_entry(struct TBEntry *entry);
 
 static FD open_tb(const char *str, const char *suffix)
 {
-    int i;
-    FD fd;
-
-    for (i = 0; i < num_paths; i++)
+    for (auto i = 0; i < num_paths; i++)
     {
+        FD fd;
         std::string file(paths[i]);
         file += '/';
         file += str;
@@ -172,7 +170,7 @@ static void init_tb(const char *str)
 {
     FD fd;
     struct TBEntry *entry;
-    int i, j, pcs[16];
+    int i, pcs[16];
     uint64_t key, key2;
     int color;
     const char *s;
@@ -212,9 +210,8 @@ static void init_tb(const char *str)
     for (i = 0; i < 8; i++)
         if (pcs[i] != pcs[i+8])
             break;
-    // TODO: add these back
-    key = 0; // calc_key_from_pcs(pcs, 0);
-    key2 = 0; // calc_key_from_pcs(pcs, 1);
+    key = calc_key_from_pcs(pcs, 0);
+    key2 = calc_key_from_pcs(pcs, 1);
     if (pcs[TB_WPAWN] + pcs[TB_BPAWN] == 0)
     {
         if (TBnum_piece == TBMAX_PIECE)
@@ -257,6 +254,7 @@ static void init_tb(const char *str)
     }
     else
     {
+        int j;
         struct TBEntry_piece *ptr = (struct TBEntry_piece *)entry;
         for (i = 0, j = 0; i < 16; i++)
             if (pcs[i] == 1) j++;
@@ -1029,7 +1027,7 @@ static void setup_pieces_pawn_dtz(struct DTZEntry_pawn *ptr, unsigned char *data
 
 static void calc_symlen(struct PairsData *d, int s, char *tmp)
 {
-    int s1, s2;
+    int s2;
 
     uint8_t* w = d->sympat + 3 * s;
     s2 = (w[2] << 4) | (w[1] >> 4);
@@ -1037,7 +1035,7 @@ static void calc_symlen(struct PairsData *d, int s, char *tmp)
         d->symlen[s] = 0;
     else
     {
-        s1 = ((w[1] & 0xf) << 8) | w[0];
+        int s1 = ((w[1] & 0xf) << 8) | w[0];
         if (!tmp[s1]) calc_symlen(d, s1, tmp);
         if (!tmp[s2]) calc_symlen(d, s2, tmp);
         d->symlen[s] = uint8_t(d->symlen[s1] + d->symlen[s2] + 1);
@@ -1118,7 +1116,6 @@ static struct PairsData *setup_pairs(unsigned char *data, uint64_t tb_size, uint
 static int init_table_wdl(struct TBEntry *entry, char *str)
 {
     uint8_t *next;
-    int f, s;
     uint64_t tb_size[8];
     uint64_t size[8 * 3];
     uint8_t flags;
@@ -1145,7 +1142,7 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
     }
 
     int split = data[4] & 0x01;
-    int files = data[4] & 0x02 ? 4 : 1;
+    int files = (data[4] & 0x02) ? 4 : 1;
 
     data += 5;
 
@@ -1194,7 +1191,8 @@ static int init_table_wdl(struct TBEntry *entry, char *str)
     else
     {
         struct TBEntry_pawn *ptr = (struct TBEntry_pawn *)entry;
-        s = 1 + (ptr->pawns[1] > 0);
+        int s = 1 + (ptr->pawns[1] > 0);
+        int f;
         for (f = 0; f < 4; f++)
         {
             setup_pieces_pawn((struct TBEntry_pawn *)ptr, data, &tb_size[2 * f], f);
@@ -1258,7 +1256,6 @@ static int init_table_dtz(struct TBEntry *entry)
 {
     uint8_t *data = (uint8_t *)entry->data;
     uint8_t *next;
-    int f, s;
     uint64_t tb_size[4];
     uint64_t size[4 * 3];
 
@@ -1274,7 +1271,7 @@ static int init_table_dtz(struct TBEntry *entry)
         return 0;
     }
 
-    int files = data[4] & 0x02 ? 4 : 1;
+    int files = (data[4] & 0x02) ? 4 : 1;
 
     data += 5;
 
@@ -1313,7 +1310,8 @@ static int init_table_dtz(struct TBEntry *entry)
     else
     {
         struct DTZEntry_pawn *ptr = (struct DTZEntry_pawn *)entry;
-        s = 1 + (ptr->pawns[1] > 0);
+        int s = 1 + (ptr->pawns[1] > 0);
+        int f;
         for (f = 0; f < 4; f++)
         {
             setup_pieces_pawn_dtz(ptr, data, &tb_size[f], f);
@@ -1364,6 +1362,11 @@ static int init_table_dtz(struct TBEntry *entry)
 
     return 1;
 }
+
+// TODO: check this
+#ifdef _MSC_VER
+#pragma warning (disable : 4127) // Shuts up warnings about conditional branches always being true/false.
+#endif
 
 template <bool LittleEndian>
 static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)

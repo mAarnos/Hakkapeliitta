@@ -11,50 +11,45 @@
 
 #include <algorithm>
 
+#include "../zobrist.hpp"
+#include "../position.hpp"
 #include "tbprobe.hpp"
 #include "tbcore-impl.hpp"
 
 int Syzygy::maxCardinality = 0;
 
-/*
 // Given a position with 6 or fewer pieces, produce a text string
 // of the form KQPvKRP, where "KQP" represents the white pieces if
 // mirror == 0 and the black pieces if mirror == 1.
-static void prt_str(Position& pos, char *str, int mirror)
+static void prt_str(const Position& pos, char* str, int mirror)
 {
-    Color color;
-    PieceType pt;
-    int i;
+    Color color = !mirror ? Color::White : Color::Black;
 
-    color = !mirror ? WHITE : BLACK;
-    for (pt = KING; pt >= PAWN; --pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            *str++ = pchr[6 - pt];
+    for (Piece pt = Piece::King; pt >= Piece::Pawn; --pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            *str++ = pchr[5 - pt];
     *str++ = 'v';
-    color = ~color;
-    for (pt = KING; pt >= PAWN; --pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            *str++ = pchr[6 - pt];
+    color = !color;
+    for (Piece pt = Piece::King; pt >= Piece::Pawn; --pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            *str++ = pchr[5 - pt];
     *str++ = 0;
 }
 
 // Given a position, produce a 64-bit material signature key.
 // If the engine supports such a key, it should equal the engine's key.
-static uint64 calc_key(Position& pos, int mirror)
+static uint64_t calc_key(const Position& pos, int mirror)
 {
-    Color color;
-    PieceType pt;
-    int i;
-    uint64 key = 0;
+    uint64_t key = 0;
+    Color color = !mirror ? Color::White : Color::Black;
 
-    color = !mirror ? WHITE : BLACK;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            key ^= Zobrist::psq[WHITE][pt][i - 1];
-    color = ~color;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = popcount<Max15>(pos.pieces(color, pt)); i > 0; i--)
-            key ^= Zobrist::psq[BLACK][pt][i - 1];
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            key ^= Zobrist::materialHashKey(Color::White * 6 + pt, i - 1);
+    color = !color;
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = pos.getPieceCount(color, pt); i > 0; i--)
+            key ^= Zobrist::materialHashKey(Color::Black * 6 + pt, i - 1);
 
     return key;
 }
@@ -63,21 +58,18 @@ static uint64 calc_key(Position& pos, int mirror)
 // defined by pcs[16], where pcs[1], ..., pcs[6] is the number of white
 // pawns, ..., kings and pcs[9], ..., pcs[14] is the number of black
 // pawns, ..., kings.
-static uint64 calc_key_from_pcs(int *pcs, int mirror)
+static uint64_t calc_key_from_pcs(int* pcs, int mirror)
 {
-    int color;
-    PieceType pt;
-    int i;
-    uint64 key = 0;
+    uint64_t key = 0;
+    auto color = !mirror ? 1 : 9;
 
-    color = !mirror ? 0 : 8;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = 0; i < pcs[color + pt]; i++)
-            key ^= Zobrist::psq[WHITE][pt][i];
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = 0; i < pcs[color + pt]; ++i)
+        key ^= Zobrist::materialHashKey(Color::White * 6 + pt, i);
     color ^= 8;
-    for (pt = PAWN; pt <= KING; ++pt)
-        for (i = 0; i < pcs[color + pt]; i++)
-            key ^= Zobrist::psq[BLACK][pt][i];
+    for (Piece pt = Piece::Pawn; pt <= Piece::King; ++pt)
+        for (auto i = 0; i < pcs[color + pt]; ++i)
+        key ^= Zobrist::materialHashKey(Color::Black * 6 + pt, i);
 
     return key;
 }
@@ -93,22 +85,23 @@ bool is_little_endian()
     return x.c[0] == 1;
 }
 
-static ubyte decompress_pairs(struct PairsData *d, uint64 idx)
+static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     static const bool isLittleEndian = is_little_endian();
-    return isLittleEndian ? decompress_pairs<true >(d, idx)
+    return isLittleEndian ? decompress_pairs<true>(d, idx)
            : decompress_pairs<false>(d, idx);
 }
 
+/*
 // probe_wdl_table and probe_dtz_table require similar adaptations.
 static int probe_wdl_table(Position& pos, int *success)
 {
     struct TBEntry *ptr;
     struct TBHashEntry *ptr2;
-    uint64 idx;
-    uint64 key;
+    uint64_t idx;
+    uint64_t key;
     int i;
-    ubyte res;
+    uint8_t res;
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
@@ -181,7 +174,7 @@ static int probe_wdl_table(Position& pos, int *success)
     if (!ptr->has_pawns)
     {
         struct TBEntry_piece *entry = (struct TBEntry_piece *)ptr;
-        ubyte *pc = entry->pieces[bside];
+        uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
             Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
@@ -207,7 +200,7 @@ static int probe_wdl_table(Position& pos, int *success)
         }
         while (bb);
         int f = pawn_file(entry, p);
-        ubyte *pc = entry->file[f].pieces[bside];
+        uint8_t *pc = entry->file[f].pieces[bside];
         for (; i < entry->num;)
         {
             bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
@@ -228,12 +221,12 @@ static int probe_wdl_table(Position& pos, int *success)
 static int probe_dtz_table(Position& pos, int wdl, int *success)
 {
     struct TBEntry *ptr;
-    uint64 idx;
+    uint64_t idx;
     int i, res;
     int p[TBPIECES];
 
     // Obtain the position's material signature key.
-    uint64 key = pos.material_key();
+    uint64_t key = pos.material_key();
 
     if (DTZ_table[0].key1 != key && DTZ_table[0].key2 != key)
     {
@@ -305,7 +298,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
             *success = -1;
             return 0;
         }
-        ubyte *pc = entry->pieces;
+        uint8_t *pc = entry->pieces;
         for (i = 0; i < entry->num;)
         {
             Bitboard bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
@@ -342,7 +335,7 @@ static int probe_dtz_table(Position& pos, int wdl, int *success)
             *success = -1;
             return 0;
         }
-        ubyte *pc = entry->file[f].pieces;
+        uint8_t *pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
             bb = pos.pieces((Color)((pc[i] ^ cmirror) >> 3),
