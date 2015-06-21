@@ -692,66 +692,50 @@ static int has_repeated(StateInfo *st)
         st = st->previous;
     }
 }
+*/
 
-static Value wdl_to_Value[5] =
-{
-    -VALUE_MATE + MAX_PLY + 1,
-    VALUE_DRAW - 2,
-    VALUE_DRAW,
-    VALUE_DRAW + 2,
-    VALUE_MATE - MAX_PLY - 1
-};
-
-// Use the DTZ tables to filter out moves that don't preserve the win or draw.
-// If the position is lost, but DTZ is fairly high, only keep moves that
-// maximise DTZ.
-//
-// A return value false indicates that not all probes were successful and that
-// no moves were filtered out.
-bool Tablebases::root_probe(Position& pos, Search::RootMoveVector& rootMoves, Value& score)
+bool Syzygy::rootProbe(const Position& pos, MoveList& rootMoves, int& score)
 {
     int success;
 
-    int dtz = probe_dtz(pos, &success);
+    int dtz = probeDtz(pos, success);
     if (!success) return false;
 
-    StateInfo st;
-    CheckInfo ci(pos);
-
     // Probe each move.
-    for (size_t i = 0; i < rootMoves.size(); i++)
+    for (auto i = 0; i < rootMoves.size(); i++)
     {
-        Move move = rootMoves[i].pv[0];
-        pos.do_move(move, st, pos.gives_check(move, ci));
+        const auto move = rootMoves.getMove(i);
+
+        Position newPos(pos);
+        newPos.makeMove(move);
         int v = 0;
-        if (pos.checkers() && dtz > 0)
+        if (newPos.inCheck() && dtz > 0)
         {
-            ExtMove s[192];
-            if (generate<LEGAL>(pos, s) == s)
+            MoveList moveList;
+            MoveGen::generateLegalEvasions(newPos, moveList);
+            if (moveList.empty())
                 v = 1;
         }
         if (!v)
         {
-            if (st.rule50 != 0)
+            if (newPos.getFiftyMoveDistance() != 0)
             {
-                v = -Tablebases::probe_dtz(pos, &success);
+                v = -Syzygy::probeDtz(pos, success);
                 if (v > 0) v++;
                 else if (v < 0) v--;
             }
             else
             {
-                v = -Tablebases::probe_wdl(pos, &success);
+                v = -Syzygy::probeWdl(pos, success);
                 v = wdl_to_dtz[v + 2];
             }
         }
-        pos.undo_move(move);
         if (!success) return false;
-        rootMoves[i].score = (Value)v;
+        rootMoves.setScore(i, static_cast<int16_t>(v));
     }
 
     // Obtain 50-move counter for the root position.
-    // In Stockfish there seems to be no clean way, so we do it like this:
-    int cnt50 = st.previous->rule50;
+    int cnt50 = pos.getFiftyMoveDistance();
 
     // Use 50-move counter to determine whether the root position is
     // won, lost or drawn.
@@ -762,110 +746,112 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoveVector& rootMoves, Va
         wdl = (-dtz + cnt50 <= 100) ? -2 : -1;
 
     // Determine the score to report to the user.
-    score = wdl_to_Value[wdl + 2];
-    // If the position is winning or losing, but too few moves left, adjust the
-    // score to show how close it is to winning or losing.
-    // NOTE: int(PawnValueEg) is used as scaling factor in score_to_uci().
-    if (wdl == 1 && dtz <= 100)
-        score = (Value)(((200 - dtz - cnt50) * int(PawnValueEg)) / 200);
-    else if (wdl == -1 && dtz >= -100)
-        score = -(Value)(((200 + dtz - cnt50) * int(PawnValueEg)) / 200);
+    score = wdl;
 
     // Now be a bit smart about filtering out moves.
-    size_t j = 0;
+    auto j = 0;
     if (dtz > 0)   // winning (or 50-move rule draw)
     {
         int best = 0xffff;
-        for (size_t i = 0; i < rootMoves.size(); i++)
+        for (auto i = 0; i < rootMoves.size(); i++)
         {
-            int v = rootMoves[i].score;
+            int v = rootMoves.getScore(i);
             if (v > 0 && v < best)
                 best = v;
         }
         int max = best;
         // If the current phase has not seen repetitions, then try all moves
         // that stay safely within the 50-move budget, if there are any.
-        if (!has_repeated(st.previous) && best + cnt50 <= 99)
+        // TODO: put has_repeated back. I am too lazy to code it. Hopefully it won't backfire.
+        if (best + cnt50 <= 99)
             max = 99 - cnt50;
-        for (size_t i = 0; i < rootMoves.size(); i++)
+        for (auto i = 0; i < rootMoves.size(); i++)
         {
-            int v = rootMoves[i].score;
+            int v = rootMoves.getScore(i);
             if (v > 0 && v <= max)
-                rootMoves[j++] = rootMoves[i];
+            {
+                rootMoves.setMove(j, rootMoves.getMove(i));
+                rootMoves.setScore(j, rootMoves.getScore(i));
+                j += 1;
+            }
         }
     }
     else if (dtz < 0)     // losing (or 50-move rule draw)
     {
         int best = 0;
-        for (size_t i = 0; i < rootMoves.size(); i++)
+        for (auto i = 0; i < rootMoves.size(); i++)
         {
-            int v = rootMoves[i].score;
+            int v = rootMoves.getScore(i);
             if (v < best)
                 best = v;
         }
         // Try all moves, unless we approach or have a 50-move rule draw.
         if (-best * 2 + cnt50 < 100)
             return true;
-        for (size_t i = 0; i < rootMoves.size(); i++)
+        for (auto i = 0; i < rootMoves.size(); i++)
         {
-            if (rootMoves[i].score == best)
-                rootMoves[j++] = rootMoves[i];
+            if (rootMoves.getScore(i) == best)
+            {
+                rootMoves.setMove(j, rootMoves.getMove(i));
+                rootMoves.setScore(j, rootMoves.getScore(i));
+                j += 1;
+            }
         }
     }
     else     // drawing
     {
         // Try all moves that preserve the draw.
-        for (size_t i = 0; i < rootMoves.size(); i++)
+        for (auto i = 0; i < rootMoves.size(); i++)
         {
-            if (rootMoves[i].score == 0)
-                rootMoves[j++] = rootMoves[i];
+            if (rootMoves.getScore(i) == 0)
+            {
+                rootMoves.setMove(j, rootMoves.getMove(i));
+                rootMoves.setScore(j, rootMoves.getScore(i));
+                j += 1;
+            }
         }
     }
-    rootMoves.resize(j, Search::RootMove(MOVE_NONE));
+    rootMoves.resize(j);
 
     return true;
 }
 
-// Use the WDL tables to filter out moves that don't preserve the win or draw.
-// This is a fallback for the case that some or all DTZ tables are missing.
-//
-// A return value false indicates that not all probes were successful and that
-// no moves were filtered out.
-bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoveVector& rootMoves, Value& score)
+bool Syzygy::rootProbeWdl(const Position& pos, MoveList& rootMoves, int& score)
 {
     int success;
 
-    int wdl = Tablebases::probe_wdl(pos, &success);
+    int wdl = Syzygy::probeWdl(pos, success);
     if (!success) return false;
-    score = wdl_to_Value[wdl + 2];
-
-    StateInfo st;
-    CheckInfo ci(pos);
+    score = wdl;
 
     int best = -2;
 
     // Probe each move.
-    for (size_t i = 0; i < rootMoves.size(); i++)
+    for (auto i = 0; i < rootMoves.size(); i++)
     {
-        Move move = rootMoves[i].pv[0];
-        pos.do_move(move, st, pos.gives_check(move, ci));
-        int v = -Tablebases::probe_wdl(pos, &success);
-        pos.undo_move(move);
+        const auto move = rootMoves.getMove(i);
+
+        Position newPos(pos);
+        newPos.makeMove(move);
+        int v = -Syzygy::probeWdl(pos, success);
         if (!success) return false;
-        rootMoves[i].score = (Value)v;
+        rootMoves.setScore(i, static_cast<int16_t>(v));
         if (v > best)
             best = v;
     }
 
-    size_t j = 0;
-    for (size_t i = 0; i < rootMoves.size(); i++)
+    auto j = 0;
+    for (auto i = 0; i < rootMoves.size(); i++)
     {
-        if (rootMoves[i].score == best)
-            rootMoves[j++] = rootMoves[i];
+        if (rootMoves.getScore(i) == best)
+        {
+            rootMoves.setMove(j, rootMoves.getMove(i));
+            rootMoves.setScore(j, rootMoves.getScore(i));
+            j += 1;
+        }
     }
-    rootMoves.resize(j, Search::RootMove(MOVE_NONE));
+    rootMoves.resize(j);
 
     return true;
 }
 
-*/

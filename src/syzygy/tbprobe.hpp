@@ -45,6 +45,21 @@ public:
     // then do not accept moves leading to dtz + 50-move-counter == 100.
     static int probeDtz(const Position& pos, int& success);
 
+    // Use the DTZ tables to filter out moves that don't preserve the win or draw.
+    // If the position is lost, but DTZ is fairly high, only keep moves that
+    // maximise DTZ.
+    //
+    // A return value false indicates that not all probes were successful and that
+    // no moves were filtered out.
+    bool rootProbe(const Position& pos, MoveList& rootMoves, int& score);
+
+    // Use the WDL tables to filter out moves that don't preserve the win or draw.
+    // This is a fallback for the case that some or all DTZ tables are missing.
+    //
+    // A return value false indicates that not all probes were successful and that
+    // no moves were filtered out.
+    bool rootProbeWdl(const Position& pos, MoveList& rootMoves, int& score);
+
     static int maxCardinality;
 };
 
