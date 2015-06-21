@@ -95,7 +95,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
-static int probe_wdl_table(const Position& pos, int *success)
+static int probe_wdl_table(const Position& pos, int& success)
 {
     struct TBEntry *ptr;
     struct TBHashEntry *ptr2;
@@ -117,7 +117,7 @@ static int probe_wdl_table(const Position& pos, int *success)
         if (ptr2[i].key == key) break;
     if (i == HSHMAX)
     {
-        *success = 0;
+        success = 0;
         return 0;
     }
 
@@ -132,7 +132,7 @@ static int probe_wdl_table(const Position& pos, int *success)
             if (!init_table_wdl(ptr, str))
             {
                 ptr2[i].key = 0ULL;
-                *success = 0;
+                success = 0;
                 TB_mutex.unlock();
                 return 0;
             }
@@ -217,7 +217,7 @@ static int probe_wdl_table(const Position& pos, int *success)
     return ((int)res) - 2;
 }
 
-static int probe_dtz_table(const Position& pos, int wdl, int *success)
+static int probe_dtz_table(const Position& pos, int wdl, int& success)
 {
     struct TBEntry *ptr;
     uint64_t idx;
@@ -245,7 +245,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int *success)
                 if (ptr2[i].key == key) break;
             if (i == HSHMAX)
             {
-                *success = 0;
+                success = 0;
                 return 0;
             }
             ptr = ptr2[i].ptr;
@@ -263,7 +263,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int *success)
     ptr = DTZ_table[0].entry;
     if (!ptr)
     {
-        *success = 0;
+        success = 0;
         return 0;
     }
 
@@ -294,7 +294,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int *success)
         struct DTZEntry_piece *entry = (struct DTZEntry_piece *)ptr;
         if ((entry->flags & 1) != bside && !entry->symmetric)
         {
-            *success = -1;
+            success = -1;
             return 0;
         }
         uint8_t *pc = entry->pieces;
@@ -330,7 +330,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int *success)
         int f = pawn_file((struct TBEntry_pawn *)entry, p);
         if ((entry->flags[f] & 1) != bside)
         {
-            *success = -1;
+            success = -1;
             return 0;
         }
         uint8_t *pc = entry->file[f].pieces;
@@ -356,7 +356,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int *success)
     return res;
 }
 
-static int probe_ab(const Position& pos, int alpha, int beta, int *success)
+static int probe_ab(const Position& pos, int alpha, int beta, int& success)
 {
     int v;
     const auto inCheck = pos.inCheck();
@@ -377,12 +377,12 @@ static int probe_ab(const Position& pos, int alpha, int beta, int *success)
         Position newPos(pos);
         newPos.makeMove(move);
         v = -probe_ab(newPos, -beta, -alpha, success);
-        if (*success == 0) return 0;
+        if (success == 0) return 0;
         if (v > alpha)
         {
             if (v >= beta)
             {
-                *success = 2;
+                success = 2;
                 return v;
             }
             alpha = v;
@@ -390,64 +390,52 @@ static int probe_ab(const Position& pos, int alpha, int beta, int *success)
     }
 
     v = probe_wdl_table(pos, success);
-    if (*success == 0) return 0;
+    if (success == 0) return 0;
     if (alpha >= v)
     {
-        *success = 1 + (alpha > 0);
+        success = 1 + (alpha > 0);
         return alpha;
     }
     else
     {
-        *success = 1;
+        success = 1;
         return v;
     }
 }
 
-/*
-// Probe the WDL table for a particular position.
-// If *success != 0, the probe was successful.
-// The return value is from the point of view of the side to move:
-// -2 : loss
-// -1 : loss, but draw under 50-move rule
-//  0 : draw
-//  1 : win, but draw under 50-move rule
-//  2 : win
-int Tablebases::probe_wdl(Position& pos, int *success)
+int Syzygy::probeWdl(const Position& pos, int& success)
 {
     int v;
 
-    *success = 1;
+    success = 1;
     v = probe_ab(pos, -2, 2, success);
 
     // If en passant is not possible, we are done.
-    if (pos.ep_square() == SQ_NONE)
+    if (pos.getEnPassantSquare() == Square::NoSquare)
         return v;
-    if (!(*success)) return 0;
+    if (!success) return 0;
 
     // Now handle en passant.
     int v1 = -3;
     // Generate (at least) all legal en passant captures.
-    ExtMove stack[192];
-    ExtMove *moves, *end;
-    StateInfo st;
+    MoveList moveList;
+    const auto inCheck = pos.inCheck();
 
-    if (!pos.checkers())
-        end = generate<CAPTURES>(pos, stack);
-    else
-        end = generate<EVASIONS>(pos, stack);
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList)
+            : MoveGen::generatePseudoLegalCaptures(pos, moveList, false);
 
-    CheckInfo ci(pos);
-
-    for (moves = stack; moves < end; moves++)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        Move capture = moves->move;
-        if (type_of(capture) != ENPASSANT
-                || !pos.legal(capture, ci.pinned))
+        const auto move = moveList.getMove(i);
+        if (move.getFlags() != Piece::Pawn || !pos.legal(move, inCheck))
+        {
             continue;
-        pos.do_move(capture, st, pos.gives_check(capture, ci));
-        int v0 = -probe_ab(pos, -2, 2, success);
-        pos.undo_move(capture);
-        if (*success == 0) return 0;
+        }
+
+        Position newPos(pos);
+        newPos.makeMove(move);
+        int v0 = -probe_ab(newPos , -2, 2, success);
+        if (success == 0) return 0;
         if (v0 > v1) v1 = v0;
     }
     if (v1 > -3)
@@ -455,25 +443,27 @@ int Tablebases::probe_wdl(Position& pos, int *success)
         if (v1 >= v) v = v1;
         else if (v == 0)
         {
+            int i;
             // Check whether there is at least one legal non-ep move.
-            for (moves = stack; moves < end; moves++)
+            for (i = 0; i < moveList.size(); ++i)
             {
-                Move capture = moves->move;
-                if (type_of(capture) == ENPASSANT) continue;
-                if (pos.legal(capture, ci.pinned)) break;
+                const auto move = moveList.getMove(i);
+                if (move.getFlags() == Piece::Pawn) continue;
+                if (pos.legal(move, inCheck)) break;
             }
-            if (moves == end && !pos.checkers())
+            if (i == moveList.size() && !inCheck)
             {
-                end = generate<QUIETS>(pos, end);
-                for (; moves < end; moves++)
+                moveList.clear();
+                MoveGen::generatePseudoLegalQuietMoves(pos, moveList);
+                for (i = 0; i < moveList.size(); ++i)
                 {
-                    Move move = moves->move;
-                    if (pos.legal(move, ci.pinned))
+                    const auto move = moveList.getMove(i);
+                    if (pos.legal(move, inCheck)) 
                         break;
                 }
             }
             // If not, then we are forced to play the losing ep capture.
-            if (moves == end)
+            if (i == moveList.size())
                 v = v1;
         }
     }
@@ -481,6 +471,7 @@ int Tablebases::probe_wdl(Position& pos, int *success)
     return v;
 }
 
+/*
 // This routine treats a position with en passant captures as one without.
 static int probe_dtz_no_ep(Position& pos, int *success)
 {
