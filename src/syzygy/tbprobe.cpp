@@ -471,51 +471,50 @@ int Syzygy::probeWdl(const Position& pos, int& success)
     return v;
 }
 
-/*
 // This routine treats a position with en passant captures as one without.
-static int probe_dtz_no_ep(Position& pos, int *success)
+static int probe_dtz_no_ep(const Position& pos, int& success)
 {
     int wdl, dtz;
 
     wdl = probe_ab(pos, -2, 2, success);
-    if (*success == 0) return 0;
+    if (success == 0) return 0;
 
     if (wdl == 0) return 0;
 
-    if (*success == 2)
+    if (success == 2)
         return wdl == 2 ? 1 : 101;
 
-    ExtMove stack[192];
-    ExtMove *moves, *end = NULL;
-    StateInfo st;
-    CheckInfo ci(pos);
+    const auto inCheck = pos.inCheck();
+    MoveList moveList;
 
     if (wdl > 0)
     {
         // Generate at least all legal non-capturing pawn moves
         // including non-capturing promotions.
-        if (!pos.checkers())
-            end = generate<NON_EVASIONS>(pos, stack);
-        else
-            end = generate<EVASIONS>(pos, stack);
+        inCheck ? MoveGen::generateLegalEvasions(pos, moveList)
+                : MoveGen::generatePseudoLegalMoves(pos, moveList);
 
-        for (moves = stack; moves < end; moves++)
+        for (auto i = 0; i < moveList.size(); ++i)
         {
-            Move move = moves->move;
-            if (type_of(pos.moved_piece(move)) != PAWN || pos.capture(move)
-                    || !pos.legal(move, ci.pinned))
+            const auto move = moveList.getMove(i);
+            if (pos.getBoard(move.getFrom()).getPieceType() != Piece::Pawn
+                || pos.getBoard(move.getTo()) != Piece::Empty
+                || !pos.legal(move, inCheck))
+            {
                 continue;
-            pos.do_move(move, st, pos.gives_check(move, ci));
-            int v = -probe_ab(pos, -2, -wdl + 1, success);
-            pos.undo_move(move);
-            if (*success == 0) return 0;
+            }
+
+            Position newPos(pos);
+            newPos.makeMove(move);
+            int v = -probe_ab(newPos, -2, -wdl + 1, success);
+            if (success == 0) return 0;
             if (v == wdl)
                 return v == 2 ? 1 : 101;
         }
     }
 
     dtz = 1 + probe_dtz_table(pos, wdl, success);
-    if (*success >= 0)
+    if (success >= 0)
     {
         if (wdl & 1) dtz += 100;
         return wdl >= 0 ? dtz : -dtz;
@@ -524,16 +523,20 @@ static int probe_dtz_no_ep(Position& pos, int *success)
     if (wdl > 0)
     {
         int best = 0xffff;
-        for (moves = stack; moves < end; moves++)
+        for (auto i = 0; i < moveList.size(); ++i)
         {
-            Move move = moves->move;
-            if (pos.capture(move) || type_of(pos.moved_piece(move)) == PAWN
-                    || !pos.legal(move, ci.pinned))
+            const auto move = moveList.getMove(i);
+            if (pos.getBoard(move.getTo()) != Piece::Empty
+                || pos.getBoard(move.getFrom()).getPieceType() == Piece::Pawn
+                || !pos.legal(move, inCheck))
+            {
                 continue;
-            pos.do_move(move, st, pos.gives_check(move, ci));
-            int v = -Tablebases::probe_dtz(pos, success);
-            pos.undo_move(move);
-            if (*success == 0) return 0;
+            }
+
+            Position newPos(pos);
+            newPos.makeMove(move);
+            int v = -Syzygy::probeDtz(newPos, success);
+            if (success == 0) return 0;
             if (v > 0 && v + 1 < best)
                 best = v + 1;
         }
@@ -542,32 +545,32 @@ static int probe_dtz_no_ep(Position& pos, int *success)
     else
     {
         int best = -1;
-        if (!pos.checkers())
-            end = generate<NON_EVASIONS>(pos, stack);
-        else
-            end = generate<EVASIONS>(pos, stack);
-        for (moves = stack; moves < end; moves++)
+        inCheck ? MoveGen::generateLegalEvasions(pos, moveList)
+                : MoveGen::generatePseudoLegalMoves(pos, moveList);
+
+        for (auto i = 0; i < moveList.size(); ++i)
         {
             int v;
-            Move move = moves->move;
-            if (!pos.legal(move, ci.pinned))
+            const auto move = moveList.getMove(i);
+            if (!pos.legal(move, inCheck))
                 continue;
-            pos.do_move(move, st, pos.gives_check(move, ci));
-            if (st.rule50 == 0)
+
+            Position newPos(pos);
+            newPos.makeMove(move);
+            if (newPos.getFiftyMoveDistance() == 0)
             {
                 if (wdl == -2) v = -1;
                 else
                 {
-                    v = probe_ab(pos, 1, 2, success);
+                    v = probe_ab(newPos, 1, 2, success);
                     v = (v == 2) ? 0 : -101;
                 }
             }
             else
             {
-                v = -Tablebases::probe_dtz(pos, success) - 1;
+                v = -Syzygy::probeDtz(newPos, success) - 1;
             }
-            pos.undo_move(move);
-            if (*success == 0) return 0;
+            if (success == 0) return 0;
             if (v < best)
                 best = v;
         }
@@ -580,64 +583,36 @@ static int wdl_to_dtz[] =
     -1, -101, 0, 101, 1
 };
 
-// Probe the DTZ table for a particular position.
-// If *success != 0, the probe was successful.
-// The return value is from the point of view of the side to move:
-//         n < -100 : loss, but draw under 50-move rule
-// -100 <= n < -1   : loss in n ply (assuming 50-move counter == 0)
-//         0        : draw
-//     1 < n <= 100 : win in n ply (assuming 50-move counter == 0)
-//   100 < n        : win, but draw under 50-move rule
-//
-// The return value n can be off by 1: a return value -n can mean a loss
-// in n+1 ply and a return value +n can mean a win in n+1 ply. This
-// cannot happen for tables with positions exactly on the "edge" of
-// the 50-move rule.
-//
-// This implies that if dtz > 0 is returned, the position is certainly
-// a win if dtz + 50-move-counter <= 99. Care must be taken that the engine
-// picks moves that preserve dtz + 50-move-counter <= 99.
-//
-// If n = 100 immediately after a capture or pawn move, then the position
-// is also certainly a win, and during the whole phase until the next
-// capture or pawn move, the inequality to be preserved is
-// dtz + 50-movecounter <= 100.
-//
-// In short, if a move is available resulting in dtz + 50-move-counter <= 99,
-// then do not accept moves leading to dtz + 50-move-counter == 100.
-//
-int Tablebases::probe_dtz(Position& pos, int *success)
+int Syzygy::probeDtz(const Position& pos, int& success)
 {
-    *success = 1;
+    success = 1;
     int v = probe_dtz_no_ep(pos, success);
 
-    if (pos.ep_square() == SQ_NONE)
+    if (pos.getEnPassantSquare() == Square::NoSquare)
         return v;
-    if (*success == 0) return 0;
+    if (success == 0) return 0;
 
     // Now handle en passant.
     int v1 = -3;
 
-    ExtMove stack[192];
-    ExtMove *moves, *end;
-    StateInfo st;
+    const auto inCheck = pos.inCheck();
+    MoveList moveList;
 
-    if (!pos.checkers())
-        end = generate<CAPTURES>(pos, stack);
-    else
-        end = generate<EVASIONS>(pos, stack);
-    CheckInfo ci(pos);
+    inCheck ? MoveGen::generateLegalEvasions(pos, moveList)
+            : MoveGen::generatePseudoLegalCaptures(pos, moveList, false);
 
-    for (moves = stack; moves < end; moves++)
+    for (auto i = 0; i < moveList.size(); ++i)
     {
-        Move capture = moves->move;
-        if (type_of(capture) != ENPASSANT
-                || !pos.legal(capture, ci.pinned))
+        const auto move = moveList.getMove(i);
+        if (move.getFlags() != Piece::Pawn || !pos.legal(move, inCheck))
+        {
             continue;
-        pos.do_move(capture, st, pos.gives_check(capture, ci));
-        int v0 = -probe_ab(pos, -2, 2, success);
-        pos.undo_move(capture);
-        if (*success == 0) return 0;
+        }
+
+        Position newPos(pos);
+        newPos.makeMove(move);
+        int v0 = -probe_ab(newPos, -2, 2, success);
+        if (success == 0) return 0;
         if (v0 > v1) v1 = v0;
     }
     if (v1 > -3)
@@ -669,23 +644,25 @@ int Tablebases::probe_dtz(Position& pos, int *success)
         }
         else
         {
-            for (moves = stack; moves < end; moves++)
+            int i;
+            for (i = 0; i < moveList.size(); ++i)
             {
-                Move move = moves->move;
-                if (type_of(move) == ENPASSANT) continue;
-                if (pos.legal(move, ci.pinned)) break;
+                const auto move = moveList.getMove(i);
+                if (move.getFlags() == Piece::Pawn) continue;
+                if (pos.legal(move, inCheck)) break;
             }
-            if (moves == end && !pos.checkers())
+            if (i == moveList.size() && !inCheck)
             {
-                end = generate<QUIETS>(pos, end);
-                for (; moves < end; moves++)
+                moveList.clear();
+                MoveGen::generatePseudoLegalQuietMoves(pos, moveList);
+                for (i = 0; i < moveList.size(); ++i)
                 {
-                    Move move = moves->move;
-                    if (pos.legal(move, ci.pinned))
+                    const auto move = moveList.getMove(i);
+                    if (pos.legal(move, inCheck))
                         break;
                 }
             }
-            if (moves == end)
+            if (i == moveList.size())
                 v = v1;
         }
     }
@@ -693,6 +670,7 @@ int Tablebases::probe_dtz(Position& pos, int *success)
     return v;
 }
 
+/*
 // Check whether there has been at least one repetition of positions
 // since the last capture or pawn move.
 static int has_repeated(StateInfo *st)
