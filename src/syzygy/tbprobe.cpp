@@ -178,7 +178,7 @@ static int probe_wdl_table(const Position& pos, int& success)
         uint8_t *pc = entry->pieces[bside];
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
             do
             {
                 p[i++] = Bitboards::popLsb(bb);
@@ -192,7 +192,7 @@ static int probe_wdl_table(const Position& pos, int& success)
     {
         struct TBEntry_pawn *entry = (struct TBEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0][0] ^ cmirror;
-        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07));
+        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07) - 1);
         i = 0;
         do
         {
@@ -203,7 +203,7 @@ static int probe_wdl_table(const Position& pos, int& success)
         uint8_t *pc = entry->file[f].pieces[bside];
         for (; i < entry->num;)
         {
-            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
             do
             {
                 p[i++] = Bitboards::popLsb(bb) ^ mirror;
@@ -300,7 +300,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int& success)
         uint8_t *pc = entry->pieces;
         for (i = 0; i < entry->num;)
         {
-            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            Bitboard bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
             do
             {
                 p[i++] = Bitboards::popLsb(bb);
@@ -320,7 +320,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int& success)
     {
         struct DTZEntry_pawn *entry = (struct DTZEntry_pawn *)ptr;
         int k = entry->file[0].pieces[0] ^ cmirror;
-        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07));
+        Bitboard bb = pos.getBitboard((int8_t)(k >> 3), (k & 0x07) - 1);
         i = 0;
         do
         {
@@ -336,7 +336,7 @@ static int probe_dtz_table(const Position& pos, int wdl, int& success)
         uint8_t *pc = entry->file[f].pieces;
         for (; i < entry->num;)
         {
-            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07));
+            bb = pos.getBitboard((int8_t)((pc[i] ^ cmirror) >> 3), (pc[i] & 0x07) - 1);
             do
             {
                 p[i++] = Bitboards::popLsb(bb) ^ mirror;
