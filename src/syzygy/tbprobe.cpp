@@ -91,7 +91,7 @@ static uint8_t decompress_pairs(struct PairsData *d, uint64_t idx)
 {
     static const bool isLittleEndian = is_little_endian();
     return isLittleEndian ? decompress_pairs<true>(d, idx)
-           : decompress_pairs<false>(d, idx);
+                          : decompress_pairs<false>(d, idx);
 }
 
 // probe_wdl_table and probe_dtz_table require similar adaptations.
@@ -668,30 +668,6 @@ int Syzygy::probeDtz(const Position& pos, int& success)
 
     return v;
 }
-
-/*
-// Check whether there has been at least one repetition of positions
-// since the last capture or pawn move.
-static int has_repeated(StateInfo *st)
-{
-    while (1)
-    {
-        int i = 4, e = std::min(st->rule50, st->pliesFromNull);
-        if (e < i)
-            return 0;
-        StateInfo *stp = st->previous->previous;
-        do
-        {
-            stp = stp->previous->previous;
-            if (stp->key == st->key)
-                return 1;
-            i += 2;
-        }
-        while (i <= e);
-        st = st->previous;
-    }
-}
-*/
 
 bool Syzygy::rootProbe(const Position& pos, MoveList& rootMoves, int& score)
 {
