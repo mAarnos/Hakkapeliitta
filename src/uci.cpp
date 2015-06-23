@@ -21,10 +21,12 @@
 #include "benchmark.hpp"
 #include "search_parameters.hpp"
 #include "textio.hpp"
+#include "syzygy/tbprobe.hpp"
 
 UCI::UCI() :
 search(*this), sync_cout(std::cout), ponder(true),
-contempt(0), pawnHashTableSize(4), transpositionTableSize(32), rootPly(0)
+contempt(0), pawnHashTableSize(4), transpositionTableSize(32), syzygyProbeDepth(1), 
+syzygyProbeLimit(6), syzygy50MoveRule(true), rootPly(0)
 {
     addCommand("uci", &UCI::sendInformation);
     addCommand("isready", &UCI::isReady);
@@ -100,8 +102,10 @@ void UCI::sendInformation(Position&, std::istringstream&)
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
     sync_cout << "option name Ponder type check default true" << std::endl;
-    // sync_cout << "option name SyzygyPath type string default C:\\wdl\\" << std::endl;
-    // sync_cout << "option name SyzygyProbeLimit type spin default 0 min 0 max 6" << std::endl;
+    sync_cout << "option name SyzygyPath type string default <empty>" << std::endl;
+    sync_cout << "option name SyzygyProbeDepth type spin default 1 min 1 max 100" << std::endl;
+    sync_cout << "option name SyzygyProbeLimit type spin default 6 min 0 max 6" << std::endl;
+    sync_cout << "option name Syzygy50MoveRule type check default true" << std::endl;
 
     // Send a response telling the listener that we are ready in UCI-mode.
     sync_cout << "uciok" << std::endl;
@@ -161,6 +165,29 @@ void UCI::setOption(Position&, std::istringstream& iss)
     else if (name == "Ponder")
     {
         iss >> ponder;
+    }
+    else if (name == "SyzygyPath")
+    {
+        std::string path;
+        while (iss >> s)
+        {
+            path += std::string(" ", !path.empty()) + s;
+        }
+        Syzygy::initialize(path);
+    }
+    else if (name == "SyzygyProbeDepth")
+    {
+        iss >> syzygyProbeDepth;
+        syzygyProbeDepth = clamp(syzygyProbeDepth, 1, 100);
+    }
+    else if (name == "SyzygyProbeLimit")
+    {
+        iss >> syzygyProbeLimit;
+        syzygyProbeLimit = clamp(syzygyProbeLimit, 0, 6);
+    }
+    else if (name == "Syzygy50MoveRule")
+    {
+        iss >> std::boolalpha >> syzygy50MoveRule;
     }
     else
     {

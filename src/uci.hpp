@@ -65,6 +65,9 @@ private:
     int contempt;
     size_t pawnHashTableSize;
     size_t transpositionTableSize;
+    int syzygyProbeDepth;
+    int syzygyProbeLimit;
+    bool syzygy50MoveRule;
 
     // History of the current position, if any.
     int rootPly;

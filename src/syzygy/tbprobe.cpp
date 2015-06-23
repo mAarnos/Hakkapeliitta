@@ -625,8 +625,7 @@ int Syzygy::probeDtz(const Position& pos, int& success)
         }
         else if (v < 0)
         {
-            if (v1 >= 0 || v1 < 100)
-                v = v1;
+            v = v1;
         }
         else if (v > 100)
         {
