@@ -71,11 +71,11 @@ public:
 
     /// @brief Get the castling rights of this position.
     /// @return The castling rights.
-    int8_t getCastlingRights() const noexcept;
+    uint8_t getCastlingRights() const noexcept;
 
     /// @brief Get the current fifty move distance.
     /// @return The fifty move distance.
-    int8_t getFiftyMoveDistance() const noexcept;
+    uint8_t getFiftyMoveDistance() const noexcept;
 
     /// @brief Get the current game phase, which is used for tapered eval.
     /// @return The game phase. 
@@ -212,9 +212,9 @@ private:
     HashKey mHashKey, mPawnHashKey, mMaterialHashKey;
     Bitboard mPinned, mDcCandidates;
     Color mSideToMove;
-    int8_t mCastlingRights;
+    uint8_t mCastlingRights;
     Square mEnPassant;
-    int8_t mFiftyMoveDistance;
+    uint8_t mFiftyMoveDistance;
     std::array<int8_t, 12> mPieceCounts;
     std::array<int8_t, 2> mNonPawnPieceCounts;
     int8_t mGamePhase;
@@ -276,12 +276,12 @@ inline Square Position::getEnPassantSquare() const noexcept
     return mEnPassant; 
 }
 
-inline int8_t Position::getCastlingRights() const noexcept
+inline uint8_t Position::getCastlingRights() const noexcept
 { 
     return mCastlingRights; 
 }
 
-inline int8_t Position::getFiftyMoveDistance() const noexcept
+inline uint8_t Position::getFiftyMoveDistance() const noexcept
 { 
     return mFiftyMoveDistance; 
 }
