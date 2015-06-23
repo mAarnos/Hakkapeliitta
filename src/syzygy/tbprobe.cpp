@@ -720,13 +720,13 @@ bool Syzygy::rootProbe(const Position& pos, MoveList& rootMoves, int& score)
         {
             if (newPos.getFiftyMoveDistance() != 0)
             {
-                v = -Syzygy::probeDtz(pos, success);
+                v = -Syzygy::probeDtz(newPos, success);
                 if (v > 0) v++;
                 else if (v < 0) v--;
             }
             else
             {
-                v = -Syzygy::probeWdl(pos, success);
+                v = -Syzygy::probeWdl(newPos, success);
                 v = wdl_to_dtz[v + 2];
             }
         }
@@ -833,7 +833,7 @@ bool Syzygy::rootProbeWdl(const Position& pos, MoveList& rootMoves, int& score)
 
         Position newPos(pos);
         newPos.makeMove(move);
-        int v = -Syzygy::probeWdl(pos, success);
+        int v = -Syzygy::probeWdl(newPos, success);
         if (!success) return false;
         rootMoves.setScore(i, static_cast<int16_t>(v));
         if (v > best)

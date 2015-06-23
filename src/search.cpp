@@ -127,7 +127,7 @@ int futilityMargin(int depth)
 
 // Removes illegal moves from a moveList.
 // Remove after getting MoveSort working everywhere.
-void removeIllegalMoves(Position& pos, MoveList& moveList, bool inCheck)
+void removeIllegalMoves(const Position& pos, MoveList& moveList, bool inCheck)
 {
     auto marker = 0;
 

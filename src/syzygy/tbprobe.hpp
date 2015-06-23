@@ -51,14 +51,14 @@ public:
     //
     // A return value false indicates that not all probes were successful and that
     // no moves were filtered out.
-    bool rootProbe(const Position& pos, MoveList& rootMoves, int& score);
+    static bool rootProbe(const Position& pos, MoveList& rootMoves, int& score);
 
     // Use the WDL tables to filter out moves that don't preserve the win or draw.
     // This is a fallback for the case that some or all DTZ tables are missing.
     //
     // A return value false indicates that not all probes were successful and that
     // no moves were filtered out.
-    bool rootProbeWdl(const Position& pos, MoveList& rootMoves, int& score);
+    static bool rootProbeWdl(const Position& pos, MoveList& rootMoves, int& score);
 
     static int maxCardinality;
 };
