@@ -24,6 +24,7 @@
 #include <iostream>
 #include <map>
 #include "benchmark.hpp"
+#include "search_listener.hpp"
 #include "search.hpp"
 #include "utils/synchronized_ostream.hpp"
 

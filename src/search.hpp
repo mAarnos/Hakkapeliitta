@@ -30,47 +30,10 @@
 #include "evaluation.hpp"
 #include "pht.hpp"
 #include "utils/stopwatch.hpp"
+#include "utils/threadpool.hpp"
+#include "search_listener.hpp"
 #include "search_parameters.hpp"
 #include "movelist.hpp"
-#include "utils/threadpool.hpp"
-
-/// @brief An interface for outputting info during the search.
-class SearchListener
-{
-public:
-    /// @brief Send info on the current root move we are searching.
-    /// @param move The move we are currently searching.
-    /// @param depth The depth we are searching the move to.
-    /// @param i The position of this move in the move list. Smaller number means it is searched earlier.
-    virtual void infoCurrMove(const Move& move, int depth, int i) = 0;
-
-    /// @brief Send info which should be sent regularly (i.e. once a second).
-    /// @param nodeCount The current amount of nodes searched.
-    /// @param tbHits The current amount of tablebase probes done.
-    /// @param searchTime The current amount of time spent searching, in milliseconds.
-    virtual void infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime) = 0;
-
-    /// @brief Send info on a new PV.
-    /// @param pv The current principal variation.
-    /// @param searchTime The current amount of time spent searching, in milliseconds.
-    /// @param nodeCount The current amount of nodes searched.
-    /// @param tbHits The current amount of tablebase probes done.
-    /// @param depth The current depth.
-    /// @param score The score of the new PV.
-    /// @param flags Information on the type of PV. Can be exact, upperbound or lowerbound, just like TT entries.
-    /// @param selDepth The max selective search depth reached so far.
-    virtual void infoPv(const std::vector<Move>& pv, uint64_t searchTime, 
-                        uint64_t nodeCount, uint64_t tbHits, 
-                        int depth, int score, int flags, int selDepth) = 0;
-
-    /// @brief When we are finishing the search send info on the best move.
-    /// @param pv The current principal variation.
-    /// @param searchTime The current amount of time spent searching, in milliseconds.
-    /// @param nodeCount The current amount of nodes searched.
-    /// @param tbHits The current amount of tablebase probes done.
-    virtual void infoBestMove(const std::vector<Move>& pv, uint64_t searchTime, 
-                              uint64_t nodeCount, uint64_t tbHits) = 0;
-};
 
 /// @brief The core of this program, the search function.
 class Search
