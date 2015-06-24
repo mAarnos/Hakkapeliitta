@@ -50,7 +50,7 @@ public:
     /// Oh yeah, this function only starts the search, the actual searching is done by a different thread.
     /// Also, this function blocks until the search has started to prevent some problems.
     /// Usually the blocking time is very short, 5-10ms at most.
-    void go(const Position& root, SearchParameters sp);
+    void go(const Position& root, const SearchParameters& sp);
 
     /// @brief Clears the TT, PHT, killer table, history table and the counter move table. 
     ///

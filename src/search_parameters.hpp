@@ -74,11 +74,21 @@ struct SearchParameters
 
     /// @brief The hash keys of all positions encountered during the game so far, in order.
     std::vector<HashKey> mHashKeys;
+
+    /// @brief Minimum depth where to probe syzygy tablebases.
+    int syzygyProbeDepth;
+
+    /// @brief The smallest number of pieces when to try probing syzygy tablebases.
+    int syzygyProbeLimit;
+
+    /// @brief Whether we should use the 50-move rule with Syzygys or not.
+    bool syzygy50MoveRule;
 };
 
 inline SearchParameters::SearchParameters():
     mPonder(false), mPonderOption(false), mContempt(0), mTime({ { 0, 0 } }), mIncrement({ { 0, 0 } }),
-    mMovesToGo(25), mDepth(0), mNodes(0), mMate(0), mMoveTime(0), mInfinite(false), mRootPly(0)
+    mMovesToGo(25), mDepth(0), mNodes(0), mMate(0), mMoveTime(0), mInfinite(false), mRootPly(0),
+    syzygyProbeDepth(1), syzygyProbeLimit(6), syzygy50MoveRule(true)
 {
 };
 

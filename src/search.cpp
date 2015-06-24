@@ -252,7 +252,7 @@ std::vector<Move> Search::extractPv(const Position& pos) const
     return pv;
 }
 
-void Search::go(const Position& root, SearchParameters sp)
+void Search::go(const Position& root, const SearchParameters& sp)
 {
     std::unique_lock<std::mutex> waitLock(waitMutex);
     tp.addJob(&Search::think, this, root, sp);

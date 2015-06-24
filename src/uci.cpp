@@ -224,6 +224,9 @@ void UCI::go(Position& pos, std::istringstream& iss)
 
     searchParameters.mRootPly = rootPly;
     searchParameters.mHashKeys = repetitionHashKeys;
+    searchParameters.syzygyProbeDepth = syzygyProbeDepth;
+    searchParameters.syzygyProbeLimit = syzygyProbeLimit;
+    searchParameters.syzygy50MoveRule = syzygy50MoveRule;
 
     search.go(pos, searchParameters);
 }
