@@ -337,12 +337,33 @@ void Search::think(const Position& root, SearchParameters sp)
         probeDepth = 0;
     }
 
-    /*
     if (cardinality >= pos.getTotalPieceCount())
     {
-        
+        score = 0;
+        auto rootInTb = Syzygy::rootProbe(pos, rootMoveList, score);
+
+        // Do not probe tablebases during the search if the root position is in the tablebases.
+        if (rootInTb)
+        {
+            cardinality = 0;
+        }
+        else
+        {
+            // If DTZ tables are missing, use WDL tables as a fallback
+            rootInTb = Syzygy::rootProbeWdl(pos, rootMoveList, score);
+
+            // Only probe during search if winning.
+            if (rootInTb && score <= 0)
+            {
+                cardinality = 0;
+            }
+        }
+
+        if (rootInTb)
+        {
+            tbHits = rootMoveList.size();
+        }
     }
-    */
 
     // Get the tt move from a possible previous search.
     const auto ttEntry = transpositionTable.probe(pos.getHashKey());
@@ -694,6 +715,25 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 return ttScore;
             }
         }
+    }
+
+    // Probe the syzygy tablebases.
+    if (pos.getTotalPieceCount() <= cardinality
+        && (pos.getTotalPieceCount() < cardinality || depth >= probeDepth)
+        && pos.getFiftyMoveDistance() == 0)
+    {
+        int found;
+        score = Syzygy::probeWdl(pos, found);
+
+        if (found)
+        {
+            ++tbHits;
+            const auto drawScore = use50 ? 1 : 0;
+            score = score < -drawScore ? -minMateScore + ss->mPly
+                  : score > drawScore ? minMateScore - ss->mPly
+                  : score + 2 * score * drawScore;
+            return score;
+        } 
     }
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
