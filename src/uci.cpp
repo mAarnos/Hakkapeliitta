@@ -93,7 +93,7 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 3.0 alpha" << std::endl;
+    sync_cout << "id name Hakkapeliitta 3.0 alpha 2" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
@@ -224,9 +224,9 @@ void UCI::go(Position& pos, std::istringstream& iss)
 
     searchParameters.mRootPly = rootPly;
     searchParameters.mHashKeys = repetitionHashKeys;
-    searchParameters.syzygyProbeDepth = syzygyProbeDepth;
-    searchParameters.syzygyProbeLimit = syzygyProbeLimit;
-    searchParameters.syzygy50MoveRule = syzygy50MoveRule;
+    searchParameters.mSyzygyProbeDepth = syzygyProbeDepth;
+    searchParameters.mSyzygyProbeLimit = syzygyProbeLimit;
+    searchParameters.mSyzygy50MoveRule = syzygy50MoveRule;
 
     search.go(pos, searchParameters);
 }

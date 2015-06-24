@@ -20,9 +20,7 @@
 #include "movesort.hpp"
 #include "utils/clamp.hpp"
 #include "utils/exception.hpp"
-
-#include <iostream>
-#include "textio.hpp"
+#include "syzygy/tbprobe.hpp"
 
 // TT-scores are adjusted to avoid some well-known problems. This adjusts a score back to normal.
 int ttScoreToRealScore(int score, int ply)
@@ -184,7 +182,7 @@ Search::Search(SearchListener& sl):
     tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
     tbHits(0), nodeCount(0), selDepth(0), searching(false), pondering(false), infinite(false), 
-    rootPly(0), repetitionHashes({}), contempt({})
+    cardinality(6), probeDepth(1), use50(true), rootPly(0), repetitionHashes({}), contempt({})
 {
     for (auto i = 0; i < 64; ++i)
     {
@@ -289,6 +287,9 @@ void Search::think(const Position& root, SearchParameters sp)
     maxNodes = (sp.mNodes > 0 ? sp.mNodes : std::numeric_limits<size_t>::max());
     rootPly = sp.mRootPly;
     repetitionHashes = sp.mHashKeys;
+    cardinality = sp.mSyzygyProbeLimit;
+    probeDepth = sp.mSyzygyProbeDepth;
+    use50 = sp.mSyzygy50MoveRule;
     transpositionTable.startNewSearch();
     historyTable.age();
     counterMoveTable.clear();
@@ -328,6 +329,20 @@ void Search::think(const Position& root, SearchParameters sp)
     inCheck ? MoveGen::generateLegalEvasions(pos, rootMoveList)
             : MoveGen::generatePseudoLegalMoves(pos, rootMoveList);
     removeIllegalMoves(pos, rootMoveList, inCheck);
+
+    // Skip TB probing when no TB found: !maxCardinality -> !cardinality
+    if (cardinality > Syzygy::maxCardinality)
+    {
+        cardinality = Syzygy::maxCardinality;
+        probeDepth = 0;
+    }
+
+    /*
+    if (cardinality >= pos.getTotalPieceCount())
+    {
+        
+    }
+    */
 
     // Get the tt move from a possible previous search.
     const auto ttEntry = transpositionTable.probe(pos.getHashKey());

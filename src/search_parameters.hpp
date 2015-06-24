@@ -76,19 +76,19 @@ struct SearchParameters
     std::vector<HashKey> mHashKeys;
 
     /// @brief Minimum depth where to probe syzygy tablebases.
-    int syzygyProbeDepth;
+    int mSyzygyProbeDepth;
 
     /// @brief The smallest number of pieces when to try probing syzygy tablebases.
-    int syzygyProbeLimit;
+    int mSyzygyProbeLimit;
 
     /// @brief Whether we should use the 50-move rule with Syzygys or not.
-    bool syzygy50MoveRule;
+    bool mSyzygy50MoveRule;
 };
 
 inline SearchParameters::SearchParameters():
     mPonder(false), mPonderOption(false), mContempt(0), mTime({ { 0, 0 } }), mIncrement({ { 0, 0 } }),
     mMovesToGo(25), mDepth(0), mNodes(0), mMate(0), mMoveTime(0), mInfinite(false), mRootPly(0),
-    syzygyProbeDepth(1), syzygyProbeLimit(6), syzygy50MoveRule(true)
+    mSyzygyProbeDepth(1), mSyzygyProbeLimit(6), mSyzygy50MoveRule(true)
 {
 };
 

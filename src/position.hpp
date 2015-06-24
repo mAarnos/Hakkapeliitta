@@ -119,6 +119,10 @@ public:
     /// @return The material hash key.
     HashKey getMaterialHashKey() const noexcept;
 
+    /// @brief Get the amount of all pieces on the board.
+    /// @return The count.
+    int8_t getTotalPieceCount() const noexcept;
+
     /// @brief Get the count of pieces of a given type and color.
     /// @param color The color of the piece.
     /// @param piece The piece type.
@@ -215,6 +219,7 @@ private:
     uint8_t mCastlingRights;
     Square mEnPassant;
     uint8_t mFiftyMoveDistance;
+    int8_t mTotalPieceCount;
     std::array<int8_t, 12> mPieceCounts;
     std::array<int8_t, 2> mNonPawnPieceCounts;
     int8_t mGamePhase;
@@ -314,6 +319,11 @@ inline HashKey Position::getPawnHashKey() const noexcept
 inline HashKey Position::getMaterialHashKey() const noexcept
 { 
     return mMaterialHashKey; 
+}
+
+inline int8_t Position::getTotalPieceCount() const noexcept
+{
+    return mTotalPieceCount;
 }
 
 inline int8_t Position::getPieceCount(Color color, Piece piece) const

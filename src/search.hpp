@@ -129,6 +129,11 @@ private:
     bool pondering;
     bool infinite;
 
+    // Information related to probing tablebases.
+    int cardinality;
+    int probeDepth;
+    bool use50;
+
     // These three are used to detect repetitions.
     // Note that the repetitions can include positions which happened during position set-up.
     // If this were not the case we would not require rootPly.

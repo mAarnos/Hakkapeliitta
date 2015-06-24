@@ -171,6 +171,7 @@ Position::Position(const std::string& fen)
     // Populate the bitboards.
     mBitboards.fill(0);
     mPieceCounts.fill(0);
+    mTotalPieceCount = 0;
     mPstScoreOp = mPstScoreEd = 0;
     mNonPawnPieceCounts.fill(0);
     for (Square sq = Square::A1; sq <= Square::H8; ++sq) 
@@ -180,6 +181,7 @@ Position::Position(const std::string& fen)
             Bitboards::setBit(mBitboards[mBoard[sq]], sq);
             mPstScoreOp += Evaluation::getPieceSquareTableOp(mBoard[sq], sq);
             mPstScoreEd += Evaluation::getPieceSquareTableEd(mBoard[sq], sq);
+            ++mTotalPieceCount;
             ++mPieceCounts[mBoard[sq]];
             if (mBoard[sq].getPieceType() != Piece::Pawn && mBoard[sq].getPieceType() != Piece::King)
             {
@@ -261,7 +263,7 @@ void Position::makeMove(const Move& m)
         mPstScoreEd -= Evaluation::getPieceSquareTableEd(captured, to);
         mHashKey ^= Zobrist::pieceHashKey(captured, to);
         mMaterialHashKey ^= Zobrist::materialHashKey(captured, --mPieceCounts[captured]);
-
+        --mTotalPieceCount;
         const auto pieceType = captured.getPieceType();
         mGamePhase += piecePhase[pieceType];
         if (pieceType == Piece::Pawn)
@@ -295,6 +297,7 @@ void Position::makeMove(const Move& m)
             mMaterialHashKey ^= Zobrist::materialHashKey(Piece::Pawn + !side * 6, --mPieceCounts[Piece::Pawn + !side * 6]);
             mPstScoreOp -= Evaluation::getPieceSquareTableOp(Piece::Pawn + !side * 6, enPassantSquare);
             mPstScoreEd -= Evaluation::getPieceSquareTableEd(Piece::Pawn + !side * 6, enPassantSquare);
+            --mTotalPieceCount;
         }
         else if (flags != Piece::Empty) // Promotion
         {
@@ -869,6 +872,11 @@ bool Position::verifyPieceCounts() const
             ++correctPieceCounts[mBoard[sq]];
             ++correctTotalPieceCount;
         }
+    }
+
+    if (mTotalPieceCount != correctTotalPieceCount)
+    {
+        return false;
     }
 
     for (Piece p = Piece::WhitePawn; p <= Piece::BlackKing; ++p)
