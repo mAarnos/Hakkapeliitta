@@ -731,7 +731,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             const auto drawScore = use50 ? 1 : 0;
             score = score < -drawScore ? -minMateScore + ss->mPly
                   : score > drawScore ? minMateScore - ss->mPly
-                  : score + 2 * score * drawScore;
+                  : score;
             return score;
         } 
     }
