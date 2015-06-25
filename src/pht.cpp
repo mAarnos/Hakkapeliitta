@@ -27,9 +27,6 @@ PawnHashTable::PawnHashTable()
 
 void PawnHashTable::setSize(size_t sizeInMegaBytes)
 {
-    // Clear the PHT completely to avoid any funny business.
-    mTable.clear();
-
     // If size is not a power of two make it the biggest power of two smaller than size.
     if (Bitboards::moreThanOneBitSet(sizeInMegaBytes))
     {
@@ -37,7 +34,9 @@ void PawnHashTable::setSize(size_t sizeInMegaBytes)
     }
 
     const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
+    mTable.clear();
     mTable.resize(tableSize);
+    mTable.shrink_to_fit();
 }
 
 void PawnHashTable::clear()

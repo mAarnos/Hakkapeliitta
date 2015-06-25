@@ -28,9 +28,6 @@ TranspositionTable::TranspositionTable()
 
 void TranspositionTable::setSize(size_t sizeInMegaBytes)
 {
-    // Clear the TT completely to avoid any funny business.
-    mTable.clear();
-
     // If size is not a power of two make it the biggest power of two smaller than size.
     if (Bitboards::moreThanOneBitSet(sizeInMegaBytes))
     {
@@ -38,8 +35,10 @@ void TranspositionTable::setSize(size_t sizeInMegaBytes)
     }
 
     const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(std::array<TranspositionTableEntry, 4>));
+    mTable.clear();
     mTable.resize(tableSize);
-    clear();
+    mTable.shrink_to_fit();
+    mGeneration = 1;
 }
 
 void TranspositionTable::clear()
