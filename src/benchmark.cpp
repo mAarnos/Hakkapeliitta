@@ -17,7 +17,7 @@
 
 #include "benchmark.hpp"
 #include <sstream>
-#include "utils\stopwatch.hpp"
+#include "utils/stopwatch.hpp"
 
 std::pair<uint64_t, uint64_t> Benchmark::runPerft(const Position& pos, int depth)
 {

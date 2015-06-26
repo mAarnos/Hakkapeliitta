@@ -322,7 +322,7 @@ void Search::think(const Position& root, SearchParameters sp)
         if (sp.mPonderOption)
         {
             targetTime += targetTime / 3;
-            targetTime = clamp(targetTime, 1ULL, maxTime);
+            targetTime = clamp(targetTime, static_cast<uint64_t>(1), maxTime);
         }
     }
 
