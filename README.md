@@ -1,24 +1,23 @@
 ﻿### Overview
 
-Hakkapeliitta is my UCI-compabtile chess engine written in C++11/14. Its rating
-is around 2775 elo and has a highly tactical and entertaining playing style. It 
-also supports Syzygy tablebases.
+Hakkapeliitta is an UCI chess engine written in C++11/14 with support for Syzygy tablebases. Version 3.0 has a rating of around 2930 at CCRL and 2800 at CEGT. 
 
 ### UCI-parameters:
 
- - Hash: set the amount of memory the main transposition table can use (in MB).
- - PawnHash: set the amount of memory the pawn hash table can use (in MB).
- - Contempt: positive values make Hakkapeliitta avoid draws, negative values make it prefer them.
- - SyzygyProbeLimit: values 0, 1 and 2 mean that tablebases aren't probed, value 3 means that 3-man tablebases are probed etc. On a 32-bit machine SyzygyProbeLimit can only be set at maximum to 5.
- - SyzygyPath: set the path to the Syzygy tablebases. Multiple directories are possible if they are separated by ";" on Windows and ":" on Linux. Do not use spaces around the ";" or ":".
+ - Hash: This option should be set to the amount of memory the main transposition table can use (in MB).
+ - Pawn Hash: This option should be set to the amount of memory the pawn hash table can use (in MB).
+ - Clear Hash: Using this option clears the transposition table and the pawn hash table.
+ - Contempt: Positive values of this option make Hakkapeliitta avoid draws, negative values make it prefer them. Larger values have a bigger effect.
+ - Ponder: This option is used for enabling/disabling pondering.
+ - SyzygyPath: This option should be set to the directory or directories that contain the .rtbw and .rtbz files. Multiple directories should be separated by ";" on Windows and by ":" on Unix-based operating systems. Do not use spaces around the ";" or ":".
+ - SyzygyProbeDepth: Increasing this option lets the engine probe less aggressively. Set this option to a higher value if you experience too much slowdown (in terms of NPS) due to TB probing.
+ - SyzygyProbeLimit: Only probe TB files which have a piece count less than or equal to this option. This option should normally be left at its default value.
+ - Syzygy50MoveRule: Set this option to false if you want TB positions that are drawn by the 50-move rule to count as wins or losses. This may be useful for correspondence games. 
 
 ### Compiling it yourself
 
-Hakkapeliitta can be compiled from the source code. No makefiles are provided 
-as I am unfamiliar with them. Supported platforms are Windows and Linux.
-Support for Macintosh isn't planned due to me not having a computer with 
-Macintosh. Supported compilers are MSVC 12.0 (or higher), GCC 4.9.0 (or higher) 
-and Clang 3.4 (or higher). 
+A makefile is provided for this purpose. 
+Binaries produced by this makefile will most likely only work on the machine it was compiled on, so Hakkapeliitta should compiled individually for every machine it is needed on.
 
 ### Acknowledgements	
 
