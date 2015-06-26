@@ -20,7 +20,7 @@ Binaries can be found inside the directory "bin". If there are no binaries for y
 
 ### Compiling it yourself
 
-A makefile is provided for this purpose inside the directory "src". It works for sure with GCC versions >= 4.8.1, and possibly with even older versions.
+A makefile is provided for this purpose inside the directory "src". It works for sure with GCC versions greater than or equal to 4.8.1, and possibly with even older versions.
 The makefile has been tested on Windows and Linux, so there might be some problems on other operating systems.
 Binaries produced by this makefile will most likely only work on the machine it was compiled on, so Hakkapeliitta should compiled individually for every machine it is needed on.
 
