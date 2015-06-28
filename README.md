@@ -16,7 +16,7 @@ Hakkapeliitta is an UCI chess engine written in C++11/14 with support for Syzygy
  
 ### Binaries
 
-Binaries can be found inside the directory "bin". If there are no binaries for your operating system, see the next part. 
+Binaries can be found inside the directory "bin". If there are no binaries for your operating system, see the next part. To get the binaries, download the whole repository as a zip or clone it somewhere. Github doesn't allow directly downloading the binaries as far as I know.
 
 ### Compiling it yourself
 
