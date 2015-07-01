@@ -959,7 +959,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
 
     int bestScore, delta;
     MoveList moveList;
-    Move bestMove;
+    Move ttMove, bestMove;
     auto ttFlag = TranspositionTable::Flags::UpperBoundScore;
 
     // Small speed optimization, runs fine without it.
@@ -1005,7 +1005,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
     const auto ttEntry = transpositionTable.probe(pos.getHashKey());
     if (ttEntry)
     {
-        bestMove = ttEntry->getBestMove();
+        ttMove = ttEntry->getBestMove();
         if (ttEntry->getDepth() >= ttDepth)
         {
             const auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->mPly);
@@ -1055,7 +1055,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
         --nodesToTimeCheck;
 
         // Only prune moves in quiescence search if we are not in check.
-        if (!inCheck)
+        if (!inCheck && move != ttMove)
         {
             const auto seeScore = pos.SEE(move);
 
