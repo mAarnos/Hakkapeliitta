@@ -46,6 +46,10 @@ public:
     /// @brief Clears the entire killer table.
     void clear();
 
+    /// @brief Clears a given ply of the killer table.
+    /// @param ply The ply.
+    void clear(int ply);
+
 private:
     std::array<std::array<Move, 2>, maxPly> mKillers;
 };

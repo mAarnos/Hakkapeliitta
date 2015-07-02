@@ -26,7 +26,7 @@
 
 int main() 
 {
-    std::cout << "Hakkapeliitta 3.01 (C) 2013-2015 Mikko Aarnos" << std::endl;
+    std::cout << "Hakkapeliitta 3.02 (C) 2013-2015 Mikko Aarnos" << std::endl;
     std::cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::staticInitialize();

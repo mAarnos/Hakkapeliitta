@@ -42,3 +42,9 @@ void KillerTable::clear()
     mKillers.fill({});
 }
 
+void KillerTable::clear(int ply)
+{
+    mKillers[ply].fill(0);
+}
+
+

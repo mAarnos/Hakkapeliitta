@@ -407,7 +407,6 @@ void Search::think(const Position& root, SearchParameters sp)
                 const auto givesCheck = pos.givesCheck(move);
                 const auto newDepth = depth - 1;
                 const auto quietMove = !pos.captureOrPromotion(move);
-                // TODO: this part was changed
                 const auto nonCriticalMove = !givesCheck && quietMove && move != bestMove
                                                                       && move != killers.first
                                                                       && move != killers.second;
@@ -415,6 +414,9 @@ void Search::think(const Position& root, SearchParameters sp)
                 Position newPosition(pos);
                 newPosition.makeMove(move);
                 ss->mCurrentMove = move;
+                // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
+                killerTable.clear(2);
+
                 if (!movesSearched)
                 {
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
@@ -867,6 +869,13 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         Position newPosition(pos);
         newPosition.makeMove(move);
         ss->mCurrentMove = move;
+
+        // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
+        if (ss->mPly + 2 < maxPly)
+        {
+            killerTable.clear(ss->mPly + 2);
+        }
+
         if (!movesSearched)
         {
             score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
