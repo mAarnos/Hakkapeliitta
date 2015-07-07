@@ -90,6 +90,7 @@ private:
         }
 
         Move mCurrentMove;
+        Move mExcludedMove;
         int mPly;
         bool mAllowNullMove;
     };

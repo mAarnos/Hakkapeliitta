@@ -616,14 +616,16 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     assert(depth > 0);
     assert(inCheck == pos.inCheck());
 
+    const auto hashKey = ss->mExcludedMove.empty() ? pos.getHashKey() : pos.getHashKey() ^ Zobrist::manglingHashKey();
     auto bestScore = matedInPly(ss->mPly), movesSearched = 0, prunedMoves = 0;
     auto ttFlag = TranspositionTable::Flags::UpperBoundScore;
+    int ttFlags = ttFlag;
     MoveList quietsSearched;
     Move bestMove, ttMove;
-    int score;
+    int score, ttScore;
 
     // Small speed optimization, runs fine without it.
-    transpositionTable.prefetch(pos.getHashKey());
+    transpositionTable.prefetch(hashKey);
 
     // Used for sending seldepth info.
     if (ss->mPly > selDepth)
@@ -702,14 +704,14 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         return alpha;
 
     // Probe the transposition table. 
-    const auto ttEntry = transpositionTable.probe(pos.getHashKey());
+    auto ttEntry = transpositionTable.probe(hashKey);
     if (ttEntry)
     {
         ttMove = ttEntry->getBestMove();
+        ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->mPly);
+        ttFlags = ttEntry->getFlags();
         if (ttEntry->getDepth() >= depth)
         {
-            const auto ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->mPly);
-            const auto ttFlags = ttEntry->getFlags();
             if (ttFlags == TranspositionTable::Flags::ExactScore
             || (ttFlags == TranspositionTable::Flags::UpperBoundScore && ttScore <= alpha)
             || (ttFlags == TranspositionTable::Flags::LowerBoundScore && ttScore >= beta))
@@ -770,7 +772,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                                 && ttEntry->getDepth() >= depth - 1 - R && ttEntry->getScore() <= alpha;
         if (!likelyFailLow)
         {
-            repetitionHashes[rootPly + ss->mPly] = pos.getHashKey();
+            repetitionHashes[rootPly + ss->mPly] = hashKey;
             ss->mCurrentMove = Move();
             Position newPosition(pos);
             newPosition.makeNullMove();
@@ -785,7 +787,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                 // Don't return unproven mate scores as they cause some instability.
                 if (isMateScore(score))
                     score = beta;
-                transpositionTable.save(pos.getHashKey(), 
+                transpositionTable.save(hashKey, 
                                         ttMove, 
                                         realScoreToTtScore(score, ss->mPly), 
                                         depth, 
@@ -804,10 +806,12 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         ss->mAllowNullMove = true;
 
         // Now probe the TT and get the best move.
-        const auto tte = transpositionTable.probe(pos.getHashKey());
-        if (tte)
+        ttEntry = transpositionTable.probe(hashKey);
+        if (ttEntry)
         {
-            ttMove = tte->getBestMove();
+            ttMove = ttEntry->getBestMove();
+            ttScore = ttScoreToRealScore(ttEntry->getScore(), ss->mPly);
+            ttFlags = ttEntry->getFlags();
         }
     }
 
@@ -816,19 +820,39 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     const auto lmpNode = (!pvNode && !inCheck && depth <= lmpDepth);
     const auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
     const auto seePruningNode = !pvNode && !inCheck && depth <= seePruningDepth;
+    const auto singularNode = (depth >= 8
+                            && !ttMove.empty()
+                            && ttFlags != TranspositionTable::Flags::UpperBoundScore
+                            && ss->mExcludedMove.empty()
+                            && ttEntry->getDepth() >= depth - 3);
     const auto killers = killerTable.getKillers(ss->mPly);
     const auto counter = counterMoveTable.getCounterMove(pos, (ss - 1)->mCurrentMove);
 
     MoveSort ms(pos, historyTable, ttMove, killers.first, killers.second, counter, inCheck);
 
-    repetitionHashes[rootPly + ss->mPly] = pos.getHashKey();
+    repetitionHashes[rootPly + ss->mPly] = hashKey;
     for (auto i = 0;; ++i)
     {
         const auto move = ms.next();
         if (move.empty()) break;
+        if (move == ss->mExcludedMove) continue;
+
+        auto newDepth = depth - 1;
+        if (singularNode && move == ttMove && pos.legal(move, inCheck))
+        {
+            const auto newBeta = ttScore - 25;
+            ss->mExcludedMove = move;
+            ss->mAllowNullMove = false;
+            score = search<false>(pos, depth / 2, newBeta - 1, newBeta, inCheck, ss);
+            ss->mAllowNullMove = true;
+            ss->mExcludedMove = Move();
+            if (score < newBeta)
+            {
+                newDepth += 1;
+            }
+        }
 
         const auto givesCheck = pos.givesCheck(move);
-        const auto newDepth = depth - 1;
         const auto quietMove = !pos.captureOrPromotion(move);
         if (quietMove) quietsSearched.emplace_back(move);
         const auto nonCriticalMove = !givesCheck && quietMove && move != ttMove
@@ -913,7 +937,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             {
                 if (score >= beta)
                 {
-                    transpositionTable.save(pos.getHashKey(), 
+                    transpositionTable.save(hashKey, 
                                             move, 
                                             realScoreToTtScore(score, ss->mPly), 
                                             depth, 
@@ -955,7 +979,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         return staticEval; 
     }
 
-    transpositionTable.save(pos.getHashKey(), bestMove, realScoreToTtScore(bestScore, ss->mPly), depth, ttFlag);
+    transpositionTable.save(hashKey, bestMove, realScoreToTtScore(bestScore, ss->mPly), depth, ttFlag);
 
     return bestScore;
 }
