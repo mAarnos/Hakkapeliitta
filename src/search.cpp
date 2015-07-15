@@ -503,7 +503,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                     score, 
                                     lowerBound ? TranspositionTable::Flags::LowerBoundScore
                                                : TranspositionTable::Flags::UpperBoundScore,
-                                    selDepth);
+                                    selDepth,
+                                    transpositionTable.hashFull());
                     score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
                                          : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
@@ -529,7 +530,8 @@ void Search::think(const Position& root, SearchParameters sp)
                                         depth,
                                         score,
                                         TranspositionTable::Flags::ExactScore, 
-                                        selDepth);
+                                        selDepth,
+                                        transpositionTable.hashFull());
                     }
                 }
             }
@@ -567,7 +569,8 @@ void Search::think(const Position& root, SearchParameters sp)
                         depth,
                         bestScore,
                         TranspositionTable::Flags::ExactScore,
-                        selDepth);
+                        selDepth,
+                        transpositionTable.hashFull());
 
         // Adjust alpha and beta based on the last score.
         // Don't adjust if depth is low - it's a waste of time.
@@ -602,7 +605,8 @@ void Search::think(const Position& root, SearchParameters sp)
     listener.infoBestMove(pv,
                           searchTime,
                           nodeCount,
-                          tbHits);
+                          tbHits, 
+                          transpositionTable.hashFull());
 }
 
 #ifdef _MSC_VER
@@ -672,7 +676,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (time >= nextSendInfo)
         {
             nextSendInfo += 1000;
-            listener.infoRegular(nodeCount, tbHits, time);
+            listener.infoRegular(nodeCount, tbHits, time, transpositionTable.hashFull());
         }
     }
 

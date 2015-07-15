@@ -323,17 +323,18 @@ void UCI::infoCurrMove(const Move& move, int depth, int nr)
               << " currmovenumber " << nr + 1 << std::endl;
 }
 
-void UCI::infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime)
+void UCI::infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime, int hashFull)
 {
     sync_cout << "info nodes " << nodeCount
               << " time " << searchTime
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
-              << " tbhits " << tbHits << std::endl;
+              << " tbhits " << tbHits 
+              << " hashfull " << hashFull << std::endl;
 }
 
 void UCI::infoPv(const std::vector<Move>& pv, uint64_t searchTime,
                  uint64_t nodeCount, uint64_t tbHits,
-                 int depth, int score, int flags, int selDepth)
+                 int depth, int score, int flags, int selDepth, int hashFull)
 {
     std::stringstream ss;
 
@@ -361,18 +362,20 @@ void UCI::infoPv(const std::vector<Move>& pv, uint64_t searchTime,
         << " nodes " << nodeCount
         << " nps " << (nodeCount / (searchTime + 1)) * 1000
         << " tbhits " << tbHits
+        << " hashfull " << hashFull
         << " pv " << movesToUciFormat(pv) << std::endl;
 
     sync_cout << ss.str();
 }
 
 void UCI::infoBestMove(const std::vector<Move>& pv, uint64_t searchTime, 
-                       uint64_t nodeCount, uint64_t tbHits)
+                       uint64_t nodeCount, uint64_t tbHits, int hashFull)
 {
     sync_cout << "info time " << searchTime
               << " nodes " << nodeCount
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
-              << " tbhits " << tbHits << std::endl
+              << " tbhits " << tbHits 
+              << " hashfull " << hashFull << std::endl
               << "bestmove " << moveToUciFormat(pv[0])
               << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
 }

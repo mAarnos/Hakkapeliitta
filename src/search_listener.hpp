@@ -38,7 +38,8 @@ public:
     /// @param nodeCount The current amount of nodes searched.
     /// @param tbHits The current amount of tablebase probes done.
     /// @param searchTime The current amount of time spent searching, in milliseconds.
-    virtual void infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime) = 0;
+    /// @param hashFull The current fill score of the transposition table.
+    virtual void infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime, int hashFull) = 0;
 
     /// @brief Send info on a new PV.
     /// @param pv The current principal variation.
@@ -49,17 +50,19 @@ public:
     /// @param score The score of the new PV.
     /// @param flags Information on the type of PV. Can be exact, upperbound or lowerbound, just like TT entries.
     /// @param selDepth The max selective search depth reached so far.
+    /// @param hashFull The current fill score of the transposition table.
     virtual void infoPv(const std::vector<Move>& pv, uint64_t searchTime,
                         uint64_t nodeCount, uint64_t tbHits,
-                        int depth, int score, int flags, int selDepth) = 0;
+                        int depth, int score, int flags, int selDepth, int hashFull) = 0;
 
     /// @brief When we are finishing the search send info on the best move.
     /// @param pv The current principal variation.
     /// @param searchTime The current amount of time spent searching, in milliseconds.
     /// @param nodeCount The current amount of nodes searched.
     /// @param tbHits The current amount of tablebase probes done.
+    /// @param hashFull The current fill score of the transposition table.
     virtual void infoBestMove(const std::vector<Move>& pv, uint64_t searchTime,
-                              uint64_t nodeCount, uint64_t tbHits) = 0;
+                              uint64_t nodeCount, uint64_t tbHits, int hashFull) = 0;
 };
 
 

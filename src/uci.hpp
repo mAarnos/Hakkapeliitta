@@ -76,12 +76,12 @@ private:
 
     // Implementations of some pure virtual functions in SearchListener.
     virtual void infoCurrMove(const Move& move, int depth, int i);
-    virtual void infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime);
+    virtual void infoRegular(uint64_t nodeCount, uint64_t tbHits, uint64_t searchTime, int hashFull);
     virtual void infoPv(const std::vector<Move>& pv, uint64_t searchTime,
                         uint64_t nodeCount, uint64_t tbHits,
-                        int depth, int score, int flags, int selDepth);
+                        int depth, int score, int flags, int selDepth, int hashFull);
     virtual void infoBestMove(const std::vector<Move>& pv, uint64_t searchTime, 
-                              uint64_t nodeCount, uint64_t tbHits);
+                              uint64_t nodeCount, uint64_t tbHits, int hashFull);
 };
 
 #endif
