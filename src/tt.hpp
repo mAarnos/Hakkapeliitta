@@ -150,13 +150,18 @@ public:
     /// @brief Used for notifying the TT that we are starting a new search. That information is used in the replacement policy.
     void startNewSearch() noexcept;
 
+    /// @brief Used for approximately measuring how full the TT is. 
+    /// @return An integer in the range [0, 1000], where 0 is completely empty and 1000 completely full.
+    int hashFull() const noexcept;
+
 private:
+    static const int bucketSize = 4;
     // Notice how we have a bucket containing four hash entries.
     // Doing this has some desirable properties when deciding what entries to overwrite.
     // Also, we have four entries because the common cache line size nowadays is 64 bytes.
     // uint64_t hash * 4 + uint64_t data * 4 = 8 * uint64_t = 64 bytes.
     // Basically this means that a single cluster fits perfectly into the cacheline.
-    std::vector<std::array<TranspositionTableEntry, 4>> mTable;
+    std::vector<std::array<TranspositionTableEntry, bucketSize>> mTable;
     uint16_t mGeneration;
 };
 

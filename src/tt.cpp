@@ -34,7 +34,7 @@ void TranspositionTable::setSize(size_t sizeInMegaBytes)
         sizeInMegaBytes = static_cast<size_t>(std::pow(2, std::floor(log2(sizeInMegaBytes))));
     }
 
-    const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(std::array<TranspositionTableEntry, 4>));
+    const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(std::array<TranspositionTableEntry, bucketSize>));
     mTable.clear();
     mTable.resize(tableSize);
     mTable.shrink_to_fit();
@@ -66,7 +66,7 @@ void TranspositionTable::save(HashKey hk, const Move& move, int score, int depth
     auto replace = hashEntry;
 
     // Determine the least valuable entry to replace.
-    for (auto i = 0; i < 4; ++i, ++hashEntry)
+    for (auto i = 0; i < bucketSize; ++i, ++hashEntry)
     {
         // If there already is an entry for this hashkey, replace it immediately.
         // If that entry was any good we wouldn't have gotten here.
@@ -110,7 +110,7 @@ const TranspositionTable::TranspositionTableEntry* TranspositionTable::probe(Has
 {
     const auto* hashEntry = &mTable[hk & (mTable.size() - 1)][0];
 
-    for (auto i = 0; i < 4; ++i, ++hashEntry)
+    for (auto i = 0; i < bucketSize; ++i, ++hashEntry)
     {
         if ((hashEntry->getHash() ^ hashEntry->getData()) == hk)
         {
@@ -124,6 +124,25 @@ const TranspositionTable::TranspositionTableEntry* TranspositionTable::probe(Has
 void TranspositionTable::startNewSearch() noexcept
 { 
     ++mGeneration; 
+}
+
+int TranspositionTable::hashFull() const noexcept
+{
+    auto cnt = 0;
+
+    for (auto i = 0; i < 1000 / bucketSize; ++i)
+    {
+        const auto* hashEntry = &mTable[i][0];
+        for (auto j = 0; j < bucketSize; ++j, ++hashEntry)
+        {
+            if (hashEntry->getFlags() != Flags::Empty)
+            {
+                cnt += 1;
+            }
+        }
+    }
+
+    return cnt;
 }
 
 
