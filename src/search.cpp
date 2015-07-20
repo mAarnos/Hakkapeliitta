@@ -756,7 +756,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     // Razoring.
     // Not useful in PV-nodes as this tries to search for nodes where score <= alpha but in PV-nodes score > alpha.
-    if (!pvNode && !inCheck && depth <= razoringDepth && staticEval + razoringMargin(depth) <= alpha)
+    // If we have a TT move this node is most likely not a ALL-node as it wasn't so previously.
+    if (!pvNode && !inCheck && ttMove.empty() && depth <= razoringDepth && staticEval + razoringMargin(depth) <= alpha)
     {
         const auto razoringAlpha = alpha - razoringMargin(depth);
         score = quiescenceSearch(pos, 0, razoringAlpha, razoringAlpha + 1, false, ss);
