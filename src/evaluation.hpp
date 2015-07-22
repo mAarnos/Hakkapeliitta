@@ -66,6 +66,8 @@ private:
     static std::array<std::array<short, 64>, 12> mPieceSquareTableOpening;
     static std::array<std::array<short, 64>, 12> mPieceSquareTableEnding;
 
+    static std::array<std::array<int, 64>, 64> mChebyshevDistance;
+
     template <bool hardwarePopcnt> 
     int evaluate(const Position& pos);
 

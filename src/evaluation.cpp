@@ -24,6 +24,8 @@
 std::array<std::array<short, 64>, 12> Evaluation::mPieceSquareTableOpening;
 std::array<std::array<short, 64>, 12> Evaluation::mPieceSquareTableEnding;
 
+std::array<std::array<int, 64>, 64> Evaluation::mChebyshevDistance;
+
 const std::array<short, 6> pieceValuesOpening = {
     79, 248, 253, 355, 847, 0
 };
@@ -147,6 +149,20 @@ void Evaluation::staticInitialize()
 
             mPieceSquareTableOpening[p + Color::Black * 6][sq ^ 56] = -(openingPST[p][sq] + pieceValuesOpening[p]);
             mPieceSquareTableEnding[p + Color::Black * 6][sq ^ 56] = -(endingPST[p][sq] + pieceValuesEnding[p]);
+        }
+    }
+
+    for (Square sq1 = Square::A1; sq1 <= Square::H8; ++sq1)
+    {
+        for (Square sq2 = Square::A1; sq2 <= Square::H8; ++sq2)
+        {
+            const auto file1 = file(sq1);
+            const auto file2 = file(sq2);
+            const auto rank1 = rank(sq1);
+            const auto rank2 = rank(sq2);
+            const auto rankDistance = std::abs(rank2 - rank1);
+            const auto fileDistance = std::abs(file2 - file1);
+            mChebyshevDistance[sq1][sq2] = std::max(rankDistance, fileDistance);
         }
     }
 }
@@ -273,9 +289,14 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
 
 int Evaluation::pawnStructureEval(const Position& pos, int phase)
 {
+    const std::array<unsigned long, 2> kingLocations = { Bitboards::lsb(pos.getBitboard(Color::White, Piece::King)),
+                                                         Bitboards::lsb(pos.getBitboard(Color::Black, Piece::King)) };
+    // Add king locations to the pawn hash key so that we can cache knowledge which requires that kings stay on specific squares.
+    const auto phk = pos.getPawnHashKey() ^ Zobrist::pieceHashKey(Piece::King, kingLocations[0])
+                                          ^ Zobrist::pieceHashKey(Piece::King, kingLocations[1]);
     auto scoreOp = 0, scoreEd = 0;
 
-    if (mPawnHashTable.probe(pos.getPawnHashKey(), scoreOp, scoreEd))
+    if (mPawnHashTable.probe(phk, scoreOp, scoreEd))
     {
         return interpolateScore(scoreOp, scoreEd, phase);
     }
@@ -307,6 +328,10 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
             {
                 scoreOpForColor += passedBonusOpening[pawnRank];
                 scoreEdForColor += passedBonusEnding[pawnRank];
+                const auto distance1 = mChebyshevDistance[kingLocations[!c]][from + 8 - 16 * c];
+                const auto distance2 = mChebyshevDistance[kingLocations[c]][from + 8 - 16 * c];
+                scoreEdForColor += static_cast<int>(std::round((std::sqrt(distance1 + 1) - 1) * 30));
+                scoreEdForColor -= static_cast<int>(std::round((std::sqrt(distance2 + 1) - 1) * 28));
             }
 
             if (doubled)
@@ -332,7 +357,7 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
         scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
     }
 
-    mPawnHashTable.save(pos.getPawnHashKey(), scoreOp, scoreEd);
+    mPawnHashTable.save(phk, scoreOp, scoreEd);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }
