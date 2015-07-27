@@ -294,70 +294,74 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
     // Add king locations to the pawn hash key so that we can cache knowledge which requires that kings stay on specific squares.
     const auto phk = pos.getPawnHashKey() ^ Zobrist::pieceHashKey(Piece::King, kingLocations[0])
                                           ^ Zobrist::pieceHashKey(Piece::King, kingLocations[1]);
+    auto passers = 0ULL;
     auto scoreOp = 0, scoreEd = 0;
 
-    if (mPawnHashTable.probe(phk, scoreOp, scoreEd))
+    if (mPawnHashTable.probe(phk, passers, scoreOp, scoreEd))
     {
-        return interpolateScore(scoreOp, scoreEd, phase);
+        // No need to do the expensive calculations again.
     }
-
-    for (Color c = Color::White; c <= Color::Black; ++c)
+    else
     {
-        const auto ownPawns = pos.getBitboard(c, Piece::Pawn);
-        const auto opponentPawns = pos.getBitboard(!c, Piece::Pawn);
-        auto tempPawns = ownPawns;
-        auto scoreOpForColor = 0, scoreEdForColor = 0;
-
-        while (tempPawns)
+        for (Color c = Color::White; c <= Color::Black; ++c)
         {
-            const auto from = Bitboards::popLsb(tempPawns);
-            const auto pawnFile = file(from);
-            const auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
+            const auto ownPawns = pos.getBitboard(c, Piece::Pawn);
+            const auto opponentPawns = pos.getBitboard(!c, Piece::Pawn);
+            auto tempPawns = ownPawns;
+            auto scoreOpForColor = 0, scoreEdForColor = 0;
 
-            const auto passed = !(opponentPawns & Bitboards::passedPawn(c, from));
-            const auto doubled = (ownPawns & (c ? Bitboards::ray(1, from) : Bitboards::ray(6, from))) != 0;
-            const auto isolated = !(ownPawns & Bitboards::isolatedPawn(from));
-            // 1. There musn't be any own pawns capable of defending the pawn. 
-            // 2. The pawn mustn't be blocked by a pawn.
-            // 3. The stop-square of the pawn must be controlled by an enemy pawn.
-            const auto backward = !(ownPawns & Bitboards::backwardPawn(c, from))
-                               && pos.getBoard(from + 8 - 16 * c) != Piece::WhitePawn && pos.getBoard(from + 8 - 16 * c) != Piece::BlackPawn
-                               && (Bitboards::pawnAttacks(c, from + 8 - 16 * c) & opponentPawns);
-
-            if (passed)
+            while (tempPawns)
             {
-                scoreOpForColor += passedBonusOpening[pawnRank];
-                scoreEdForColor += passedBonusEnding[pawnRank];
-                const auto distance1 = mChebyshevDistance[kingLocations[!c]][from + 8 - 16 * c];
-                const auto distance2 = mChebyshevDistance[kingLocations[c]][from + 8 - 16 * c];
-                scoreEdForColor += static_cast<int>(std::round((std::sqrt(distance1 + 1) - 1) * 30));
-                scoreEdForColor -= static_cast<int>(std::round((std::sqrt(distance2 + 1) - 1) * 28));
+                const auto from = Bitboards::popLsb(tempPawns);
+                const auto pawnFile = file(from);
+                const auto pawnRank = (c ? 7 - rank(from) : rank(from)); // rank is relative to side to move
+
+                const auto passed = !(opponentPawns & Bitboards::passedPawn(c, from));
+                const auto doubled = (ownPawns & (c ? Bitboards::ray(1, from) : Bitboards::ray(6, from))) != 0;
+                const auto isolated = !(ownPawns & Bitboards::isolatedPawn(from));
+                // 1. There musn't be any own pawns capable of defending the pawn. 
+                // 2. The pawn mustn't be blocked by a pawn.
+                // 3. The stop-square of the pawn must be controlled by an enemy pawn.
+                const auto backward = !(ownPawns & Bitboards::backwardPawn(c, from))
+                    && pos.getBoard(from + 8 - 16 * c) != Piece::WhitePawn && pos.getBoard(from + 8 - 16 * c) != Piece::BlackPawn
+                    && (Bitboards::pawnAttacks(c, from + 8 - 16 * c) & opponentPawns);
+
+                if (passed)
+                {
+                    Bitboards::setBit(passers, from);
+                    scoreOpForColor += passedBonusOpening[pawnRank];
+                    scoreEdForColor += passedBonusEnding[pawnRank];
+                    const auto distance1 = mChebyshevDistance[kingLocations[!c]][from + 8 - 16 * c];
+                    const auto distance2 = mChebyshevDistance[kingLocations[c]][from + 8 - 16 * c];
+                    scoreEdForColor += static_cast<int>(std::round((std::sqrt(distance1 + 1) - 1) * 30));
+                    scoreEdForColor -= static_cast<int>(std::round((std::sqrt(distance2 + 1) - 1) * 28));
+                }
+
+                if (doubled)
+                {
+                    scoreOpForColor -= doubledPenaltyOpening[pawnFile];
+                    scoreEdForColor -= doubledPenaltyEnding[pawnFile];
+                }
+
+                if (isolated)
+                {
+                    scoreOpForColor -= isolatedPenaltyOpening[pawnFile];
+                    scoreEdForColor -= isolatedPenaltyEnding[pawnFile];
+                }
+
+                if (backward)
+                {
+                    scoreOpForColor -= backwardPenaltyOpening[pawnFile];
+                    scoreEdForColor -= backwardPenaltyEnding[pawnFile];
+                }
             }
 
-            if (doubled)
-            {
-                scoreOpForColor -= doubledPenaltyOpening[pawnFile];
-                scoreEdForColor -= doubledPenaltyEnding[pawnFile];
-            }
-
-            if (isolated)
-            {
-                scoreOpForColor -= isolatedPenaltyOpening[pawnFile];
-                scoreEdForColor -= isolatedPenaltyEnding[pawnFile];
-            }
-
-            if (backward)
-            {
-                scoreOpForColor -= backwardPenaltyOpening[pawnFile];
-                scoreEdForColor -= backwardPenaltyEnding[pawnFile];
-            }
+            scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
+            scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
         }
 
-        scoreOp += (c == Color::Black ? -scoreOpForColor : scoreOpForColor);
-        scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
+        mPawnHashTable.save(phk, passers, scoreOp, scoreEd);
     }
-
-    mPawnHashTable.save(phk, scoreOp, scoreEd);
 
     return interpolateScore(scoreOp, scoreEd, phase);
 }

@@ -23,6 +23,7 @@
 
 #include <cstdint>
 #include <vector>
+#include "bitboards.hpp"
 #include "zobrist.hpp"
 
 /// @brief Hash table for speeding up pawn evaluation.
@@ -43,59 +44,32 @@ public:
 
     /// @brief Save some information to the pawn hash table.
     /// @param phk The pawn hash key of the position the information is for.
+    /// @param passers The passed pawns of the position.
     /// @param scoreOp The opening pawn score of the position.
     /// @param scoreEd The ending pawn score of the position.
-    void save(HashKey phk, int scoreOp, int scoreEd);
+    void save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd);
 
     /// @brief Get some information from the hash table. 
     /// @param phk The pawn hash key of the position we are probing information for.
+    /// @param passers On a succesful probe the bitboard containing passed pawns of the position is put here.
     /// @param scoreOp On a succesful probe the opening pawn score is put here.
     /// @param scoreEd On a succesful probe the ending pawn score is put here.
     /// @return True on a succesful probe, false otherwise.
-    bool probe(HashKey phk, int& scoreOp, int& scoreEd) const;
+    bool probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd) const;
 
 private:
     // A single entry in the pawn hash table.
     class PawnHashTableEntry
     {
     public:
-        PawnHashTableEntry() noexcept : mHash(0), mData(0) 
+        PawnHashTableEntry() noexcept : mHash(0), mPassers(0), mScoreOp(0), mScoreEd(0)
         {
         }
 
-        void setHash(uint64_t newHash) noexcept 
-        {
-            mHash = newHash; 
-        }
-
-        void setData(uint64_t newData) noexcept 
-        { 
-            mData = newData; 
-        }
-
-        uint64_t getHash() const noexcept 
-        { 
-            return mHash; 
-        }
-
-        uint64_t getData() const noexcept 
-        { 
-            return mData; 
-        }
-
-        int16_t getScoreOp() const noexcept 
-        {
-            return static_cast<int16_t>(mData);
-        }
-
-        int16_t getScoreEd() const noexcept
-        { 
-            return static_cast<int16_t>(mData >> 16); 
-        }
-
-    private:
-        uint64_t mHash;
-        uint64_t mData;
+        HashKey mHash;
+        Bitboard mPassers;
+        int16_t mScoreOp;
+        int16_t mScoreEd;
     };
 
     std::vector<PawnHashTableEntry> mTable;

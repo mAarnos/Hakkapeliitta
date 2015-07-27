@@ -27,13 +27,13 @@ PawnHashTable::PawnHashTable()
 
 void PawnHashTable::setSize(size_t sizeInMegaBytes)
 {
+    auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
     // If size is not a power of two make it the biggest power of two smaller than size.
-    if (Bitboards::moreThanOneBitSet(sizeInMegaBytes))
+    if (Bitboards::moreThanOneBitSet(tableSize))
     {
-        sizeInMegaBytes = static_cast<size_t>(std::pow(2, std::floor(log2(sizeInMegaBytes))));
+        tableSize = static_cast<size_t>(std::pow(2, std::floor(log2(tableSize))));
     }
 
-    const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
     mTable.clear();
     mTable.resize(tableSize);
     mTable.shrink_to_fit();
@@ -46,25 +46,29 @@ void PawnHashTable::clear()
     mTable.resize(tableSize);
 }
 
-void PawnHashTable::save(HashKey phk, int scoreOp, int scoreEd)
+void PawnHashTable::save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd)
 {
+    assert((phk & (mTable.size() - 1)) == (phk % mTable.size()));
+
     auto& hashEntry = mTable[phk & (mTable.size() - 1)];
 
-    hashEntry.setData((scoreOp & 0xffff) | (scoreEd << 16));
-    hashEntry.setHash(phk ^ hashEntry.getData());
-
-    assert(hashEntry.getScoreOp() == scoreOp);
-    assert(hashEntry.getScoreEd() == scoreEd);
+    hashEntry.mHash = phk;
+    hashEntry.mPassers = passers;
+    hashEntry.mScoreOp = static_cast<int16_t>(scoreOp);
+    hashEntry.mScoreEd = static_cast<int16_t>(scoreEd);
 }
 
-bool PawnHashTable::probe(HashKey phk, int& scoreOp, int& scoreEd) const
+bool PawnHashTable::probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd) const
 {
+    assert((phk & (mTable.size() - 1)) == (phk % mTable.size()));
+
     const auto& hashEntry = mTable[phk & (mTable.size() - 1)];
 
-    if ((hashEntry.getHash() ^ hashEntry.getData()) == phk)
+    if (hashEntry.mHash == phk)
     {
-        scoreOp = hashEntry.getScoreOp();
-        scoreEd = hashEntry.getScoreEd();
+        passers = hashEntry.mPassers;
+        scoreOp = hashEntry.mScoreOp;
+        scoreEd = hashEntry.mScoreEd;
         return true;
     }
 
