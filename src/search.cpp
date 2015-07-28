@@ -379,7 +379,6 @@ void Search::think(const Position& root, SearchParameters sp)
     }
     auto ss = &searchStack[0];
 
-    repetitionHashes[rootPly] = pos.getHashKey();
     for (auto depth = 1; depth < maxDepth;)
     {
         const auto previousAlpha = alpha;
@@ -414,6 +413,7 @@ void Search::think(const Position& root, SearchParameters sp)
                 Position newPosition(pos);
                 newPosition.makeMove(move);
                 ss->mCurrentMove = move;
+                repetitionHashes[rootPly] = pos.getHashKey();
                 // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
                 killerTable.clear(2);
 
@@ -835,7 +835,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     MoveSort ms(pos, historyTable, ttMove, killers.first, killers.second, counter, inCheck);
 
-    repetitionHashes[rootPly + ss->mPly] = hashKey;
     for (auto i = 0;; ++i)
     {
         const auto move = ms.next();
@@ -897,6 +896,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         Position newPosition(pos);
         newPosition.makeMove(move);
+        repetitionHashes[rootPly + ss->mPly] = hashKey;
         ss->mCurrentMove = move;
 
         // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
@@ -908,7 +908,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         if (!movesSearched)
         {
             score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+                                 : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
         }
         else
         {
