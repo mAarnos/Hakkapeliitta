@@ -363,6 +363,37 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
         mPawnHashTable.save(phk, passers, scoreOp, scoreEd);
     }
 
+    // Give extra score to passers which are unstoppable.
+    for (Color c = Color::White; c <= Color::Black; ++c)
+    {
+        // Make sure that the opponent has no other pieces than his king.
+        if (pos.getNonPawnPieceCount(!c) != 0)
+        {
+            continue;
+        }
+
+        auto colorPassers = passers & pos.getPieces(c);
+        while (colorPassers)
+        {
+            const auto from = Bitboards::popLsb(colorPassers);
+            const auto front = c ? Bitboards::ray(1, from) : Bitboards::ray(6, from);
+
+            // Check that the promotion path is free.
+            if ((pos.getOccupiedSquares() & front) != 0)
+            {
+                continue;
+            }
+
+            // Check that the opponent king is outside the square of the pawn.
+            const auto kingSquare = Bitboards::lsb(pos.getBitboard(!c, Piece::King));
+            const auto promoSquare = file(from) + !c * 56;
+            if (std::min(5, mChebyshevDistance[from][promoSquare]) < (mChebyshevDistance[kingSquare][promoSquare] - (!c == pos.getSideToMove())))
+            {
+                scoreEd += c ? -80 : 80;
+            }
+        }
+    }
+
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
