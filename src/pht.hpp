@@ -62,7 +62,8 @@ private:
     class PawnHashTableEntry
     {
     public:
-        PawnHashTableEntry() noexcept : mHash(0), mPassers(0), mScoreOp(0), mScoreEd(0)
+        // Initializing the hash key to 1 is pretty important, as the pawn hash key of a position without pawns is 0.
+        PawnHashTableEntry() noexcept : mHash(1), mPassers(0), mScoreOp(0), mScoreEd(0)
         {
         }
 
