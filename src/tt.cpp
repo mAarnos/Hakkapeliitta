@@ -34,7 +34,7 @@ void TranspositionTable::setSize(size_t sizeInMegaBytes)
         sizeInMegaBytes = static_cast<size_t>(std::pow(2, std::floor(log2(sizeInMegaBytes))));
     }
 
-    const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(std::array<TranspositionTableEntry, bucketSize>));
+    const auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(Cluster));
     mTable.clear();
     mTable.resize(tableSize);
     mTable.shrink_to_fit();
@@ -61,8 +61,9 @@ void TranspositionTable::prefetch(HashKey hk) const
 
 void TranspositionTable::save(HashKey hk, const Move& move, int score, int depth, int flags)
 {
+    const auto comparisionHashKey = hk >> 32;
     auto best = move;
-    auto hashEntry = &mTable[hk & (mTable.size() - 1)][0];
+    auto hashEntry = &mTable[hk & (mTable.size() - 1)].mEntries[0];
     auto replace = hashEntry;
 
     // Determine the least valuable entry to replace.
@@ -70,7 +71,7 @@ void TranspositionTable::save(HashKey hk, const Move& move, int score, int depth
     {
         // If there already is an entry for this hashkey, replace it immediately.
         // If that entry was any good we wouldn't have gotten here.
-        if ((hashEntry->getHash() ^ hashEntry->getData()) == hk)
+        if (hashEntry->getHash() == comparisionHashKey)
         {
             replace = hashEntry;
             if (best.empty())
@@ -89,30 +90,29 @@ void TranspositionTable::save(HashKey hk, const Move& move, int score, int depth
         }
     }
 
-    replace->setData((static_cast<uint64_t>(best.getRawMove()) | 
-                      static_cast<uint64_t>(mGeneration) << 16 | 
-                      static_cast<uint64_t>(score & 0xffff) << 32 | 
-                      static_cast<uint64_t>(depth & 0xff) << 48) | 
-                      static_cast<uint64_t>(flags) << 56);
-    // Use Dr. Hyatt's lockless hashing to make sure that there are no corrupted TT entries which remain undetected.
-    // Not really necessary until we have multithreading.
-    replace->setHash(hk ^ replace->getData());
+    replace->setHash(static_cast<uint32_t>(comparisionHashKey));
+    replace->setBestMove(best);
+    replace->setScore(static_cast<int16_t>(score));
+    replace->setDepth(static_cast<int8_t>(depth));
+    replace->setFlagsAndGeneration(static_cast<uint8_t>(flags) | (mGeneration << 2));
 
     // In multithreaded mode these could potetially fail. Think about that someday, even though we don't HAVE multithreading yet.
+    assert(replace->getHash() == comparisionHashKey);
     assert(replace->getBestMove() == best);
-    assert(replace->getGeneration() == mGeneration);
     assert(replace->getScore() == score);
     assert(replace->getDepth() == depth);
     assert(replace->getFlags() == flags);
+    assert(replace->getGeneration() == mGeneration);
 }
 
 const TranspositionTable::TranspositionTableEntry* TranspositionTable::probe(HashKey hk) const
 {
-    const auto* hashEntry = &mTable[hk & (mTable.size() - 1)][0];
+    const auto comparisionHashKey = hk >> 32;
+    const auto* hashEntry = &mTable[hk & (mTable.size() - 1)].mEntries[0];
 
     for (auto i = 0; i < bucketSize; ++i, ++hashEntry)
     {
-        if ((hashEntry->getHash() ^ hashEntry->getData()) == hk)
+        if (hashEntry->getHash() == comparisionHashKey)
         {
             return hashEntry;
         }
@@ -123,7 +123,8 @@ const TranspositionTable::TranspositionTableEntry* TranspositionTable::probe(Has
 
 void TranspositionTable::startNewSearch() noexcept
 { 
-    ++mGeneration; 
+    mGeneration += 1;
+    mGeneration &= 63;
 }
 
 int TranspositionTable::hashFull() const noexcept
@@ -132,7 +133,7 @@ int TranspositionTable::hashFull() const noexcept
 
     for (auto i = 0; i < 1000 / bucketSize; ++i)
     {
-        const auto* hashEntry = &mTable[i][0];
+        const auto* hashEntry = &mTable[i].mEntries[0];
         for (auto j = 0; j < bucketSize; ++j, ++hashEntry)
         {
             if (hashEntry->getFlags() != Flags::Empty)

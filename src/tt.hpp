@@ -46,24 +46,48 @@ public:
     /// @brief A single entry in the transposition table.
     ///
     /// Contains the best move, score, generation, depth and flags for a single position encountered in the search.
+#pragma pack (push, 1)
     class TranspositionTableEntry
     {
     public:
         /// @brief Default constructor.
-        TranspositionTableEntry() noexcept : mHash(0), mData(0) 
+        TranspositionTableEntry() noexcept : mHash(0), mScore(0), mDepth(0), mFlagsAndGeneration(0)
         {
         }
 
         /// @brief Set the hash key of this TT entry.
-        void setHash(uint64_t newHash) noexcept 
+        /// @param newHash The new hash key.
+        void setHash(uint32_t newHash) noexcept 
         { 
             mHash = newHash; 
         }
 
-        /// @brief Set the data of this TT entry. This data should be in a packed format.
-        void setData(uint64_t newData) noexcept 
+        /// @brief Set the best move of this TT entry.
+        /// @param move The new move.
+        void setBestMove(Move move) noexcept
         {
-            mData = newData; 
+            mMove = move;
+        }
+
+        /// @brief Set the score of this TT entry.
+        /// @param score The new score.
+        void setScore(int16_t score) noexcept
+        {
+            mScore = score;
+        }
+
+        /// @brief Set the depth of this TT entry.
+        /// @param depth The new depth.
+        void setDepth(int8_t depth) noexcept
+        {
+            mDepth = depth;
+        }
+
+        /// @brief Set the flags and generation of this hash entry.
+        /// @param flagsAndGeneration The new flags and generation.
+        void setFlagsAndGeneration(uint8_t flagsAndGeneration) noexcept
+        {
+            mFlagsAndGeneration = flagsAndGeneration;
         }
 
         /// @brief Get the hash key of this TT entry.
@@ -73,52 +97,49 @@ public:
             return mHash; 
         }
 
-        /// @brief Get the packed data of this TT entry. Not really used as is except for validation of TT entry integrity.
-        /// @return The packed data.
-        uint64_t getData() const noexcept 
-        { 
-            return mData; 
-        }
-
         /// @brief Get the saved best move of this TT entry.
         /// @return The best move. Note that ALL-nodes have no best move.
         Move getBestMove() const noexcept 
         { 
-            return static_cast<uint16_t>(mData); 
-        }
-
-        /// @brief Get the generation of this TT entry. Used for TT replacement policy.
-        /// @return The generation.
-        uint16_t getGeneration() const noexcept 
-        { 
-            return static_cast<uint16_t>(mData >> 16); 
+            return mMove; 
         }
 
         /// @brief Get the score of this TT entry.
         /// @return The score. Mate scores need to be adjusted.
         int16_t getScore() const noexcept 
         { 
-            return static_cast<int16_t>(mData >> 32); 
+            return mScore; 
         }
 
         /// @brief Get the depth of this TT entry.
         /// @return The depth.
         int8_t getDepth() const noexcept 
         { 
-            return static_cast<int8_t>(mData >> 48);
+            return mDepth;
         }
 
         /// @brief Get the flags of this TT entry. 
         /// @return The flags. 
         uint8_t getFlags() const noexcept 
         {
-            return mData >> 56; 
+            return mFlagsAndGeneration & 3; 
         };
 
+        /// @brief Get the generation of this TT entry. Used for TT replacement policy.
+        /// @return The generation.
+        uint8_t getGeneration() const noexcept
+        {
+            return (mFlagsAndGeneration & 252) >> 2;
+        }
+
     private:
-        uint64_t mHash;
-        uint64_t mData; // 16 bits for the best move, 16 bits for the generation (only 4 or so are actually necessary), 16 bits for the score, 8 bits for the depth and 8 bits for the flags (only 2 bits necessary).
+        uint32_t mHash;
+        Move mMove;
+        int16_t mScore;
+        int8_t mDepth;
+        uint8_t mFlagsAndGeneration; // 2 first bits are flags, the rest are the generation
     };
+#pragma pack (pop)
 
     /// @brief Default constructor.
     TranspositionTable();
@@ -155,14 +176,19 @@ public:
     int hashFull() const noexcept;
 
 private:
-    static const int bucketSize = 4;
-    // Notice how we have a bucket containing four hash entries.
-    // Doing this has some desirable properties when deciding what entries to overwrite.
-    // Also, we have four entries because the common cache line size nowadays is 64 bytes.
-    // uint64_t hash * 4 + uint64_t data * 4 = 8 * uint64_t = 64 bytes.
-    // Basically this means that a single cluster fits perfectly into the cacheline.
-    std::vector<std::array<TranspositionTableEntry, bucketSize>> mTable;
-    uint16_t mGeneration;
+    static const auto bucketSize = 6;
+    static const auto cacheLineSize = 64;
+
+    struct Cluster
+    {
+        std::array<TranspositionTableEntry, bucketSize> mEntries;
+        std::array<char, 4> mPadding; // We could put a spinlock here.
+    };
+
+    std::vector<Cluster> mTable;
+    uint8_t mGeneration;
+
+    static_assert(sizeof(Cluster) == cacheLineSize, "Cluster size is wrong");
 };
 
 #endif
