@@ -236,11 +236,10 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         while (tempPiece)
         {
             const auto from = Bitboards::popLsb(tempPiece);
-            auto tempMove = Bitboards::bishopAttacks(from, occupied) & targetBitboard;
+            const auto tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
             const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Bishop][count];
             scoreEdForColor += mobilityEnding[Piece::Bishop][count];
-            tempMove = Bitboards::bishopAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen)) & targetBitboard;
             attackUnits += attackWeight[Piece::Bishop] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
         }
 
@@ -248,11 +247,10 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
         while (tempPiece)
         {
             const auto from = Bitboards::popLsb(tempPiece);
-            auto tempMove = Bitboards::rookAttacks(from, occupied) & targetBitboard;
+            const auto tempMove = Bitboards::rookAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen) ^ pos.getBitboard(c, Piece::Rook)) & targetBitboard;
             const auto count = Bitboards::popcnt<hardwarePopcnt>(tempMove);
             scoreOpForColor += mobilityOpening[Piece::Rook][count];
             scoreEdForColor += mobilityEnding[Piece::Rook][count];
-            tempMove = Bitboards::rookAttacks(from, occupied ^ pos.getBitboard(c, Piece::Queen) ^ pos.getBitboard(c, Piece::Rook)) & targetBitboard;
             attackUnits += attackWeight[Piece::Rook] * Bitboards::popcnt<hardwarePopcnt>(tempMove & opponentKingZone);
 
             if (!(Bitboards::files[file(from)] & pos.getBitboard(c, Piece::Pawn)))
@@ -326,7 +324,8 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
                     && pos.getBoard(from + 8 - 16 * c) != Piece::WhitePawn && pos.getBoard(from + 8 - 16 * c) != Piece::BlackPawn
                     && (Bitboards::pawnAttacks(c, from + 8 - 16 * c) & opponentPawns);
 
-                if (passed)
+                // Doubled pawns cannot obviously be passed.
+                if (passed && !doubled)
                 {
                     Bitboards::setBit(passers, from);
                     scoreOpForColor += passedBonusOpening[pawnRank];
@@ -385,7 +384,7 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
             }
 
             // Check that the opponent king is outside the square of the pawn.
-            const auto kingSquare = Bitboards::lsb(pos.getBitboard(!c, Piece::King));
+            const auto kingSquare = kingLocations[!c];
             const auto promoSquare = file(from) + !c * 56;
             if (std::min(5, mChebyshevDistance[from][promoSquare]) < (mChebyshevDistance[kingSquare][promoSquare] - (!c == pos.getSideToMove())))
             {
