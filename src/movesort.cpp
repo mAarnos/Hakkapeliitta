@@ -48,7 +48,7 @@ void MoveSort::generateNextPhase()
         MoveGen::generatePseudoLegalCaptures(mPos, mMoveList, true);
         for (auto i = 0; i < mMoveList.size(); ++i)
         {
-            mMoveList.setScore(i, mPos.SEE(mMoveList.getMove(i)));
+            mMoveList.setScore(i, mPos.mvvLva(mMoveList.getMove(i)));
         }
     }
     else if (mPhase == Killers)
@@ -101,11 +101,10 @@ Move MoveSort::next()
         else if (mPhase == GoodCaptures)
         {
             selectionSort(mCurrentLocation);
-            const auto move = mMoveList.getMove(mCurrentLocation);
-            const auto score = mMoveList.getScore(mCurrentLocation++);
+            const auto move = mMoveList.getMove(mCurrentLocation++);
             if (move != mTtMove)
             {
-                if (score >= 0)
+                if (mPos.SEE(move) >= 0)
                 {
                     return move;
                 }
