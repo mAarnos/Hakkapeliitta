@@ -858,7 +858,6 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
         const auto givesCheck = pos.givesCheck(move);
         const auto quietMove = !pos.captureOrPromotion(move);
-        if (quietMove) quietsSearched.emplace_back(move);
         const auto nonCriticalMove = !givesCheck && quietMove && move != ttMove
                                                               && move != killers.first
                                                               && move != killers.second
@@ -935,6 +934,10 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             }
         }
         ++movesSearched;
+        if (quietMove && !inCheck)
+        {
+            quietsSearched.emplace_back(move);
+        }
 
         if (score > bestScore)
         {
