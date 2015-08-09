@@ -217,7 +217,7 @@ void UCI::go(Position& pos, std::istringstream& iss)
         else if (s == "movestogo") { iss >> searchParameters.mMovesToGo; searchParameters.mMovesToGo += 2; }
         else if (s == "depth") { iss >> searchParameters.mDepth; }
         else if (s == "nodes") { iss >> searchParameters.mNodes; }
-        else if (s == "mate") { searchParameters.mMate = true; }
+        else if (s == "mate") { iss >> searchParameters.mMate; }
         else if (s == "movetime") { iss >> searchParameters.mMoveTime; }
         else if (s == "infinite") { searchParameters.mInfinite = true; }
     }

@@ -282,7 +282,7 @@ void Search::think(const Position& root, SearchParameters sp)
     nextSendInfo = 1000;
     searching = true;
     pondering = sp.mPonder;
-    infinite = (sp.mInfinite || sp.mDepth > 0 || sp.mNodes > 0);
+    infinite = (sp.mInfinite || sp.mDepth > 0 || sp.mNodes > 0 || sp.mMate > 0);
     const auto maxDepth = (sp.mDepth > 0 ? std::min(sp.mDepth + 1, 128) : 128);
     maxNodes = (sp.mNodes > 0 ? sp.mNodes : std::numeric_limits<size_t>::max());
     rootPly = sp.mRootPly;
@@ -553,6 +553,12 @@ void Search::think(const Position& root, SearchParameters sp)
         // Not done if we are in an infinite search or pondering, since we must search for ever in those cases.
         // depth > 6 is there to make sure we have something to ponder on.
         if (!infinite && !pondering && rootMoveList.size() == 1 && depth > 6)
+        {
+            break;
+        }
+
+        // Have we found a mate in X as asked? If yes we can quit.
+        if (sp.mMate > 0 && isWinScore(bestScore) && mateScore - bestScore <= 2 * sp.mMate)
         {
             break;
         }
