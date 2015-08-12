@@ -384,7 +384,7 @@ Bitboard Position::checkBlockers(Color c, Color kingColor) const
     assert(c.isOk() && kingColor.isOk());
 
     auto result = 0ULL;
-    const auto kingSquare = Bitboards::lsb(getBitboard(kingColor, Piece::King));
+    const auto kingSquare = getKingLocation(kingColor);
     const auto rq = getRooksAndQueens(!kingColor);
     const auto bq = getBishopsAndQueens(!kingColor);
     auto pinners = (rq & Bitboards::rookAttacks(kingSquare, 0)) | (bq & Bitboards::bishopAttacks(kingSquare, 0));
@@ -527,7 +527,7 @@ bool Position::pseudoLegal(const Move& move, bool inCheck) const
         {
             const auto toFrom = Bitboards::bit(from) | Bitboards::bit(to);
             const auto newOccupied = getOccupiedSquares() ^ toFrom ^ (mBoard[to] != Piece::Empty ? Bitboards::bit(to) : 0);
-            const auto kingSquare = Bitboards::lsb(getBitboard(mSideToMove, Piece::King));
+            const auto kingSquare = getKingLocation(mSideToMove); 
             const auto exclusion = ~(Bitboards::bit(to) | (flags == Piece::Pawn ? Bitboards::bit(to + (mSideToMove ? 8 : -8)) : 0));
             // Check if the move stops our king from being in check.
             if (((Bitboards::knightAttacks(kingSquare) & getBitboard(!mSideToMove, Piece::Knight) & exclusion
@@ -554,7 +554,7 @@ bool Position::legal(const Move& move, bool inCheck) const
 
     if (move.getFlags() == Piece::Pawn)
     {
-        const auto kingSquare = Bitboards::lsb(getBitboard(mSideToMove, Piece::King));
+        const auto kingSquare = getKingLocation(mSideToMove);
         const auto captureSquare = to ^ 8;
         const auto occupied = (getOccupiedSquares() ^ Bitboards::bit(from) ^ Bitboards::bit(captureSquare)) | Bitboards::bit(to);
         const auto rq = getRooksAndQueens(!mSideToMove);
@@ -571,7 +571,7 @@ bool Position::legal(const Move& move, bool inCheck) const
 
     // Otherwise a move is legal if it is not pinned or it is moving along the ray towards or away from the king.
     return !Bitboards::testBit(mPinned, from) 
-         || Bitboards::testBit(Bitboards::lineFormedBySquares(from, to), Bitboards::lsb(getBitboard(mSideToMove, Piece::King)));
+         || Bitboards::testBit(Bitboards::lineFormedBySquares(from, to), getKingLocation(mSideToMove));
 }
 
 int Position::givesCheck(const Move& move) const
@@ -579,7 +579,7 @@ int Position::givesCheck(const Move& move) const
     const auto from = move.getFrom();
     const auto to = move.getTo();
     const auto flags = move.getFlags();
-    const auto kingSquare = Bitboards::lsb(getBitboard(!mSideToMove, Piece::King)); 
+    const auto kingSquare = getKingLocation(!mSideToMove); 
     auto occupied = getOccupiedSquares();
 
     // Test for discovered check.
@@ -703,7 +703,7 @@ int16_t Position::SEE(const Move& move) const
         }
         else
         {
-            next = Bitboards::lsb(getBitboard(stm, Piece::King));
+            next = getKingLocation(stm);
         }
 
         // Update the materialgains array.

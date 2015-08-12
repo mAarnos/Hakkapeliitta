@@ -146,6 +146,11 @@ public:
     /// @return The ply.
     int16_t getGamePly() const noexcept;
 
+    /// @brief Get the king location of a given color.
+    /// @param c The color.
+    /// @return The king location.
+    Square getKingLocation(Color c) const noexcept;
+
     /// @brief Makes a given move on the board. We use copy-make so unmake is unnecessary.
     /// @param move The move.
     void makeMove(const Move& move);
@@ -351,9 +356,14 @@ inline int16_t Position::getGamePly() const noexcept
     return mGamePly;
 }
 
+inline Square Position::getKingLocation(Color c) const noexcept
+{
+    return Bitboards::lsb(getBitboard(c, Piece::King));
+}
+
 inline bool Position::inCheck() const 
 { 
-    return isAttacked(Bitboards::lsb(getBitboard(mSideToMove, Piece::King)), !mSideToMove); 
+    return isAttacked(getKingLocation(mSideToMove), !mSideToMove); 
 }
 
 inline Bitboard Position::discoveredCheckCandidates() const 

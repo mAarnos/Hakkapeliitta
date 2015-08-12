@@ -112,7 +112,7 @@ void MoveGen::generatePseudoLegalMoves(const Position& pos, MoveList& moveList)
     addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), true, side);
 
     // King moves (without castling which is handled later).
-    auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    auto from = pos.getKingLocation(side);
     tempMove = Bitboards::kingAttacks(from) & targetBB;
     addPieceMovesFromMask(moveList, tempMove, from);
 
@@ -187,7 +187,7 @@ void MoveGen::generateLegalEvasions(const Position& pos, MoveList& moveList)
     const auto occupied = pos.getOccupiedSquares();
     const auto freeSquares = pos.getFreeSquares();
     const auto targetBitboard = ~pos.getPieces(side);
-    const auto kingLocation = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    const auto kingLocation = pos.getKingLocation(side);
 
     // King moves.
     auto tempMove = Bitboards::kingAttacks(kingLocation) & targetBitboard;
@@ -283,7 +283,7 @@ void MoveGen::generatePseudoLegalQuietMoves(const Position& pos, MoveList& moveL
     addPawnDoubleMovesFromMask(moveList, tempMove, side);
 
     // King moves. Castling is handled later for no reason.
-    auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    auto from = pos.getKingLocation(side);
     tempMove = Bitboards::kingAttacks(from) & freeSquares;
     addPieceMovesFromMask(moveList, tempMove, from);
 
@@ -355,7 +355,7 @@ void MoveGen::generatePseudoLegalCapturesAndQuietChecks(const Position& pos, Mov
     const auto occupied = pos.getOccupiedSquares();
     const auto targetBitboard = ~pos.getPieces(side);
     const auto opponentPieces = pos.getPieces(!side);
-    const auto opponentKingSquare = Bitboards::lsb(pos.getBitboard(!side, Piece::King));
+    const auto opponentKingSquare = pos.getKingLocation(!side);
     const auto bishopCheckSquares = Bitboards::bishopAttacks(opponentKingSquare, occupied);
     const auto rookCheckSquares = Bitboards::rookAttacks(opponentKingSquare, occupied);
     const auto dcCandidates = pos.getDiscoveredCheckCandidates();
@@ -382,7 +382,7 @@ void MoveGen::generatePseudoLegalCapturesAndQuietChecks(const Position& pos, Mov
     addPawnDoubleMovesFromMask(moveList, tempMove & Bitboards::pawnAttacks(!side, opponentKingSquare), side);
 
     // King moves without castling.
-    auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    auto from = pos.getKingLocation(side);
     tempMove = Bitboards::kingAttacks(from)
              & (!Bitboards::testBit(dcCandidates, from) ? opponentPieces
                                                         : (targetBitboard & ~Bitboards::lineFormedBySquares(from, opponentKingSquare)));
@@ -460,7 +460,7 @@ void MoveGen::generatePseudoLegalCaptures(const Position& pos, MoveList& moveLis
     addPawnCapturesFromMask<true>(moveList, tempMove, pos.getEnPassantSquare(), underPromotions, side);
 
     // King moves.
-    auto from = Bitboards::lsb(pos.getBitboard(side, Piece::King));
+    auto from = pos.getKingLocation(side);
     tempMove = Bitboards::kingAttacks(from) & enemyPieces;
     addPieceMovesFromMask(moveList, tempMove, from);
 

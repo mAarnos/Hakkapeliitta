@@ -217,7 +217,7 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
     for (Color c = Color::White; c <= Color::Black; ++c)
     {
         const auto targetBitboard = ~pos.getPieces(c);
-        const auto opponentKingZone = Bitboards::kingSafetyZone(!c, Bitboards::lsb(pos.getBitboard(!c, Piece::King)));
+        const auto opponentKingZone = Bitboards::kingSafetyZone(!c, pos.getKingLocation(!c));
         auto scoreOpForColor = 0, scoreEdForColor = 0;
         auto attackUnits = 0;
 
@@ -287,8 +287,8 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
 
 int Evaluation::pawnStructureEval(const Position& pos, int phase)
 {
-    const std::array<unsigned long, 2> kingLocations = { Bitboards::lsb(pos.getBitboard(Color::White, Piece::King)),
-                                                         Bitboards::lsb(pos.getBitboard(Color::Black, Piece::King)) };
+    const std::array<unsigned long, 2> kingLocations = { pos.getKingLocation(Color::White),
+                                                         pos.getKingLocation(Color::Black) };
     // Add king locations to the pawn hash key so that we can cache knowledge which requires that kings stay on specific squares.
     const auto phk = pos.getPawnHashKey() ^ Zobrist::pieceHashKey(Piece::King, kingLocations[0])
                                           ^ Zobrist::pieceHashKey(Piece::King, kingLocations[1]);
@@ -407,7 +407,7 @@ int evaluatePawnShelter(const Position& pos, Color side)
     const auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
     // If the king is at the edge assume that it is a bit closer to the center.
     // This prevents all bugs related to the next loop and going off the board.
-    const auto kingFile = clamp(file(Bitboards::lsb(pos.getBitboard(side, Piece::King))), 1, 6);
+    const auto kingFile = clamp(file(pos.getKingLocation(side)), 1, 6);
 
     for (auto f = kingFile - 1; f <= kingFile + 1; ++f)
     {

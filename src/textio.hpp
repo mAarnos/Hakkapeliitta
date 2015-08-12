@@ -22,6 +22,7 @@
 #define TEXTIO_HPP_
 
 #include <sstream>
+#include <vector>
 #include "position.hpp"
 #include "constants.hpp"
 
