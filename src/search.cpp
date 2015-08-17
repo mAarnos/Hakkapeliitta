@@ -791,18 +791,16 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             --nodesToTimeCheck;
             (ss + 1)->mAllowNullMove = false;
             score = depth - 1 - R > 0 ? -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
-                : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
+                                      : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
             (ss + 1)->mAllowNullMove = true;
             if (score >= beta)
             {
                 // Don't return unproven mate scores as they cause some instability.
                 if (isMateScore(score))
+                {
                     score = beta;
-                transpositionTable.save(hashKey, 
-                                        ttMove, 
-                                        realScoreToTtScore(score, ss->mPly), 
-                                        depth, 
-                                        TranspositionTable::Flags::LowerBoundScore);
+                }
+
                 return score;
             }
         }

@@ -30,7 +30,7 @@ int main()
     static_assert(false, "Only MSVC supported right now due to packing pragmas, will be fixed soon.");
 #endif
 
-    std::cout << "Hakkapeliitta 3.15 (C) 2013-2015 Mikko Aarnos" << std::endl;
+    std::cout << "Hakkapeliitta 3.16 (C) 2013-2015 Mikko Aarnos" << std::endl;
     std::cout << "Detected " << std::max(1u, std::thread::hardware_concurrency()) << " CPU core(s)" << std::endl;
 
     Bitboards::staticInitialize();
