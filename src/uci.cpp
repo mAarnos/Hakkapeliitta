@@ -376,6 +376,6 @@ void UCI::infoBestMove(const std::vector<Move>& pv, uint64_t searchTime,
               << " nps " << (nodeCount / (searchTime + 1)) * 1000
               << " tbhits " << tbHits 
               << " hashfull " << hashFull << std::endl
-              << "bestmove " << moveToUciFormat(pv[0])
+              << "bestmove " << (pv.size() > 0 ? moveToUciFormat(pv[0]) : "(none)") 
               << " ponder " << (pv.size() > 1 ? moveToUciFormat(pv[1]) : "(none)") << std::endl;
 }

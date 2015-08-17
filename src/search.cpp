@@ -379,14 +379,14 @@ void Search::think(const Position& root, SearchParameters sp)
     }
     auto ss = &searchStack[0];
 
-    for (auto depth = 1; depth < maxDepth;)
+    for (auto depth = 1; depth < maxDepth && rootMoveList.size();)
     {
         const auto previousAlpha = alpha;
         const auto previousBeta = beta;
         const auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
         const auto killers = killerTable.getKillers(0);
         auto movesSearched = 0;
-        auto bestScore = -mateScore;
+        auto bestScore = matedInPly(0);
 
         orderRootMoves(pos, rootMoveList, bestMove);
         try {
