@@ -1,6 +1,6 @@
 ﻿### Overview
 
-Hakkapeliitta is an UCI chess engine written in C++11/14 with support for Syzygy tablebases. Version 3.0 has a rating of around 2930 at CCRL and 2800 at CEGT. 
+Hakkapeliitta is an UCI chess engine written in C++11/14 with support for Syzygy tablebases. Version 3.0 has a rating of around 2950 at CCRL and 2820 at CEGT, making it approximately the 20th strongest chess engine in the world on a single thread. 
 
 ### UCI-parameters:
 
