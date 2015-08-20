@@ -332,8 +332,8 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
                     scoreEdForColor += passedBonusEnding[pawnRank];
                     const auto distance1 = mChebyshevDistance[kingLocations[!c]][from + 8 - 16 * c];
                     const auto distance2 = mChebyshevDistance[kingLocations[c]][from + 8 - 16 * c];
-                    scoreEdForColor += static_cast<int>(std::round((std::sqrt(distance1 + 1) - 1) * 30));
-                    scoreEdForColor -= static_cast<int>(std::round((std::sqrt(distance2 + 1) - 1) * 28));
+                    scoreEdForColor += static_cast<int>(std::round((std::sqrt(distance1 + 1) - 1) * 39));
+                    scoreEdForColor -= static_cast<int>(std::round((std::sqrt(distance2 + 1) - 1) * 34));
                 }
 
                 if (doubled)
@@ -388,7 +388,7 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
             const auto promoSquare = file(from) + !c * 56;
             if (std::min(5, mChebyshevDistance[from][promoSquare]) < (mChebyshevDistance[kingSquare][promoSquare] - (!c == pos.getSideToMove())))
             {
-                scoreEd += c ? -80 : 80;
+                scoreEd += c ? -81 : 81;
             }
         }
     }
