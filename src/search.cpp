@@ -779,7 +779,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (!pvNode && ss->mAllowNullMove && !inCheck && depth > 1 && staticEval >= beta && pos.getNonPawnPieceCount(pos.getSideToMove()))
     {
         const auto R = baseNullReduction + depth / 6;
-        const auto likelyFailLow = ttEntry && ttEntry->getFlags() == TranspositionTable::Flags::UpperBoundScore
+        const auto likelyFailLow = ttEntry && ttEntry->getFlags() != TranspositionTable::Flags::LowerBoundScore
                                 && ttEntry->getDepth() >= depth - 1 - R && ttEntry->getScore() <= alpha;
         if (!likelyFailLow)
         {
