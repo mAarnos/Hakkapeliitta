@@ -74,9 +74,9 @@ private:
     template <bool hardwarePopcnt> 
     int mobilityEval(const Position& pos, std::array<int, 2>& kingSafetyScore, int phase);
 
-    int pawnStructureEval(const Position& pos, int phase);
+    int pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& pawnShelterScore, int phase);
     // Static to get around a static analysis tool warning.
-    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore);
+    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore);
 };
 
 inline void Evaluation::clearPawnHashTable()

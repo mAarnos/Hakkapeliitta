@@ -47,15 +47,17 @@ public:
     /// @param passers The passed pawns of the position.
     /// @param scoreOp The opening pawn score of the position.
     /// @param scoreEd The ending pawn score of the position.
-    void save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd);
+    /// @param pawnShieldScore The penalties for messed up pawn shelters for both sides.
+    void save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd, const std::array<uint8_t, 2>& pawnShieldScore);
 
     /// @brief Get some information from the hash table. 
     /// @param phk The pawn hash key of the position we are probing information for.
     /// @param passers On a succesful probe the bitboard containing passed pawns of the position is put here.
     /// @param scoreOp On a succesful probe the opening pawn score is put here.
     /// @param scoreEd On a succesful probe the ending pawn score is put here.
+    /// @param pawnShieldScore On a succsful probe the penalties for bad pawn shelters will be put here.
     /// @return True on a succesful probe, false otherwise.
-    bool probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd) const;
+    bool probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd, std::array<uint8_t, 2>& pawnShieldScore) const;
 
 private:
     // A single entry in the pawn hash table.
@@ -63,7 +65,7 @@ private:
     {
     public:
         // Initializing the hash key to 1 is pretty important, as the pawn hash key of a position without pawns is 0.
-        PawnHashTableEntry() noexcept : mHash(1), mPassers(0), mScoreOp(0), mScoreEd(0)
+        PawnHashTableEntry() noexcept : mHash(1), mPassers(0), mScoreOp(0), mScoreEd(0), mPawnShieldScore({ 0, 0 })
         {
         }
 
@@ -71,6 +73,7 @@ private:
         Bitboard mPassers;
         int16_t mScoreOp;
         int16_t mScoreEd;
+        std::array<uint8_t, 2> mPawnShieldScore;
     };
 
     std::vector<PawnHashTableEntry> mTable;

@@ -186,11 +186,12 @@ int Evaluation::evaluate(const Position& pos)
     }
 
     std::array<int, 2> kingSafetyScore;
+    std::array<uint8_t, 2> pawnShelterScore;
     const auto phase = clamp(static_cast<int>(pos.getGamePhase()), 0, 64); // The phase can be negative in some weird cases, guard against that.
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
-    score += pawnStructureEval(pos, phase);
-    score += kingSafetyEval(pos, phase, kingSafetyScore);
+    score += pawnStructureEval(pos, pawnShelterScore, phase);
+    score += kingSafetyEval(pos, phase, kingSafetyScore, pawnShelterScore);
     score += interpolateScore(pos.getPstScoreOp(), pos.getPstScoreEd(), phase);
 
     // Bishop pair bonus.
@@ -285,7 +286,33 @@ int Evaluation::mobilityEval(const Position& pos, std::array<int, 2>& kingSafety
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int Evaluation::pawnStructureEval(const Position& pos, int phase)
+int evaluatePawnShelter(const Position& pos, Color side)
+{
+    static const std::array<int, 8> openFilePenalty = { 6, 5, 4, 4, 4, 4, 5, 6 };
+    static const std::array<int, 8> halfopenFilePenalty = { 5, 4, 3, 3, 3, 3, 4, 5 };
+    static const std::array<int, 8> pawnStormPenalty = { 0, 0, 0, 1, 2, 3, 0, 0 };
+
+    auto penalty = 0;
+    const auto ownPawns = pos.getBitboard(side, Piece::Pawn);
+    const auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
+    // If the king is at the edge assume that it is a bit closer to the center.
+    // This prevents all bugs related to the next loop and going off the board.
+    const auto kingFile = clamp(file(pos.getKingLocation(side)), 1, 6);
+
+    for (auto f = kingFile - 1; f <= kingFile + 1; ++f)
+    {
+        const auto own = Bitboards::files[f] & ownPawns;
+        const auto opponent = Bitboards::files[f] & enemyPawns;
+
+        penalty += (own | opponent) ? 0 : openFilePenalty[f];
+        penalty += (!own && opponent) ? halfopenFilePenalty[f] : 0;
+        penalty += opponent ? pawnStormPenalty[side ? rank(Bitboards::msb(opponent)) : 7 - rank(Bitboards::lsb(opponent))] : 0;
+    }
+
+    return penalty;
+}
+
+int Evaluation::pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& pawnShelterScore, int phase)
 {
     const std::array<unsigned long, 2> kingLocations = { pos.getKingLocation(Color::White),
                                                          pos.getKingLocation(Color::Black) };
@@ -295,7 +322,7 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
     auto passers = 0ULL;
     auto scoreOp = 0, scoreEd = 0;
 
-    if (mPawnHashTable.probe(phk, passers, scoreOp, scoreEd))
+    if (mPawnHashTable.probe(phk, passers, scoreOp, scoreEd, pawnShelterScore))
     {
         // No need to do the expensive calculations again.
     }
@@ -359,7 +386,9 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
             scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
         }
 
-        mPawnHashTable.save(phk, passers, scoreOp, scoreEd);
+        pawnShelterScore[Color::White] = evaluatePawnShelter(pos, Color::Black);
+        pawnShelterScore[Color::Black] = evaluatePawnShelter(pos, Color::White);
+        mPawnHashTable.save(phk, passers, scoreOp, scoreEd, pawnShelterScore);
     }
 
     // Give extra score to passers which are unstoppable.
@@ -396,36 +425,10 @@ int Evaluation::pawnStructureEval(const Position& pos, int phase)
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int evaluatePawnShelter(const Position& pos, Color side)
+int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore)
 {
-    static const std::array<int, 8> openFilePenalty = { 6, 5, 4, 4, 4, 4, 5, 6 };
-    static const std::array<int, 8> halfopenFilePenalty = { 5, 4, 3, 3, 3, 3, 4, 5 };
-    static const std::array<int, 8> pawnStormPenalty = { 0, 0, 0, 1, 2, 3, 0, 0 };
-
-    auto penalty = 0;
-    const auto ownPawns = pos.getBitboard(side, Piece::Pawn);
-    const auto enemyPawns = pos.getBitboard(!side, Piece::Pawn);
-    // If the king is at the edge assume that it is a bit closer to the center.
-    // This prevents all bugs related to the next loop and going off the board.
-    const auto kingFile = clamp(file(pos.getKingLocation(side)), 1, 6);
-
-    for (auto f = kingFile - 1; f <= kingFile + 1; ++f)
-    {
-        const auto own = Bitboards::files[f] & ownPawns;
-        const auto opponent = Bitboards::files[f] & enemyPawns;
-
-        penalty += (own | opponent) ? 0 : openFilePenalty[f];
-        penalty += (!own && opponent) ? halfopenFilePenalty[f] : 0;
-        penalty += opponent ? pawnStormPenalty[side ? rank(Bitboards::msb(opponent)) : 7 - rank(Bitboards::lsb(opponent))] : 0;
-    }
-
-    return penalty;
-}
-
-int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore)
-{
-    kingSafetyScore[Color::Black] += evaluatePawnShelter(pos, Color::White);
-    kingSafetyScore[Color::White] += evaluatePawnShelter(pos, Color::Black);
+    kingSafetyScore[Color::White] += pawnShelterScore[Color::White];
+    kingSafetyScore[Color::Black] += pawnShelterScore[Color::Black];
     kingSafetyScore[Color::White] = std::min(kingSafetyScore[Color::White], 99);
     kingSafetyScore[Color::Black] = std::min(kingSafetyScore[Color::Black], 99);
 

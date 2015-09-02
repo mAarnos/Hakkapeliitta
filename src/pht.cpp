@@ -46,19 +46,22 @@ void PawnHashTable::clear()
     mTable.resize(tableSize);
 }
 
-void PawnHashTable::save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd)
+void PawnHashTable::save(HashKey phk, Bitboard passers, int scoreOp, int scoreEd, const std::array<uint8_t, 2>& pawnShieldScore)
 {
     assert((phk & (mTable.size() - 1)) == (phk % mTable.size()));
 
     auto& hashEntry = mTable[phk & (mTable.size() - 1)];
 
+    // Always overwrite.
     hashEntry.mHash = phk;
     hashEntry.mPassers = passers;
     hashEntry.mScoreOp = static_cast<int16_t>(scoreOp);
     hashEntry.mScoreEd = static_cast<int16_t>(scoreEd);
+    hashEntry.mPawnShieldScore[Color::White] = pawnShieldScore[Color::White];
+    hashEntry.mPawnShieldScore[Color::Black] = pawnShieldScore[Color::Black];
 }
 
-bool PawnHashTable::probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd) const
+bool PawnHashTable::probe(HashKey phk, Bitboard& passers, int& scoreOp, int& scoreEd, std::array<uint8_t, 2>& pawnShieldScore) const
 {
     assert((phk & (mTable.size() - 1)) == (phk % mTable.size()));
 
@@ -69,6 +72,8 @@ bool PawnHashTable::probe(HashKey phk, Bitboard& passers, int& scoreOp, int& sco
         passers = hashEntry.mPassers;
         scoreOp = hashEntry.mScoreOp;
         scoreEd = hashEntry.mScoreEd;
+        pawnShieldScore[Color::White] = hashEntry.mPawnShieldScore[Color::White];
+        pawnShieldScore[Color::Black] = hashEntry.mPawnShieldScore[Color::Black];
         return true;
     }
 
