@@ -628,11 +628,12 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
 
     const auto hashKey = ss->mExcludedMove.empty() ? pos.getHashKey() : pos.getHashKey() ^ Zobrist::manglingHashKey();
     auto bestScore = matedInPly(ss->mPly), movesSearched = 0, prunedMoves = 0;
+    auto ttScore = -infinity;
     auto ttFlag = TranspositionTable::Flags::UpperBoundScore;
     int ttFlags = ttFlag;
     MoveList quietsSearched;
     Move bestMove, ttMove;
-    int score, ttScore;
+    int score;
 
     // Small speed optimization, runs fine without it.
     transpositionTable.prefetch(hashKey);

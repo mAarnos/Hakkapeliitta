@@ -191,7 +191,7 @@ int Evaluation::evaluate(const Position& pos)
 
     auto score = mobilityEval<hardwarePopcnt>(pos, kingSafetyScore, phase);
     score += pawnStructureEval(pos, pawnShelterScore, phase);
-    score += kingSafetyEval(pos, phase, kingSafetyScore, pawnShelterScore);
+    score += kingSafetyEval(phase, kingSafetyScore, pawnShelterScore);
     score += interpolateScore(pos.getPstScoreOp(), pos.getPstScoreEd(), phase);
 
     // Bishop pair bonus.
@@ -386,8 +386,8 @@ int Evaluation::pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& p
             scoreEd += (c == Color::Black ? -scoreEdForColor : scoreEdForColor);
         }
 
-        pawnShelterScore[Color::White] = evaluatePawnShelter(pos, Color::Black);
-        pawnShelterScore[Color::Black] = evaluatePawnShelter(pos, Color::White);
+        pawnShelterScore[Color::White] = static_cast<uint8_t>(evaluatePawnShelter(pos, Color::Black));
+        pawnShelterScore[Color::Black] = static_cast<uint8_t>(evaluatePawnShelter(pos, Color::White));
         mPawnHashTable.save(phk, passers, scoreOp, scoreEd, pawnShelterScore);
     }
 
@@ -425,7 +425,7 @@ int Evaluation::pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& p
     return interpolateScore(scoreOp, scoreEd, phase);
 }
 
-int Evaluation::kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore)
+int Evaluation::kingSafetyEval(int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore)
 {
     kingSafetyScore[Color::White] += pawnShelterScore[Color::White];
     kingSafetyScore[Color::Black] += pawnShelterScore[Color::Black];

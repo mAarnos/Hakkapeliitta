@@ -76,7 +76,7 @@ private:
 
     int pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& pawnShelterScore, int phase);
     // Static to get around a static analysis tool warning.
-    static int kingSafetyEval(const Position& pos, int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore);
+    static int kingSafetyEval(int phase, std::array<int, 2>& kingSafetyScore, std::array<uint8_t, 2>& pawnShelterScore);
 };
 
 inline void Evaluation::clearPawnHashTable()
