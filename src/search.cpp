@@ -378,6 +378,7 @@ void Search::think(const Position& root, SearchParameters sp)
         searchStack.emplace_back(i);
     }
     auto ss = &searchStack[0];
+    auto previousBestScore = matedInPly(0);
 
     for (auto depth = 1; depth < maxDepth && rootMoveList.size();)
     {
@@ -543,7 +544,7 @@ void Search::think(const Position& root, SearchParameters sp)
 
         transpositionTable.save(pos.getHashKey(), 
                                 bestMove, 
-                                realScoreToTtScore(bestScore, 0), 
+                                realScoreToTtScore((bestScore == matedInPly(0) ? previousBestScore : bestScore), 0),
                                 depth, 
                                 TranspositionTable::Flags::ExactScore);
 
@@ -593,6 +594,7 @@ void Search::think(const Position& root, SearchParameters sp)
         }
         delta = aspirationWindow;
         ++depth;
+        previousBestScore = bestScore;
     }
 
     // If we are in an infinite search (or pondering) and we reach the max amount of iterations possible loop here until stopped.
