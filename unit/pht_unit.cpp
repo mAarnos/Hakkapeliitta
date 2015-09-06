@@ -21,16 +21,21 @@
 BOOST_AUTO_TEST_CASE(AllCasesPHT)
 {
     PawnHashTable pht;
+    Bitboard passers;
+    std::array<uint8_t, 2> pawnShelterScore;
     int scoreOp, scoreEd;
 
-    pht.save(5270488176186631498, 15, 20);
+    pht.save(5270488176186631498, 1024, 15, 20, { 5, 7 });
 
-    BOOST_CHECK(pht.probe(5270488176186631498, scoreOp, scoreEd));
+    BOOST_CHECK(pht.probe(5270488176186631498, passers, scoreOp, scoreEd, pawnShelterScore));
+    BOOST_CHECK(passers == 1024);
     BOOST_CHECK(scoreOp == 15);
     BOOST_CHECK(scoreEd == 20);
+    BOOST_CHECK(pawnShelterScore[Color::White] == 5);
+    BOOST_CHECK(pawnShelterScore[Color::Black] == 7);
 
     pht.clear();
-    BOOST_CHECK(!pht.probe(5270488176186631498, scoreOp, scoreEd));
+    BOOST_CHECK(!pht.probe(5270488176186631498, passers, scoreOp, scoreEd, pawnShelterScore));
 }
 
 

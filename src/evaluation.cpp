@@ -314,12 +314,12 @@ int evaluatePawnShelter(const Position& pos, Color side)
 
 int Evaluation::pawnStructureEval(const Position& pos, std::array<uint8_t, 2>& pawnShelterScore, int phase)
 {
-    const std::array<unsigned long, 2> kingLocations = { pos.getKingLocation(Color::White),
+    const std::array<Square, 2> kingLocations = { pos.getKingLocation(Color::White),
                                                          pos.getKingLocation(Color::Black) };
     // Add king locations to the pawn hash key so that we can cache knowledge which requires that kings stay on specific squares.
     const auto phk = pos.getPawnHashKey() ^ Zobrist::pieceHashKey(Piece::King, kingLocations[0])
                                           ^ Zobrist::pieceHashKey(Piece::King, kingLocations[1]);
-    auto passers = 0ULL;
+    auto passers = static_cast<Bitboard>(0);
     auto scoreOp = 0, scoreEd = 0;
 
     if (mPawnHashTable.probe(phk, passers, scoreOp, scoreEd, pawnShelterScore))
