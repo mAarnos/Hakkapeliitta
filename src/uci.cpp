@@ -351,19 +351,19 @@ void UCI::infoPv(const std::vector<Move>& pv, uint64_t searchTime,
 
     if (flags == TranspositionTable::Flags::LowerBoundScore)
     {
-        ss << " lowerbound ";
+        ss << " lowerbound";
     }
     else if (flags == TranspositionTable::Flags::UpperBoundScore)
     {
-        ss << " upperbound ";
+        ss << " upperbound";
     }
 
     ss << " time " << searchTime
-        << " nodes " << nodeCount
-        << " nps " << (nodeCount / (searchTime + 1)) * 1000
-        << " tbhits " << tbHits
-        << " hashfull " << hashFull
-        << " pv " << movesToUciFormat(pv) << std::endl;
+       << " nodes " << nodeCount
+       << " nps " << (nodeCount / (searchTime + 1)) * 1000
+       << " tbhits " << tbHits
+       << " hashfull " << hashFull
+       << " pv " << movesToUciFormat(pv) << std::endl;
 
     sync_cout << ss.str();
 }
