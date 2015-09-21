@@ -465,13 +465,13 @@ void Search::think(const Position& root, SearchParameters sp)
                             {
                                 historyTable.addCutoff(pos, move, depth);
                                 killerTable.update(move, 0);
-                            }
-                            for (auto j = 0; j < i; ++j)
-                            {
-                                const auto move2 = rootMoveList.getMove(j);
-                                if (!pos.captureOrPromotion(move2))
+                                for (auto j = 0; j < i; ++j)
                                 {
-                                    historyTable.addNotCutoff(pos, move2, depth);
+                                    const auto move2 = rootMoveList.getMove(j);
+                                    if (!pos.captureOrPromotion(move2))
+                                    {
+                                        historyTable.addNotCutoff(pos, move2, depth);
+                                    }
                                 }
                             }
                         }
@@ -966,10 +966,10 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                             historyTable.addCutoff(pos, move, depth);
                             killerTable.update(move, ss->mPly);
                             counterMoveTable.update(pos, move, (ss - 1)->mCurrentMove);
-                        }
-                        for (auto j = 0; j < quietsSearched.size() - 1; ++j)
-                        {
-                            historyTable.addNotCutoff(pos, quietsSearched.getMove(j), depth);
+                            for (auto j = 0; j < quietsSearched.size() - 1; ++j)
+                            {
+                                historyTable.addNotCutoff(pos, quietsSearched.getMove(j), depth);
+                            }
                         }
                     }
 
