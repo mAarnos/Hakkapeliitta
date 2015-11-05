@@ -21,7 +21,6 @@
 #ifndef SEARCH_HPP_
 #define SEARCH_HPP_
 
-#include <thread>
 #include <condition_variable>
 #include "tt.hpp"
 #include "history.hpp"
@@ -34,6 +33,7 @@
 #include "search_listener.hpp"
 #include "search_parameters.hpp"
 #include "movelist.hpp"
+#include "search_thread.hpp"
 
 /// @brief The core of this program, the search function.
 class Search
@@ -96,7 +96,7 @@ private:
     };
     
     // Different classes used by the search function.
-    ThreadPool<std::thread> tp;
+    ThreadPool<SearchThread> tp;
     TranspositionTable transpositionTable;
     Evaluation evaluation;
     KillerTable killerTable;
@@ -105,7 +105,7 @@ private:
     SearchListener& listener;
     Stopwatch sw;
 
-    void think(const Position& root, SearchParameters searchParameters);
+    void think(std::reference_wrapper<SearchThread> st, const Position& root, SearchParameters searchParameters);
 
     template <bool pvNode>
     int search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);

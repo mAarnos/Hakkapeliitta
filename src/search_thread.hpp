@@ -31,11 +31,21 @@
 class SearchThread : public std::thread
 {
 public:
+    /// @brief Default constructor.
+    template<class Fn, class... Args>
+    SearchThread(Fn&& f, Args&&... args);
+
 private:
     Evaluation evaluation;
     KillerTable killerTable;
     CounterMoveTable counterMoveTable;
     HistoryTable historyTable;
 };
+
+template<class Fn, class... Args>
+inline SearchThread::SearchThread(Fn&& f, Args&&... args) 
+    : std::thread(std::forward<Fn>(f), std::forward<Args>(args)...)
+{
+}
 
 #endif

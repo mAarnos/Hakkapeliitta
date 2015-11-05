@@ -253,14 +253,14 @@ std::vector<Move> Search::extractPv(const Position& pos) const
 void Search::go(const Position& root, const SearchParameters& sp)
 {
     std::unique_lock<std::mutex> waitLock(waitMutex);
-    tp.addJob(&Search::think, this, root, sp);
+    tp.addJob(&Search::think, this, std::ref(tp.getThread(0)), root, sp);
     // Wait here until the search function has started.
     // Think of a chain of commands "go", "stop", "go", "stop" sent within 1 or 2 milliseconds.
     // If this part isn't here, some commands could get lost.
     waitCv.wait(waitLock);
 }
 
-void Search::think(const Position& root, SearchParameters sp)
+void Search::think(std::reference_wrapper<SearchThread> st, const Position& root, SearchParameters sp)
 {
     const auto inCheck = root.inCheck();
     auto alpha = -infinity;

@@ -48,6 +48,13 @@ public:
     template<class Fn, class... Args>
     void addJob(Fn&& fn, Args&&... args);
 
+    /// @brief Get a reference to a given thread.
+    /// @param i The index of the thread.
+    /// @return A reference to the thread.
+    ///
+    /// Used by the crazy scheme in Search.
+    T& getThread(size_t i);
+
 private:
     void loop();
 
@@ -90,6 +97,12 @@ void ThreadPool<T>::addJob(Fn&& fn, Args&&... args)
     std::unique_lock<std::mutex> lock(jobQueueMutex);
     jobQueue.push(job);
     cv.notify_one();
+}
+
+template<class T>
+inline T& ThreadPool<T>::getThread(size_t i)
+{
+    return threads[i];
 }
 
 template <typename T>
