@@ -22,21 +22,8 @@
 
 PawnHashTable::PawnHashTable()
 {
-    setSize(4); 
-}
-
-void PawnHashTable::setSize(size_t sizeInMegaBytes)
-{
-    auto tableSize = ((sizeInMegaBytes * 1024 * 1024) / sizeof(PawnHashTableEntry));
-    // If size is not a power of two make it the biggest power of two smaller than size.
-    if (Bitboards::moreThanOneBitSet(tableSize))
-    {
-        tableSize = static_cast<size_t>(std::pow(2, std::floor(log2(tableSize))));
-    }
-
-    mTable.clear();
+    const auto tableSize = ((4 * 1024 * 1024) / sizeof(PawnHashTableEntry));
     mTable.resize(tableSize);
-    mTable.shrink_to_fit();
 }
 
 void PawnHashTable::clear()

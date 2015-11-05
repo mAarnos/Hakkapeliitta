@@ -93,12 +93,11 @@ void UCI::addCommand(const std::string& name, FunctionPointer fp)
 void UCI::sendInformation(Position&, std::istringstream&)
 {
     // Send the name of the engine and the name of it's author.
-    sync_cout << "id name Hakkapeliitta 3.22" << std::endl;
+    sync_cout << "id name Hakkapeliitta 3.22 MP" << std::endl;
     sync_cout << "id author Mikko Aarnos" << std::endl;
 
     // Send all possible options the engine has that can be modified.
     sync_cout << "option name Hash type spin default 32 min 1 max 65536" << std::endl;
-    sync_cout << "option name Pawn Hash type spin default 4 min 1 max 8192" << std::endl;
     sync_cout << "option name Clear Hash type button" << std::endl;
     sync_cout << "option name Contempt type spin default 0 min -75 max 75" << std::endl;
     sync_cout << "option name Ponder type check default true" << std::endl;
@@ -152,11 +151,6 @@ void UCI::setOption(Position&, std::istringstream& iss)
     {
         iss >> transpositionTableSize;
         search.setTranspositionTableSize(transpositionTableSize);
-    }
-    else if (name == "Pawn Hash")
-    {
-        iss >> pawnHashTableSize;
-        search.setPawnHashTableSize(pawnHashTableSize);
     }
     else if (name == "Clear Hash")
     {

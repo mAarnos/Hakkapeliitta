@@ -29,15 +29,12 @@
 /// @brief Hash table for speeding up pawn evaluation.
 ///
 /// Default size of the pawn hash table is 4MB.
+/// TODO: make it smaller?
 class PawnHashTable
 {
 public:
     /// @brief Default constructor.
     PawnHashTable();
-
-    /// @brief Sets the size of the pawn hash table.
-    /// @param sizeInMegaBytes Obviously, the new size of the hash table in megabytes.
-    void setSize(size_t sizeInMegaBytes);
 
     /// @brief Clears the pawn hash table. Can potentially be an expensive operation.
     void clear();

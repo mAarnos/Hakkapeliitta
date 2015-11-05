@@ -30,6 +30,7 @@
 /// @brief A single thread we use when searching. 
 class SearchThread : public std::thread
 {
+    friend class Search;
 public:
     /// @brief Default constructor.
     template<class Fn, class... Args>

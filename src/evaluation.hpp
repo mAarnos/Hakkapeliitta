@@ -42,10 +42,6 @@ public:
     /// @brief Clears the pawn hash table used by the evalation function.
     void clearPawnHashTable();
 
-    /// @brief Sets the size of the pawn hash table used by the evaluation function.
-    /// @param sizeInMegaBytes The new size in megabytes.
-    void setPawnHashTableSize(size_t sizeInMegaBytes);
-
     /// @brief Get the opening PST score of a given piece on a given square.
     /// @param p The piece.
     /// @param sq The square.
@@ -82,11 +78,6 @@ private:
 inline void Evaluation::clearPawnHashTable()
 {
     mPawnHashTable.clear();
-}
-
-inline void Evaluation::setPawnHashTableSize(size_t sizeInMegaBytes)
-{
-    mPawnHashTable.setSize(sizeInMegaBytes);
 }
 
 inline short Evaluation::getPieceSquareTableOp(Piece p, Square sq)

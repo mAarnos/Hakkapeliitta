@@ -54,7 +54,7 @@ int realScoreToTtScore(int score, int ply)
 
 // Used for ordering moves during the quiescence search.
 // Delete as soon as MoveSort works everywhere.
-void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const
+void Search::orderCaptures(SearchThread& st, const Position& pos, MoveList& moveList, const Move& ttMove) const
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -70,7 +70,7 @@ void Search::orderCaptures(const Position& pos, MoveList& moveList, const Move& 
         }
         else
         {
-            moveList.setScore(i, historyTable.getScore(pos, move));
+            moveList.setScore(i, st.historyTable.getScore(pos, move));
         }
     }
 }
@@ -140,7 +140,7 @@ void removeIllegalMoves(const Position& pos, MoveList& moveList, bool inCheck)
     moveList.resize(marker);
 }
 
-void Search::orderRootMoves(const Position& pos, MoveList& moveList, const Move& ttMove) const
+void Search::orderRootMoves(SearchThread& st, const Position& pos, MoveList& moveList, const Move& ttMove) const
 {
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -161,7 +161,7 @@ void Search::orderRootMoves(const Position& pos, MoveList& moveList, const Move&
         }
         else
         {
-            const auto killers = killerTable.getKillers(0);
+            const auto killers = st.killerTable.getKillers(0);
             if (move == killers.first)
             {
                 moveList.setScore(i, killerMoveScore[1]);
@@ -172,7 +172,7 @@ void Search::orderRootMoves(const Position& pos, MoveList& moveList, const Move&
             }
             else
             {
-                moveList.setScore(i, historyTable.getScore(pos, move));
+                moveList.setScore(i, st.historyTable.getScore(pos, move));
             }
         }
     }
@@ -260,7 +260,7 @@ void Search::go(const Position& root, const SearchParameters& sp)
     waitCv.wait(waitLock);
 }
 
-void Search::think(std::reference_wrapper<SearchThread> st, const Position& root, SearchParameters sp)
+void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
 {
     const auto inCheck = root.inCheck();
     auto alpha = -infinity;
@@ -291,9 +291,9 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
     probeDepth = sp.mSyzygyProbeDepth;
     use50 = sp.mSyzygy50MoveRule;
     transpositionTable.startNewSearch();
-    historyTable.age();
-    counterMoveTable.clear();
-    killerTable.clear();
+    st.historyTable.age();
+    st.counterMoveTable.clear();
+    st.killerTable.clear();
 
     {
         // Notify the thread which is waiting in "go" that the search has started.
@@ -385,11 +385,11 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
         const auto previousAlpha = alpha;
         const auto previousBeta = beta;
         const auto lmrNode = (!inCheck && depth >= lmrDepthLimit);
-        const auto killers = killerTable.getKillers(0);
+        const auto killers = st.killerTable.getKillers(0);
         auto movesSearched = 0;
         auto bestScore = matedInPly(0);
 
-        orderRootMoves(pos, rootMoveList, bestMove);
+        orderRootMoves(st, pos, rootMoveList, bestMove);
         try {
             for (auto i = 0; i < rootMoveList.size(); ++i)
             {
@@ -416,29 +416,29 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
                 ss->mCurrentMove = move;
                 repetitionHashes[rootPly] = pos.getHashKey();
                 // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
-                killerTable.clear(2);
+                st.killerTable.clear(2);
 
                 if (!movesSearched)
                 {
-                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+                    score = newDepth > 0 ? -search<true>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                         : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
                 else
                 {
                     const auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
 
-                    score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                                     : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+                    score = newDepth - reduction > 0 ? -search<false>(st, newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                                     : -quiescenceSearch(st, newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
                     if (reduction && score > alpha)
                     {
-                        score = newDepth > 0 ? -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                             : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+                        score = newDepth > 0 ? -search<false>(st, newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(st, newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
                     }
                     if (score > alpha && score < beta)
                     {
-                        score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                             : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+                        score = newDepth > 0 ? -search<true>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                     }
                 }
                 ++movesSearched;
@@ -463,14 +463,14 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
                         {
                             if (quietMove)
                             {
-                                historyTable.addCutoff(pos, move, depth);
-                                killerTable.update(move, 0);
+                                st.historyTable.addCutoff(pos, move, depth);
+                                st.killerTable.update(move, 0);
                                 for (auto j = 0; j < i; ++j)
                                 {
                                     const auto move2 = rootMoveList.getMove(j);
                                     if (!pos.captureOrPromotion(move2))
                                     {
-                                        historyTable.addNotCutoff(pos, move2, depth);
+                                        st.historyTable.addNotCutoff(pos, move2, depth);
                                     }
                                 }
                             }
@@ -506,8 +506,8 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
                                                : TranspositionTable::Flags::UpperBoundScore,
                                     selDepth,
                                     transpositionTable.hashFull());
-                    score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                         : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+                    score = newDepth > 0 ? -search<true>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                         : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
                 }
 
                 if (score > bestScore)
@@ -622,7 +622,7 @@ void Search::think(std::reference_wrapper<SearchThread> st, const Position& root
 #endif
 
 template <bool pvNode>
-int Search::search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
+int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
 {
     assert(alpha < beta);
     assert(depth > 0);
@@ -649,7 +649,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     // Don't go over max ply.
     if (ss->mPly >= maxPly)
     {
-        return evaluation.evaluate(pos);
+        return st.evaluation.evaluate(pos);
     }
 
     // Time check things.
@@ -754,7 +754,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     }
 
     // Get the static evaluation of the position. Not needed in nodes where we are in check.
-    const auto staticEval = (inCheck ? -infinity : evaluation.evaluate(pos));
+    const auto staticEval = (inCheck ? -infinity : st.evaluation.evaluate(pos));
 
     // Reverse futility pruning / static null move pruning.
     // Not useful in PV-nodes as this tries to search for nodes where score >= beta but in PV-nodes score < beta.
@@ -769,7 +769,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (!pvNode && !inCheck && ttMove.empty() && depth <= razoringDepth && staticEval + razoringMargin(depth) <= alpha)
     {
         const auto razoringAlpha = alpha - razoringMargin(depth);
-        score = quiescenceSearch(pos, 0, razoringAlpha, razoringAlpha + 1, false, ss);
+        score = quiescenceSearch(st, pos, 0, razoringAlpha, razoringAlpha + 1, false, ss);
         if (score <= razoringAlpha)
         {
             return score;
@@ -793,8 +793,8 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             ++nodeCount;
             --nodesToTimeCheck;
             (ss + 1)->mAllowNullMove = false;
-            score = depth - 1 - R > 0 ? -search<false>(newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
-                                      : -quiescenceSearch(newPosition, 0, -beta, -beta + 1, false, ss + 1);
+            score = depth - 1 - R > 0 ? -search<false>(st, newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
+                                      : -quiescenceSearch(st, newPosition, 0, -beta, -beta + 1, false, ss + 1);
             (ss + 1)->mAllowNullMove = true;
             if (score >= beta)
             {
@@ -814,7 +814,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     {
         // We can skip nullmove in IID since if it would have worked we wouldn't be here.
         ss->mAllowNullMove = false;
-        score = search<pvNode>(pos, pvNode ? depth - 2 : depth / 2, alpha, beta, inCheck, ss);
+        score = search<pvNode>(st, pos, pvNode ? depth - 2 : depth / 2, alpha, beta, inCheck, ss);
         ss->mAllowNullMove = true;
 
         // Now probe the TT and get the best move.
@@ -837,10 +837,10 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                             && ttFlags != TranspositionTable::Flags::UpperBoundScore
                             && ss->mExcludedMove.empty()
                             && ttEntry->getDepth() >= depth - 3);
-    const auto killers = killerTable.getKillers(ss->mPly);
-    const auto counter = counterMoveTable.getCounterMove(pos, (ss - 1)->mCurrentMove);
+    const auto killers = st.killerTable.getKillers(ss->mPly);
+    const auto counter = st.counterMoveTable.getCounterMove(pos, (ss - 1)->mCurrentMove);
 
-    MoveSort ms(pos, historyTable, ttMove, killers.first, killers.second, counter, inCheck);
+    MoveSort ms(pos, st.historyTable, ttMove, killers.first, killers.second, counter, inCheck);
 
     for (auto i = 0;; ++i)
     {
@@ -854,7 +854,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
             const auto newBeta = ttScore - 25;
             ss->mExcludedMove = move;
             ss->mAllowNullMove = false;
-            score = search<false>(pos, depth / 2, newBeta - 1, newBeta, inCheck, ss);
+            score = search<false>(st, pos, depth / 2, newBeta - 1, newBeta, inCheck, ss);
             ss->mAllowNullMove = true;
             ss->mExcludedMove = Move();
             if (score < newBeta)
@@ -908,36 +908,36 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
         // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
         if (ss->mPly + 2 < maxPly)
         {
-            killerTable.clear(ss->mPly + 2);
+            st.killerTable.clear(ss->mPly + 2);
         }
 
         if (!movesSearched)
         {
-            score = newDepth > 0 ? -search<pvNode>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                 : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+            score = newDepth > 0 ? -search<pvNode>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                 : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
         }
         else
         {
             const auto reduction = ((lmrNode && nonCriticalMove) ? lmrReductions[std::min(i, 63)][std::min(depth, 63)] : 0);
 
-            score = newDepth - reduction > 0 ? -search<false>(newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                             : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+            score = newDepth - reduction > 0 ? -search<false>(st, newPosition, newDepth - reduction, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                             : -quiescenceSearch(st, newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
 
             // The LMR'd move didn't fail low, drop the reduction because that most likely caused the fail high.
             // If we are in a PV-node the alternative is to open the window first. The more unstable the search the better doing that is.
             // Before the tuned evaluation opening the window was better, after the tuned eval it is worse. Why?
             if (reduction && score > alpha)
             {
-                score = newDepth > 0 ? -search<false>(newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
-                                     : -quiescenceSearch(newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
+                score = newDepth > 0 ? -search<false>(st, newPosition, newDepth, -alpha - 1, -alpha, givesCheck != 0, ss + 1)
+                                     : -quiescenceSearch(st, newPosition, 0, -alpha - 1, -alpha, givesCheck != 0, ss + 1);
             }
 
             // If we are in a PV-node this is used to get the exact score for a new PV.
             // Since we used null window on the previous searches the score is only a bound, and this won't do for a PV.
             if (score > alpha && score < beta)
             {
-                score = newDepth > 0 ? -search<true>(newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
-                                     : -quiescenceSearch(newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
+                score = newDepth > 0 ? -search<true>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
+                                     : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
             }
         }
         ++movesSearched;
@@ -963,12 +963,12 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
                     {
                         if (quietMove)
                         {
-                            historyTable.addCutoff(pos, move, depth);
-                            killerTable.update(move, ss->mPly);
-                            counterMoveTable.update(pos, move, (ss - 1)->mCurrentMove);
+                            st.historyTable.addCutoff(pos, move, depth);
+                            st.killerTable.update(move, ss->mPly);
+                            st.counterMoveTable.update(pos, move, (ss - 1)->mCurrentMove);
                             for (auto j = 0; j < quietsSearched.size() - 1; ++j)
                             {
-                                historyTable.addNotCutoff(pos, quietsSearched.getMove(j), depth);
+                                st.historyTable.addNotCutoff(pos, quietsSearched.getMove(j), depth);
                             }
                         }
                     }
@@ -999,7 +999,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     return bestScore;
 }
 
-int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
+int Search::quiescenceSearch(SearchThread& st, const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss)
 {
     assert(alpha < beta);
     assert(depth <= 0);
@@ -1016,7 +1016,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
     // Don't go over max ply.
     if (ss->mPly >= maxPly)
     {
-        return evaluation.evaluate(pos);
+        return st.evaluation.evaluate(pos);
     }
 
     // Check for fifty move draws.
@@ -1079,7 +1079,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
     }
     else
     {
-        bestScore = evaluation.evaluate(pos);
+        bestScore = st.evaluation.evaluate(pos);
         if (bestScore > alpha)
         {
             if (bestScore >= beta)
@@ -1093,7 +1093,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
                    : MoveGen::generatePseudoLegalCaptures(pos, moveList, false);
     }
 
-    orderCaptures(pos, moveList, bestMove);
+    orderCaptures(st, pos, moveList, bestMove);
     repetitionHashes[rootPly + ss->mPly] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
     {
@@ -1130,7 +1130,7 @@ int Search::quiescenceSearch(const Position& pos, int depth, int alpha, int beta
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-        const auto score = -quiescenceSearch(newPosition, depth - 1, -beta, -alpha, givesCheck != 0, ss + 1);
+        const auto score = -quiescenceSearch(st, newPosition, depth - 1, -beta, -alpha, givesCheck != 0, ss + 1);
 
         if (score > bestScore)
         {

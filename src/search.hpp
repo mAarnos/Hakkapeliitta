@@ -63,12 +63,6 @@ public:
     /// Can take a long time with a large value of sizeInMegaBytes.
     void setTranspositionTableSize(size_t sizeInMegaBytes);
 
-    /// @brief Used for setting the size of the PHT. 
-    /// @param sizeInMegaBytes The new size of the PHT.
-    ///
-    /// Can take a long time with a large value of sizeInMegaBytes.
-    void setPawnHashTableSize(size_t sizeInMegaBytes);
-
     /// @brief Checks if we are currently searching.
     /// @return True if we are searching.
     bool isSearching() const;
@@ -98,19 +92,15 @@ private:
     // Different classes used by the search function.
     ThreadPool<SearchThread> tp;
     TranspositionTable transpositionTable;
-    Evaluation evaluation;
-    KillerTable killerTable;
-    CounterMoveTable counterMoveTable;
-    HistoryTable historyTable;
     SearchListener& listener;
     Stopwatch sw;
 
-    void think(std::reference_wrapper<SearchThread> st, const Position& root, SearchParameters searchParameters);
+    void think(SearchThread& st, const Position& root, SearchParameters searchParameters);
 
     template <bool pvNode>
-    int search(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
+    int search(SearchThread& st, const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
-    int quiescenceSearch(const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
+    int quiescenceSearch(SearchThread& st, const Position& pos, int depth, int alpha, int beta, bool inCheck, SearchStack* ss);
 
     // Time allocation variables.
     bool searchNeedsMoreTime;
@@ -158,10 +148,10 @@ private:
     std::condition_variable waitCv;
 
     // Used for ordering root moves.
-    void orderRootMoves(const Position& pos, MoveList& moveList, const Move& ttMove) const;
+    void orderRootMoves(SearchThread& st, const Position& pos, MoveList& moveList, const Move& ttMove) const;
 
     // Used for ordering captures in the quiescence search.
-    void orderCaptures(const Position& pos, MoveList& moveList, const Move& ttMove) const;
+    void orderCaptures(SearchThread& st, const Position& pos, MoveList& moveList, const Move& ttMove) const;
 
     // Used for getting the PV out of the TT:
     std::vector<Move> extractPv(const Position& root) const;
@@ -170,20 +160,18 @@ private:
 inline void Search::clearSearch() 
 { 
     transpositionTable.clear();
+    assert(false);
+    /*
     evaluation.clearPawnHashTable(); 
     killerTable.clear(); 
     historyTable.clear();
     counterMoveTable.clear();
+    */
 }
 
 inline void Search::setTranspositionTableSize(size_t sizeInMegaBytes)
 {
     transpositionTable.setSize(sizeInMegaBytes);
-}
-
-inline void Search::setPawnHashTableSize(size_t sizeInMegaBytes)
-{ 
-    evaluation.setPawnHashTableSize(sizeInMegaBytes);
 }
 
 inline bool Search::isSearching() const
