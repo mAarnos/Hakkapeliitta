@@ -96,7 +96,7 @@ private:
     };
     
     // Different classes used by the search function.
-    ThreadPool tp;
+    ThreadPool<std::thread> tp;
     TranspositionTable transpositionTable;
     Evaluation evaluation;
     KillerTable killerTable;

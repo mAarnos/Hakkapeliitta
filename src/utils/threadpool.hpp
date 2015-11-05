@@ -33,6 +33,7 @@
 ///
 /// Most likely contains bugs. Haven't found them so far, if they exist.
 /// All functions given as jobs must return nothing (i.e. be void).
+template <class T>
 class ThreadPool
 {
 public:
@@ -50,15 +51,18 @@ public:
 private:
     void loop();
 
-    std::vector<std::thread> threads;
+    std::vector<T> threads;
     std::queue<std::function<void()>> jobQueue;
 
     std::mutex jobQueueMutex;
     std::condition_variable cv;
     std::atomic<bool> terminateFlag;
+
+    static_assert(std::is_base_of<std::thread, T>::value, "T not derived from std::thread");
 };
 
-inline ThreadPool::ThreadPool(int amountOfThreads) :
+template <class T>
+inline ThreadPool<T>::ThreadPool(int amountOfThreads) :
     terminateFlag(false)
 {
     for (auto i = 0; i < amountOfThreads; ++i)
@@ -67,7 +71,8 @@ inline ThreadPool::ThreadPool(int amountOfThreads) :
     }
 }
 
-inline ThreadPool::~ThreadPool()
+template <typename T>
+inline ThreadPool<T>::~ThreadPool()
 {
     terminateFlag = true;
     cv.notify_all();
@@ -77,8 +82,9 @@ inline ThreadPool::~ThreadPool()
     }
 }
 
+template<class T>
 template<class Fn, class... Args>
-void ThreadPool::addJob(Fn&& fn, Args&&... args)
+void ThreadPool<T>::addJob(Fn&& fn, Args&&... args)
 {
     const auto job = std::bind(std::forward<Fn>(fn), std::forward<Args>(args)...);
     std::unique_lock<std::mutex> lock(jobQueueMutex);
@@ -86,7 +92,8 @@ void ThreadPool::addJob(Fn&& fn, Args&&... args)
     cv.notify_one();
 }
 
-inline void ThreadPool::loop()
+template <typename T>
+inline void ThreadPool<T>::loop()
 {
     for (;;)
     {
