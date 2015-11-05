@@ -41,11 +41,16 @@ private:
     KillerTable killerTable;
     CounterMoveTable counterMoveTable;
     HistoryTable historyTable;
+
+    // Search statistics
+    uint64_t tbHits;
+    uint64_t nodeCount;
+    int selDepth;
 };
 
 template<class Fn, class... Args>
 inline SearchThread::SearchThread(Fn&& f, Args&&... args) 
-    : std::thread(std::forward<Fn>(f), std::forward<Args>(args)...)
+    : std::thread(std::forward<Fn>(f), std::forward<Args>(args)...), tbHits(0), nodeCount(0), selDepth(0)
 {
 }
 

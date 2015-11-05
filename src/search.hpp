@@ -110,11 +110,6 @@ private:
     uint64_t maxTime;
     uint64_t maxNodes;
 
-    // Search statistics
-    uint64_t tbHits;
-    uint64_t nodeCount;
-    int selDepth;
-
     // Flags related to stopping the search.
     bool searching;
     bool pondering;

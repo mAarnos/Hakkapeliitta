@@ -181,7 +181,7 @@ void Search::orderRootMoves(SearchThread& st, const Position& pos, MoveList& mov
 Search::Search(SearchListener& sl):
     tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
-    tbHits(0), nodeCount(0), selDepth(0), searching(false), pondering(false), infinite(false), 
+    searching(false), pondering(false), infinite(false), 
     cardinality(6), probeDepth(1), use50(true), rootPly(0), repetitionHashes({}), contempt({})
 {
     for (auto i = 0; i < 64; ++i)
@@ -272,13 +272,13 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
     std::vector<Move> pv;
     Move bestMove;
 
-    tbHits = 0;
-    nodeCount = 0;
+    st.tbHits = 0;
+    st.nodeCount = 0;
+    st.selDepth = 1;
     nodesToTimeCheck = 10000;
     contempt[root.getSideToMove()] = -sp.mContempt;
     contempt[!root.getSideToMove()] = sp.mContempt;
     searchNeedsMoreTime = false;
-    selDepth = 1;
     nextSendInfo = 1000;
     searching = true;
     pondering = sp.mPonder;
@@ -361,7 +361,7 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
 
         if (rootInTb)
         {
-            tbHits = rootMoveList.size();
+            st.tbHits = rootMoveList.size();
         }
     }
 
@@ -394,7 +394,7 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
             for (auto i = 0; i < rootMoveList.size(); ++i)
             {
                 const auto move = selectMove(rootMoveList, i);
-                ++nodeCount;
+                st.nodeCount += 1;
                 --nodesToTimeCheck;
                 searchNeedsMoreTime = i > 0;
 
@@ -498,13 +498,13 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
                     pv = extractPv(pos);
                     listener.infoPv(pv, 
                                     sw.elapsed<std::chrono::milliseconds>(), 
-                                    nodeCount,
-                                    tbHits,    
+                                    st.nodeCount,
+                                    st.tbHits,    
                                     depth, 
                                     score, 
                                     lowerBound ? TranspositionTable::Flags::LowerBoundScore
                                                : TranspositionTable::Flags::UpperBoundScore,
-                                    selDepth,
+                                    st.selDepth,
                                     transpositionTable.hashFull());
                     score = newDepth > 0 ? -search<true>(st, newPosition, newDepth, -beta, -alpha, givesCheck != 0, ss + 1)
                                          : -quiescenceSearch(st, newPosition, 0, -beta, -alpha, givesCheck != 0, ss + 1);
@@ -526,12 +526,12 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
                         pv = extractPv(pos);
                         listener.infoPv(pv,
                                         sw.elapsed<std::chrono::milliseconds>(),
-                                        nodeCount,
-                                        tbHits,
+                                        st.nodeCount,
+                                        st.tbHits,
                                         depth,
                                         score,
                                         TranspositionTable::Flags::ExactScore, 
-                                        selDepth,
+                                        st.selDepth,
                                         transpositionTable.hashFull());
                     }
                 }
@@ -571,12 +571,12 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
 
         listener.infoPv(pv,
                         sw.elapsed<std::chrono::milliseconds>(),
-                        nodeCount,
-                        tbHits,
+                        st.nodeCount,
+                        st.tbHits,
                         depth,
                         bestScore,
                         TranspositionTable::Flags::ExactScore,
-                        selDepth,
+                        st.selDepth,
                         transpositionTable.hashFull());
 
         // Adjust alpha and beta based on the last score.
@@ -612,8 +612,8 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
     const auto searchTime = sw.elapsed<std::chrono::milliseconds>();
     listener.infoBestMove(pv,
                           searchTime,
-                          nodeCount,
-                          tbHits, 
+                          st.nodeCount,
+                          st.tbHits, 
                           transpositionTable.hashFull());
 }
 
@@ -641,9 +641,9 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
     transpositionTable.prefetch(hashKey);
 
     // Used for sending seldepth info.
-    if (ss->mPly > selDepth)
+    if (ss->mPly > st.selDepth)
     {
-        selDepth = ss->mPly;
+        st.selDepth = ss->mPly;
     }
 
     // Don't go over max ply.
@@ -659,7 +659,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
         const auto time = sw.elapsed<std::chrono::milliseconds>();
 
         // Check if we have gone over the node limit.
-        if (nodeCount >= maxNodes)
+        if (st.nodeCount >= maxNodes)
         {
             searching = false;
         }
@@ -685,7 +685,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
         if (time >= nextSendInfo)
         {
             nextSendInfo += 1000;
-            listener.infoRegular(nodeCount, tbHits, time, transpositionTable.hashFull());
+            listener.infoRegular(st.nodeCount, st.tbHits, time, transpositionTable.hashFull());
         }
     }
 
@@ -744,7 +744,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
 
         if (found)
         {
-            ++tbHits;
+            st.tbHits += 1;
             const auto drawScore = use50 ? 1 : 0;
             score = score < -drawScore ? -minMateScore + ss->mPly
                   : score > drawScore ? minMateScore - ss->mPly
@@ -790,7 +790,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
             ss->mCurrentMove = Move();
             Position newPosition(pos);
             newPosition.makeNullMove();
-            ++nodeCount;
+            st.nodeCount += 1;
             --nodesToTimeCheck;
             (ss + 1)->mAllowNullMove = false;
             score = depth - 1 - R > 0 ? -search<false>(st, newPosition, depth - 1 - R, -beta, -beta + 1, false, ss + 1)
@@ -869,7 +869,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
                                                               && move != killers.first
                                                               && move != killers.second
                                                               && move != counter;
-        ++nodeCount;
+        st.nodeCount += 1;
         --nodesToTimeCheck;
 
         // Futility pruning and late move pruning. Oh, SEE pruning as well.
@@ -1099,7 +1099,7 @@ int Search::quiescenceSearch(SearchThread& st, const Position& pos, int depth, i
     {
         const auto move = selectMove(moveList, i);
         const auto givesCheck = pos.givesCheck(move);
-        ++nodeCount;
+        st.nodeCount += 1;
         --nodesToTimeCheck;
 
         // Only prune moves in quiescence search if we are not in check.
