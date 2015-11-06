@@ -42,6 +42,10 @@ private:
     CounterMoveTable counterMoveTable;
     HistoryTable historyTable;
 
+    // Is this thread the master search thread or not?
+    // We make the first thread in the threadpool the master thread.
+    bool master;
+
     // Search statistics
     uint64_t tbHits;
     uint64_t nodeCount;
@@ -53,7 +57,7 @@ private:
 
 template<class Fn, class... Args>
 inline SearchThread::SearchThread(Fn&& f, Args&&... args) 
-    : std::thread(std::forward<Fn>(f), std::forward<Args>(args)...), tbHits(0), nodeCount(0), selDepth(0)
+    : std::thread(std::forward<Fn>(f), std::forward<Args>(args)...), master(false), tbHits(0), nodeCount(0), selDepth(0)
 {
 }
 

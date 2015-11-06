@@ -104,7 +104,7 @@ private:
 
     // Time allocation variables.
     bool searchNeedsMoreTime;
-    int nodesToTimeCheck; // move to SearchThread
+    int nodesToTimeCheck; 
     uint64_t nextSendInfo;
     uint64_t targetTime;
     uint64_t maxTime;
@@ -115,6 +115,7 @@ private:
     bool searching;
     bool pondering;
     bool infinite;
+    bool stopOtherThreads;
 
     // Information related to probing tablebases.
     int cardinality;

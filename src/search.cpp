@@ -180,9 +180,9 @@ void Search::orderRootMoves(SearchThread& st, const Position& pos, MoveList& mov
 
 Search::Search(SearchListener& sl):
     tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
-    targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
-    searching(false), pondering(false), infinite(false), 
-    cardinality(6), probeDepth(1), use50(true), rootPly(0), contempt({})
+    targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()), rootPly(0),
+    searching(false), pondering(false), infinite(false), stopOtherThreads(false),
+    cardinality(6), probeDepth(1), use50(true), contempt({})
 {
     for (auto i = 0; i < 64; ++i)
     {
@@ -196,6 +196,9 @@ Search::Search(SearchListener& sl):
     {
         lmpMoveCounts[d] = static_cast<int>(std::round(2.98484 + std::pow(d, 1.74716)));
     }
+
+    // Set the first thread as master.
+    tp.getThread(0).master = true;
 }
 
 bool Search::repetitionDraw(SearchThread& st, const Position& pos, int ply) const
@@ -652,41 +655,48 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
         return st.evaluation.evaluate(pos);
     }
 
-    // Time check things.
-    if (nodesToTimeCheck <= 0)
+    // Deals with time checking and search stopping.
+    if (st.master) 
     {
-        nodesToTimeCheck = 10000;
-        const auto time = sw.elapsed<std::chrono::milliseconds>();
-
-        // Check if we have gone over the node limit.
-        if (st.nodeCount >= maxNodes)
+        if (nodesToTimeCheck <= 0)
         {
-            searching = false;
-        }
+            nodesToTimeCheck = 10000;
+            const auto time = sw.elapsed<std::chrono::milliseconds>();
 
-        if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
-        {
-            // First check hard cutoff, then check soft cutoff which depends on the current search situation.
-            if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
+            // Check if we have gone over the node limit.
+            if (st.nodeCount >= maxNodes)
             {
                 searching = false;
             }
-            else
+
+            if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
             {
-                // TODO: Add easy move here.
+                // First check hard cutoff, then check soft cutoff which depends on the current search situation.
+                if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
+                {
+                    searching = false;
+                }
+                else
+                {
+                    // TODO: Add easy move here.
+                }
+            }
+
+            if (!searching)
+            {
+                throw StopSearchException("allocated time has run out");
+            }
+
+            if (time >= nextSendInfo)
+            {
+                nextSendInfo += 1000;
+                listener.infoRegular(st.nodeCount, st.tbHits, time, transpositionTable.hashFull());
             }
         }
-
-        if (!searching)
-        {
-            throw StopSearchException("allocated time has run out");
-        }
-
-        if (time >= nextSendInfo)
-        {
-            nextSendInfo += 1000;
-            listener.infoRegular(st.nodeCount, st.tbHits, time, transpositionTable.hashFull());
-        }
+    }
+    else if (stopOtherThreads)
+    {
+        throw StopSearchException("stop signal given to other threads");
     }
 
     // Check for fifty move draws.
