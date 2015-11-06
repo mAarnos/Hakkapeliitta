@@ -182,7 +182,7 @@ Search::Search(SearchListener& sl):
     tp(1), listener(sl), searchNeedsMoreTime(false), nodesToTimeCheck(10000), nextSendInfo(1000), 
     targetTime(1000), maxTime(10000), maxNodes(std::numeric_limits<size_t>::max()),
     searching(false), pondering(false), infinite(false), 
-    cardinality(6), probeDepth(1), use50(true), rootPly(0), repetitionHashes({}), contempt({})
+    cardinality(6), probeDepth(1), use50(true), rootPly(0), contempt({})
 {
     for (auto i = 0; i < 64; ++i)
     {
@@ -198,13 +198,13 @@ Search::Search(SearchListener& sl):
     }
 }
 
-bool Search::repetitionDraw(const Position& pos, int ply) const
+bool Search::repetitionDraw(SearchThread& st, const Position& pos, int ply) const
 {
     const auto limit = std::max(rootPly + ply - pos.getFiftyMoveDistance(), 0);
 
     for (auto i = rootPly + ply - 2; i >= limit; i -= 2)
     {
-        if (repetitionHashes[i] == pos.getHashKey())
+        if (st.repetitionHashes[i] == pos.getHashKey())
         {
             return true;
         }
@@ -286,7 +286,7 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
     const auto maxDepth = (sp.mDepth > 0 ? std::min(sp.mDepth + 1, 128) : 128);
     maxNodes = (sp.mNodes > 0 ? sp.mNodes : std::numeric_limits<size_t>::max());
     rootPly = sp.mRootPly;
-    repetitionHashes = sp.mHashKeys;
+    st.repetitionHashes = sp.mHashKeys;
     cardinality = sp.mSyzygyProbeLimit;
     probeDepth = sp.mSyzygyProbeDepth;
     use50 = sp.mSyzygy50MoveRule;
@@ -414,7 +414,7 @@ void Search::think(SearchThread& st, const Position& root, SearchParameters sp)
                 Position newPosition(pos);
                 newPosition.makeMove(move);
                 ss->mCurrentMove = move;
-                repetitionHashes[rootPly] = pos.getHashKey();
+                st.repetitionHashes[rootPly] = pos.getHashKey();
                 // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
                 st.killerTable.clear(2);
 
@@ -705,7 +705,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
     }
 
     // Check for repetition draws. Technically we are checking for 2-fold repetitions instead of 3-fold, but that is enough for game theoric correctness.
-    if (repetitionDraw(pos, ss->mPly))
+    if (repetitionDraw(st, pos, ss->mPly))
     {
         return contempt[pos.getSideToMove()];
     }
@@ -786,7 +786,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
                                 && ttEntry->getDepth() >= depth - 1 - R && ttEntry->getScore() <= alpha;
         if (!likelyFailLow)
         {
-            repetitionHashes[rootPly + ss->mPly] = hashKey;
+            st.repetitionHashes[rootPly + ss->mPly] = hashKey;
             ss->mCurrentMove = Move();
             Position newPosition(pos);
             newPosition.makeNullMove();
@@ -902,7 +902,7 @@ int Search::search(SearchThread& st, const Position& pos, int depth, int alpha, 
 
         Position newPosition(pos);
         newPosition.makeMove(move);
-        repetitionHashes[rootPly + ss->mPly] = hashKey;
+        st.repetitionHashes[rootPly + ss->mPly] = hashKey;
         ss->mCurrentMove = move;
 
         // Clear the ply + 2 killer slot to make sure you cannot inherit any killer from a cousin.
@@ -1034,7 +1034,7 @@ int Search::quiescenceSearch(SearchThread& st, const Position& pos, int depth, i
     }
 
     // Check for repetition draws. 
-    if (repetitionDraw(pos, ss->mPly))
+    if (repetitionDraw(st, pos, ss->mPly))
     {
         return contempt[pos.getSideToMove()];
     }
@@ -1094,7 +1094,7 @@ int Search::quiescenceSearch(SearchThread& st, const Position& pos, int depth, i
     }
 
     orderCaptures(st, pos, moveList, bestMove);
-    repetitionHashes[rootPly + ss->mPly] = pos.getHashKey();
+    st.repetitionHashes[rootPly + ss->mPly] = pos.getHashKey();
     for (auto i = 0; i < moveList.size(); ++i)
     {
         const auto move = selectMove(moveList, i);

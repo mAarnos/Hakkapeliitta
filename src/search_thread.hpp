@@ -46,6 +46,9 @@ private:
     uint64_t tbHits;
     uint64_t nodeCount;
     int selDepth;
+
+    // Used for detecting repetitions.
+    std::vector<HashKey> repetitionHashes;
 };
 
 template<class Fn, class... Args>

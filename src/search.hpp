@@ -104,11 +104,12 @@ private:
 
     // Time allocation variables.
     bool searchNeedsMoreTime;
-    int nodesToTimeCheck;
+    int nodesToTimeCheck; // move to SearchThread
     uint64_t nextSendInfo;
     uint64_t targetTime;
     uint64_t maxTime;
     uint64_t maxNodes;
+    int rootPly;
 
     // Flags related to stopping the search.
     bool searching;
@@ -120,14 +121,11 @@ private:
     int probeDepth;
     bool use50;
 
-    // These three are used to detect repetitions.
     // Note that the repetitions can include positions which happened during position set-up.
     // If this were not the case we would not require rootPly.
     // Actually, we check for 2-fold repetitions instead of 3-fold repetitions like FIDE-rules require.
     // If you think about it for a while, you notice that 2-fold is all we need.
-    int rootPly;
-    std::vector<HashKey> repetitionHashes;
-    bool repetitionDraw(const Position& pos, int ply) const;
+    bool repetitionDraw(SearchThread& st, const Position& pos, int ply) const;
 
     // Used for changing the values of draws inside the search.
     std::array<int, 2> contempt;
