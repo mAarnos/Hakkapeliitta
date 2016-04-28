@@ -165,6 +165,8 @@ private:
 
     // Used for getting the PV out of the TT:
     std::vector<Move> extractPv(const Position& root) const;
+
+    void checkTime();
 };
 
 inline void Search::clearSearch() 

@@ -274,7 +274,7 @@ void Search::think(const Position& root, SearchParameters sp)
 
     tbHits = 0;
     nodeCount = 0;
-    nodesToTimeCheck = 10000;
+    nodesToTimeCheck = 1000;
     contempt[root.getSideToMove()] = -sp.mContempt;
     contempt[!root.getSideToMove()] = sp.mContempt;
     searchNeedsMoreTime = false;
@@ -398,6 +398,11 @@ void Search::think(const Position& root, SearchParameters sp)
                 --nodesToTimeCheck;
                 searchNeedsMoreTime = i > 0;
 
+                // It is a good idea to check the time here as well.
+                // In certain cases when we have search data up to depth 30 or so,
+                // it takes more than a second for us to check if we are over the time limit.
+                // This is obviously bad if we have less than a second of time.
+                checkTime();
                 // Start sending currmove info only after one second has elapsed.
                 if (sw.elapsed<std::chrono::milliseconds>() > 1000)
                 {
@@ -617,6 +622,41 @@ void Search::think(const Position& root, SearchParameters sp)
                           transpositionTable.hashFull());
 }
 
+void Search::checkTime()
+{
+    const auto time = sw.elapsed<std::chrono::milliseconds>();
+
+    // Check if we have gone over the node limit.
+    if (nodeCount >= maxNodes)
+    {
+        searching = false;
+    }
+
+    if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
+    {
+        // First check hard cutoff, then check soft cutoff which depends on the current search situation.
+        if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
+        {
+            searching = false;
+        }
+        else
+        {
+            // TODO: Add easy move here.
+        }
+    }
+
+    if (!searching)
+    {
+        throw StopSearchException("allocated time has run out");
+    }
+
+    if (time >= nextSendInfo)
+    {
+        nextSendInfo += 1000;
+        listener.infoRegular(nodeCount, tbHits, time, transpositionTable.hashFull());
+    }
+}
+
 #ifdef _MSC_VER
 #pragma warning (disable : 4127) // Shuts up warnings about conditional branches always being true/false.
 #endif
@@ -656,37 +696,7 @@ int Search::search(const Position& pos, int depth, int alpha, int beta, bool inC
     if (nodesToTimeCheck <= 0)
     {
         nodesToTimeCheck = 10000;
-        const auto time = sw.elapsed<std::chrono::milliseconds>();
-
-        // Check if we have gone over the node limit.
-        if (nodeCount >= maxNodes)
-        {
-            searching = false;
-        }
-
-        if (!infinite && !pondering) // Can't stop search if ordered to run indefinitely
-        {
-            // First check hard cutoff, then check soft cutoff which depends on the current search situation.
-            if (time > maxTime || time > (searchNeedsMoreTime ? 5 * targetTime : targetTime))
-            {
-                searching = false;
-            }
-            else
-            {
-                // TODO: Add easy move here.
-            }
-        }
-
-        if (!searching)
-        {
-            throw StopSearchException("allocated time has run out");
-        }
-
-        if (time >= nextSendInfo)
-        {
-            nextSendInfo += 1000;
-            listener.infoRegular(nodeCount, tbHits, time, transpositionTable.hashFull());
-        }
+        checkTime();
     }
 
     // Check for fifty move draws.
