@@ -15,6 +15,7 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include "evaluation.hpp"
 #include "piece.hpp"
 #include "color.hpp"
