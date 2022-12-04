@@ -21,6 +21,7 @@
 #ifndef TT_HPP_
 #define TT_HPP_
 
+#include <cstdlib>
 #include <cstdint>
 #include <array>
 #include <vector>

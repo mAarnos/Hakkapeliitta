@@ -15,6 +15,7 @@
     along with Hakkapeliitta. If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include "search.hpp"
 #include "movegen.hpp"
 #include "movesort.hpp"
