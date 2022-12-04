@@ -98,7 +98,7 @@ inline std::string positionToFen(const Position& pos)
         {
             fen += static_cast<char>('0' + emptySquares);
         }
-        if (rank > 0)
+        if (r > 0)
         {
             fen += '/';
         }

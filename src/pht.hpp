@@ -21,6 +21,7 @@
 #ifndef PHT_HPP_
 #define PHT_HPP_
 
+#include <cstdlib>
 #include <cstdint>
 #include <vector>
 #include "zobrist.hpp"
